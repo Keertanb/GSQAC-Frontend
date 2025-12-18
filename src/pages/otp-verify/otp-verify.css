@@ -1,0 +1,325 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+.otp-page-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+/* ============================
+   LEFT PANEL (Visual)
+   ============================ */
+.otp-visual-panel {
+  flex: 1.2;
+  position: relative;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem;
+  overflow: hidden;
+}
+
+.blob {
+  position: absolute;
+  filter: blur(80px);
+  z-index: 0;
+  opacity: 0.6;
+  animation: moveBlob 20s infinite alternate;
+}
+
+.blob-1 {
+  top: -10%;
+  left: -10%;
+  width: 500px;
+  height: 500px;
+  background: #4f46e5;
+  border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+}
+
+.blob-2 {
+  bottom: -10%;
+  right: -10%;
+  width: 600px;
+  height: 600px;
+  background: #0ea5e9;
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  animation-delay: -5s;
+}
+
+@keyframes moveBlob {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  100% { transform: translate(50px, 50px) rotate(20deg); }
+}
+
+/* Glass Overlay */
+.visual-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  z-index: 1;
+}
+
+.visual-content {
+  position: relative;
+  z-index: 10;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Typography on Left */
+.visual-title {
+  font-weight: 800 !important;
+  color: #fff;
+  line-height: 1.1 !important;
+  margin-bottom: 1.5rem !important;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.visual-subtitle {
+  color: rgba(255,255,255,0.8);
+  font-size: 1.1rem !important;
+  line-height: 1.6 !important;
+  font-weight: 300;
+}
+
+/* Vector Animation */
+.illustration-wrapper {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto 3rem auto;
+}
+
+.verification-vector {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.2));
+}
+
+.shield-group {
+  animation: float 6s ease-in-out infinite;
+}
+
+.float-element-1 { animation: float 5s ease-in-out infinite reverse; }
+.float-element-2 { animation: float 7s ease-in-out infinite 1s; }
+.float-element-3 { animation: float 6s ease-in-out infinite 2s; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+/* Curved Divider */
+.custom-shape-divider-y {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 150px;
+  height: 100%;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.custom-shape-divider-y svg {
+  position: relative;
+  display: block;
+  width: calc(300% + 1.3px);
+  height: 100vh;
+  transform: rotate(90deg);
+  transform-origin: top right;
+}
+
+.custom-shape-divider-y .shape-fill {
+  fill: #ffffff;
+}
+
+/* ============================
+   RIGHT PANEL (Form)
+   ============================ */
+.otp-form-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: #ffffff;
+  position: relative;
+  z-index: 25;
+}
+
+.otp-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 2.5rem;
+  border-radius: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.field-label {
+  display: block;
+  color: #6b7280;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  font-size: 0.75rem;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.otp-input-section {
+  margin-bottom: 1.5rem;
+}
+
+.otp-input-container {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.otp-input-box {
+  width: 60px;
+  height: 70px;
+  background-color: #f3f4f6;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.otp-input-box:hover {
+  background-color: #ebedef;
+  border-color: #d1d5db;
+}
+
+.otp-input-box.focused {
+  background-color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  transform: scale(1.05);
+}
+
+.otp-input-box.filled {
+  background-color: #ffffff;
+  border-color: #10b981;
+}
+
+.otp-input-box.error {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+  animation: shake 0.5s;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Buttons */
+.verify-btn {
+  padding: 16px !important;
+  border-radius: 12px !important;
+  text-transform: none !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  box-shadow: 0 10px 20px -5px rgba(30, 58, 138, 0.4) !important;
+  transition: all 0.3s ease !important;
+}
+
+.verify-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 25px -5px rgba(30, 58, 138, 0.5) !important;
+}
+
+.link-text {
+  color: #3b82f6;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.link-text:hover {
+  color: #1e40af;
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .otp-page-container {
+    flex-direction: column;
+    height: auto;
+    overflow-y: auto;
+  }
+  
+  .otp-visual-panel {
+    min-height: 40vh;
+    padding: 2rem;
+    align-items: center;
+    text-align: center;
+  }
+
+  .custom-shape-divider-y {
+    display: none;
+  }
+
+  .otp-form-panel {
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
+    margin-top: -30px;
+    padding-top: 3rem;
+  }
+
+  .otp-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .otp-input-box {
+    width: 50px;
+    height: 60px;
+  }
+}
+
+@media (max-width: 600px) {
+  .otp-visual-panel {
+    min-height: 35vh;
+    padding: 1.5rem;
+  }
+
+  .visual-title {
+    font-size: 2rem !important;
+  }
+
+  .visual-subtitle {
+    font-size: 0.95rem !important;
+  }
+
+  .illustration-wrapper {
+    max-width: 300px;
+    margin-bottom: 2rem;
+  }
+
+  .otp-card {
+    padding: 1.5rem;
+    border-radius: 20px;
+  }
+
+  .otp-input-container {
+    gap: 0.5rem;
+  }
+
+  .otp-input-box {
+    width: 45px;
+    height: 55px;
+  }
+}
