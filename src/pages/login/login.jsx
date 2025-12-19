@@ -8,11 +8,10 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel,
-  IconButton,
   InputAdornment,
   Paper,
   Fade,
+  CircularProgress,
 } from "@mui/material";
 import {
   ArrowBack,
@@ -25,8 +24,10 @@ import {
   LockOutlined,
   EmailOutlined,
 } from "@mui/icons-material";
-import { colors } from "../../constants/colors"; // Ensure this path is correct
-import { roles } from "../../constants/roles"; // Ensure this path is correct
+import { colors } from "../../constants/colors";
+import { roles } from "../../constants/roles";
+import { useSendOtpMutation } from "../../services/authService";
+import useAuthStore from "../../store/useAuthStore";
 import "./login.css";
 
 const Login = () => {
@@ -35,6 +36,27 @@ const Login = () => {
   const [userId, setUserId] = useState("");
   const [errors, setErrors] = useState({ role: "", userId: "" });
   const [focusedInput, setFocusedInput] = useState("");
+  const { setOtpUserId } = useAuthStore();
+
+  const sendOtpMutation = useSendOtpMutation({
+    onSuccess: (data) => {
+      const apiUserId = data?.userId || data?.data?.userId;
+      if (apiUserId) {
+        setOtpUserId(apiUserId, selectedRole);
+      }
+
+      navigate("/otp-verify", {
+        state: { role: selectedRole },
+      });
+    },
+    onError: (error) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to send OTP. Please try again.";
+      setErrors({ ...errors, userId: errorMessage });
+    },
+  });
 
   const getRoleIcon = (roleValue) => {
     const iconMap = {
@@ -75,8 +97,8 @@ const Login = () => {
       return;
     }
 
-    navigate("/otp-verify", {
-      state: { role: selectedRole, userId: userId.trim() },
+    sendOtpMutation.mutate({
+      userName: userId.trim(),
     });
   };
 
@@ -84,17 +106,14 @@ const Login = () => {
 
   return (
     <Box className="login-container">
-      {/* LEFT SECTION: Visual & Brand */}
       <Box className="login-visual-panel">
         <Box className="visual-overlay" />
 
-        {/* Animated Background Blobs */}
         <div className="blob blob-1"></div>
         <div className="blob blob-2"></div>
 
         <Box className="visual-content">
           <Box className="illustration-wrapper">
-            {/* Abstract Education Vector */}
             <svg
               viewBox="0 0 500 500"
               xmlns="http://www.w3.org/2000/svg"
@@ -113,14 +132,12 @@ const Login = () => {
                 </linearGradient>
               </defs>
 
-              {/* Central Shield/Emblem Base */}
               <path
                 d="M250 450 L100 350 L100 150 L250 50 L400 150 L400 350 Z"
                 fill="url(#grad1)"
                 opacity="0.1"
               />
 
-              {/* Floating Elements - Books/Data */}
               <g className="float-element-1">
                 <rect
                   x="150"
@@ -284,7 +301,6 @@ const Login = () => {
             )}
           </FormControl>
 
-          {/* User ID Input */}
           <Fade in={!!selectedRole} timeout={500}>
             <Box>
               <Box
@@ -330,22 +346,31 @@ const Login = () => {
             </Box>
           </Fade>
 
-          {/* Action Buttons */}
           <Box sx={{ mt: 6 }}>
             <Button
               fullWidth
               variant="contained"
               size="large"
               onClick={handleContinue}
-              disabled={!selectedRole || !userId.trim()}
-              endIcon={<ArrowForward />}
+              disabled={
+                !selectedRole || !userId.trim() || sendOtpMutation.isPending
+              }
+              endIcon={
+                sendOtpMutation.isPending ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <ArrowForward />
+                )
+              }
               className="login-btn"
               sx={{
                 bgcolor:
                   selectedRoleData?.color || colors.primary?.blue || "#1e3a8a",
               }}
             >
-              Continue Securely
+              {sendOtpMutation.isPending
+                ? "Sending OTP..."
+                : "Continue Securely"}
             </Button>
           </Box>
 

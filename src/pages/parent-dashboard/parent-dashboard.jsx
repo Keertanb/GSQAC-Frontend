@@ -19,10 +19,17 @@ import {
   ReportProblem,
   School,
 } from "@mui/icons-material";
+import useAuthStore from "../../store/useAuthStore";
 import "./parent-dashboard.css";
 
 const ParentDashboard = () => {
   const navigate = useNavigate();
+  const { logout, user } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <Box className="dashboard-wrapper">
@@ -40,7 +47,12 @@ const ParentDashboard = () => {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Parent/Guardian Dashboard
           </Typography>
-          <Button color="inherit" onClick={() => navigate("/login")}>
+          {user && (
+            <Typography variant="body2" sx={{ mr: 2, opacity: 0.9 }}>
+              {user.name}
+            </Typography>
+          )}
+          <Button color="inherit" onClick={handleLogout}>
             Logout
           </Button>
         </Toolbar>
@@ -48,7 +60,7 @@ const ParentDashboard = () => {
 
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
         <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
-          Welcome to Parent/Guardian Portal
+          Welcome{user?.name ? `, ${user.name}` : ""} to Parent/Guardian Portal
         </Typography>
 
         <Grid container spacing={3}>

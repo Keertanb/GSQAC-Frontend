@@ -12,7 +12,6 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container">
-      {/* Header */}
       <header className="dashboard-header">
         <div className="header-content">
           <div className="logo-section">
@@ -33,16 +32,26 @@ const Dashboard = () => {
             </div>
             <div className="logo-text">
               <h2 className="logo-title">GSQAC</h2>
-              <p className="logo-subtitle">Gujarat School Quality Accreditation</p>
+              <p className="logo-subtitle">
+                Gujarat School Quality Accreditation
+              </p>
             </div>
           </div>
 
           <div className="header-right">
             <nav className="header-nav">
-              <a href="#" className="nav-link">Home</a>
-              <a href="#" className="nav-link">Schools</a>
-              <a href="#" className="nav-link">About</a>
-              <a href="#" className="nav-link">Grievance</a>
+              <a href="#" className="nav-link">
+                Home
+              </a>
+              <a href="#" className="nav-link">
+                Schools
+              </a>
+              <a href="#" className="nav-link">
+                About
+              </a>
+              <a href="#" className="nav-link">
+                Grievance
+              </a>
             </nav>
 
             <Button
@@ -73,14 +82,15 @@ const Dashboard = () => {
           <div className="badge">
             <span>NEP 2020 Quality Mandate</span>
           </div>
-          
+
           <h1 className="hero-title">
             Gujarat School Quality Accreditation Council
           </h1>
-          
+
           <p className="hero-subtitle">
-            State School Standards Authority ensuring transparent assessment, 
-            accreditation, and public disclosure for quality education in Gujarat.
+            State School Standards Authority ensuring transparent assessment,
+            accreditation, and public disclosure for quality education in
+            Gujarat.
           </p>
 
           <div className="hero-buttons">
@@ -100,7 +110,7 @@ const Dashboard = () => {
               </svg>
               <span>Find Schools</span>
             </button>
-            
+
             <button className="btn-secondary">
               <span>School Login</span>
               <svg
@@ -221,7 +231,8 @@ const Dashboard = () => {
             <SectionBadge text="SQAAF Parameters" />
             <h2 className="section-title">5 Domains of Assessment</h2>
             <p className="section-subtitle">
-              Schools are evaluated across five comprehensive domains aligned with National Education Policy 2020 quality benchmarks.
+              Schools are evaluated across five comprehensive domains aligned
+              with National Education Policy 2020 quality benchmarks.
             </p>
           </div>
 
@@ -240,9 +251,12 @@ const Dashboard = () => {
         <div className="content-container">
           <div className="section-header">
             <SectionBadge text="System Features" />
-            <h2 className="section-title">Complete Quality Assurance Workflow</h2>
+            <h2 className="section-title">
+              Complete Quality Assurance Workflow
+            </h2>
             <p className="section-subtitle">
-              End-to-end digital system for school registration, assessment, verification, and public disclosure.
+              End-to-end digital system for school registration, assessment,
+              verification, and public disclosure.
             </p>
           </div>
 

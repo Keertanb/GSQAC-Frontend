@@ -19,10 +19,17 @@ import {
   People,
   Settings,
 } from "@mui/icons-material";
+import useAuthStore from "../../store/useAuthStore";
 import "./school-dashboard.css";
 
 const SchoolDashboard = () => {
   const navigate = useNavigate();
+  const { logout, user } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <Box className="dashboard-wrapper">
@@ -40,7 +47,12 @@ const SchoolDashboard = () => {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             School Dashboard
           </Typography>
-          <Button color="inherit" onClick={() => navigate("/login")}>
+          {user && (
+            <Typography variant="body2" sx={{ mr: 2, opacity: 0.9 }}>
+              {user.name}
+            </Typography>
+          )}
+          <Button color="inherit" onClick={handleLogout}>
             Logout
           </Button>
         </Toolbar>
@@ -48,7 +60,7 @@ const SchoolDashboard = () => {
 
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
         <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
-          Welcome to School Dashboard
+          Welcome{user?.name ? `, ${user.name}` : ""} to School Dashboard
         </Typography>
 
         <Grid container spacing={3}>
@@ -100,4 +112,3 @@ const SchoolDashboard = () => {
 };
 
 export default SchoolDashboard;
-

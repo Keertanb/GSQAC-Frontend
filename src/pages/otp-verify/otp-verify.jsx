@@ -8,15 +8,12 @@ import {
   IconButton,
   Chip,
   Paper,
-  Fade,
+  CircularProgress,
 } from "@mui/material";
-import {
-  ArrowBack,
-  VerifiedUser,
-  ArrowForward,
-  LockOutlined,
-} from "@mui/icons-material";
+import { ArrowBack, ArrowForward, LockOutlined } from "@mui/icons-material";
 import { colors } from "../../constants/colors";
+import useAuthStore from "../../store/useAuthStore";
+import { useVerifyOtpMutation } from "../../services/authService";
 import "./otp-verify.css";
 
 const OTP_VERIFY = "123456";
@@ -24,18 +21,33 @@ const OTP_VERIFY = "123456";
 const OtpVerify = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { role, userId } = location.state || {};
+  const { role: locationRole } = location.state || {};
+  const { setUserData, userId, role } = useAuthStore();
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
   const [focusedIndex, setFocusedIndex] = useState(null);
   const inputRefs = useRef([]);
 
+  const currentRole = role || locationRole;
+
+  const getRoleLabel = () => {
+    const roleLabels = {
+      school: "School",
+      parent: "Parent/Guardian",
+      inspector: "School Inspector",
+      admin: "GSQAC Admin",
+    };
+    return roleLabels[currentRole] || "User";
+  };
+
+  const verifyOtpMutation = useVerifyOtpMutation();
+
   useEffect(() => {
-    if (!role || !userId) {
+    if (!currentRole || !userId) {
       navigate("/login");
     }
-  }, [role, userId, navigate]);
+  }, [currentRole, userId, navigate]);
 
   const handleOtpChange = (index, value) => {
     if (value.length > 1) return;
@@ -45,7 +57,6 @@ const OtpVerify = () => {
     setOtp(newOtp);
     setError("");
 
-    // Auto-focus next input
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -76,46 +87,69 @@ const OtpVerify = () => {
       return;
     }
 
-    if (otpString === OTP_VERIFY) {
-      // Navigate to respective dashboard
-      const dashboardRoutes = {
-        school: "/school-dashboard",
-        parent: "/parent-dashboard",
-        inspector: "/inspector-dashboard",
-        admin: "/admin-dashboard",
-      };
-
-      navigate(dashboardRoutes[role] || "/");
-    } else {
-      setError("Invalid OTP. Please try again.");
+    if (!userId) {
+      setError("User ID not found. Please login again.");
+      navigate("/login");
+      return;
     }
+
+    const userIdNumber =
+      typeof userId === "string" ? parseInt(userId, 10) : userId;
+
+    verifyOtpMutation.mutate(
+      {
+        userId: userIdNumber,
+        otp: otpString,
+      },
+      {
+        onSuccess: (data) => {
+          const token =
+            data?.token ||
+            data?.accessToken ||
+            data?.data?.token ||
+            `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          const userData = data?.user ||
+            data?.data?.user || {
+              id: userId,
+              role: currentRole,
+              name: getRoleLabel(),
+            };
+
+          setUserData(userData, token, currentRole, userId);
+
+          const dashboardRoutes = {
+            school: "/school-dashboard",
+            parent: "/parent-dashboard",
+            inspector: "/inspector-dashboard",
+            admin: "/admin-dashboard",
+          };
+
+          navigate(dashboardRoutes[currentRole] || "/");
+        },
+        onError: (error) => {
+          console.error("OTP verification error:", error);
+          const errorMessage =
+            error?.response?.data?.message ||
+            error?.message ||
+            "Invalid OTP. Please try again.";
+          setError(errorMessage);
+        },
+      }
+    );
   };
 
-  if (!role || !userId) {
+  if (!currentRole || !userId) {
     return null;
   }
 
-  const getRoleLabel = () => {
-    const roleLabels = {
-      school: "School",
-      parent: "Parent/Guardian",
-      inspector: "School Inspector",
-      admin: "GSQAC Admin",
-    };
-    return roleLabels[role] || "User";
-  };
-
   return (
     <Box className="otp-page-container">
-      {/* LEFT SECTION: Visual & Brand */}
       <Box className="otp-visual-panel">
         <Box className="visual-overlay" />
 
-        {/* Animated Background Blobs */}
         <div className="blob blob-1"></div>
         <div className="blob blob-2"></div>
 
-        {/* Back Button */}
         <IconButton
           onClick={() => navigate("/login")}
           sx={{
@@ -132,14 +166,19 @@ const OtpVerify = () => {
 
         <Box className="visual-content">
           <Box className="illustration-wrapper">
-            {/* Verification Illustration */}
             <svg
               viewBox="0 0 400 400"
               xmlns="http://www.w3.org/2000/svg"
               className="verification-vector"
             >
               <defs>
-                <linearGradient id="verifyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient
+                  id="verifyGrad"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="100%"
+                >
                   <stop
                     offset="0%"
                     style={{ stopColor: "#ffffff", stopOpacity: 0.9 }}
@@ -151,14 +190,19 @@ const OtpVerify = () => {
                 </linearGradient>
               </defs>
 
-              {/* Shield/Checkmark Icon */}
               <g className="shield-group">
                 <path
                   d="M200 50 L120 80 L120 180 Q120 250 200 320 Q280 250 280 180 L280 80 Z"
                   fill="url(#verifyGrad)"
                   opacity="0.3"
                 />
-                <circle cx="200" cy="200" r="80" fill="url(#verifyGrad)" opacity="0.2" />
+                <circle
+                  cx="200"
+                  cy="200"
+                  r="80"
+                  fill="url(#verifyGrad)"
+                  opacity="0.2"
+                />
                 <path
                   d="M170 200 L190 220 L230 180"
                   stroke="white"
@@ -169,7 +213,6 @@ const OtpVerify = () => {
                 />
               </g>
 
-              {/* Floating Security Elements */}
               <g className="float-element-1">
                 <circle cx="100" cy="150" r="20" fill="#fbbf24" opacity="0.8">
                   <animate
@@ -211,7 +254,6 @@ const OtpVerify = () => {
                 </circle>
               </g>
 
-              {/* Connecting Lines */}
               <path
                 d="M120 200 Q 160 180 200 200 Q 240 220 280 200"
                 stroke="white"
@@ -233,8 +275,6 @@ const OtpVerify = () => {
             </Typography>
           </Box>
         </Box>
-
-        {/* Organic Curve Divider */}
         <div className="custom-shape-divider-y">
           <svg
             data-name="Layer 1"
@@ -250,7 +290,6 @@ const OtpVerify = () => {
         </div>
       </Box>
 
-      {/* RIGHT SECTION: OTP Form */}
       <Box className="otp-form-panel">
         <Paper elevation={0} className="otp-card">
           <Box sx={{ mb: 5, textAlign: "center" }}>
@@ -264,11 +303,10 @@ const OtpVerify = () => {
             </Typography>
             <Typography variant="body2" color="text.secondary">
               OTP has been sent to your{" "}
-              {role === "parent" ? "mobile number" : "registered ID"}
+              {currentRole === "parent" ? "mobile number" : "registered ID"}
             </Typography>
           </Box>
 
-          {/* User Info Chip */}
           <Box sx={{ mb: 4, display: "flex", justifyContent: "center" }}>
             <Chip
               icon={<LockOutlined />}
@@ -286,7 +324,6 @@ const OtpVerify = () => {
             />
           </Box>
 
-          {/* OTP Input Section */}
           <Box className="otp-input-section">
             <Typography variant="caption" className="field-label">
               ENTER VERIFICATION CODE
@@ -343,7 +380,6 @@ const OtpVerify = () => {
             )}
           </Box>
 
-          {/* Test OTP Hint */}
           <Box
             sx={{
               mt: 3,
@@ -354,18 +390,28 @@ const OtpVerify = () => {
               textAlign: "center",
             }}
           >
-            <Typography variant="body2" sx={{ color: "#6b7280", fontSize: "0.875rem" }}>
-              Use OTP: <strong style={{ color: colors.primary.blue }}>123456</strong> for
+            <Typography
+              variant="body2"
+              sx={{ color: "#6b7280", fontSize: "0.875rem" }}
+            >
+              Use OTP:{" "}
+              <strong style={{ color: colors.primary.blue }}>123456</strong> for
               testing
             </Typography>
           </Box>
 
-          {/* Verify Button */}
           <Button
             variant="contained"
             fullWidth
             onClick={handleVerify}
-            endIcon={<ArrowForward />}
+            disabled={verifyOtpMutation.isPending}
+            endIcon={
+              verifyOtpMutation.isPending ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                <ArrowForward />
+              )
+            }
             className="verify-btn"
             sx={{
               py: 1.5,
@@ -377,10 +423,9 @@ const OtpVerify = () => {
               mt: 1,
             }}
           >
-            Verify OTP
+            {verifyOtpMutation.isPending ? "Verifying..." : "Verify OTP"}
           </Button>
 
-          {/* Resend OTP */}
           <Box sx={{ textAlign: "center", mt: 3 }}>
             <Button
               variant="text"
