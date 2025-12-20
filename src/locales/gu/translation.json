@@ -1,0 +1,57 @@
+{
+  "common": {
+    "add": "ઉમેરો",
+    "delete": "કાઢી નાખો",
+    "edit": "સંપાદિત કરો",
+    "save": "સાચવો",
+    "cancel": "રદ કરો",
+    "submit": "સબમિટ કરો",
+    "search": "શોધો",
+    "filter": "ફિલ્ટર",
+    "actions": "ક્રિયાઓ",
+    "entries": "પ્રવેશો",
+    "noRecordsFound": "કોઈ રેકોર્ડ મળ્યા નથી"
+  },
+  "assessment": {
+    "title": "મૂલ્યાંકન વ્યવસ્થાપન",
+    "domain": {
+      "title": "ડોમેન",
+      "addDomain": "ડોમેન ઉમેરો",
+      "domainName": "ડોમેન નામ",
+      "domainDescription": "ડોમેન વર્ણન",
+      "domainDetails": "ડોમેન વિગતો",
+      "noDomains": "હજુ સુધી કોઈ ડોમેન ઉમેરાયા નથી"
+    },
+    "subdomain": {
+      "title": "ઉપ-ડોમેન",
+      "addSubdomain": "ઉપ-ડોમેન ઉમેરો",
+      "subdomainName": "ઉપ-ડોમેન નામ",
+      "subdomainDescription": "ઉપ-ડોમેન વર્ણન",
+      "noSubdomains": "હજુ સુધી કોઈ ઉપ-ડોમેન ઉમેરાયા નથી"
+    },
+    "category": {
+      "title": "શ્રેણી",
+      "addCategory": "શ્રેણી ઉમેરો",
+      "categoryName": "શ્રેણી નામ",
+      "categoryDescription": "શ્રેણી વર્ણન",
+      "noCategories": "હજુ સુધી કોઈ શ્રેણી ઉમેરાયી નથી"
+    },
+    "question": {
+      "title": "પ્રશ્નો",
+      "addQuestion": "પ્રશ્ન ઉમેરો",
+      "questionText": "પ્રશ્ન ટેક્સ્ટ",
+      "options": "વિકલ્પો",
+      "addOption": "વિકલ્પ ઉમેરો",
+      "correctAnswer": "સાચો જવાબ",
+      "noQuestions": "હજુ સુધી કોઈ પ્રશ્નો ઉમેરાયા નથી"
+    }
+  },
+  "admin": {
+    "tabs": {
+      "verifier": "ચકાસણીકર્તા",
+      "assessmentManagement": "મૂલ્યાંકન વ્યવસ્થાપન",
+      "schoolAllocation": "શાળા ફાળવણી"
+    }
+  }
+}
+

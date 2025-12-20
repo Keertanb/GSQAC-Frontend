@@ -1,0 +1,57 @@
+{
+  "common": {
+    "add": "Add",
+    "delete": "Delete",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "search": "Search",
+    "filter": "Filter",
+    "actions": "Actions",
+    "entries": "entries",
+    "noRecordsFound": "No records found"
+  },
+  "assessment": {
+    "title": "Assessment Management",
+    "domain": {
+      "title": "Domain",
+      "addDomain": "Add Domain",
+      "domainName": "Domain Name",
+      "domainDescription": "Domain Description",
+      "domainDetails": "Domain Details",
+      "noDomains": "No domains added yet"
+    },
+    "subdomain": {
+      "title": "Subdomain",
+      "addSubdomain": "Add Subdomain",
+      "subdomainName": "Subdomain Name",
+      "subdomainDescription": "Subdomain Description",
+      "noSubdomains": "No subdomains added yet"
+    },
+    "category": {
+      "title": "Category",
+      "addCategory": "Add Category",
+      "categoryName": "Category Name",
+      "categoryDescription": "Category Description",
+      "noCategories": "No categories added yet"
+    },
+    "question": {
+      "title": "Questions",
+      "addQuestion": "Add Question",
+      "questionText": "Question Text",
+      "options": "Options",
+      "addOption": "Add Option",
+      "correctAnswer": "Correct Answer",
+      "noQuestions": "No questions added yet"
+    }
+  },
+  "admin": {
+    "tabs": {
+      "verifier": "Verifier",
+      "assessmentManagement": "Assessment Management",
+      "schoolAllocation": "School Allocation"
+    }
+  }
+}
+

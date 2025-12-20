@@ -149,6 +149,36 @@ export const adminRoutes = [
           </ProtectedRoute>
         ),
       },
+      {
+        path: ROUTE_URLS.ADMIN_VERIFIER_URL,
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <Suspense fallback={<LazyLoad />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTE_URLS.ADMIN_ASSESSMENT_MANAGEMENT_URL,
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <Suspense fallback={<LazyLoad />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTE_URLS.ADMIN_SCHOOL_ALLOCATION_URL,
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <Suspense fallback={<LazyLoad />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
   {

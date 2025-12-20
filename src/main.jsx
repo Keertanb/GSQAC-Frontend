@@ -5,6 +5,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { queryClient } from "./lib/queryClient";
 import { muiTheme } from "./theme/muiTheme";
+import "./i18n/config";
 import "./index.css";
 import "./styles/global.css";
 import App from "./App.jsx";

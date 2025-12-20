@@ -9,4 +9,9 @@ export const PARENT_DASHBOARD_URL = "/parent-dashboard";
 export const INSPECTOR_DASHBOARD_URL = "/inspector-dashboard";
 export const ADMIN_DASHBOARD_URL = "/admin-dashboard";
 
+// Admin Dashboard Sub-routes
+export const ADMIN_VERIFIER_URL = "/admin-dashboard/verifier";
+export const ADMIN_ASSESSMENT_MANAGEMENT_URL = "/admin-dashboard/assessment-management";
+export const ADMIN_SCHOOL_ALLOCATION_URL = "/admin-dashboard/school-allocation";
+
 export const WILDCARD_URL = "*";

@@ -23,6 +23,15 @@ export const verifyOtp = async (payload) => {
 };
 
 /**
+ * Logout user
+ * @returns {Promise} API response
+ */
+export const logout = async () => {
+  const response = await axiosInstance.post("/auth/logout");
+  return response.data;
+};
+
+/**
  * React Query hook for sending OTP
  * @param {Object} options - Mutation options
  * @returns {Object} Mutation object from React Query
@@ -44,6 +53,19 @@ export const useVerifyOtpMutation = (options = {}) => {
   return useMutation({
     mutationFn: (data) => verifyOtp(data),
     mutationKey: queryKeys.auth.verifyOtp(),
+    ...options,
+  });
+};
+
+/**
+ * React Query hook for logout
+ * @param {Object} options - Mutation options
+ * @returns {Object} Mutation object from React Query
+ */
+export const useLogoutMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: () => logout(),
+    mutationKey: queryKeys.auth.logout(),
     ...options,
   });
 };

@@ -1,0 +1,57 @@
+{
+  "common": {
+    "add": "जोड़ें",
+    "delete": "हटाएं",
+    "edit": "संपादित करें",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "submit": "सबमिट करें",
+    "search": "खोजें",
+    "filter": "फ़िल्टर",
+    "actions": "कार्रवाई",
+    "entries": "प्रविष्टियां",
+    "noRecordsFound": "कोई रिकॉर्ड नहीं मिला"
+  },
+  "assessment": {
+    "title": "मूल्यांकन प्रबंधन",
+    "domain": {
+      "title": "डोमेन",
+      "addDomain": "डोमेन जोड़ें",
+      "domainName": "डोमेन नाम",
+      "domainDescription": "डोमेन विवरण",
+      "domainDetails": "डोमेन विवरण",
+      "noDomains": "अभी तक कोई डोमेन नहीं जोड़ा गया"
+    },
+    "subdomain": {
+      "title": "उप-डोमेन",
+      "addSubdomain": "उप-डोमेन जोड़ें",
+      "subdomainName": "उप-डोमेन नाम",
+      "subdomainDescription": "उप-डोमेन विवरण",
+      "noSubdomains": "अभी तक कोई उप-डोमेन नहीं जोड़ा गया"
+    },
+    "category": {
+      "title": "श्रेणी",
+      "addCategory": "श्रेणी जोड़ें",
+      "categoryName": "श्रेणी नाम",
+      "categoryDescription": "श्रेणी विवरण",
+      "noCategories": "अभी तक कोई श्रेणी नहीं जोड़ी गई"
+    },
+    "question": {
+      "title": "प्रश्न",
+      "addQuestion": "प्रश्न जोड़ें",
+      "questionText": "प्रश्न पाठ",
+      "options": "विकल्प",
+      "addOption": "विकल्प जोड़ें",
+      "correctAnswer": "सही उत्तर",
+      "noQuestions": "अभी तक कोई प्रश्न नहीं जोड़ा गया"
+    }
+  },
+  "admin": {
+    "tabs": {
+      "verifier": "सत्यापनकर्ता",
+      "assessmentManagement": "मूल्यांकन प्रबंधन",
+      "schoolAllocation": "स्कूल आवंटन"
+    }
+  }
+}
+

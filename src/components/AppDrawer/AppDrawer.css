@@ -1,0 +1,90 @@
+/* Additional drawer styling */
+.drawer-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.drawer-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+}
+
+.MuiDrawer-paper {
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1) !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+.MuiListItemButton-root {
+  border-radius: 12px !important;
+  margin: 4px 8px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.MuiListItemButton-root:hover:not(.btn-active) {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  transform: translateX(4px);
+}
+
+.MuiListItemIcon-root {
+  transition: all 0.2s ease !important;
+}
+
+.MuiListItemButton-root:hover .MuiListItemIcon-root {
+  transform: scale(1.1);
+}
+
+.item-icon .icon {
+  transition: all 0.2s ease;
+}
+
+.MuiListItemButton-root:hover .item-icon .icon {
+  transform: scale(1.1);
+}
+
+/* Active state animations */
+.btn-active {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Submenu styling */
+.MuiCollapse-root {
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 0 0 12px 12px;
+  margin: 0 8px 4px 8px;
+}
+
+/* Scrollbar styling */
+.MuiBox-root::-webkit-scrollbar {
+  width: 6px;
+}
+
+.MuiBox-root::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.MuiBox-root::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.MuiBox-root::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
