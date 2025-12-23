@@ -9,8 +9,6 @@ import {
   Assignment,
   CheckCircle,
   List,
-  AdminPanelSettings,
-  Person,
   VerifiedUser,
   Business,
 } from "@mui/icons-material";
@@ -22,12 +20,19 @@ const DRAWER_WIDTH = {
 
 // School Menu Items
 export const schoolMenuItems = [
+  //   {
+  //     id: "dashboard",
+  //     label: "Dashboard",
+  //     icon: Dashboard,
+  //     url: "/school-dashboard",
+  //     activeFinder: ["/school-dashboard"],
+  //   },
   {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: Dashboard,
-    url: "/school-dashboard",
-    activeFinder: ["/school-dashboard"],
+    id: "school-details",
+    label: "School Details",
+    icon: School,
+    url: "/school-dashboard/school-details",
+    activeFinder: ["/school-dashboard/school-details"],
   },
   {
     id: "self-assessment",
@@ -36,27 +41,27 @@ export const schoolMenuItems = [
     url: "/school-dashboard/self-assessment",
     activeFinder: ["/school-dashboard/self-assessment"],
   },
-  {
-    id: "students",
-    label: "Student Management",
-    icon: People,
-    url: "/school-dashboard/students",
-    activeFinder: ["/school-dashboard/students"],
-  },
-  {
-    id: "reports",
-    label: "Reports",
-    icon: Assessment,
-    url: "/school-dashboard/reports",
-    activeFinder: ["/school-dashboard/reports"],
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    icon: Settings,
-    url: "/school-dashboard/settings",
-    activeFinder: ["/school-dashboard/settings"],
-  },
+  //   {
+  //     id: "students",
+  //     label: "Student Management",
+  //     icon: People,
+  //     url: "/school-dashboard/students",
+  //     activeFinder: ["/school-dashboard/students"],
+  //   },
+  //   {
+  //     id: "reports",
+  //     label: "Reports",
+  //     icon: Assessment,
+  //     url: "/school-dashboard/reports",
+  //     activeFinder: ["/school-dashboard/reports"],
+  //   },
+  //   {
+  //     id: "settings",
+  //     label: "Settings",
+  //     icon: Settings,
+  //     url: "/school-dashboard/settings",
+  //     activeFinder: ["/school-dashboard/settings"],
+  //   },
 ];
 
 // Parent Menu Items
@@ -125,13 +130,13 @@ export const inspectorMenuItems = [
 
 // Admin Menu Items
 export const adminMenuItems = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: Dashboard,
-    url: "/admin-dashboard",
-    activeFinder: ["/admin-dashboard"],
-  },
+  // {
+  //   id: "dashboard",
+  //   label: "Dashboard",
+  //   icon: Dashboard,
+  //   url: "/admin-dashboard",
+  //   activeFinder: ["/admin-dashboard"],
+  // },
   {
     id: "verifier",
     label: "Verifier",
@@ -156,4 +161,3 @@ export const adminMenuItems = [
 ];
 
 export { DRAWER_WIDTH };
-

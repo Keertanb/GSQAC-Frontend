@@ -4,8 +4,6 @@ import {
   Box,
   Paper,
   Typography,
-  TextField,
-  Button,
   Table,
   TableBody,
   TableCell,
@@ -14,89 +12,382 @@ import {
   TableRow,
   IconButton,
   Chip,
-  Fade,
+  CircularProgress,
+  Alert,
   Card,
-  CardContent,
+  TextField,
+  Button,
+  Fade,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import {
-  Add,
-  Delete,
   ExpandMore,
   ExpandLess,
-  Language,
+  Visibility,
+  Add,
+  Delete,
 } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import DomainSubdomainView from "./DomainSubdomainView";
-import CategoryView from "./CategoryView";
-import QuestionView from "./QuestionView";
+import QuestionsView from "./QuestionsView";
+import {
+  useGetDomainsQuery,
+  useUpsertDomainMutation,
+} from "../../../services/adminService";
+import { roleIdMap, getRoleId } from "../../../constants/roles";
 import "./AssessmentManagement.css";
 
 const AssessmentManagement = () => {
   const { t, i18n } = useTranslation();
-  const [domains, setDomains] = useState([]);
-  const [newDomainName, setNewDomainName] = useState({ en: "", hi: "", gu: "" });
+
   const [expandedDomain, setExpandedDomain] = useState(null);
-  const [currentView, setCurrentView] = useState("domains"); // domains, categories, questions
-  const [selectedCategory, setSelectedCategory] = useState(null);
-
+  const [currentView, setCurrentView] = useState("domains"); // domains, questions
+  const [selectedSubdomain, setSelectedSubdomain] = useState(null);
   const [currentLanguage, setCurrentLanguage] = useState("en");
+  const [showAddDomain, setShowAddDomain] = useState(false);
+  const [newDomainName, setNewDomainName] = useState({
+    en: "",
+    hi: "",
+    gu: "",
+  });
+  const [selectedRole, setSelectedRole] = useState("all");
+  const [editingDomain, setEditingDomain] = useState(null);
 
-  const handleAddDomain = () => {
-    if (!newDomainName.en.trim()) {
-      return;
-    }
-
-    const newDomain = {
-      id: Date.now(),
-      name: newDomainName,
-      description: { en: "", hi: "", gu: "" },
-      subdomains: [],
-      createdAt: new Date().toISOString(),
-    };
-
-    setDomains([...domains, newDomain]);
-    setNewDomainName({ en: "", hi: "", gu: "" });
+  // Map language code: en -> EN, hi -> HI, gu -> GU
+  const languageCodeMap = {
+    en: "EN",
+    hi: "HI",
+    gu: "GU",
   };
+  const languageCode = languageCodeMap[currentLanguage] || "EN";
 
-  const handleDeleteDomain = (domainId) => {
-    setDomains(domains.filter((d) => d.id !== domainId));
-    if (expandedDomain === domainId) {
-      setExpandedDomain(null);
+  // Get roleId based on selected role (null for "all")
+  const roleId = selectedRole === "all" ? null : getRoleId(selectedRole);
+
+  // Fetch domains for all roles when "all" is selected
+  const {
+    data: domainsDataAdmin,
+    isLoading: isLoadingAdmin,
+    refetch: refetchAdmin,
+  } = useGetDomainsQuery({
+    roleId: 1, // Admin
+    languageCode,
+    enabled: selectedRole === "all" || selectedRole === "admin",
+  });
+
+  const {
+    data: domainsDataSchool,
+    isLoading: isLoadingSchool,
+    refetch: refetchSchool,
+  } = useGetDomainsQuery({
+    roleId: 2, // School
+    languageCode,
+    enabled: selectedRole === "all" || selectedRole === "school",
+  });
+
+  const {
+    data: domainsDataInspector,
+    isLoading: isLoadingInspector,
+    refetch: refetchInspector,
+  } = useGetDomainsQuery({
+    roleId: 3, // Inspector
+    languageCode,
+    enabled: selectedRole === "all" || selectedRole === "inspector",
+  });
+
+  const {
+    data: domainsDataParent,
+    isLoading: isLoadingParent,
+    refetch: refetchParent,
+  } = useGetDomainsQuery({
+    roleId: 4, // Parent
+    languageCode,
+    enabled: selectedRole === "all" || selectedRole === "parent",
+  });
+
+  const {
+    data: domainsData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useGetDomainsQuery({
+    roleId,
+    languageCode,
+    enabled: selectedRole !== "all" && !!roleId,
+  });
+
+  // Combine all domains when "all" is selected
+  const allDomains = React.useMemo(() => {
+    if (selectedRole !== "all") {
+      return domainsData?.data || [];
     }
-  };
+    const combined = [];
+    if (domainsDataAdmin?.data) combined.push(...domainsDataAdmin.data);
+    if (domainsDataSchool?.data) combined.push(...domainsDataSchool.data);
+    if (domainsDataInspector?.data) combined.push(...domainsDataInspector.data);
+    if (domainsDataParent?.data) combined.push(...domainsDataParent.data);
+    return combined;
+  }, [
+    selectedRole,
+    domainsData,
+    domainsDataAdmin,
+    domainsDataSchool,
+    domainsDataInspector,
+    domainsDataParent,
+  ]);
+
+  const isLoadingAll =
+    selectedRole === "all"
+      ? isLoadingAdmin ||
+        isLoadingSchool ||
+        isLoadingInspector ||
+        isLoadingParent
+      : isLoading;
+
+  const upsertDomainMutation = useUpsertDomainMutation({
+    onSuccess: () => {
+      if (selectedRole === "all") {
+        refetchAdmin();
+        refetchSchool();
+        refetchInspector();
+        refetchParent();
+      } else {
+        refetch();
+      }
+      setNewDomainName({ en: "", hi: "", gu: "" });
+      setShowAddDomain(false);
+      setEditingDomain(null);
+    },
+  });
+
+  const domains = allDomains;
 
   const handleToggleDomain = (domainId) => {
     setExpandedDomain(expandedDomain === domainId ? null : domainId);
   };
 
+  const handleAddDomain = () => {
+    if (!newDomainName.en.trim() || !selectedRole) {
+      return;
+    }
+
+    const payload = {
+      roleId: getRoleId(selectedRole),
+      domainNameEn: newDomainName.en.trim(),
+      domainNameHi: newDomainName.hi.trim(),
+      domainNameGu: newDomainName.gu.trim(),
+    };
+
+    // If editing, include domainId
+    if (editingDomain) {
+      payload.domainId = editingDomain.domainId;
+    }
+
+    upsertDomainMutation.mutate(payload);
+  };
+
+  const handleEditDomain = (domain) => {
+    setEditingDomain(domain);
+    setNewDomainName({
+      en: domain.domainNameEn || "",
+      hi: domain.domainNameHi || "",
+      gu: domain.domainNameGu || "",
+    });
+    // Set selected role based on domain's roleId
+    const domainRole = Object.keys(roleIdMap).find(
+      (key) => roleIdMap[key] === domain.roleId
+    );
+    if (domainRole) {
+      setSelectedRole(domainRole);
+    }
+    setShowAddDomain(true);
+  };
+
+  const handleDeleteDomain = (domain) => {
+    // TODO: Implement delete domain API call
+    // const deleteDomain = async (domainId) => {
+    //   try {
+    //     const response = await axiosInstance.delete(`/questionnaire/domain/${domainId}`);
+    //     // Refetch domains after deletion
+    //     if (selectedRole === "all") {
+    //       refetchAdmin();
+    //       refetchSchool();
+    //       refetchInspector();
+    //       refetchParent();
+    //     } else {
+    //       refetch();
+    //     }
+    //     return response.data;
+    //   } catch (error) {
+    //     console.error("Error deleting domain:", error);
+    //     throw error;
+    //   }
+    // };
+    // deleteDomain(domain.domainId);
+    console.log("Delete domain:", domain);
+  };
+
   const handleLanguageChange = (lang) => {
     setCurrentLanguage(lang);
     i18n.changeLanguage(lang);
+    // Refetch data when language changes
+    refetch();
   };
+
+  const getDomainName = (domain) => {
+    if (languageCode === "EN") {
+      return domain.domainNameEn || domain.domainName;
+    } else if (languageCode === "HI") {
+      return domain.domainNameHi || domain.domainName;
+    } else {
+      return domain.domainNameGu || domain.domainName;
+    }
+  };
+
+  // const getSubdomainName = (subdomain) => {
+  //   if (languageCode === "EN") {
+  //     return subdomain.subDomainNameEn || subdomain.subDomainName;
+  //   } else if (languageCode === "HI") {
+  //     return subdomain.subDomainNameHi || subdomain.subDomainName;
+  //   } else {
+  //     return subdomain.subDomainNameGu || subdomain.subDomainName;
+  //   }
+  // };
+
+  if (isLoadingAll) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "400px",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Box>
+        <Alert severity="error">
+          {error?.message || t("common.error") || "Failed to load domains"}
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (currentView === "questions" && selectedSubdomain) {
+    return (
+      <QuestionsView
+        subdomainData={selectedSubdomain}
+        onBack={() => {
+          setCurrentView("domains");
+          setSelectedSubdomain(null);
+        }}
+        currentLanguage={currentLanguage}
+      />
+    );
+  }
 
   return (
     <Box className="assessment-management-container">
-      {/* Language Selector */}
-      <Box sx={{ mb: 3, display: "flex", justifyContent: "flex-end", gap: 1 }}>
-        {["en", "hi", "gu"].map((lang) => (
-          <Chip
-            key={lang}
-            label={lang.toUpperCase()}
-            onClick={() => handleLanguageChange(lang)}
-            color={currentLanguage === lang ? "primary" : "default"}
-            sx={{
-              cursor: "pointer",
-              fontWeight: currentLanguage === lang ? 700 : 400,
+      {/* Language Selector and Role Filter */}
+      <Box
+        sx={{
+          mb: 3,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+          {["en", "hi", "gu"].map((lang) => (
+            <Chip
+              key={lang}
+              label={lang.toUpperCase()}
+              onClick={() => handleLanguageChange(lang)}
+              color={currentLanguage === lang ? "primary" : "default"}
+              sx={{
+                cursor: "pointer",
+                fontWeight: currentLanguage === lang ? 700 : 400,
+              }}
+            />
+          ))}
+        </Box>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>{t("assessment.domain.selectRole")}</InputLabel>
+            <Select
+              value={selectedRole}
+              onChange={(e) => {
+                setSelectedRole(e.target.value);
+                // Refetch domains when role changes
+                if (e.target.value === "all") {
+                  setTimeout(() => {
+                    refetchAdmin();
+                    refetchSchool();
+                    refetchInspector();
+                    refetchParent();
+                  }, 100);
+                } else {
+                  setTimeout(() => refetch(), 100);
+                }
+              }}
+              label={t("assessment.domain.selectRole")}
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="admin">Admin</MenuItem>
+              <MenuItem value="school">School</MenuItem>
+              <MenuItem value="inspector">School Verifier</MenuItem>
+              <MenuItem value="parent">Parent</MenuItem>
+            </Select>
+          </FormControl>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => {
+              setEditingDomain(null);
+              setNewDomainName({ en: "", hi: "", gu: "" });
+              setShowAddDomain(!showAddDomain);
             }}
-          />
-        ))}
+            sx={{
+              bgcolor: colors.primary.blue,
+              "&:hover": { bgcolor: colors.primary.dark },
+            }}
+          >
+            {t("assessment.domain.addDomain")}
+          </Button>
+        </Box>
       </Box>
 
-      {currentView === "domains" && (
-        <Box>
-          <Card elevation={2} sx={{ mb: 3, p: 3, borderRadius: 3 }}>
-            <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
-              {t("assessment.domain.addDomain")}
+      {/* Add/Edit Domain Form */}
+      {showAddDomain && (
+        <Fade in={showAddDomain}>
+          <Card
+            elevation={2}
+            sx={{
+              mb: 3,
+              p: 3,
+              borderRadius: 3,
+            }}
+          >
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{ fontWeight: 700, mb: 3 }}
+            >
+              {editingDomain
+                ? t("assessment.domain.editDomain")
+                : t("assessment.domain.addDomain")}
             </Typography>
             <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
               <TextField
@@ -108,6 +399,7 @@ const AssessmentManagement = () => {
                 }
                 variant="outlined"
                 size="small"
+                required
               />
               <TextField
                 fullWidth
@@ -130,168 +422,189 @@ const AssessmentManagement = () => {
                 size="small"
               />
             </Box>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={handleAddDomain}
-              sx={{
-                bgcolor: colors.primary.blue,
-                "&:hover": { bgcolor: colors.primary.dark },
-              }}
-            >
-              {t("common.add")} {t("assessment.domain.title")}
-            </Button>
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={handleAddDomain}
+                disabled={upsertDomainMutation.isPending}
+                sx={{
+                  bgcolor: colors.primary.blue,
+                  "&:hover": { bgcolor: colors.primary.dark },
+                }}
+              >
+                {editingDomain
+                  ? t("common.save")
+                  : `${t("common.add")} ${t("assessment.domain.title")}`}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setShowAddDomain(false);
+                  setNewDomainName({ en: "", hi: "", gu: "" });
+                  setEditingDomain(null);
+                  setSelectedRole("admin");
+                }}
+                disabled={upsertDomainMutation.isPending}
+              >
+                {t("common.cancel")}
+              </Button>
+            </Box>
           </Card>
+        </Fade>
+      )}
 
-          {/* Domains Table */}
-          {domains.length > 0 ? (
-            <TableContainer component={Paper} elevation={2} sx={{ borderRadius: 3 }}>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: colors.primary.blue + "10" }}>
-                    <TableCell sx={{ fontWeight: 700 }}>
-                      {t("assessment.domain.title")}
+      {/* Domains Table */}
+      {domains.length > 0 ? (
+        <TableContainer
+          component={Paper}
+          elevation={2}
+          sx={{ borderRadius: 3 }}
+        >
+          <Table>
+            <TableHead>
+              <TableRow sx={{ bgcolor: colors.primary.blue + "10" }}>
+                <TableCell sx={{ fontWeight: 700, width: "50px" }}>
+                  {/* Expand/Collapse column */}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>
+                  {t("assessment.domain.title")}
+                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 700 }}>
+                  {t("common.actions")}
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {domains.map((domain) => (
+                <React.Fragment key={domain.domainId}>
+                  <TableRow
+                    sx={{
+                      "&:hover": { bgcolor: "rgba(0,0,0,0.02)" },
+                      cursor: "pointer",
+                    }}
+                    onClick={() => handleToggleDomain(domain.domainId)}
+                  >
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleDomain(domain.domainId);
+                        }}
+                      >
+                        {expandedDomain === domain.domainId ? (
+                          <ExpandLess />
+                        ) : (
+                          <ExpandMore />
+                        )}
+                      </IconButton>
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>
-                      {t("assessment.domain.domainDetails")}
+                    <TableCell>
+                      <Typography fontWeight={600}>
+                        {getDomainName(domain)}
+                      </Typography>
                     </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>
-                      {t("common.actions")}
+                    <TableCell align="center">
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          justifyContent: "center",
+                        }}
+                      >
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedDomain(domain.domainId);
+                          }}
+                          sx={{
+                            bgcolor: colors.primary.blue + "15",
+                            "&:hover": { bgcolor: colors.primary.blue + "25" },
+                          }}
+                        >
+                          <Visibility />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditDomain(domain);
+                          }}
+                          sx={{
+                            bgcolor: colors.accent.green + "15",
+                            "&:hover": { bgcolor: colors.accent.green + "25" },
+                          }}
+                        >
+                          <Add />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteDomain(domain);
+                          }}
+                          sx={{
+                            bgcolor: colors.semantic.error + "15",
+                            "&:hover": {
+                              bgcolor: colors.semantic.error + "25",
+                            },
+                          }}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </Box>
                     </TableCell>
                   </TableRow>
-                </TableHead>
-                <TableBody>
-                  {domains.map((domain) => (
-                    <React.Fragment key={domain.id}>
-                      <TableRow
-                        sx={{
-                          "&:hover": { bgcolor: "rgba(0,0,0,0.02)" },
-                          cursor: "pointer",
-                        }}
-                        onClick={() => handleToggleDomain(domain.id)}
-                      >
-                        <TableCell>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                            {expandedDomain === domain.id ? (
-                              <ExpandLess />
-                            ) : (
-                              <ExpandMore />
-                            )}
-                            <Typography fontWeight={600}>
-                              {domain.name[currentLanguage] || domain.name.en}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {domain.description[currentLanguage] ||
-                              domain.description.en ||
-                              "No description"}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedDomain(domain.id);
-                              }}
-                              sx={{
-                                bgcolor: colors.primary.blue + "15",
-                                "&:hover": { bgcolor: colors.primary.blue + "25" },
-                              }}
-                            >
-                              <Add />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteDomain(domain.id);
-                              }}
-                              sx={{
-                                bgcolor: colors.semantic.error + "15",
-                                "&:hover": { bgcolor: colors.semantic.error + "25" },
-                              }}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                      {expandedDomain === domain.id && (
-                        <TableRow>
-                          <TableCell colSpan={3} sx={{ py: 3, bgcolor: "#f9fafb" }}>
-                            <DomainSubdomainView
-                              domain={domain}
-                              domains={domains}
-                              setDomains={setDomains}
-                              currentLanguage={currentLanguage}
-                              onNavigateToCategories={(subdomain) => {
-                                setSelectedCategory({ domain, subdomain });
-                                setCurrentView("categories");
-                                setExpandedDomain(null);
-                              }}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <Card elevation={2} sx={{ p: 4, textAlign: "center", borderRadius: 3 }}>
-              <Typography variant="body1" color="text.secondary">
-                {t("assessment.domain.noDomains")}
-              </Typography>
-            </Card>
-          )}
-        </Box>
-      )}
-
-      {currentView === "categories" && selectedCategory && (
-        <CategoryView
-          categoryData={selectedCategory}
-          domains={domains}
-          setDomains={setDomains}
-          onBack={() => {
-            setCurrentView("domains");
-            setSelectedCategory(null);
-          }}
-          onNavigateToQuestions={(category) => {
-            if (selectedCategory && selectedCategory.domain && selectedCategory.subdomain) {
-              setSelectedCategory({
-                domain: selectedCategory.domain,
-                subdomain: selectedCategory.subdomain,
-                category: category,
-              });
-              setCurrentView("questions");
-            }
-          }}
-          currentLanguage={currentLanguage}
-        />
-      )}
-
-      {currentView === "questions" && selectedCategory && (
-        <QuestionView
-          questionData={selectedCategory}
-          domains={domains}
-          setDomains={setDomains}
-          onBack={() => {
-            setCurrentView("categories");
-            setSelectedCategory({ ...selectedCategory, category: null });
-          }}
-          currentLanguage={currentLanguage}
-        />
+                  {expandedDomain === domain.domainId && (
+                    <TableRow>
+                      <TableCell colSpan={3} sx={{ py: 3, bgcolor: "#f9fafb" }}>
+                        <DomainSubdomainView
+                          domain={domain}
+                          languageCode={languageCode}
+                          roleId={domain.roleId}
+                          onNavigateToCriteria={(subdomain) => {
+                            setSelectedSubdomain({
+                              ...subdomain,
+                              subDomainId:
+                                subdomain.subDomainId || subdomain.id,
+                              roleId: domain.roleId, // Pass roleId from domain
+                            });
+                            setCurrentView("questions");
+                            setExpandedDomain(null);
+                          }}
+                          onSubdomainAdded={() => {
+                            if (selectedRole === "all") {
+                              refetchAdmin();
+                              refetchSchool();
+                              refetchInspector();
+                              refetchParent();
+                            } else {
+                              refetch();
+                            }
+                          }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ) : (
+        <Card elevation={2} sx={{ p: 4, textAlign: "center", borderRadius: 3 }}>
+          <Typography variant="body1" color="text.secondary">
+            {t("assessment.domain.noDomains")}
+          </Typography>
+        </Card>
       )}
     </Box>
   );
 };
 
 export default AssessmentManagement;
-

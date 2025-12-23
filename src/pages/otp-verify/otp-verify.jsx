@@ -21,15 +21,45 @@ const OTP_VERIFY = "123456";
 const OtpVerify = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { role: locationRole } = location.state || {};
-  const { setUserData, userId, role } = useAuthStore();
+  const { role: locationRole, userId: locationUserId } = location.state || {};
+  const {
+    setUserData,
+    userId: storeUserId,
+    role,
+    setOtpUserId,
+  } = useAuthStore();
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
   const [focusedIndex, setFocusedIndex] = useState(null);
   const inputRefs = useRef([]);
 
+  // Use userId from store, or from location state
+  const userId = storeUserId || locationUserId;
   const currentRole = role || locationRole;
+
+  // Set userId from location state to store if available
+  useEffect(() => {
+    if (locationUserId && locationRole) {
+      const currentStoreUserId = useAuthStore.getState().userId;
+      if (!currentStoreUserId) {
+        console.log("Setting userId from location state:", locationUserId);
+        setOtpUserId(locationUserId, locationRole);
+      }
+    }
+  }, [locationUserId, locationRole, setOtpUserId]);
+
+  // Log current state for debugging
+  useEffect(() => {
+    console.log("OTP Verify - Current state:", {
+      storeUserId,
+      locationUserId,
+      userId,
+      role,
+      locationRole,
+      currentRole,
+    });
+  }, [storeUserId, locationUserId, userId, role, locationRole, currentRole]);
 
   const getRoleLabel = () => {
     const roleLabels = {
@@ -43,11 +73,70 @@ const OtpVerify = () => {
 
   const verifyOtpMutation = useVerifyOtpMutation();
 
+  // Only redirect if both role and userId are missing after allowing time for state updates
   useEffect(() => {
-    if (!currentRole || !userId) {
-      navigate("/login");
+    // If we have locationRole (we just navigated here from login), don't redirect immediately
+    // Even if locationUserId is undefined, we should wait for it to be set in store
+    if (locationRole) {
+      console.log("OTP Verify - Has locationRole, waiting for userId:", {
+        locationRole,
+        locationUserId,
+        storeUserId,
+      });
+
+      // Give a delay to allow userId to be set in store from location state
+      const timer = setTimeout(() => {
+        const finalUserId = useAuthStore.getState().userId || locationUserId;
+        const finalRole = useAuthStore.getState().role || locationRole;
+
+        console.log("OTP Verify - After delay, checking auth state:", {
+          finalRole,
+          finalUserId,
+          locationRole,
+          locationUserId,
+          storeUserId,
+          role,
+        });
+
+        // Only redirect if we truly don't have both role and userId after delay
+        if (!finalRole || !finalUserId) {
+          console.warn(
+            "Missing role or userId after delay, redirecting to login"
+          );
+          navigate("/login", { replace: true });
+        } else {
+          console.log(
+            "OTP Verify - Auth state valid after delay, staying on page"
+          );
+        }
+      }, 500); // Increased delay to allow store updates
+
+      return () => clearTimeout(timer);
     }
-  }, [currentRole, userId, navigate]);
+
+    // If no locationRole, check store state (user might have refreshed or navigated directly)
+    const timer = setTimeout(() => {
+      const finalUserId = useAuthStore.getState().userId;
+      const finalRole = useAuthStore.getState().role;
+
+      console.log("OTP Verify - No locationRole, checking store auth state:", {
+        finalRole,
+        finalUserId,
+        storeUserId,
+        role,
+      });
+
+      // Only redirect if we truly don't have both role and userId
+      if (!finalRole || !finalUserId) {
+        console.warn("Missing role or userId in store, redirecting to login");
+        navigate("/login", { replace: true });
+      } else {
+        console.log("OTP Verify - Store auth state valid, staying on page");
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [locationRole, locationUserId, storeUserId, role, navigate]);
 
   const handleOtpChange = (index, value) => {
     if (value.length > 1) return;
@@ -103,10 +192,11 @@ const OtpVerify = () => {
       },
       {
         onSuccess: (data) => {
+          console.log(data.data[0], "datadatadata");
           const token =
-            data?.token ||
+            data?.data[0]?.token ||
+            data[0]?.token ||
             data?.accessToken ||
-            data?.data?.token ||
             `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const userData = data?.user ||
             data?.data?.user || {

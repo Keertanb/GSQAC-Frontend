@@ -1,11 +1,20 @@
 import { BrowserRouter } from "react-router-dom";
+import { SnackbarProvider } from "notistack";
 import Router from "./routes/Router";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Router />
-    </BrowserRouter>
+    <SnackbarProvider
+      maxSnack={3}
+      anchorOrigin={{
+        vertical: "top",
+        horizontal: "right",
+      }}
+    >
+      <BrowserRouter>
+        <Router />
+      </BrowserRouter>
+    </SnackbarProvider>
   );
 }
 

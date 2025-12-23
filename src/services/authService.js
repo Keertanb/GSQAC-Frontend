@@ -4,7 +4,7 @@ import { queryKeys } from "../config/queryClient";
 
 /**
  * Send OTP to user
- * @param {Object} payload - { userName: string }
+ * @param {Object} payload - { userName: string, roleId: number }
  * @returns {Promise} API response
  */
 export const sendOtp = async (payload) => {

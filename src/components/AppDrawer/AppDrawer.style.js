@@ -9,39 +9,40 @@ export const DrawerWrapper = styled(Drawer)`
     height: 100vh !important;
     min-height: 100vh !important;
     max-height: 100vh !important;
-    border-right: 1px solid rgba(0, 0, 0, 0.12) !important;
+    border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
     display: flex !important;
     flex-direction: column !important;
+    background: #ffffff !important;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08) !important;
   }
 
   .drawer-header {
-    gap: 16px;
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    padding: 24px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
-    min-height: 120px;
-    height: auto;
-    justify-content: center;
     position: relative;
     flex-shrink: 0;
+    height: 64px;
+    min-height: 64px;
+    max-height: 64px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    overflow: hidden;
+    background: #ffffff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
 
-    .logo-text {
-      font-weight: 800;
-      font-size: 1.75rem;
-      letter-spacing: 2px;
-      text-align: center;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    }
+  .logo-text {
+    font-weight: 800;
+    font-size: 1.875rem;
+    letter-spacing: 3px;
+    text-align: center;
+    margin-bottom: 8px;
+  }
 
-    .logo-subtitle {
-      font-size: 0.75rem;
-      opacity: 0.95;
-      text-align: center;
-      font-weight: 400;
-    }
+  .logo-subtitle {
+    font-size: 0.75rem;
+    text-align: center;
+    font-weight: 500;
+    letter-spacing: 0.5px;
   }
 
   .btn-active {
@@ -51,38 +52,26 @@ export const DrawerWrapper = styled(Drawer)`
 
     .MuiListItemText-primary {
       color: white !important;
-      font-weight: 600 !important;
+      font-weight: 700 !important;
     }
   }
 
   .item-icon {
-    color: ${(props) => props.theme.palette.text.primary};
     min-width: 40px;
     padding-right: 12px;
+    transition: all 0.2s ease;
 
     .icon {
       width: 1.5rem;
       height: 1.5rem;
-
-      &.active {
-        color: white;
-      }
-    }
-  }
-
-  .MuiListItemButton-root {
-    margin: 4px 8px;
-    border-radius: 12px;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background-color: rgba(0, 0, 0, 0.04);
+      transition: all 0.2s ease;
     }
   }
 
   .MuiListItemText-primary {
     font-size: 0.95rem;
     font-weight: 500;
+    transition: all 0.2s ease;
   }
 `;
 

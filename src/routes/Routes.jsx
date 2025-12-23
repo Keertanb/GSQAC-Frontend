@@ -14,6 +14,9 @@ const OtpVerify = lazy(() => import("../pages/otp-verify/otp-verify"));
 const SchoolDashboard = lazy(() =>
   import("../pages/school-dashboard/school-dashboard")
 );
+const SchoolDetails = lazy(() =>
+  import("../pages/school-dashboard/school-details/SchoolDetails")
+);
 const ParentDashboard = lazy(() =>
   import("../pages/parent-dashboard/parent-dashboard")
 );
@@ -76,6 +79,16 @@ export const schoolRoutes = [
           <ProtectedRoute requiredRole="school">
             <Suspense fallback={<LazyLoad />}>
               <SchoolDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTE_URLS.SCHOOL_DETAILS_URL,
+        element: (
+          <ProtectedRoute requiredRole="school">
+            <Suspense fallback={<LazyLoad />}>
+              <SchoolDetails />
             </Suspense>
           </ProtectedRoute>
         ),

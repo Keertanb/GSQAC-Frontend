@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Box,
-  TextField,
-  Button,
   Table,
   TableBody,
   TableCell,
@@ -12,18 +10,27 @@ import {
   IconButton,
   Paper,
   Typography,
-  Fade,
   TableContainer,
+  Button,
+  TextField,
+  Fade,
+  Card,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
-import { Add, Delete } from "@mui/icons-material";
+import { Visibility, Add, Delete } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
+import { useUpsertSubdomainMutation } from "../../../services/adminService";
+import { roleIdMap, getRoleId } from "../../../constants/roles";
 
 const DomainSubdomainView = ({
   domain,
-  domains,
-  setDomains,
-  currentLanguage,
-  onNavigateToCategories,
+  languageCode,
+  roleId,
+  onNavigateToCriteria,
+  onSubdomainAdded,
 }) => {
   const { t } = useTranslation();
   const [showAddSubdomain, setShowAddSubdomain] = useState(false);
@@ -32,54 +39,101 @@ const DomainSubdomainView = ({
     hi: "",
     gu: "",
   });
+  const [selectedSubdomainRole, setSelectedSubdomainRole] = useState(
+    roleId
+      ? Object.keys(roleIdMap).find((key) => roleIdMap[key] === roleId) ||
+          "admin"
+      : "admin"
+  );
+  const [editingSubdomain, setEditingSubdomain] = useState(null);
+
+  const upsertSubdomainMutation = useUpsertSubdomainMutation({
+    onSuccess: () => {
+      setNewSubdomainName({ en: "", hi: "", gu: "" });
+      setShowAddSubdomain(false);
+      setEditingSubdomain(null);
+      if (onSubdomainAdded) {
+        onSubdomainAdded();
+      }
+    },
+  });
+
+  const getSubdomainName = (subdomain) => {
+    if (languageCode === "EN") {
+      return subdomain.subDomainNameEn || subdomain.subDomainName;
+    } else if (languageCode === "HI") {
+      return subdomain.subDomainNameHi || subdomain.subDomainName;
+    } else {
+      return subdomain.subDomainNameGu || subdomain.subDomainName;
+    }
+  };
+
+  const subdomains = domain.subDomain || [];
 
   const handleAddSubdomain = () => {
-    if (!newSubdomainName.en.trim()) {
+    if (!newSubdomainName.en.trim() || !selectedSubdomainRole) {
       return;
     }
 
-    const updatedDomains = domains.map((d) => {
-      if (d.id === domain.id) {
-        return {
-          ...d,
-          subdomains: [
-            ...d.subdomains,
-            {
-              id: Date.now(),
-              name: newSubdomainName,
-              description: { en: "", hi: "", gu: "" },
-              categories: [],
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        };
-      }
-      return d;
-    });
+    const payload = {
+      domainId: domain.domainId,
+      roleId: getRoleId(selectedSubdomainRole),
+      subDomainNameEn: newSubdomainName.en.trim(),
+      subDomainNameHi: newSubdomainName.hi.trim(),
+      subDomainNameGu: newSubdomainName.gu.trim(),
+    };
 
-    setDomains(updatedDomains);
-    setNewSubdomainName({ en: "", hi: "", gu: "" });
-    setShowAddSubdomain(false);
+    // If editing, include subDomainId
+    if (editingSubdomain) {
+      payload.subDomainId = editingSubdomain.subDomainId || editingSubdomain.id;
+    }
+
+    upsertSubdomainMutation.mutate(payload);
   };
 
-  const handleDeleteSubdomain = (subdomainId) => {
-    const updatedDomains = domains.map((d) => {
-      if (d.id === domain.id) {
-        return {
-          ...d,
-          subdomains: d.subdomains.filter((s) => s.id !== subdomainId),
-        };
-      }
-      return d;
+  const handleEditSubdomain = (subdomain) => {
+    setEditingSubdomain(subdomain);
+    setNewSubdomainName({
+      en: subdomain.subDomainNameEn || "",
+      hi: subdomain.subDomainNameHi || "",
+      gu: subdomain.subDomainNameGu || "",
     });
-    setDomains(updatedDomains);
+    // Set selected role based on domain's roleId
+    const subdomainRole = Object.keys(roleIdMap).find(
+      (key) => roleIdMap[key] === domain.roleId
+    );
+    if (subdomainRole) {
+      setSelectedSubdomainRole(subdomainRole);
+    }
+    setShowAddSubdomain(true);
+  };
+
+  const handleDeleteSubdomain = (subdomain) => {
+    // TODO: Implement delete subdomain API call
+    // const deleteSubdomain = async (subDomainId) => {
+    //   try {
+    //     const response = await axiosInstance.delete(`/questionnaire/sub-domain/${subDomainId}`);
+    //     // Refetch domains after deletion
+    //     if (onSubdomainAdded) {
+    //       onSubdomainAdded();
+    //     }
+    //     return response.data;
+    //   } catch (error) {
+    //     console.error("Error deleting subdomain:", error);
+    //     throw error;
+    //   }
+    // };
+    // deleteSubdomain(subdomain.subDomainId || subdomain.id);
+    console.log("Delete subdomain:", subdomain);
   };
 
   return (
     <Box>
-      <Box sx={{ mb: 3 }}>
+      {/* Add Subdomain Button */}
+      <Box sx={{ mb: 2 }}>
         <Button
           variant="outlined"
+          size="small"
           startIcon={<Add />}
           onClick={() => setShowAddSubdomain(!showAddSubdomain)}
           sx={{
@@ -95,74 +149,108 @@ const DomainSubdomainView = ({
         </Button>
       </Box>
 
-      <Fade in={showAddSubdomain}>
-        <Paper
-          elevation={2}
-          sx={{
-            p: 3,
-            mb: 3,
-            borderRadius: 2,
-            bgcolor: "#f9fafb",
-            display: showAddSubdomain ? "block" : "none",
-          }}
-        >
-          <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-            {t("assessment.subdomain.addSubdomain")}
-          </Typography>
-          <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-            <TextField
-              fullWidth
-              label={`${t("assessment.subdomain.subdomainName")} (English)`}
-              value={newSubdomainName.en}
-              onChange={(e) =>
-                setNewSubdomainName({ ...newSubdomainName, en: e.target.value })
-              }
-              variant="outlined"
-              size="small"
-            />
-            <TextField
-              fullWidth
-              label={`${t("assessment.subdomain.subdomainName")} (Hindi)`}
-              value={newSubdomainName.hi}
-              onChange={(e) =>
-                setNewSubdomainName({ ...newSubdomainName, hi: e.target.value })
-              }
-              variant="outlined"
-              size="small"
-            />
-            <TextField
-              fullWidth
-              label={`${t("assessment.subdomain.subdomainName")} (Gujarati)`}
-              value={newSubdomainName.gu}
-              onChange={(e) =>
-                setNewSubdomainName({ ...newSubdomainName, gu: e.target.value })
-              }
-              variant="outlined"
-              size="small"
-            />
-          </Box>
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <Button
-              variant="contained"
-              onClick={handleAddSubdomain}
-              sx={{ bgcolor: colors.primary.blue }}
+      {/* Add/Edit Subdomain Form */}
+      {showAddSubdomain && (
+        <Fade in={showAddSubdomain}>
+          <Card
+            elevation={1}
+            sx={{
+              p: 3,
+              mb: 3,
+              borderRadius: 2,
+              bgcolor: "#f9fafb",
+            }}
+          >
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+              {editingSubdomain
+                ? t("assessment.subdomain.editSubdomain")
+                : t("assessment.subdomain.addSubdomain")}
+            </Typography>
+            <Box
+              sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}
             >
-              {t("common.add")}
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setShowAddSubdomain(false);
-                setNewSubdomainName({ en: "", hi: "", gu: "" });
-              }}
-            >
-              {t("common.cancel")}
-            </Button>
-          </Box>
-        </Paper>
-      </Fade>
-
-      {domain.subdomains && domain.subdomains.length > 0 ? (
+              <FormControl fullWidth size="small">
+                <InputLabel>{t("assessment.domain.selectRole")}</InputLabel>
+                <Select
+                  value={selectedSubdomainRole}
+                  onChange={(e) => setSelectedSubdomainRole(e.target.value)}
+                  label={t("assessment.domain.selectRole")}
+                >
+                  <MenuItem value="admin">Admin</MenuItem>
+                  <MenuItem value="school">School</MenuItem>
+                  <MenuItem value="inspector">School Verifier</MenuItem>
+                  <MenuItem value="parent">Parent</MenuItem>
+                </Select>
+              </FormControl>
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <TextField
+                  fullWidth
+                  label={`${t("assessment.subdomain.subdomainName")} (English)`}
+                  value={newSubdomainName.en}
+                  onChange={(e) =>
+                    setNewSubdomainName({
+                      ...newSubdomainName,
+                      en: e.target.value,
+                    })
+                  }
+                  variant="outlined"
+                  size="small"
+                />
+                <TextField
+                  fullWidth
+                  label={`${t("assessment.subdomain.subdomainName")} (Hindi)`}
+                  value={newSubdomainName.hi}
+                  onChange={(e) =>
+                    setNewSubdomainName({
+                      ...newSubdomainName,
+                      hi: e.target.value,
+                    })
+                  }
+                  variant="outlined"
+                  size="small"
+                />
+                <TextField
+                  fullWidth
+                  label={`${t(
+                    "assessment.subdomain.subdomainName"
+                  )} (Gujarati)`}
+                  value={newSubdomainName.gu}
+                  onChange={(e) =>
+                    setNewSubdomainName({
+                      ...newSubdomainName,
+                      gu: e.target.value,
+                    })
+                  }
+                  variant="outlined"
+                  size="small"
+                />
+              </Box>
+            </Box>
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <Button
+                variant="contained"
+                onClick={handleAddSubdomain}
+                disabled={upsertSubdomainMutation.isPending}
+                sx={{ bgcolor: colors.primary.blue }}
+              >
+                {editingSubdomain ? t("common.save") : t("common.add")}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setShowAddSubdomain(false);
+                  setNewSubdomainName({ en: "", hi: "", gu: "" });
+                  setEditingSubdomain(null);
+                }}
+                disabled={upsertSubdomainMutation.isPending}
+              >
+                {t("common.cancel")}
+              </Button>
+            </Box>
+          </Card>
+        </Fade>
+      )}
+      {subdomains && subdomains.length > 0 ? (
         <TableContainer
           component={Paper}
           elevation={1}
@@ -174,305 +262,22 @@ const DomainSubdomainView = ({
                 <TableCell sx={{ fontWeight: 700 }}>
                   {t("assessment.subdomain.title")}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>
-                  {t("assessment.subdomain.subdomainDescription")}
-                </TableCell>
                 <TableCell align="center" sx={{ fontWeight: 700 }}>
                   {t("common.actions")}
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {domain.subdomains.map((subdomain) => (
-                <React.Fragment key={subdomain.id}>
-                  <TableRow
-                    sx={{
-                      "&:hover": { bgcolor: "rgba(0,0,0,0.02)" },
-                    }}
-                  >
-                    <TableCell>
-                      <Typography fontWeight={500}>
-                        {subdomain.name[currentLanguage] || subdomain.name.en}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {subdomain.description[currentLanguage] ||
-                          subdomain.description.en ||
-                          "No description"}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Box
-                        sx={{
-                          display: "flex",
-                          gap: 1,
-                          justifyContent: "center",
-                        }}
-                      >
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (onNavigateToCategories) {
-                              onNavigateToCategories(subdomain);
-                            }
-                          }}
-                          sx={{
-                            bgcolor: colors.accent.green + "15",
-                            "&:hover": { bgcolor: colors.accent.green + "25" },
-                          }}
-                        >
-                          <Add />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteSubdomain(subdomain.id);
-                          }}
-                          sx={{
-                            bgcolor: colors.semantic.error + "15",
-                            "&:hover": {
-                              bgcolor: colors.semantic.error + "25",
-                            },
-                          }}
-                        >
-                          <Delete />
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                </React.Fragment>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      ) : (
-        <Paper
-          elevation={1}
-          sx={{ p: 3, textAlign: "center", borderRadius: 2 }}
-        >
-          <Typography variant="body2" color="text.secondary">
-            {t("assessment.subdomain.noSubdomains")}
-          </Typography>
-        </Paper>
-      )}
-    </Box>
-  );
-};
-
-// Category view within subdomain
-const CategorySubdomainView = ({
-  subdomain,
-  domain,
-  domains,
-  setDomains,
-  currentLanguage,
-  onNavigateToQuestions,
-}) => {
-  const { t } = useTranslation();
-  const [showAddCategory, setShowAddCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState({
-    en: "",
-    hi: "",
-    gu: "",
-  });
-
-  const handleAddCategory = () => {
-    if (!newCategoryName.en.trim()) {
-      return;
-    }
-
-    const updatedDomains = domains.map((d) => {
-      if (d.id === domain.id) {
-        return {
-          ...d,
-          subdomains: d.subdomains.map((s) => {
-            if (s.id === subdomain.id) {
-              return {
-                ...s,
-                categories: [
-                  ...s.categories,
-                  {
-                    id: Date.now(),
-                    name: newCategoryName,
-                    description: { en: "", hi: "", gu: "" },
-                    questions: [],
-                    createdAt: new Date().toISOString(),
-                  },
-                ],
-              };
-            }
-            return s;
-          }),
-        };
-      }
-      return d;
-    });
-
-    setDomains(updatedDomains);
-    setNewCategoryName({ en: "", hi: "", gu: "" });
-    setShowAddCategory(false);
-  };
-
-  const handleDeleteCategory = (categoryId) => {
-    const updatedDomains = domains.map((d) => {
-      if (d.id === domain.id) {
-        return {
-          ...d,
-          subdomains: d.subdomains.map((s) => {
-            if (s.id === subdomain.id) {
-              return {
-                ...s,
-                categories: s.categories.filter((c) => c.id !== categoryId),
-              };
-            }
-            return s;
-          }),
-        };
-      }
-      return d;
-    });
-    setDomains(updatedDomains);
-  };
-
-  const handleNavigateToQuestions = (category) => {
-    if (onNavigateToQuestions) {
-      onNavigateToQuestions({ domain, subdomain, category });
-    }
-  };
-
-  return (
-    <Box>
-      <Box sx={{ mb: 2 }}>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<Add />}
-          onClick={() => setShowAddCategory(!showAddCategory)}
-          sx={{
-            borderColor: colors.accent.green,
-            color: colors.accent.green,
-            "&:hover": {
-              borderColor: colors.accent.green,
-              bgcolor: colors.accent.green + "10",
-            },
-          }}
-        >
-          {t("assessment.category.addCategory")}
-        </Button>
-      </Box>
-
-      <Fade in={showAddCategory}>
-        <Paper
-          elevation={1}
-          sx={{
-            p: 2,
-            mb: 2,
-            borderRadius: 2,
-            bgcolor: "#ffffff",
-            display: showAddCategory ? "block" : "none",
-          }}
-        >
-          <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-            {t("assessment.category.addCategory")}
-          </Typography>
-          <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-            <TextField
-              fullWidth
-              label={`${t("assessment.category.categoryName")} (English)`}
-              value={newCategoryName.en}
-              onChange={(e) =>
-                setNewCategoryName({ ...newCategoryName, en: e.target.value })
-              }
-              variant="outlined"
-              size="small"
-            />
-            <TextField
-              fullWidth
-              label={`${t("assessment.category.categoryName")} (Hindi)`}
-              value={newCategoryName.hi}
-              onChange={(e) =>
-                setNewCategoryName({ ...newCategoryName, hi: e.target.value })
-              }
-              variant="outlined"
-              size="small"
-            />
-            <TextField
-              fullWidth
-              label={`${t("assessment.category.categoryName")} (Gujarati)`}
-              value={newCategoryName.gu}
-              onChange={(e) =>
-                setNewCategoryName({ ...newCategoryName, gu: e.target.value })
-              }
-              variant="outlined"
-              size="small"
-            />
-          </Box>
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <Button
-              variant="contained"
-              size="small"
-              onClick={handleAddCategory}
-              sx={{ bgcolor: colors.accent.green }}
-            >
-              {t("common.add")}
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => {
-                setShowAddCategory(false);
-                setNewCategoryName({ en: "", hi: "", gu: "" });
-              }}
-            >
-              {t("common.cancel")}
-            </Button>
-          </Box>
-        </Paper>
-      </Fade>
-
-      {subdomain.categories && subdomain.categories.length > 0 ? (
-        <TableContainer
-          component={Paper}
-          elevation={0}
-          sx={{ borderRadius: 2 }}
-        >
-          <Table size="small">
-            <TableHead>
-              <TableRow sx={{ bgcolor: colors.accent.orange + "10" }}>
-                <TableCell sx={{ fontWeight: 700 }}>
-                  {t("assessment.category.title")}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>
-                  {t("assessment.category.categoryDescription")}
-                </TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700 }}>
-                  {t("common.actions")}
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {subdomain.categories.map((category) => (
+              {subdomains.map((subdomain) => (
                 <TableRow
-                  key={category.id}
+                  key={subdomain.subDomainId || subdomain.id}
                   sx={{
                     "&:hover": { bgcolor: "rgba(0,0,0,0.02)" },
                   }}
                 >
                   <TableCell>
                     <Typography fontWeight={500}>
-                      {category.name[currentLanguage] || category.name.en}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {category.description[currentLanguage] ||
-                        category.description.en ||
-                        "No description"}
+                      {getSubdomainName(subdomain)}
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
@@ -481,15 +286,31 @@ const CategorySubdomainView = ({
                         display: "flex",
                         gap: 1,
                         justifyContent: "center",
+                        alignItems: "center",
                       }}
                     >
+                      <Button
+                        size="small"
+                        variant="contained"
+                        startIcon={<Visibility />}
+                        onClick={() => onNavigateToCriteria(subdomain)}
+                        sx={{
+                          bgcolor: colors.primary.blue,
+                          textTransform: "none",
+                          "&:hover": {
+                            bgcolor: colors.primary.dark,
+                          },
+                        }}
+                      >
+                        {t("assessment.question.viewQuestions")}
+                      </Button>
                       <IconButton
                         size="small"
                         color="primary"
-                        onClick={() => handleNavigateToQuestions(category)}
+                        onClick={() => handleEditSubdomain(subdomain)}
                         sx={{
-                          bgcolor: colors.accent.orange + "15",
-                          "&:hover": { bgcolor: colors.accent.orange + "25" },
+                          bgcolor: colors.accent.green + "15",
+                          "&:hover": { bgcolor: colors.accent.green + "25" },
                         }}
                       >
                         <Add />
@@ -497,7 +318,7 @@ const CategorySubdomainView = ({
                       <IconButton
                         size="small"
                         color="error"
-                        onClick={() => handleDeleteCategory(category.id)}
+                        onClick={() => handleDeleteSubdomain(subdomain)}
                         sx={{
                           bgcolor: colors.semantic.error + "15",
                           "&:hover": { bgcolor: colors.semantic.error + "25" },
@@ -518,7 +339,7 @@ const CategorySubdomainView = ({
           sx={{ p: 2, textAlign: "center", borderRadius: 2 }}
         >
           <Typography variant="body2" color="text.secondary">
-            {t("assessment.category.noCategories")}
+            {t("assessment.subdomain.noSubdomains")}
           </Typography>
         </Paper>
       )}

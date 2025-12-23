@@ -10,16 +10,19 @@
     "filter": "ફિલ્ટર",
     "actions": "ક્રિયાઓ",
     "entries": "પ્રવેશો",
-    "noRecordsFound": "કોઈ રેકોર્ડ મળ્યા નથી"
+    "noRecordsFound": "કોઈ રેકોર્ડ મળ્યા નથી",
+    "error": "એક ભૂલ આવી"
   },
   "assessment": {
     "title": "મૂલ્યાંકન વ્યવસ્થાપન",
     "domain": {
       "title": "ડોમેન",
       "addDomain": "ડોમેન ઉમેરો",
+      "editDomain": "ડોમેન સંપાદિત કરો",
       "domainName": "ડોમેન નામ",
       "domainDescription": "ડોમેન વર્ણન",
       "domainDetails": "ડોમેન વિગતો",
+      "selectRole": "ભૂમિકા પસંદ કરો",
       "noDomains": "હજુ સુધી કોઈ ડોમેન ઉમેરાયા નથી"
     },
     "subdomain": {
@@ -36,9 +39,19 @@
       "categoryDescription": "શ્રેણી વર્ણન",
       "noCategories": "હજુ સુધી કોઈ શ્રેણી ઉમેરાયી નથી"
     },
+    "criteria": {
+      "title": "માપદંડ",
+      "criteria": "માપદંડ",
+      "viewCriteria": "માપદંડ જુઓ",
+      "addCriteria": "માપદંડ ઉમેરો",
+      "criteriaName": "માપદંડ નામ",
+      "noCriteria": "કોઈ માપદંડ ઉપલબ્ધ નથી"
+    },
     "question": {
       "title": "પ્રશ્નો",
       "addQuestion": "પ્રશ્ન ઉમેરો",
+      "editQuestion": "પ્રશ્ન સંપાદિત કરો",
+      "viewQuestions": "પ્રશ્નો જુઓ",
       "questionText": "પ્રશ્ન ટેક્સ્ટ",
       "options": "વિકલ્પો",
       "addOption": "વિકલ્પ ઉમેરો",

@@ -116,51 +116,58 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
   const primaryColor = roleData?.color || theme.palette.primary.main;
 
   const drawer = (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+    <Box className="flex flex-col h-screen bg-white">
       <Box
-        className="drawer-header"
+        className="drawer-header relative flex-shrink-0 bg-white border-b border-gray-200 h-16 flex items-center px-6"
         sx={{
-          background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}dd 100%)`,
-          position: "relative",
-          flexShrink: 0,
+          height: "64px",
+          minHeight: "64px",
+          backgroundColor: "#ffffff",
+          borderBottom: "1px solid rgba(0,0,0,0.08)",
         }}
       >
         {!matchDownMD && (
           <IconButton
             onClick={handleDrawerToggle}
-            sx={{
-              position: "absolute",
-              top: 12,
-              right: 12,
-              color: "white",
-              backgroundColor: "rgba(255, 255, 255, 0.2)",
-              backdropFilter: "blur(10px)",
-              "&:hover": {
-                backgroundColor: "rgba(255, 255, 255, 0.3)",
-                transform: "scale(1.1)",
-              },
-              transition: "all 0.2s ease",
-              zIndex: 10,
-            }}
+            className="absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-500 hover:bg-gray-100 rounded-lg transition-all duration-200"
             size="small"
+            sx={{
+              color: "#6b7280",
+              borderRadius: "8px",
+              "&:hover": {
+                backgroundColor: "rgba(0,0,0,0.04)",
+              },
+            }}
           >
             {open ? <ChevronLeft /> : <ChevronRight />}
           </IconButton>
         )}
-        <Typography className="logo-text">GSQAC</Typography>
-        <Typography className="logo-subtitle">
-          Gujarat School Quality Accreditation
-        </Typography>
+
+        <Box className="flex items-center gap-3 flex-1">
+          <Box
+            className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center"
+            sx={{
+              backgroundColor: primaryColor,
+            }}
+          >
+            <Typography className="text-white font-bold text-lg">G</Typography>
+          </Box>
+          {open && (
+            <Typography
+              className="font-bold text-gray-900 text-lg"
+              sx={{
+                fontSize: "1.125rem",
+                fontWeight: 700,
+                color: "#111827",
+              }}
+            >
+              GSQAC
+            </Typography>
+          )}
+        </Box>
       </Box>
-      <Box
-        sx={{
-          flex: 1,
-          overflowY: "auto",
-          overflowX: "hidden",
-          minHeight: 0,
-        }}
-      >
-        <List>
+      <Box className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 bg-white">
+        <List className="py-4 px-3">
           {menuItems.map((item) => {
             const isActive = item?.activeFinder?.some((path) =>
               location.pathname.includes(path)
@@ -168,123 +175,170 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
             const IconComponent = item.icon;
 
             return (
-              <Box key={item.id}>
+              <Box key={item.id} className="mb-2">
                 <ListItem disableGutters disablePadding>
                   <ListItemButton
-                    className={isActive ? "btn-active" : ""}
+                    className={`group relative transition-all duration-200 ${
+                      isActive ? "bg-blue-50" : "hover:bg-gray-50"
+                    }`}
                     onClick={
                       item.hasSubMenu
                         ? handleSubmenuToggle(item.id)
                         : handleNavigate(item.url)
                     }
                     sx={{
-                      paddingBlock: 1,
-                      paddingInline: 2,
+                      paddingBlock: 1.25,
+                      paddingInline: open ? 1.5 : 1.5,
+                      padding: open ? 3 : 4,
+                      borderRadius: "10px",
+                      marginX: open ? "8px" : "4px",
                       ...(isActive && {
-                        backgroundColor: `${primaryColor} !important`,
-                        color: "white !important",
+                        backgroundColor: "#eff6ff",
+                        color: `${primaryColor} !important`,
                         "&:hover": {
-                          backgroundColor: `${primaryColor}dd !important`,
+                          backgroundColor: "#dbeafe",
                         },
                         "& .MuiListItemIcon-root": {
-                          color: "white !important",
+                          color: `${primaryColor} !important`,
                         },
                       }),
                     }}
                   >
-                    <ListItemIcon className="item-icon">
+                    <ListItemIcon
+                      className="item-icon"
+                      sx={{
+                        minWidth: open ? 40 : 24,
+                        justifyContent: open ? "flex-start" : "center",
+                        color: isActive ? primaryColor : "#6b7280",
+                        marginRight: open ? "16px" : "0px",
+                      }}
+                    >
                       <IconComponent
-                        className={`icon ${isActive ? "active" : ""}`}
+                        className="icon"
+                        sx={{
+                          fontSize: "1.5rem",
+                          color: isActive ? primaryColor : "#6b7280",
+                        }}
                       />
                     </ListItemIcon>
-                    <ListItemText
-                      primary={item.label}
-                      primaryTypographyProps={{
-                        variant: "subtitle1",
-                        style: { textWrap: "wrap" },
-                        fontWeight: isActive ? 600 : 500,
-                        color: isActive ? "#fff" : theme.palette.text.primary,
-                      }}
-                    />
-                    {item?.hasSubMenu &&
-                      (openSubmenuId === item.id ? (
-                        <ExpandLess />
-                      ) : (
-                        <ExpandMore />
-                      ))}
+                    {open && (
+                      <ListItemText
+                        primary={item.label}
+                        primaryTypographyProps={{
+                          variant: "body1",
+                          style: { textWrap: "wrap" },
+                          fontWeight: isActive ? 600 : 500,
+                          fontSize: "0.9375rem",
+                          color: isActive ? primaryColor : "#374151",
+                        }}
+                        sx={{
+                          margin: 0,
+                        }}
+                      />
+                    )}
+                    {open && item?.hasSubMenu && (
+                      <Box
+                        className="ml-auto transition-transform duration-200"
+                        sx={{
+                          transform:
+                            openSubmenuId === item.id
+                              ? "rotate(180deg)"
+                              : "rotate(0deg)",
+                        }}
+                      >
+                        <ExpandMore
+                          sx={{
+                            fontSize: "1.25rem",
+                            color: isActive ? primaryColor : "#9ca3af",
+                          }}
+                        />
+                      </Box>
+                    )}
                   </ListItemButton>
                 </ListItem>
-                {item?.hasSubMenu && (
+                {open && item?.hasSubMenu && (
                   <Collapse in={openSubmenuId === item.id} timeout="auto">
-                    <List
-                      component="div"
-                      sx={{ bgcolor: "rgba(0, 0, 0, 0.02)" }}
-                    >
-                      {item.subMenu?.map((menuItem) => {
-                        const isMenuItemActive = menuItem?.activeFinder?.some(
-                          (path) => location.pathname.includes(path)
-                        );
-                        const SubIconComponent = menuItem.icon;
+                    <Box className="ml-6 mr-2 mt-2 mb-2 rounded-lg bg-gray-50">
+                      <List component="div" className="py-2">
+                        {item.subMenu?.map((menuItem) => {
+                          const isMenuItemActive = menuItem?.activeFinder?.some(
+                            (path) => location.pathname.includes(path)
+                          );
+                          const SubIconComponent = menuItem.icon;
 
-                        return (
-                          <ListItem
-                            disableGutters
-                            disablePadding
-                            key={menuItem?.id}
-                          >
-                            <ListItemButton
-                              sx={{
-                                paddingBlock: 1,
-                                paddingInline: 3,
-                                borderLeft: "4px solid transparent",
-                                "&:hover": {
-                                  borderLeft: `4px solid ${primaryColor}`,
-                                  bgcolor: "rgba(0, 0, 0, 0.04)",
-                                },
-                                ...(isMenuItemActive && {
-                                  borderLeft: `4px solid ${primaryColor}`,
-                                  bgcolor: `${primaryColor}15`,
-                                  backgroundColor: `${primaryColor} !important`,
-                                  color: "white !important",
-                                  "&:hover": {
-                                    backgroundColor: `${primaryColor}dd !important`,
-                                  },
-                                  "& .MuiListItemIcon-root": {
-                                    color: "white !important",
-                                  },
-                                }),
-                              }}
-                              className={isMenuItemActive ? "btn-active" : ""}
-                              onClick={handleNavigate(menuItem.url)}
+                          return (
+                            <ListItem
+                              disableGutters
+                              disablePadding
+                              key={menuItem?.id}
+                              className="px-2 mb-1"
                             >
-                              {SubIconComponent && (
-                                <ListItemIcon
-                                  className="item-icon"
-                                  sx={{ minWidth: 40 }}
-                                >
-                                  <SubIconComponent
-                                    className={`icon ${
-                                      isMenuItemActive ? "active" : ""
-                                    }`}
-                                  />
-                                </ListItemIcon>
-                              )}
-                              <ListItemText
-                                primary={menuItem.label}
-                                primaryTypographyProps={{
-                                  variant: "subtitle1",
-                                  style: { textWrap: "wrap" },
-                                  fontWeight: isMenuItemActive ? 600 : 500,
-                                  color: isMenuItemActive
-                                    ? "#fff"
-                                    : theme.palette.text.primary,
+                              <ListItemButton
+                                className={`group relative rounded-lg transition-all duration-200 ${
+                                  isMenuItemActive
+                                    ? "bg-blue-50"
+                                    : "hover:bg-gray-100"
+                                }`}
+                                sx={{
+                                  paddingBlock: 1,
+                                  paddingInline: 2.5,
+                                  borderRadius: "8px",
+                                  ...(isMenuItemActive && {
+                                    backgroundColor: "#eff6ff",
+                                    color: `${primaryColor} !important`,
+                                    "&:hover": {
+                                      backgroundColor: "#dbeafe",
+                                    },
+                                    "& .MuiListItemIcon-root": {
+                                      color: `${primaryColor} !important`,
+                                    },
+                                  }),
                                 }}
-                              />
-                            </ListItemButton>
-                          </ListItem>
-                        );
-                      })}
-                    </List>
+                                onClick={handleNavigate(menuItem.url)}
+                              >
+                                {SubIconComponent && (
+                                  <ListItemIcon
+                                    className="item-icon"
+                                    sx={{
+                                      minWidth: 36,
+                                      marginRight: "12px",
+                                      color: isMenuItemActive
+                                        ? primaryColor
+                                        : "#9ca3af",
+                                    }}
+                                  >
+                                    <SubIconComponent
+                                      className="icon"
+                                      sx={{
+                                        fontSize: "1.25rem",
+                                        color: isMenuItemActive
+                                          ? primaryColor
+                                          : "#9ca3af",
+                                      }}
+                                    />
+                                  </ListItemIcon>
+                                )}
+                                <ListItemText
+                                  primary={menuItem.label}
+                                  primaryTypographyProps={{
+                                    variant: "body2",
+                                    style: { textWrap: "wrap" },
+                                    fontWeight: isMenuItemActive ? 600 : 500,
+                                    fontSize: "0.875rem",
+                                    color: isMenuItemActive
+                                      ? primaryColor
+                                      : "#6b7280",
+                                  }}
+                                  sx={{
+                                    margin: 0,
+                                  }}
+                                />
+                              </ListItemButton>
+                            </ListItem>
+                          );
+                        })}
+                      </List>
+                    </Box>
                   </Collapse>
                 )}
               </Box>

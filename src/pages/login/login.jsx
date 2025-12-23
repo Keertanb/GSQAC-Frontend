@@ -25,7 +25,7 @@ import {
   EmailOutlined,
 } from "@mui/icons-material";
 import { colors } from "../../constants/colors";
-import { roles } from "../../constants/roles";
+import { roles, getRoleId } from "../../constants/roles";
 import { useSendOtpMutation } from "../../services/authService";
 import useAuthStore from "../../store/useAuthStore";
 import "./login.css";
@@ -40,18 +40,68 @@ const Login = () => {
 
   const sendOtpMutation = useSendOtpMutation({
     onSuccess: (data) => {
-      const apiUserId = data?.userId || data?.data?.userId;
-      if (apiUserId) {
-        setOtpUserId(apiUserId, selectedRole);
+      console.log("Send OTP Success Response:", data);
+
+      // Extract userId from various possible response structures
+      // Handle: data.userId, data.data.userId, data.data[0].userId, data.data[0].id, etc.
+      let apiUserId = null;
+
+      // Try direct access
+      if (data?.userId) {
+        apiUserId = data.userId;
+      }
+      // Try nested object access
+      else if (data?.data?.userId) {
+        apiUserId = data.data.userId;
+      }
+      // Try array access (data.data is an array)
+      else if (Array.isArray(data?.data) && data.data.length > 0) {
+        const firstItem = data.data[0];
+        apiUserId = firstItem?.userId || firstItem?.id || firstItem?.user?.id;
+      }
+      // Try deeply nested
+      else if (data?.data?.data?.userId) {
+        apiUserId = data.data.data.userId;
       }
 
-      navigate("/otp-verify", {
-        state: { role: selectedRole },
-      });
+      console.log("Extracted userId:", apiUserId, "Role:", selectedRole);
+      console.log("Full response structure:", JSON.stringify(data, null, 2));
+      console.log("Data array contents:", data?.data);
+
+      // Only proceed if we have a userId
+      if (!apiUserId) {
+        console.error("No userId found in response. Full response:", data);
+        setErrors({
+          ...errors,
+          userId: "Failed to get user ID from server. Please try again.",
+        });
+        return; // Don't navigate if no userId
+      }
+
+      // Set userId in store first (synchronous operation)
+      setOtpUserId(apiUserId, selectedRole);
+      console.log("UserId set in store:", apiUserId);
+
+      // Navigate after a small delay to ensure store is updated
+      setTimeout(() => {
+        console.log("Navigating to OTP verify with:", {
+          role: selectedRole,
+          userId: apiUserId,
+        });
+        navigate("/otp-verify", {
+          state: {
+            role: selectedRole,
+            userId: apiUserId,
+          },
+          replace: false,
+        });
+      }, 50);
     },
     onError: (error) => {
+      console.error("Send OTP Error:", error);
       const errorMessage =
         error?.response?.data?.message ||
+        error?.response?.data?.error ||
         error?.message ||
         "Failed to send OTP. Please try again.";
       setErrors({ ...errors, userId: errorMessage });
@@ -97,8 +147,13 @@ const Login = () => {
       return;
     }
 
+    // Get roleId from selected role
+    const roleId = getRoleId(selectedRole);
+
+    // Only mutate - navigation happens in onSuccess callback
     sendOtpMutation.mutate({
       userName: userId.trim(),
+      roleId: roleId,
     });
   };
 

@@ -10,16 +10,19 @@
     "filter": "फ़िल्टर",
     "actions": "कार्रवाई",
     "entries": "प्रविष्टियां",
-    "noRecordsFound": "कोई रिकॉर्ड नहीं मिला"
+    "noRecordsFound": "कोई रिकॉर्ड नहीं मिला",
+    "error": "एक त्रुटि हुई"
   },
   "assessment": {
     "title": "मूल्यांकन प्रबंधन",
     "domain": {
       "title": "डोमेन",
       "addDomain": "डोमेन जोड़ें",
+      "editDomain": "डोमेन संपादित करें",
       "domainName": "डोमेन नाम",
       "domainDescription": "डोमेन विवरण",
       "domainDetails": "डोमेन विवरण",
+      "selectRole": "भूमिका चुनें",
       "noDomains": "अभी तक कोई डोमेन नहीं जोड़ा गया"
     },
     "subdomain": {
@@ -36,9 +39,19 @@
       "categoryDescription": "श्रेणी विवरण",
       "noCategories": "अभी तक कोई श्रेणी नहीं जोड़ी गई"
     },
+    "criteria": {
+      "title": "मानदंड",
+      "criteria": "मानदंड",
+      "viewCriteria": "मानदंड देखें",
+      "addCriteria": "मानदंड जोड़ें",
+      "criteriaName": "मानदंड नाम",
+      "noCriteria": "कोई मानदंड उपलब्ध नहीं"
+    },
     "question": {
       "title": "प्रश्न",
       "addQuestion": "प्रश्न जोड़ें",
+      "editQuestion": "प्रश्न संपादित करें",
+      "viewQuestions": "प्रश्न देखें",
       "questionText": "प्रश्न पाठ",
       "options": "विकल्प",
       "addOption": "विकल्प जोड़ें",

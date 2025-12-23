@@ -6,4 +6,28 @@ export const queryKeys = {
     verifyOtp: (userName, otp) => ["auth", "verify-otp", userName, otp],
     logout: () => ["auth", "logout"],
   },
+  admin: {
+    domains: (roleId, languageCode) => ["admin", "domains", roleId, languageCode],
+    criteriaQuestions: (subDomainId, roleId, languageCode) => [
+      "admin",
+      "criteria-questions",
+      subDomainId,
+      roleId,
+      languageCode,
+    ],
+    subdomainQuestions: (subDomainId, roleId, languageCode) => [
+      "admin",
+      "subdomain-questions",
+      subDomainId,
+      roleId,
+      languageCode,
+    ],
+    upsertDomain: () => ["admin", "upsert-domain"],
+    upsertSubdomain: () => ["admin", "upsert-subdomain"],
+    upsertQuestion: () => ["admin", "upsert-question"],
+    upsertQuestionOption: () => ["admin", "upsert-question-option"],
+  },
+  school: {
+    schoolData: (schoolId, academicYear) => ["school", "school-data", schoolId, academicYear],
+  },
 };

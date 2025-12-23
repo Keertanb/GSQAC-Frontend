@@ -10,21 +10,25 @@
     "filter": "Filter",
     "actions": "Actions",
     "entries": "entries",
-    "noRecordsFound": "No records found"
+    "noRecordsFound": "No records found",
+    "error": "An error occurred"
   },
   "assessment": {
     "title": "Assessment Management",
     "domain": {
       "title": "Domain",
       "addDomain": "Add Domain",
+      "editDomain": "Edit Domain",
       "domainName": "Domain Name",
       "domainDescription": "Domain Description",
       "domainDetails": "Domain Details",
+      "selectRole": "Select Role",
       "noDomains": "No domains added yet"
     },
     "subdomain": {
       "title": "Subdomain",
       "addSubdomain": "Add Subdomain",
+      "editSubdomain": "Edit Subdomain",
       "subdomainName": "Subdomain Name",
       "subdomainDescription": "Subdomain Description",
       "noSubdomains": "No subdomains added yet"
@@ -36,9 +40,19 @@
       "categoryDescription": "Category Description",
       "noCategories": "No categories added yet"
     },
+    "criteria": {
+      "title": "Criteria",
+      "criteria": "criteria",
+      "viewCriteria": "View Criteria",
+      "addCriteria": "Add Criteria",
+      "criteriaName": "Criteria Name",
+      "noCriteria": "No criteria available"
+    },
     "question": {
       "title": "Questions",
       "addQuestion": "Add Question",
+      "editQuestion": "Edit Question",
+      "viewQuestions": "View Questions",
       "questionText": "Question Text",
       "options": "Options",
       "addOption": "Add Option",

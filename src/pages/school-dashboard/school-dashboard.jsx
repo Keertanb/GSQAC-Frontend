@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
-  Container,
   Typography,
   AppBar,
   Toolbar,
@@ -62,25 +61,31 @@ const SchoolDashboard = () => {
         sx={{
           flexGrow: 1,
           width: "100%",
-          transition: theme.transitions.create(["margin"], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-          }),
-          marginLeft: drawerOpen && !matchDownMD ? `${DRAWER_WIDTH.xs}px` : 0,
+          marginLeft: drawerOpen && !matchDownMD ? 0 : 0,
           [`@media (min-width:${theme.breakpoints.values.xl}px)`]: {
             marginLeft: drawerOpen && !matchDownMD ? `${DRAWER_WIDTH.xl}px` : 0,
           },
+          transition: theme.transitions.create(["margin-left"], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
         }}
       >
         <AppBar
           position="fixed"
           sx={{
-            backgroundColor: "#1e3a8a",
+            // backgroundColor: "#1e3a8a",
             zIndex: theme.zIndex.drawer + 1,
             boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-            width: drawerOpen && !matchDownMD ? `calc(100% - ${DRAWER_WIDTH.xs}px)` : "100%",
+            width:
+              drawerOpen && !matchDownMD
+                ? `calc(100% - ${DRAWER_WIDTH.xs}px)`
+                : "100%",
             [`@media (min-width:${theme.breakpoints.values.xl}px)`]: {
-              width: drawerOpen && !matchDownMD ? `calc(100% - ${DRAWER_WIDTH.xl}px)` : "100%",
+              width:
+                drawerOpen && !matchDownMD
+                  ? `calc(100% - ${DRAWER_WIDTH.xl}px)`
+                  : "100%",
             },
             transition: theme.transitions.create(["width", "margin"], {
               easing: theme.transitions.easing.sharp,
@@ -112,29 +117,56 @@ const SchoolDashboard = () => {
           </Toolbar>
         </AppBar>
 
-        <Box sx={{ mt: 8, p: 3 }}>
-          <Container maxWidth="xl">
-            <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
+        <Box sx={{ mt: 8 }}>
+          <Box
+            sx={{
+              pl: drawerOpen && !matchDownMD ? 0 : { xs: 2, sm: 2, md: 3 },
+              pr: { xs: 2, sm: 2, md: 3 },
+              py: 3,
+              maxWidth: "xl",
+              mx: "auto",
+            }}
+          >
+            <Typography
+              variant="h4"
+              gutterBottom
+              sx={{ fontWeight: 700, mb: 3 }}
+            >
               Welcome{user?.name ? `, ${user.name}` : ""} to School Dashboard
             </Typography>
 
             <Grid container spacing={3}>
               <Grid item xs={12} md={4}>
-                <Card sx={{ height: "100%", transition: "transform 0.2s", "&:hover": { transform: "translateY(-4px)" } }}>
+                <Card
+                  sx={{
+                    height: "100%",
+                    transition: "transform 0.2s",
+                    "&:hover": { transform: "translateY(-4px)" },
+                  }}
+                >
                   <CardContent>
-                    <Assessment sx={{ fontSize: 48, color: "#1e3a8a", mb: 2 }} />
+                    <Assessment
+                      sx={{ fontSize: 48, color: "#1e3a8a", mb: 2 }}
+                    />
                     <Typography variant="h6" gutterBottom>
                       Self-Assessment
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Complete your school's self-assessment across 5 key domains
+                      Complete your school's self-assessment across 5 key
+                      domains
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
 
               <Grid item xs={12} md={4}>
-                <Card sx={{ height: "100%", transition: "transform 0.2s", "&:hover": { transform: "translateY(-4px)" } }}>
+                <Card
+                  sx={{
+                    height: "100%",
+                    transition: "transform 0.2s",
+                    "&:hover": { transform: "translateY(-4px)" },
+                  }}
+                >
                   <CardContent>
                     <People sx={{ fontSize: 48, color: "#1e3a8a", mb: 2 }} />
                     <Typography variant="h6" gutterBottom>
@@ -148,7 +180,13 @@ const SchoolDashboard = () => {
               </Grid>
 
               <Grid item xs={12} md={4}>
-                <Card sx={{ height: "100%", transition: "transform 0.2s", "&:hover": { transform: "translateY(-4px)" } }}>
+                <Card
+                  sx={{
+                    height: "100%",
+                    transition: "transform 0.2s",
+                    "&:hover": { transform: "translateY(-4px)" },
+                  }}
+                >
                   <CardContent>
                     <Settings sx={{ fontSize: 48, color: "#1e3a8a", mb: 2 }} />
                     <Typography variant="h6" gutterBottom>
@@ -161,7 +199,7 @@ const SchoolDashboard = () => {
                 </Card>
               </Grid>
             </Grid>
-          </Container>
+          </Box>
         </Box>
       </Box>
     </Box>

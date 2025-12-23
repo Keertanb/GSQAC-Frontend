@@ -1,0 +1,31 @@
+/* School Details Page Styles */
+
+.school-details-container {
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+/* Smooth transitions for cards */
+.MuiCard-root {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom scrollbar for better UX */
+.school-details-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.school-details-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.school-details-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.school-details-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
