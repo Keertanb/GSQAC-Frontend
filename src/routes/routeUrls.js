@@ -6,6 +6,7 @@ export const OTP_VERIFY_URL = "/otp-verify";
 // Dashboard Routes
 export const SCHOOL_DASHBOARD_URL = "/school-dashboard";
 export const SCHOOL_DETAILS_URL = "/school-dashboard/school-details";
+export const SCHOOL_SELF_ASSESSMENT_URL = "/school-dashboard/self-assessment";
 export const PARENT_DASHBOARD_URL = "/parent-dashboard";
 export const INSPECTOR_DASHBOARD_URL = "/inspector-dashboard";
 export const ADMIN_DASHBOARD_URL = "/admin-dashboard";

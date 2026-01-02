@@ -73,10 +73,7 @@ const OtpVerify = () => {
 
   const verifyOtpMutation = useVerifyOtpMutation();
 
-  // Only redirect if both role and userId are missing after allowing time for state updates
   useEffect(() => {
-    // If we have locationRole (we just navigated here from login), don't redirect immediately
-    // Even if locationUserId is undefined, we should wait for it to be set in store
     if (locationRole) {
       console.log("OTP Verify - Has locationRole, waiting for userId:", {
         locationRole,
@@ -205,7 +202,15 @@ const OtpVerify = () => {
               name: getRoleLabel(),
             };
 
-          setUserData(userData, token, currentRole, userId);
+          // Extract userName from API response
+          const userName =
+            data?.data[0]?.userName ||
+            data?.data?.[0]?.userName ||
+            data?.userName ||
+            data?.data?.userName ||
+            null;
+
+          setUserData(userData, token, currentRole, userId, userName);
 
           const dashboardRoutes = {
             school: "/school-dashboard",

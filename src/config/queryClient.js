@@ -26,8 +26,13 @@ export const queryKeys = {
     upsertSubdomain: () => ["admin", "upsert-subdomain"],
     upsertQuestion: () => ["admin", "upsert-question"],
     upsertQuestionOption: () => ["admin", "upsert-question-option"],
+    deleteDomain: () => ["admin", "delete-domain"],
+    deleteQuestion: () => ["admin", "delete-question"],
+    deleteQuestionOption: () => ["admin", "delete-question-option"],
   },
   school: {
     schoolData: (schoolId, academicYear) => ["school", "school-data", schoolId, academicYear],
+    classWiseSections: (userId, classNumber) => ["school", "class-wise-sections", userId, classNumber],
+    submitSubdomainWiseAnswers: () => ["school", "submit-subdomain-wise-answers"],
   },
 };

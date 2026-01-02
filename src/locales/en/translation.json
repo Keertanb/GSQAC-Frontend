@@ -11,7 +11,8 @@
     "actions": "Actions",
     "entries": "entries",
     "noRecordsFound": "No records found",
-    "error": "An error occurred"
+    "error": "An error occurred",
+    "back": "Back"
   },
   "assessment": {
     "title": "Assessment Management",

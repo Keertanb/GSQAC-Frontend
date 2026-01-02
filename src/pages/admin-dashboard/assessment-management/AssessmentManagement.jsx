@@ -36,8 +36,10 @@ import QuestionsView from "./QuestionsView";
 import {
   useGetDomainsQuery,
   useUpsertDomainMutation,
+  useDeleteDomainMutation,
 } from "../../../services/adminService";
 import { roleIdMap, getRoleId } from "../../../constants/roles";
+import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
 import "./AssessmentManagement.css";
 
 const AssessmentManagement = () => {
@@ -55,8 +57,9 @@ const AssessmentManagement = () => {
   });
   const [selectedRole, setSelectedRole] = useState("all");
   const [editingDomain, setEditingDomain] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [domainToDelete, setDomainToDelete] = useState(null);
 
-  // Map language code: en -> EN, hi -> HI, gu -> GU
   const languageCodeMap = {
     en: "EN",
     hi: "HI",
@@ -64,10 +67,8 @@ const AssessmentManagement = () => {
   };
   const languageCode = languageCodeMap[currentLanguage] || "EN";
 
-  // Get roleId based on selected role (null for "all")
   const roleId = selectedRole === "all" ? null : getRoleId(selectedRole);
 
-  // Fetch domains for all roles when "all" is selected
   const {
     data: domainsDataAdmin,
     isLoading: isLoadingAdmin,
@@ -120,7 +121,6 @@ const AssessmentManagement = () => {
     enabled: selectedRole !== "all" && !!roleId,
   });
 
-  // Combine all domains when "all" is selected
   const allDomains = React.useMemo(() => {
     if (selectedRole !== "all") {
       return domainsData?.data || [];
@@ -161,6 +161,24 @@ const AssessmentManagement = () => {
       setNewDomainName({ en: "", hi: "", gu: "" });
       setShowAddDomain(false);
       setEditingDomain(null);
+    },
+  });
+
+  const deleteDomainMutation = useDeleteDomainMutation({
+    onSuccess: (data, domainId) => {
+      // Refetch domains after deletion
+      if (selectedRole === "all") {
+        refetchAdmin();
+        refetchSchool();
+        refetchInspector();
+        refetchParent();
+      } else {
+        refetch();
+      }
+      // Close expanded domain if it was deleted
+      if (expandedDomain === domainId) {
+        setExpandedDomain(null);
+      }
     },
   });
 
@@ -208,27 +226,14 @@ const AssessmentManagement = () => {
   };
 
   const handleDeleteDomain = (domain) => {
-    // TODO: Implement delete domain API call
-    // const deleteDomain = async (domainId) => {
-    //   try {
-    //     const response = await axiosInstance.delete(`/questionnaire/domain/${domainId}`);
-    //     // Refetch domains after deletion
-    //     if (selectedRole === "all") {
-    //       refetchAdmin();
-    //       refetchSchool();
-    //       refetchInspector();
-    //       refetchParent();
-    //     } else {
-    //       refetch();
-    //     }
-    //     return response.data;
-    //   } catch (error) {
-    //     console.error("Error deleting domain:", error);
-    //     throw error;
-    //   }
-    // };
-    // deleteDomain(domain.domainId);
-    console.log("Delete domain:", domain);
+    setDomainToDelete(domain);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteDomain = () => {
+    if (domainToDelete) {
+      deleteDomainMutation.mutate(domainToDelete.domainId);
+    }
   };
 
   const handleLanguageChange = (lang) => {
@@ -603,6 +608,27 @@ const AssessmentManagement = () => {
           </Typography>
         </Card>
       )}
+
+      <ConfirmationModal
+        open={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setDomainToDelete(null);
+        }}
+        onConfirm={confirmDeleteDomain}
+        title="Delete Domain"
+        message={
+          domainToDelete
+            ? `Are you sure you want to delete "${getDomainName(
+                domainToDelete
+              )}"? This action cannot be undone.`
+            : "Are you sure you want to delete this domain?"
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={deleteDomainMutation.isPending}
+      />
     </Box>
   );
 };

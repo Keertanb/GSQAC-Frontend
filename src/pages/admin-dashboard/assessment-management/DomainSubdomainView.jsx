@@ -24,6 +24,7 @@ import { Visibility, Add, Delete } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import { useUpsertSubdomainMutation } from "../../../services/adminService";
 import { roleIdMap, getRoleId } from "../../../constants/roles";
+import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
 
 const DomainSubdomainView = ({
   domain,
@@ -46,6 +47,8 @@ const DomainSubdomainView = ({
       : "admin"
   );
   const [editingSubdomain, setEditingSubdomain] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [subdomainToDelete, setSubdomainToDelete] = useState(null);
 
   const upsertSubdomainMutation = useUpsertSubdomainMutation({
     onSuccess: () => {
@@ -108,23 +111,33 @@ const DomainSubdomainView = ({
     setShowAddSubdomain(true);
   };
 
-  const handleDeleteSubdomain = (subdomain) => {
-    // TODO: Implement delete subdomain API call
-    // const deleteSubdomain = async (subDomainId) => {
-    //   try {
-    //     const response = await axiosInstance.delete(`/questionnaire/sub-domain/${subDomainId}`);
-    //     // Refetch domains after deletion
-    //     if (onSubdomainAdded) {
-    //       onSubdomainAdded();
-    //     }
-    //     return response.data;
-    //   } catch (error) {
-    //     console.error("Error deleting subdomain:", error);
-    //     throw error;
-    //   }
-    // };
-    // deleteSubdomain(subdomain.subDomainId || subdomain.id);
-    console.log("Delete subdomain:", subdomain);
+  const handleDeleteSubdomain = (subdomain, event) => {
+    event?.stopPropagation();
+    setSubdomainToDelete(subdomain);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteSubdomain = () => {
+    if (subdomainToDelete) {
+      // TODO: Implement delete subdomain API call
+      // const deleteSubdomain = async (subDomainId) => {
+      //   try {
+      //     const response = await axiosInstance.delete(`/questionnaire/sub-domain/${subDomainId}`);
+      //     // Refetch domains after deletion
+      //     if (onSubdomainAdded) {
+      //       onSubdomainAdded();
+      //     }
+      //     return response.data;
+      //   } catch (error) {
+      //     console.error("Error deleting subdomain:", error);
+      //     throw error;
+      //   }
+      // };
+      // deleteSubdomain(subdomainToDelete.subDomainId || subdomainToDelete.id);
+      console.log("Delete subdomain:", subdomainToDelete);
+      setDeleteModalOpen(false);
+      setSubdomainToDelete(null);
+    }
   };
 
   return (
@@ -318,7 +331,7 @@ const DomainSubdomainView = ({
                       <IconButton
                         size="small"
                         color="error"
-                        onClick={() => handleDeleteSubdomain(subdomain)}
+                        onClick={(e) => handleDeleteSubdomain(subdomain, e)}
                         sx={{
                           bgcolor: colors.semantic.error + "15",
                           "&:hover": { bgcolor: colors.semantic.error + "25" },
@@ -343,6 +356,28 @@ const DomainSubdomainView = ({
           </Typography>
         </Paper>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        open={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSubdomainToDelete(null);
+        }}
+        onConfirm={confirmDeleteSubdomain}
+        title="Delete Subdomain"
+        message={
+          subdomainToDelete
+            ? `Are you sure you want to delete "${getSubdomainName(
+                subdomainToDelete
+              )}"? This action cannot be undone.`
+            : "Are you sure you want to delete this subdomain?"
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={false}
+      />
     </Box>
   );
 };

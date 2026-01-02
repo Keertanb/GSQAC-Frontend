@@ -20,15 +20,12 @@ import {
 import { ArrowBack, Menu as MenuIcon, Add } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import { useGetCriteriaQuestionsQuery } from "../../../services/adminService";
-import useAuthStore from "../../../store/useAuthStore";
 
 const CriteriaQuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const matchDownMD = useMediaQuery(theme.breakpoints.down("md"));
-  const { userId } = useAuthStore();
 
-  // Map language code: en -> EN, hi -> HI, gu -> GU
   const languageCodeMap = {
     en: "EN",
     hi: "HI",
@@ -36,7 +33,6 @@ const CriteriaQuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
   };
   const languageCode = languageCodeMap[currentLanguage] || "EN";
 
-  // Assuming roleId = 2 for admin (based on API example)
   const roleId = 2;
 
   const [selectedCriteriaId, setSelectedCriteriaId] = useState(null);

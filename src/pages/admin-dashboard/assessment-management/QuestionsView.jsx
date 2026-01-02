@@ -18,6 +18,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  FormLabel,
 } from "@mui/material";
 import { ArrowBack, Add, Edit, Delete } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
@@ -25,11 +29,14 @@ import {
   useGetSubdomainQuestionsQuery,
   useUpsertQuestionMutation,
   useUpsertQuestionOptionMutation,
+  useDeleteQuestionMutation,
+  useDeleteQuestionOptionMutation,
 } from "../../../services/adminService";
 import { queryKeys } from "../../../config/queryClient";
 import useAuthStore from "../../../store/useAuthStore";
 import { getRoleId, roleIdMap } from "../../../constants/roles";
 import { enqueueSnackbar } from "notistack";
+import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
 
 const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
   const { t } = useTranslation();
@@ -64,6 +71,10 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
     { id: 1, text: { en: "", hi: "", gu: "" } },
     { id: 2, text: { en: "", hi: "", gu: "" } },
   ]);
+  const [isClassroomObservation, setIsClassroomObservation] = useState(0);
+  const [observationCount, setObservationCount] = useState("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [questionToDelete, setQuestionToDelete] = useState(null);
 
   // Initialize selected role based on roleId
   const getRoleByRoleId = (rId) => {
@@ -92,6 +103,36 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
 
   const upsertQuestionMutation = useUpsertQuestionMutation();
   const upsertQuestionOptionMutation = useUpsertQuestionOptionMutation();
+  const deleteQuestionMutation = useDeleteQuestionMutation({
+    onSuccess: () => {
+      // Invalidate and refetch questions query after deletion
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.subdomainQuestions(
+          subDomainId,
+          roleId,
+          languageCode
+        ),
+      });
+      // Close modal
+      setDeleteModalOpen(false);
+      setQuestionToDelete(null);
+    },
+    onError: () => {
+      setDeleteModalOpen(false);
+    },
+  });
+  const deleteQuestionOptionMutation = useDeleteQuestionOptionMutation({
+    onSuccess: () => {
+      // Invalidate and refetch questions query after deletion
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.subdomainQuestions(
+          subDomainId,
+          roleId,
+          languageCode
+        ),
+      });
+    },
+  });
 
   // Helper function to extract questionId from API response
   const extractQuestionId = (response) => {
@@ -161,7 +202,13 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
         questionTextEn: newQuestionText.en.trim(),
         questionTextHi: newQuestionText.hi.trim(),
         questionTextGu: newQuestionText.gu.trim(),
+        isClassroomObservation: isClassroomObservation,
       };
+
+      // Include observationCount only if isClassroomObservation is 1
+      if (isClassroomObservation === 1 && observationCount) {
+        questionPayload.observationCount = parseInt(observationCount, 10);
+      }
 
       // If editing, include questionId
       if (editingQuestion) {
@@ -188,27 +235,8 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
         return;
       }
 
-      // Store questionId and show options form
+      // Store questionId first
       setCurrentQuestionId(questionId);
-      setShowOptionsForm(true);
-
-      enqueueSnackbar(
-        editingQuestion
-          ? "Question updated successfully. Now add options."
-          : "Question added successfully. Now add options.",
-        {
-          variant: "success",
-        }
-      );
-
-      // Invalidate and refetch questions query
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.admin.subdomainQuestions(
-          subDomainId,
-          roleId,
-          languageCode
-        ),
-      });
 
       // If editing, load existing options
       if (editingQuestion) {
@@ -225,7 +253,30 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
           }));
           setNewOptions(formattedOptions);
         }
+      } else {
+        // Reset options for new question
+        setNewOptions([
+          { id: 1, text: { en: "", hi: "", gu: "" } },
+          { id: 2, text: { en: "", hi: "", gu: "" } },
+        ]);
       }
+
+      // Use React's state batching - set both states together
+      // This ensures they update in the same render cycle
+      setShowAddQuestion(false);
+      setShowOptionsForm(true);
+
+      enqueueSnackbar(
+        editingQuestion
+          ? "Question updated successfully. Now add options."
+          : "Question added successfully. Now add options.",
+        {
+          variant: "success",
+        }
+      );
+
+      // DO NOT invalidate queries here - this causes a re-render that can interfere
+      // with the options form display. We'll invalidate after options are added instead.
     } catch (error) {
       console.error("Error adding question:", error);
       enqueueSnackbar(
@@ -300,6 +351,8 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
         { id: 1, text: { en: "", hi: "", gu: "" } },
         { id: 2, text: { en: "", hi: "", gu: "" } },
       ]);
+      setIsClassroomObservation(0);
+      setObservationCount("");
       setShowAddQuestion(false);
       setShowOptionsForm(false);
       setEditingQuestion(null);
@@ -324,6 +377,11 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
       hi: question.questionTextHi || question.questionText || "",
       gu: question.questionTextGu || question.questionText || "",
     });
+    // Set classroom observation fields
+    setIsClassroomObservation(question.isClassroomObservation || 0);
+    setObservationCount(
+      question.observationCount ? String(question.observationCount) : ""
+    );
 
     // Parse and set options
     const parsedOptions = parseOptions(question.options);
@@ -355,35 +413,25 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
   };
 
   const handleDeleteQuestion = (question) => {
-    // TODO: Implement delete question API call
-    // const deleteQuestion = async (questionId) => {
-    //   try {
-    //     const response = await axiosInstance.delete(`/questionnaire/question/${questionId}`);
-    //     // Invalidate and refetch questions query after deletion
-    //     queryClient.invalidateQueries({
-    //       queryKey: queryKeys.admin.subdomainQuestions(
-    //         subDomainId,
-    //         roleId,
-    //         languageCode
-    //       ),
-    //     });
-    //     enqueueSnackbar("Question deleted successfully", {
-    //       variant: "success",
-    //     });
-    //     return response.data;
-    //   } catch (error) {
-    //     console.error("Error deleting question:", error);
-    //     enqueueSnackbar(
-    //       error?.response?.data?.message || "Failed to delete question",
-    //       {
-    //         variant: "error",
-    //       }
-    //     );
-    //     throw error;
-    //   }
-    // };
-    // deleteQuestion(question.questionId);
-    console.log("Delete question:", question);
+    setQuestionToDelete(question);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteQuestion = () => {
+    if (questionToDelete) {
+      deleteQuestionMutation.mutate(questionToDelete.questionId);
+    }
+  };
+
+  // eslint-disable-next-line no-unused-vars
+  const handleDeleteQuestionOption = (questionId) => {
+    if (
+      window.confirm(
+        `Are you sure you want to delete all options for this question?`
+      )
+    ) {
+      deleteQuestionOptionMutation.mutate(questionId);
+    }
   };
 
   const getQuestionText = (question) => {
@@ -491,6 +539,8 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                 { id: 1, text: { en: "", hi: "", gu: "" } },
                 { id: 2, text: { en: "", hi: "", gu: "" } },
               ]);
+              setIsClassroomObservation(0);
+              setObservationCount("");
               setShowAddQuestion(!showAddQuestion);
             }}
             sx={{
@@ -589,6 +639,53 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                     rows={3}
                   />
                 </Box>
+                <FormControl component="fieldset">
+                  <FormLabel component="legend" sx={{ mb: 1 }}>
+                    Is Classroom Observation
+                  </FormLabel>
+                  <RadioGroup
+                    row
+                    value={isClassroomObservation}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value, 10);
+                      setIsClassroomObservation(value);
+                      // Reset observationCount when switching to No
+                      if (value === 0) {
+                        setObservationCount("");
+                      }
+                    }}
+                  >
+                    <FormControlLabel
+                      value={1}
+                      control={<Radio />}
+                      label="Yes"
+                    />
+                    <FormControlLabel
+                      value={0}
+                      control={<Radio />}
+                      label="No"
+                    />
+                  </RadioGroup>
+                </FormControl>
+                {isClassroomObservation === 1 && (
+                  <TextField
+                    fullWidth
+                    label="Observation Count"
+                    type="number"
+                    value={observationCount}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Only allow positive integers
+                      if (value === "" || /^\d+$/.test(value)) {
+                        setObservationCount(value);
+                      }
+                    }}
+                    variant="outlined"
+                    size="small"
+                    inputProps={{ min: 1 }}
+                    helperText="Enter the number of observations"
+                  />
+                )}
               </Box>
 
               {/* Question Submit Button */}
@@ -625,6 +722,8 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                       { id: 1, text: { en: "", hi: "", gu: "" } },
                       { id: 2, text: { en: "", hi: "", gu: "" } },
                     ]);
+                    setIsClassroomObservation(0);
+                    setObservationCount("");
                     setEditingQuestion(null);
                     setCurrentQuestionId(null);
                   }}
@@ -633,180 +732,195 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                   {t("common.cancel")}
                 </Button>
               </Box>
+            </Card>
+          </Fade>
+        )}
 
-              {/* Options Section - Show after question is added or when editing */}
-              {showOptionsForm && (
-                <Fade in={showOptionsForm}>
-                  <Box
-                    sx={{ mb: 2, mt: 3, pt: 3, borderTop: "2px solid #e5e7eb" }}
+        {/* Options Form - Separate Card */}
+        {showOptionsForm && (
+          <Fade in={showOptionsForm}>
+            <Card
+              elevation={2}
+              sx={{
+                mb: 3,
+                p: 3,
+                borderRadius: 2,
+                bgcolor: "#f9fafb",
+              }}
+            >
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ fontWeight: 700, mb: 3 }}
+              >
+                {editingQuestion
+                  ? t("assessment.question.editOptions")
+                  : t("assessment.question.addOptions")}
+              </Typography>
+              <Box sx={{ mb: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 2,
+                  }}
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {t("assessment.question.options")}
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<Add />}
+                    onClick={handleAddOption}
+                    sx={{
+                      borderColor: colors.primary.blue,
+                      color: colors.primary.blue,
+                      "&:hover": {
+                        borderColor: colors.primary.dark,
+                        bgcolor: colors.primary.blue + "10",
+                      },
+                    }}
                   >
-                    <Box
+                    {t("assessment.question.addOption")}
+                  </Button>
+                </Box>
+
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  {newOptions.map((option, optIndex) => (
+                    <Card
+                      key={option.id}
+                      elevation={1}
                       sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        mb: 2,
+                        p: 2,
+                        borderRadius: 2,
+                        bgcolor: "white",
+                        border: "1px solid rgba(0,0,0,0.08)",
                       }}
                     >
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        {t("assessment.question.options")}
-                      </Typography>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<Add />}
-                        onClick={handleAddOption}
+                      <Box
                         sx={{
-                          borderColor: colors.primary.blue,
-                          color: colors.primary.blue,
-                          "&:hover": {
-                            borderColor: colors.primary.dark,
-                            bgcolor: colors.primary.blue + "10",
-                          },
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          mb: 1.5,
                         }}
                       >
-                        {t("assessment.question.addOption")}
-                      </Button>
-                    </Box>
-
-                    <Box
-                      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-                    >
-                      {newOptions.map((option, optIndex) => (
-                        <Card
-                          key={option.id}
-                          elevation={1}
+                        <Chip
+                          label={`${t("assessment.question.options")} ${
+                            optIndex + 1
+                          }`}
+                          size="small"
                           sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            bgcolor: "white",
-                            border: "1px solid rgba(0,0,0,0.08)",
+                            bgcolor: colors.primary.lightest,
+                            color: colors.primary.blue,
+                            fontWeight: 600,
                           }}
-                        >
-                          <Box
+                        />
+                        {newOptions.length > 2 && (
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteOption(option.id)}
                             sx={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              mb: 1.5,
+                              bgcolor: colors.semantic.error + "15",
+                              "&:hover": {
+                                bgcolor: colors.semantic.error + "25",
+                              },
                             }}
                           >
-                            <Chip
-                              label={`${t("assessment.question.options")} ${
-                                optIndex + 1
-                              }`}
-                              size="small"
-                              sx={{
-                                bgcolor: colors.primary.lightest,
-                                color: colors.primary.blue,
-                                fontWeight: 600,
-                              }}
-                            />
-                            {newOptions.length > 2 && (
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() => handleDeleteOption(option.id)}
-                                sx={{
-                                  bgcolor: colors.semantic.error + "15",
-                                  "&:hover": {
-                                    bgcolor: colors.semantic.error + "25",
-                                  },
-                                }}
-                              >
-                                <Delete fontSize="small" />
-                              </IconButton>
-                            )}
-                          </Box>
-                          <Box sx={{ display: "flex", gap: 2 }}>
-                            <TextField
-                              fullWidth
-                              label={`${t(
-                                "assessment.question.options"
-                              )} (English)`}
-                              value={option.text.en}
-                              onChange={(e) =>
-                                handleOptionChange(
-                                  option.id,
-                                  "en",
-                                  e.target.value
-                                )
-                              }
-                              variant="outlined"
-                              size="small"
-                              required
-                              multiline
-                              rows={2}
-                            />
-                            <TextField
-                              fullWidth
-                              label={`${t(
-                                "assessment.question.options"
-                              )} (Hindi)`}
-                              value={option.text.hi}
-                              onChange={(e) =>
-                                handleOptionChange(
-                                  option.id,
-                                  "hi",
-                                  e.target.value
-                                )
-                              }
-                              variant="outlined"
-                              size="small"
-                              multiline
-                              rows={2}
-                            />
-                            <TextField
-                              fullWidth
-                              label={`${t(
-                                "assessment.question.options"
-                              )} (Gujarati)`}
-                              value={option.text.gu}
-                              onChange={(e) =>
-                                handleOptionChange(
-                                  option.id,
-                                  "gu",
-                                  e.target.value
-                                )
-                              }
-                              variant="outlined"
-                              size="small"
-                              multiline
-                              rows={2}
-                            />
-                          </Box>
-                        </Card>
-                      ))}
-                    </Box>
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        )}
+                      </Box>
+                      <Box sx={{ display: "flex", gap: 2 }}>
+                        <TextField
+                          fullWidth
+                          label={`${t(
+                            "assessment.question.options"
+                          )} (English)`}
+                          value={option.text.en}
+                          onChange={(e) =>
+                            handleOptionChange(option.id, "en", e.target.value)
+                          }
+                          variant="outlined"
+                          size="small"
+                          required
+                          multiline
+                          rows={2}
+                        />
+                        <TextField
+                          fullWidth
+                          label={`${t("assessment.question.options")} (Hindi)`}
+                          value={option.text.hi}
+                          onChange={(e) =>
+                            handleOptionChange(option.id, "hi", e.target.value)
+                          }
+                          variant="outlined"
+                          size="small"
+                          multiline
+                          rows={2}
+                        />
+                        <TextField
+                          fullWidth
+                          label={`${t(
+                            "assessment.question.options"
+                          )} (Gujarati)`}
+                          value={option.text.gu}
+                          onChange={(e) =>
+                            handleOptionChange(option.id, "gu", e.target.value)
+                          }
+                          variant="outlined"
+                          size="small"
+                          multiline
+                          rows={2}
+                        />
+                      </Box>
+                    </Card>
+                  ))}
+                </Box>
 
-                    {/* Options Submit Button */}
-                    <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
-                      <Button
-                        variant="contained"
-                        startIcon={
-                          upsertQuestionOptionMutation.isPending ? (
-                            <CircularProgress size={20} color="inherit" />
-                          ) : (
-                            <Add />
-                          )
-                        }
-                        onClick={handleAddOptions}
-                        disabled={upsertQuestionOptionMutation.isPending}
-                        sx={{
-                          bgcolor: colors.accent.green,
-                          "&:hover": { bgcolor: colors.accent.greenDark },
-                        }}
-                      >
-                        {upsertQuestionOptionMutation.isPending
-                          ? "Saving Options..."
-                          : editingQuestion
-                          ? "Update Options"
-                          : "Add Options"}
-                      </Button>
-                    </Box>
-                  </Box>
-                </Fade>
-              )}
+                {/* Options Submit Button */}
+                <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
+                  <Button
+                    variant="contained"
+                    startIcon={
+                      upsertQuestionOptionMutation.isPending ? (
+                        <CircularProgress size={20} color="inherit" />
+                      ) : (
+                        <Add />
+                      )
+                    }
+                    onClick={handleAddOptions}
+                    disabled={upsertQuestionOptionMutation.isPending}
+                    sx={{
+                      bgcolor: colors.accent.green,
+                      "&:hover": { bgcolor: colors.accent.greenDark },
+                    }}
+                  >
+                    {upsertQuestionOptionMutation.isPending
+                      ? "Saving Options..."
+                      : editingQuestion
+                      ? "Update Options"
+                      : "Add Options"}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      setShowOptionsForm(false);
+                      setNewOptions([
+                        { id: 1, text: { en: "", hi: "", gu: "" } },
+                        { id: 2, text: { en: "", hi: "", gu: "" } },
+                      ]);
+                      setCurrentQuestionId(null);
+                    }}
+                    disabled={upsertQuestionOptionMutation.isPending}
+                  >
+                    {t("common.cancel")}
+                  </Button>
+                </Box>
+              </Box>
             </Card>
           </Fade>
         )}
@@ -847,17 +961,55 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                           minWidth: "40px",
                         }}
                       />
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          fontWeight: 600,
-                          flex: 1,
-                          fontSize: "1rem",
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        {getQuestionText(question)}
-                      </Typography>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "1rem",
+                            lineHeight: 1.6,
+                            mb:
+                              question.isClassroomObservation === 1 &&
+                              question.observationCount
+                                ? 0.5
+                                : 0,
+                          }}
+                        >
+                          {getQuestionText(question)}
+                        </Typography>
+                        {question.isClassroomObservation === 1 &&
+                          question.observationCount && (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                mt: 0.5,
+                              }}
+                            >
+                              {/* <Chip
+                                label="Classroom Observation"
+                                size="small"
+                                sx={{
+                                  bgcolor: colors.semantic.warning + "20",
+                                  color: colors.semantic.warning,
+                                  fontWeight: 600,
+                                  fontSize: "0.75rem",
+                                }}
+                              /> */}
+                              <Chip
+                                label={`Observation Count: ${question.observationCount}`}
+                                size="small"
+                                sx={{
+                                  bgcolor: colors.primary.blue + "20",
+                                  color: colors.primary.blue,
+                                  fontWeight: 600,
+                                  fontSize: "0.75rem",
+                                }}
+                              />
+                            </Box>
+                          )}
+                      </Box>
                       <IconButton
                         size="small"
                         color="primary"
@@ -969,6 +1121,26 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
           </Box>
         )}
       </Paper>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        open={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setQuestionToDelete(null);
+        }}
+        onConfirm={confirmDeleteQuestion}
+        title="Delete Question"
+        message={
+          questionToDelete
+            ? `Are you sure you want to delete this question? This will also delete all associated options. This action cannot be undone.`
+            : "Are you sure you want to delete this question?"
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={deleteQuestionMutation.isPending}
+      />
     </Box>
   );
 };

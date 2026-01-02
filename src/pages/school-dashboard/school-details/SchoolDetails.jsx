@@ -432,8 +432,7 @@ const SchoolDetails = () => {
     isError,
     error,
   } = useGetSchoolDataQuery({
-    schoolId: "24060100401", // Use actual schoolId or fallback for testing
-    // academicYear: academicYear,
+    schoolId: "24060100401",
   });
 
   // Initialize school data with API response or default values
@@ -605,10 +604,15 @@ const SchoolDetails = () => {
       >
         <AppBar
           position="fixed"
+          className="bg-white shadow-lg border-b border-gray-200 backdrop-blur-sm"
           sx={{
-            // backgroundColor: colors.primary.blue,
+            backgroundColor: "rgba(255, 255, 255, 0.95)",
+            backdropFilter: "blur(10px)",
             zIndex: theme.zIndex.drawer + 1,
-            // boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            boxShadow:
+              "0 4px 20px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)",
+            borderBottom: "1px solid rgba(0,0,0,0.06)",
+            height: "64px",
             width:
               drawerOpen && !matchDownMD
                 ? `calc(100% - ${DRAWER_WIDTH.xs}px)`
@@ -625,25 +629,114 @@ const SchoolDetails = () => {
             }),
           }}
         >
-          <Toolbar>
+          <Toolbar className="h-16 px-6">
             <IconButton
-              color="inherit"
-              edge="start"
               onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
+              className="mr-4 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200"
+              edge="start"
+              sx={{
+                color: "#4b5563",
+                borderRadius: "12px",
+                "&:hover": {
+                  backgroundColor: "#eff6ff",
+                  color: "#2563eb",
+                  transform: "scale(1.05)",
+                },
+              }}
             >
               <Menu />
             </IconButton>
-            <School sx={{ mr: 1 }} />
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              School Details
-            </Typography>
+            <Box className="flex items-center gap-3 mr-6">
+              <Box
+                className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 transition-all duration-200 hover:scale-105"
+                sx={{
+                  background:
+                    "linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #4f46e5 100%)",
+                }}
+              >
+                <School className="text-white text-lg" />
+              </Box>
+              <Box>
+                <Typography
+                  variant="h6"
+                  component="div"
+                  className="font-bold text-gray-900"
+                  sx={{
+                    fontSize: "1.125rem",
+                    fontWeight: 700,
+                    color: "#111827",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  School Details
+                </Typography>
+                <Typography
+                  variant="caption"
+                  className="text-gray-500 text-xs"
+                  sx={{
+                    fontSize: "0.7rem",
+                    color: "#6b7280",
+                    fontWeight: 500,
+                  }}
+                >
+                  School Information
+                </Typography>
+              </Box>
+            </Box>
+            <Box sx={{ flexGrow: 1 }} />
             {user && (
-              <Typography variant="body2" sx={{ mr: 2, opacity: 0.9 }}>
-                {user.name}
-              </Typography>
+              <Box className="flex items-center gap-4 mr-4">
+                <Box className="text-right hidden sm:block">
+                  <Typography
+                    variant="body2"
+                    className="font-semibold text-gray-900 text-sm"
+                    sx={{
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      color: "#111827",
+                    }}
+                  >
+                    {user.name}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    className="text-gray-500 text-xs"
+                    sx={{
+                      fontSize: "0.75rem",
+                      color: "#6b7280",
+                      fontWeight: 500,
+                    }}
+                  >
+                    School
+                  </Typography>
+                </Box>
+                <Box
+                  className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-400 via-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-blue-500/30 hover:shadow-blue-500/40 transition-all duration-200 hover:scale-105 cursor-pointer"
+                  sx={{
+                    background:
+                      "linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #4f46e5 100%)",
+                  }}
+                >
+                  {user.name?.charAt(0)?.toUpperCase() || "S"}
+                </Box>
+              </Box>
             )}
-            <Button color="inherit" onClick={handleLogout}>
+            <Button
+              onClick={handleLogout}
+              className="text-gray-700 hover:bg-red-50 hover:text-red-600 font-semibold px-5 py-2 rounded-xl transition-all duration-200 hover:scale-105"
+              sx={{
+                color: "#374151",
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.875rem",
+                borderRadius: "12px",
+                "&:hover": {
+                  backgroundColor: "#fef2f2",
+                  color: "#dc2626",
+                  transform: "scale(1.05)",
+                },
+              }}
+            >
               Logout
             </Button>
           </Toolbar>

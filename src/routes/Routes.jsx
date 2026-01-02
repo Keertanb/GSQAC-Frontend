@@ -5,17 +5,18 @@ import LazyLoad from "../components/LazyLoad/LazyLoad";
 import ProtectedRoute from "../components/ProtectedRoute/ProtectedRoute";
 import PublicRoute from "../components/PublicRoute/PublicRoute";
 
-// PUBLIC ROUTES
 const Dashboard = lazy(() => import("../pages/dashboard/dashboard"));
 const Login = lazy(() => import("../pages/login/login"));
 const OtpVerify = lazy(() => import("../pages/otp-verify/otp-verify"));
 
-// PRIVATE ROUTES - DASHBOARDS
 const SchoolDashboard = lazy(() =>
   import("../pages/school-dashboard/school-dashboard")
 );
 const SchoolDetails = lazy(() =>
   import("../pages/school-dashboard/school-details/SchoolDetails")
+);
+const SelfAssessment = lazy(() =>
+  import("../pages/school-dashboard/self-assessment/SelfAssessment")
 );
 const ParentDashboard = lazy(() =>
   import("../pages/parent-dashboard/parent-dashboard")
@@ -27,7 +28,6 @@ const AdminDashboard = lazy(() =>
   import("../pages/admin-dashboard/admin-dashboard")
 );
 
-// PUBLIC ROUTES
 export const publicRoutes = [
   {
     path: ROUTE_URLS.ROOT_URL,
@@ -89,6 +89,16 @@ export const schoolRoutes = [
           <ProtectedRoute requiredRole="school">
             <Suspense fallback={<LazyLoad />}>
               <SchoolDetails />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTE_URLS.SCHOOL_SELF_ASSESSMENT_URL,
+        element: (
+          <ProtectedRoute requiredRole="school">
+            <Suspense fallback={<LazyLoad />}>
+              <SelfAssessment />
             </Suspense>
           </ProtectedRoute>
         ),
