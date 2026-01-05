@@ -1,344 +1,251 @@
-import { Fragment } from "react";
-import {
-  Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableFooter,
-  TableHead,
-  TablePagination,
-  TableRow,
-  Toolbar,
-  Typography,
-  TextField,
-  InputAdornment,
-  Select,
-  MenuItem,
-  FormControl,
-} from "@mui/material";
-import { useTranslation } from "react-i18next";
-import { Search } from "@mui/icons-material";
-import AppTableWrapper from "./AppTable.style";
-
-const ROWS_PER_PAGE = [5, 10, 25, 50, 100];
+import React from "react";
+import "./AppTable.css";
 
 /**
- * AppTable Component - Reusable table component with search, pagination, and customizable columns
- * 
+ * AppTable Component - Reusable table component with pagination and actions
+ *
  * @param {Object} props
- * @param {Array} props.columns - Array of column definitions
+ * @param {Array} props.columns - Array of column definitions { id, label, render }
  * @param {Array} props.data - Array of data objects
- * @param {string|number} props.rowKey - Key to use as unique identifier for rows
+ * @param {string|Function} props.rowKey - Key to use as unique identifier for rows
  * @param {boolean} props.loading - Show loading state
- * @param {boolean} props.hideToolbar - Hide the toolbar (search, pagination controls)
- * @param {boolean} props.hidePagination - Hide pagination
- * @param {JSX.Element} props.toolbarContent - Custom content to show in toolbar
- * @param {JSX.Element} props.headerContent - Custom content to show in header
- * @param {string} props.search - Search input value
- * @param {Function} props.handleSearchChange - Handler for search input change
- * @param {number} props.rowsPerPage - Number of rows per page
- * @param {number} props.page - Current page number
- * @param {number} props.count - Total number of items
- * @param {Function} props.handleChangePage - Handler for page change
- * @param {Function} props.handleRowsPerPageChange - Handler for rows per page change
- * @param {boolean} props.showZeroIfEmpty - Show 0 instead of '-' for empty values
- * @param {Array} props.footerColumns - Footer column definitions
- * @param {Object} props.footerData - Footer data object
- * @param {boolean} props.hideBorders - Hide table borders
- * @param {Object} props.boxProps - Additional props for wrapper Box
- * @param {Object} props.tableProps - Additional props for Table component
+ * @param {boolean} props.isError - Show error state
+ * @param {Function} props.renderActions - Function to render actions column (row) => JSX
+ * @param {number} props.itemsPerPage - Number of items per page (default: 10)
+ * @param {number} props.currentPage - Current page number (default: 1)
+ * @param {Function} props.onPageChange - Handler for page change (page) => void
+ * @param {number} props.totalCount - Total count for server-side pagination (optional)
+ * @param {boolean} props.serverSidePagination - Use server-side pagination (default: false)
+ * @param {string} props.emptyTitle - Title for empty state
+ * @param {string} props.emptySubtitle - Subtitle for empty state
+ * @param {JSX.Element} props.emptyIcon - Custom icon for empty state
+ * @param {string} props.tableClassName - Additional class name for table
+ * @param {string} props.containerClassName - Additional class name for container
  */
-const AppTable = (props) => {
-  const {
-    data = [],
-    rowsPerPage = 10,
-    handleChangePage,
-    handleRowsPerPageChange,
-    columns = [],
-    rowKey = "id",
-    loading = false,
-    hideToolbar = false,
-    hidePagination = false,
-    toolbarContent,
-    headerContent,
-    search = "",
-    handleSearchChange,
-    page = 0,
-    count = 0,
-    showZeroIfEmpty = false,
-    footerColumns = [],
-    footerData = {},
-    hideBorders = false,
-    boxProps = {},
-    tableProps = {},
-  } = props;
+const AppTable = ({
+  columns = [],
+  data = [],
+  rowKey = "id",
+  loading = false,
+  isError = false,
+  renderActions,
+  itemsPerPage = 10,
+  currentPage = 1,
+  onPageChange,
+  totalCount,
+  serverSidePagination = false,
+  emptyTitle = "No records found",
+  emptySubtitle = "No data available",
+  emptyIcon,
+  tableClassName = "",
+  containerClassName = "",
+}) => {
+  // Calculate pagination
+  const totalItems =
+    serverSidePagination && totalCount !== undefined ? totalCount : data.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  // For server-side pagination, use data as-is; for client-side, slice it
+  const paginatedData = serverSidePagination
+    ? data
+    : data.slice(startIndex, endIndex);
 
-  const { t } = useTranslation();
-
-  // Helper function to get nested value from object
-  const getValue = (obj, path) => {
-    return path.split(".").reduce((current, prop) => current?.[prop], obj);
+  // Get row key value
+  const getRowKey = (row, index) => {
+    if (typeof rowKey === "function") {
+      return rowKey(row, index);
+    }
+    return row[rowKey] || index;
   };
 
-  // Calculate total columns for empty state
-  const getTotalColumns = () => {
-    return columns.reduce((total, column) => {
-      return total + (column?.subLabel?.length || 1);
-    }, 0);
-  };
+  // Default empty icon
+  const defaultEmptyIcon = (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+      />
+    </svg>
+  );
+
+  if (loading) {
+    return (
+      <div className="app-table-loading-container">
+        <div className="app-table-loading-spinner"></div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="app-table-error-container">
+        <p className="app-table-error-message">
+          Failed to load data. Please try again.
+        </p>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="app-table-empty-container">
+        <div className="app-table-empty-icon-container">
+          {emptyIcon || defaultEmptyIcon}
+        </div>
+        <p className="app-table-empty-title">{emptyTitle}</p>
+        <p className="app-table-empty-subtitle">{emptySubtitle}</p>
+      </div>
+    );
+  }
 
   return (
-    <AppTableWrapper
-      mt={3}
-      position="relative"
-      $hideBorders={hideBorders}
-      {...boxProps}
-    >
-      {loading && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "rgba(255, 255, 255, 0.8)",
-            zIndex: 10,
-          }}
-        >
-          <Typography>Loading...</Typography>
-        </Box>
-      )}
-
-      {!hideToolbar && (
-        <>
-          <Toolbar className={`table-toolbar ${!search ? "end" : ""}`}>
-            <Box display="flex" alignItems="center" flex={1}>
-              {search !== undefined && (
-                <Box flex={1} minWidth={250} maxWidth={300}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    placeholder={t("common.search") || "Search"}
-                    value={search}
-                    onChange={handleSearchChange}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Search sx={{ cursor: "default" }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-              )}
-
-              {toolbarContent && (
-                <Box
-                  display="flex"
-                  gap={2}
-                  flexWrap="wrap"
-                  flex={2}
-                  minWidth={250}
-                  ml="auto"
-                >
-                  {toolbarContent}
-                </Box>
-              )}
-            </Box>
-
-            {!hidePagination && (
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <Select
-                  value={rowsPerPage}
-                  onChange={handleRowsPerPageChange}
-                  className="pagination-selector"
-                >
-                  {ROWS_PER_PAGE.map((pageSize) => (
-                    <MenuItem key={pageSize} value={pageSize}>
-                      {pageSize} {t("common.entries") || "entries"}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
-          </Toolbar>
-
-          {headerContent && (
-            <Box className="header-content">{headerContent}</Box>
-          )}
-        </>
-      )}
-
-      <TableContainer className="table-container">
-        <Table {...tableProps}>
-          <TableHead>
-            <TableRow>
+    <div className={`app-table-container ${containerClassName}`}>
+      <div className="app-table-wrapper">
+        <table className={`app-table ${tableClassName}`}>
+          <thead>
+            <tr>
               {columns.map((column) => (
-                <TableCell
+                <th
                   key={column.id}
-                  className="table-header"
-                  align={column.align || "left"}
-                  colSpan={column?.subLabel?.length || undefined}
-                  rowSpan={column?.subLabel?.length ? undefined : 2}
-                  {...column.columnProps}
+                  className={`app-table-header ${column.headerClassName || ""}`}
+                  style={column.headerStyle}
                 >
-                  <Typography
-                    noWrap
-                    fontWeight={700}
-                    variant="subtitle2"
-                    {...column.labelProps}
-                  >
-                    {column.label}
-                  </Typography>
-                </TableCell>
+                  {column.label}
+                </th>
               ))}
-            </TableRow>
-            {columns.some((col) => col?.subLabel?.length) && (
-              <TableRow>
+              {renderActions && (
+                <th className="app-table-header app-table-actions-header">
+                  Actions
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedData.map((row, index) => (
+              <tr
+                key={getRowKey(row, startIndex + index)}
+                className="app-table-row"
+              >
                 {columns.map((column) => (
-                  <Fragment key={column.id}>
-                    {column?.subLabel?.map((subColumn) => (
-                      <TableCell
-                        key={subColumn.id}
-                        className="table-header"
-                        align={subColumn.align || "left"}
-                        {...subColumn.columnProps}
-                      >
-                        <Typography
-                          noWrap
-                          fontWeight={700}
-                          variant="subtitle2"
-                          {...subColumn.labelProps}
-                        >
-                          {subColumn.label}
-                        </Typography>
-                      </TableCell>
-                    ))}
-                  </Fragment>
-                ))}
-              </TableRow>
-            )}
-          </TableHead>
-
-          <TableBody className="table-body">
-            {!data.length && !loading && (
-              <TableRow>
-                <TableCell
-                  align="center"
-                  colSpan={getTotalColumns()}
-                  sx={{ py: 4 }}
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    {t("common.noRecordsFound") || "No records found"}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            )}
-
-            {data.map((row, index) => (
-              <TableRow tabIndex={-1} key={row[rowKey] || index}>
-                {columns.map((column) => (
-                  <Fragment key={column.id}>
-                    {column?.subLabel?.length ? (
-                      column.subLabel.map((sub) => (
-                        <TableCell
-                          key={sub.id}
-                          variant="body"
-                          className="table-cell"
-                          align={sub.align || "left"}
-                          {...sub.columnProps}
-                        >
-                          {sub.element ? (
-                            <sub.element {...row} index={index} />
-                          ) : (
-                            <Typography variant="body2" {...sub.labelProps}>
-                              {getValue(row, sub.id)
-                                ? getValue(row, sub.id)
-                                : showZeroIfEmpty
-                                ? 0
-                                : "-"}
-                            </Typography>
-                          )}
-                        </TableCell>
-                      ))
-                    ) : (
-                      <TableCell
-                        variant="body"
-                        className="table-cell"
-                        align={column.align || "left"}
-                        {...column.columnProps}
-                      >
-                        {column.element ? (
-                          <column.element {...row} index={index} />
-                        ) : (
-                          <Typography variant="body2" {...column.labelProps}>
-                            {getValue(row, column.id)
-                              ? getValue(row, column.id)
-                              : showZeroIfEmpty
-                              ? 0
-                              : "-"}
-                          </Typography>
-                        )}
-                      </TableCell>
-                    )}
-                  </Fragment>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-
-          {footerColumns?.length > 0 && (
-            <TableFooter className="table-footer">
-              <TableRow tabIndex={-1}>
-                {footerColumns.map((column) => (
-                  <TableCell
+                  <td
                     key={column.id}
-                    variant="body"
-                    className="table-cell"
-                    align={column.align || "left"}
-                    {...column.columnProps}
+                    className={`app-table-cell ${column.cellClassName || ""}`}
+                    style={column.cellStyle}
                   >
-                    <Typography variant="body2" {...column.labelProps}>
-                      {column.label
-                        ? column.label
-                        : getValue(footerData, column.id)
-                        ? getValue(footerData, column.id)
-                        : showZeroIfEmpty
-                        ? 0
-                        : "-"}
-                    </Typography>
-                  </TableCell>
+                    {column.render
+                      ? column.render(row, startIndex + index)
+                      : row[column.id] || "-"}
+                  </td>
                 ))}
-              </TableRow>
-            </TableFooter>
-          )}
-        </Table>
-      </TableContainer>
+                {renderActions && (
+                  <td className="app-table-cell app-table-actions-cell">
+                    <div className="app-table-actions">
+                      {renderActions(row, startIndex + index)}
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      {!hidePagination && (
-        <TablePagination
-          showFirstButton
-          showLastButton
-          page={page}
-          component="div"
-          count={count || data.length}
-          labelRowsPerPage=""
-          rowsPerPageOptions={[]}
-          onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
-          className="table-pagination"
-          ActionsComponent={undefined}
-          onRowsPerPageChange={undefined}
-        />
+      {/* Pagination */}
+      {totalPages > 1 && onPageChange && (
+        <div className="app-table-pagination-container">
+          <div className="app-table-pagination-info">
+            Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{" "}
+            {totalItems} {totalItems === 1 ? "item" : "items"}
+          </div>
+          <div className="app-table-pagination-controls">
+            <button
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="app-table-pagination-button app-table-pagination-prev"
+            >
+              <svg
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                className="app-table-pagination-icon"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              Previous
+            </button>
+
+            <div className="app-table-pagination-numbers">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => {
+                  if (
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => onPageChange(page)}
+                        className={`app-table-pagination-number ${
+                          currentPage === page
+                            ? "app-table-pagination-active"
+                            : ""
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  } else if (
+                    page === currentPage - 2 ||
+                    page === currentPage + 2
+                  ) {
+                    return (
+                      <span
+                        key={page}
+                        className="app-table-pagination-ellipsis"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+                  return null;
+                }
+              )}
+            </div>
+
+            <button
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="app-table-pagination-button app-table-pagination-next"
+            >
+              Next
+              <svg
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                className="app-table-pagination-icon"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
       )}
-    </AppTableWrapper>
+    </div>
   );
 };
 
 export default AppTable;
-

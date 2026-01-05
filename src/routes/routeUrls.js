@@ -15,5 +15,6 @@ export const ADMIN_DASHBOARD_URL = "/admin-dashboard";
 export const ADMIN_VERIFIER_URL = "/admin-dashboard/verifier";
 export const ADMIN_ASSESSMENT_MANAGEMENT_URL = "/admin-dashboard/assessment-management";
 export const ADMIN_SCHOOL_ALLOCATION_URL = "/admin-dashboard/school-allocation";
+export const ADMIN_DISTRICT_NODAL_OFFICERS_URL = "/admin-dashboard/district-nodal-officers";
 
 export const WILDCARD_URL = "*";

@@ -118,25 +118,45 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
   const drawer = (
     <Box className="flex flex-col h-screen bg-white">
       <Box
-        className="drawer-header relative flex-shrink-0 bg-white border-b border-gray-200 h-16 flex items-center px-6"
+        className="drawer-header relative flex-shrink-0 h-16 flex items-center px-6"
         sx={{
           height: "64px",
           minHeight: "64px",
-          backgroundColor: "#ffffff",
-          borderBottom: "1px solid rgba(0,0,0,0.08)",
+          background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+          borderBottom: "1px solid rgba(0,0,0,0.06)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "3px",
+            background: `linear-gradient(90deg, ${primaryColor} 0%, ${primaryColor}dd 50%, ${primaryColor} 100%)`,
+          },
         }}
       >
         {!matchDownMD && (
           <IconButton
             onClick={handleDrawerToggle}
-            className="absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-500 hover:bg-gray-100 rounded-lg transition-all duration-200"
+            className="absolute top-1/2 right-3 transform -translate-y-1/2"
             size="small"
             sx={{
               color: "#6b7280",
-              borderRadius: "8px",
+              borderRadius: "10px",
+              width: "32px",
+              height: "32px",
+              backgroundColor: "rgba(255,255,255,0.8)",
+              border: "1px solid rgba(0,0,0,0.06)",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
               "&:hover": {
-                backgroundColor: "rgba(0,0,0,0.04)",
+                backgroundColor: "rgba(255,255,255,1)",
+                color: primaryColor,
+                transform: "translateY(-50%) scale(1.05)",
+                boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
               },
+              transition: "all 0.2s ease",
             }}
           >
             {open ? <ChevronLeft /> : <ChevronRight />}
@@ -144,25 +164,37 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
         )}
 
         <Box className="flex items-center gap-3 flex-1">
-          <Box
-            className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center"
-            sx={{
-              backgroundColor: primaryColor,
-            }}
-          >
-            <Typography className="text-white font-bold text-lg">G</Typography>
-          </Box>
           {open && (
-            <Typography
-              className="font-bold text-gray-900 text-lg"
-              sx={{
-                fontSize: "1.125rem",
-                fontWeight: 700,
-                color: "#111827",
-              }}
-            >
-              GSQAC
-            </Typography>
+            <Box>
+              <Typography
+                className="font-bold text-gray-900"
+                sx={{
+                  fontSize: "1.25rem",
+                  fontWeight: 800,
+                  color: "#111827",
+                  letterSpacing: "-0.02em",
+                  lineHeight: 1.2,
+                  background: `linear-gradient(135deg, ${primaryColor} 0%, #111827 100%)`,
+                  backgroundClip: "text",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                GSQAC
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: "0.65rem",
+                  color: "#6b7280",
+                  fontWeight: 500,
+                  letterSpacing: "0.5px",
+                  textTransform: "uppercase",
+                }}
+              >
+                {roleData?.label || "Dashboard"}
+              </Typography>
+            </Box>
           )}
         </Box>
       </Box>

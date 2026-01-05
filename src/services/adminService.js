@@ -424,3 +424,218 @@ export const useSubmitAnswerMutation = (options = {}) => {
     ...options,
   });
 };
+
+/**
+ * Get verifiers
+ * @param {Object} params - { page: number, limit: number }
+ * @returns {Promise} API response
+ */
+export const getVerifiers = async (params) => {
+  const response = await axiosInstance.get("/admin/verifier", { params });
+  return response.data;
+};
+
+/**
+ * Upsert (add or edit) verifier
+ * @param {Object} payload - { userId?: number, userName: string, mobileNumber: string, isActive: number }
+ * @returns {Promise} API response
+ */
+export const upsertVerifier = async (payload) => {
+  const response = await axiosInstance.post("/admin/verifier", payload);
+  return response.data;
+};
+
+/**
+ * React Query hook for getting verifiers
+ * @param {Object} params - { page: number, limit: number }
+ * @returns {Object} Query object from React Query
+ */
+export const useGetVerifiersQuery = (params = { page: 1, limit: 10 }) => {
+  return useQuery({
+    queryKey: ["admin", "verifiers", params.page, params.limit],
+    queryFn: () => getVerifiers(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * React Query hook for upserting verifier
+ * @param {Object} options - Mutation options
+ * @returns {Object} Mutation object from React Query
+ */
+export const useUpsertVerifierMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => upsertVerifier(data),
+    mutationKey: ["admin", "upsert-verifier"],
+    onSuccess: (data) => {
+      enqueueSnackbar(data?.message || "Verifier saved successfully", {
+        variant: "success",
+      });
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to save verifier",
+        {
+          variant: "error",
+        }
+      );
+      if (options.onError) {
+        options.onError(error);
+      }
+    },
+    ...options,
+  });
+};
+
+/**
+ * Get all districts
+ * @returns {Promise} API response
+ */
+export const getAllDistricts = async () => {
+  const response = await axiosInstance.get("/master/all-districts");
+  return response.data;
+};
+
+/**
+ * React Query hook for getting all districts
+ * @returns {Object} Query object from React Query
+ */
+export const useGetAllDistrictsQuery = () => {
+  return useQuery({
+    queryKey: ["master", "all-districts"],
+    queryFn: () => getAllDistricts(),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+/**
+ * Get blocks by district ID
+ * @param {number} districtId - District ID
+ * @returns {Promise} API response
+ */
+export const getDistrictWiseBlocks = async (districtId) => {
+  const response = await axiosInstance.get("/master/blocks-by-districtId", {
+    params: { districtId },
+  });
+  return response.data;
+};
+
+/**
+ * React Query hook for getting blocks by district
+ * @param {number} districtId - District ID
+ * @returns {Object} Query object from React Query
+ */
+export const useGetDistrictWiseBlocksQuery = (districtId) => {
+  return useQuery({
+    queryKey: ["master", "district-wise-blocks", districtId],
+    queryFn: () => getDistrictWiseBlocks(districtId),
+    enabled: !!districtId,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+/**
+ * Get clusters by block ID
+ * @param {number} blockId - Block ID
+ * @returns {Promise} API response
+ */
+export const getClustersByBlockId = async (blockId) => {
+  const response = await axiosInstance.get("/master/clusters-by-blockId", {
+    params: { blockId },
+  });
+  return response.data;
+};
+
+/**
+ * React Query hook for getting clusters by block
+ * @param {number} blockId - Block ID
+ * @returns {Object} Query object from React Query
+ */
+export const useGetClustersByBlockIdQuery = (blockId) => {
+  return useQuery({
+    queryKey: ["master", "clusters-by-blockId", blockId],
+    queryFn: () => getClustersByBlockId(blockId),
+    enabled: !!blockId,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+/**
+ * Get all district nodal officers
+ * @param {Object} params - { page: number, limit: number, search?: string }
+ * @returns {Promise} API response
+ */
+export const getDistrictNodalOfficers = async (params) => {
+  const response = await axiosInstance.get("/admin/nodel-officer", { params });
+  return response.data;
+};
+
+/**
+ * Upsert (add or edit) district nodal officer
+ * @param {Object} payload - { userId?: number, roleId: number, userName: string, mobileNumber: string, isActive: number, districtIds: number[], email?: string }
+ * @returns {Promise} API response
+ */
+export const upsertDistrictNodalOfficer = async (payload) => {
+  const response = await axiosInstance.post("/admin/nodel-officer", payload);
+  return response.data;
+};
+
+/**
+ * React Query hook for getting district nodal officers
+ * @param {Object} params - { page: number, limit: number, search?: string }
+ * @returns {Object} Query object from React Query
+ */
+export const useGetDistrictNodalOfficersQuery = (
+  params = { page: 1, limit: 10 }
+) => {
+  return useQuery({
+    queryKey: [
+      "admin",
+      "nodal-officers",
+      params.page,
+      params.limit,
+      params.search,
+    ],
+    queryFn: () => getDistrictNodalOfficers(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * React Query hook for upserting district nodal officer
+ * @param {Object} options - Mutation options
+ * @returns {Object} Mutation object from React Query
+ */
+export const useUpsertDistrictNodalOfficerMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => upsertDistrictNodalOfficer(data),
+    mutationKey: ["admin", "upsert-nodal-officer"],
+    onSuccess: (data) => {
+      enqueueSnackbar(
+        data?.message || "District Nodal Officer saved successfully",
+        {
+          variant: "success",
+        }
+      );
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message ||
+          "Failed to save district nodal officer",
+        {
+          variant: "error",
+        }
+      );
+      if (options.onError) {
+        options.onError(error);
+      }
+    },
+    ...options,
+  });
+};

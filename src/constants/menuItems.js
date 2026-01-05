@@ -11,6 +11,7 @@ import {
   List,
   VerifiedUser,
   Business,
+  AccountCircle,
 } from "@mui/icons-material";
 
 const DRAWER_WIDTH = {
@@ -157,6 +158,13 @@ export const adminMenuItems = [
     icon: Business,
     url: "/admin-dashboard/school-allocation",
     activeFinder: ["/admin-dashboard/school-allocation"],
+  },
+  {
+    id: "district-nodal-officers",
+    label: "District Nodal Officers",
+    icon: AccountCircle,
+    url: "/admin-dashboard/district-nodal-officers",
+    activeFinder: ["/admin-dashboard/district-nodal-officers"],
   },
 ];
 

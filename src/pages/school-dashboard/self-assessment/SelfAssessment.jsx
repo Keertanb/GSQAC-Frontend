@@ -35,6 +35,13 @@ import {
   Assessment,
   Class,
   Assignment,
+  ExpandMore,
+  ExpandLess,
+  WorkspacePremium,
+  MenuBook,
+  Groups,
+  Business,
+  School as SchoolIcon,
 } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import {
@@ -69,6 +76,9 @@ const SelfAssessment = () => {
   const [questionBatch, setQuestionBatch] = useState(0);
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
+  const [expandedQuestions, setExpandedQuestions] = useState({});
+  const [questionRatings, setQuestionRatings] = useState({});
+  const [questionRemarks, setQuestionRemarks] = useState({});
 
   const logoutMutation = useLogoutMutation({
     onSuccess: () => {
@@ -350,6 +360,32 @@ const SelfAssessment = () => {
     return option.optionText || "";
   };
 
+  // Get domain icon based on domain ID or name
+  const getDomainIcon = (domain) => {
+    const domainId = domain.domainId;
+    const domainName = getDomainName(domain).toLowerCase();
+    
+    if (domainId === 1 || domainName.includes("leadership") || domainName.includes("governance")) {
+      return <WorkspacePremium />;
+    } else if (domainId === 2 || domainName.includes("curriculum") || domainName.includes("instruction")) {
+      return <MenuBook />;
+    } else if (domainId === 3 || domainName.includes("human") || domainName.includes("resource")) {
+      return <Groups />;
+    } else if (domainId === 4 || domainName.includes("facility") || domainName.includes("infrastructure")) {
+      return <Business />;
+    } else if (domainId === 5 || domainName.includes("student") || domainName.includes("outcome")) {
+      return <SchoolIcon />;
+    }
+    return <Assessment />;
+  };
+
+  const toggleQuestionExpansion = (questionId) => {
+    setExpandedQuestions((prev) => ({
+      ...prev,
+      [questionId]: !prev[questionId],
+    }));
+  };
+
   const parseOptions = (options) => {
     try {
       if (Array.isArray(options)) {
@@ -366,9 +402,23 @@ const SelfAssessment = () => {
   };
 
   const handleDomainSelect = (domain) => {
-    setSelectedDomain(domain);
-    setSelectedSubdomain(null);
-    setAnswers({});
+    // Toggle domain selection - if already selected, deselect it
+    if (selectedDomain?.domainId === domain.domainId) {
+      setSelectedDomain(null);
+      setSelectedSubdomain(null);
+      setAnswers({});
+    } else {
+      setSelectedDomain(domain);
+      // Keep subdomain selected if it belongs to the new domain
+      if (selectedSubdomain && domain.subDomain?.some(
+        (sd) => (sd.subDomainId || sd.id) === (selectedSubdomain.subDomainId || selectedSubdomain.id)
+      )) {
+        // Subdomain belongs to this domain, keep it selected
+      } else {
+        setSelectedSubdomain(null);
+        setAnswers({});
+      }
+    }
   };
 
   const handleSubdomainSelect = (subdomain) => {
@@ -899,19 +949,17 @@ const SelfAssessment = () => {
                 >
                   <Typography
                     variant="h6"
-                    sx={{ fontWeight: 700, color: colors.text.primary }}
+                    sx={{ fontWeight: 700, color: colors.text.primary, mb: 0.5 }}
                   >
-                    {selectedDomain ? "Subdomains" : "Select Domain"}
+                    Assessment Domains
                   </Typography>
-                  {selectedDomain && (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mt: 0.5 }}
-                    >
-                      {getDomainName(selectedDomain)}
-                    </Typography>
-                  )}
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.8125rem" }}
+                  >
+                    Navigate through domains and sub-domains
+                  </Typography>
                 </Box>
 
                 {/* Domains/Subdomains List */}
@@ -922,112 +970,106 @@ const SelfAssessment = () => {
                     p: { xs: 2, md: 2.5 },
                   }}
                 >
-                  {!selectedDomain ? (
-                    // Show Domains
-                    domains.length > 0 ? (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 2,
-                        }}
-                      >
-                        {domains.map((domain) => {
-                          const progress = getDomainProgress(domain);
-                          return (
+                  {domains.length > 0 ? (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 1.5,
+                      }}
+                    >
+                      {domains.map((domain) => {
+                        const progress = getDomainProgress(domain);
+                        const isDomainSelected = selectedDomain?.domainId === domain.domainId;
+                        const DomainIcon = getDomainIcon(domain);
+                        
+                        return (
+                          <Box key={domain.domainId}>
                             <Card
-                              key={domain.domainId}
                               onClick={() => handleDomainSelect(domain)}
                               sx={{
                                 cursor: "pointer",
                                 transition: "all 0.3s ease",
-                                border: "1.5px solid transparent",
-                                borderRadius: 2.5,
-                                bgcolor: colors.background.primary,
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                                border: "1.5px solid",
+                                borderColor: isDomainSelected
+                                  ? colors.primary.blue
+                                  : "transparent",
+                                borderRadius: 2,
+                                bgcolor: isDomainSelected
+                                  ? colors.primary.blue + "08"
+                                  : colors.background.primary,
+                                boxShadow: isDomainSelected
+                                  ? `0 4px 12px ${colors.primary.blue}15`
+                                  : "0 2px 8px rgba(0,0,0,0.04)",
                                 "&:hover": {
                                   transform: "translateX(4px)",
                                   boxShadow: `0 6px 16px ${colors.primary.blue}25`,
                                   borderColor: colors.primary.blue,
-                                  bgcolor: colors.primary.lightest + "40",
+                                  bgcolor: isDomainSelected
+                                    ? colors.primary.blue + "12"
+                                    : colors.primary.lightest + "40",
                                 },
                               }}
                             >
                               <CardContent
-                                sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}
+                                sx={{ p: 2, "&:last-child": { pb: 2 } }}
                               >
                                 <Box
                                   sx={{
                                     display: "flex",
                                     alignItems: "center",
-                                    gap: 2,
+                                    gap: 1.5,
                                     mb: 1.5,
                                   }}
                                 >
                                   <Box
                                     sx={{
-                                      width: 40,
-                                      height: 40,
-                                      bgcolor: colors.primary.blue,
+                                      width: 36,
+                                      height: 36,
                                       borderRadius: 1.5,
                                       display: "flex",
                                       alignItems: "center",
                                       justifyContent: "center",
                                       flexShrink: 0,
+                                      color: isDomainSelected
+                                        ? colors.primary.blue
+                                        : colors.text.secondary,
                                     }}
                                   >
-                                    <Typography
-                                      sx={{
-                                        color: "white",
-                                        fontWeight: 700,
-                                        fontSize: "0.875rem",
-                                      }}
-                                    >
-                                      {domain.domainId}
-                                    </Typography>
+                                    {DomainIcon}
                                   </Box>
                                   <Box sx={{ flex: 1, minWidth: 0 }}>
                                     <Typography
                                       variant="body1"
                                       sx={{
                                         fontWeight: 600,
-                                        color: colors.text.primary,
+                                        color: isDomainSelected
+                                          ? colors.primary.blue
+                                          : colors.text.primary,
                                         fontSize: "0.9375rem",
-                                        noWrap: true,
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
+                                        mb: 0.25,
                                       }}
                                     >
-                                      {getDomainName(domain)}
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                      sx={{ fontSize: "0.75rem" }}
-                                    >
-                                      {domain.subDomain?.length || 0} Subdomain
-                                      {domain.subDomain?.length !== 1
-                                        ? "s"
-                                        : ""}
+                                      D{domain.domainId} {getDomainName(domain)}
                                     </Typography>
                                   </Box>
                                   {progress === 100 && (
                                     <CheckCircle
                                       sx={{
                                         color: colors.accent.green,
-                                        fontSize: 20,
+                                        fontSize: 18,
                                       }}
                                     />
                                   )}
                                 </Box>
                                 {/* Progress Bar */}
-                                <Box sx={{ mt: 1.5 }}>
+                                <Box sx={{ mt: 1 }}>
                                   <Box
                                     sx={{
                                       display: "flex",
                                       alignItems: "center",
                                       justifyContent: "space-between",
-                                      mb: 0.75,
+                                      mb: 0.5,
                                     }}
                                   >
                                     <Typography
@@ -1055,11 +1097,11 @@ const SelfAssessment = () => {
                                     variant="determinate"
                                     value={progress}
                                     sx={{
-                                      height: 7,
-                                      borderRadius: 3.5,
+                                      height: 6,
+                                      borderRadius: 3,
                                       bgcolor: colors.neutral.gray200,
                                       "& .MuiLinearProgress-bar": {
-                                        borderRadius: 3.5,
+                                        borderRadius: 3,
                                         bgcolor:
                                           progress === 100
                                             ? colors.accent.green
@@ -1070,200 +1112,159 @@ const SelfAssessment = () => {
                                 </Box>
                               </CardContent>
                             </Card>
-                          );
-                        })}
-                      </Box>
-                    ) : (
-                      <Box sx={{ textAlign: "center", py: 4 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          No domains available
-                        </Typography>
-                      </Box>
-                    )
-                  ) : (
-                    // Show Subdomains
-                    <>
-                      <Button
-                        startIcon={
-                          <ArrowForward sx={{ transform: "rotate(180deg)" }} />
-                        }
-                        onClick={() => {
-                          setSelectedDomain(null);
-                          setSelectedSubdomain(null);
-                          setAnswers({});
-                        }}
-                        variant="text"
-                        sx={{
-                          mb: 2,
-                          color: colors.primary.blue,
-                          textTransform: "none",
-                          fontWeight: 600,
-                          "&:hover": {
-                            bgcolor: colors.primary.lightest,
-                          },
-                        }}
-                      >
-                        Back to Domains
-                      </Button>
-                      {selectedDomain.subDomain &&
-                      selectedDomain.subDomain.length > 0 ? (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 2,
-                          }}
-                        >
-                          {selectedDomain.subDomain.map((subdomain, index) => {
-                            const subdomainId =
-                              subdomain.subDomainId || subdomain.id;
-                            const progress = getSubdomainProgress(subdomainId);
-                            const isSelected =
-                              selectedSubdomain?.subDomainId === subdomainId;
-                            return (
-                              <Card
-                                key={subdomainId}
-                                onClick={() => handleSubdomainSelect(subdomain)}
-                                sx={{
-                                  cursor: "pointer",
-                                  transition: "all 0.3s ease",
-                                  border: "1.5px solid",
-                                  borderColor: isSelected
-                                    ? colors.accent.green
-                                    : "transparent",
-                                  borderRadius: 2.5,
-                                  bgcolor: isSelected
-                                    ? colors.accent.green + "10"
-                                    : colors.background.primary,
-                                  boxShadow: isSelected
-                                    ? `0 4px 12px ${colors.accent.green}20`
-                                    : "0 2px 8px rgba(0,0,0,0.04)",
-                                  "&:hover": {
-                                    transform: "translateX(4px)",
-                                    boxShadow: `0 6px 16px ${colors.accent.green}25`,
-                                    borderColor: colors.accent.green,
-                                    bgcolor: colors.accent.green + "15",
-                                  },
-                                }}
-                              >
-                                <CardContent
-                                  sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}
-                                >
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 2,
-                                      mb: 1.5,
-                                    }}
-                                  >
-                                    <Box
+                            
+                            {/* Show Subdomains when domain is selected */}
+                            {isDomainSelected && domain.subDomain && domain.subDomain.length > 0 && (
+                              <Box sx={{ mt: 1.5, ml: 2, pl: 2, borderLeft: `2px solid ${colors.neutral.gray200}` }}>
+                                {domain.subDomain.map((subdomain, index) => {
+                                  const subdomainId = subdomain.subDomainId || subdomain.id;
+                                  const subdomainProgress = getSubdomainProgress(subdomainId);
+                                  const isSubdomainSelected = selectedSubdomain?.subDomainId === subdomainId;
+                                  
+                                  return (
+                                    <Card
+                                      key={subdomainId}
+                                      onClick={() => handleSubdomainSelect(subdomain)}
                                       sx={{
-                                        width: 40,
-                                        height: 40,
-                                        bgcolor: colors.accent.green,
-                                        borderRadius: 1.5,
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        flexShrink: 0,
-                                      }}
-                                    >
-                                      <Typography
-                                        sx={{
-                                          color: "white",
-                                          fontWeight: 700,
-                                          fontSize: "0.875rem",
-                                        }}
-                                      >
-                                        {String.fromCharCode(65 + (index % 26))}
-                                      </Typography>
-                                    </Box>
-                                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                                      <Typography
-                                        variant="body1"
-                                        sx={{
-                                          fontWeight: 600,
-                                          color: colors.text.primary,
-                                          fontSize: "0.9375rem",
-                                          noWrap: true,
-                                          overflow: "hidden",
-                                          textOverflow: "ellipsis",
-                                        }}
-                                      >
-                                        {getSubdomainName(subdomain)}
-                                      </Typography>
-                                    </Box>
-                                    {isSelected && progress === 100 && (
-                                      <CheckCircle
-                                        sx={{
-                                          color: colors.accent.green,
-                                          fontSize: 20,
-                                        }}
-                                      />
-                                    )}
-                                  </Box>
-                                  {/* Progress Bar */}
-                                  <Box sx={{ mt: 1.5 }}>
-                                    <Box
-                                      sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                        mb: 0.75,
-                                      }}
-                                    >
-                                      <Typography
-                                        variant="caption"
-                                        sx={{
-                                          fontSize: "0.7rem",
-                                          color: colors.text.secondary,
-                                          fontWeight: 500,
-                                        }}
-                                      >
-                                        Progress
-                                      </Typography>
-                                      <Typography
-                                        variant="caption"
-                                        sx={{
-                                          fontSize: "0.7rem",
-                                          color: colors.accent.green,
-                                          fontWeight: 600,
-                                        }}
-                                      >
-                                        {Math.round(progress)}%
-                                      </Typography>
-                                    </Box>
-                                    <LinearProgress
-                                      variant="determinate"
-                                      value={progress}
-                                      sx={{
-                                        height: 7,
-                                        borderRadius: 3.5,
-                                        bgcolor: colors.neutral.gray200,
-                                        "& .MuiLinearProgress-bar": {
-                                          borderRadius: 3.5,
-                                          bgcolor:
-                                            progress === 100
-                                              ? colors.accent.green
-                                              : colors.accent.green,
+                                        cursor: "pointer",
+                                        transition: "all 0.3s ease",
+                                        border: "1.5px solid",
+                                        borderColor: isSubdomainSelected
+                                          ? colors.accent.green
+                                          : "transparent",
+                                        borderRadius: 2,
+                                        bgcolor: isSubdomainSelected
+                                          ? colors.accent.green + "10"
+                                          : colors.background.primary,
+                                        boxShadow: isSubdomainSelected
+                                          ? `0 4px 12px ${colors.accent.green}20`
+                                          : "0 2px 8px rgba(0,0,0,0.04)",
+                                        mb: 1.5,
+                                        "&:hover": {
+                                          transform: "translateX(4px)",
+                                          boxShadow: `0 6px 16px ${colors.accent.green}25`,
+                                          borderColor: colors.accent.green,
+                                          bgcolor: colors.accent.green + "15",
                                         },
                                       }}
-                                    />
-                                  </Box>
-                                </CardContent>
-                              </Card>
-                            );
-                          })}
-                        </Box>
-                      ) : (
-                        <Box sx={{ textAlign: "center", py: 4 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            No subdomains available
-                          </Typography>
-                        </Box>
-                      )}
-                    </>
+                                    >
+                                      <CardContent
+                                        sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}
+                                      >
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1.5,
+                                            mb: 1,
+                                          }}
+                                        >
+                                          <Box
+                                            sx={{
+                                              width: 28,
+                                              height: 28,
+                                              borderRadius: 1,
+                                              bgcolor: colors.accent.green,
+                                              display: "flex",
+                                              alignItems: "center",
+                                              justifyContent: "center",
+                                              flexShrink: 0,
+                                            }}
+                                          >
+                                            <Typography
+                                              sx={{
+                                                color: "white",
+                                                fontWeight: 700,
+                                                fontSize: "0.75rem",
+                                              }}
+                                            >
+                                              {String.fromCharCode(65 + (index % 26))}
+                                            </Typography>
+                                          </Box>
+                                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                                            <Typography
+                                              variant="body2"
+                                              sx={{
+                                                fontWeight: 600,
+                                                color: isSubdomainSelected
+                                                  ? colors.accent.green
+                                                  : colors.text.primary,
+                                                fontSize: "0.875rem",
+                                              }}
+                                            >
+                                              SD{domain.domainId}.{index + 1} {getSubdomainName(subdomain)}
+                                            </Typography>
+                                          </Box>
+                                          {isSubdomainSelected && subdomainProgress === 100 && (
+                                            <CheckCircle
+                                              sx={{
+                                                color: colors.accent.green,
+                                                fontSize: 16,
+                                              }}
+                                            />
+                                          )}
+                                        </Box>
+                                        {/* Progress Bar */}
+                                        <Box sx={{ mt: 1 }}>
+                                          <Box
+                                            sx={{
+                                              display: "flex",
+                                              alignItems: "center",
+                                              justifyContent: "space-between",
+                                              mb: 0.5,
+                                            }}
+                                          >
+                                            <Typography
+                                              variant="caption"
+                                              sx={{
+                                                fontSize: "0.65rem",
+                                                color: colors.text.secondary,
+                                                fontWeight: 500,
+                                              }}
+                                            >
+                                              Progress
+                                            </Typography>
+                                            <Typography
+                                              variant="caption"
+                                              sx={{
+                                                fontSize: "0.65rem",
+                                                color: colors.accent.green,
+                                                fontWeight: 600,
+                                              }}
+                                            >
+                                              {Math.round(subdomainProgress)}%
+                                            </Typography>
+                                          </Box>
+                                          <LinearProgress
+                                            variant="determinate"
+                                            value={subdomainProgress}
+                                            sx={{
+                                              height: 5,
+                                              borderRadius: 2.5,
+                                              bgcolor: colors.neutral.gray200,
+                                              "& .MuiLinearProgress-bar": {
+                                                borderRadius: 2.5,
+                                                bgcolor: colors.accent.green,
+                                              },
+                                            }}
+                                          />
+                                        </Box>
+                                      </CardContent>
+                                    </Card>
+                                  );
+                                })}
+                              </Box>
+                            )}
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                  ) : (
+                    <Box sx={{ textAlign: "center", py: 4 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No domains available
+                      </Typography>
+                    </Box>
                   )}
                 </Box>
               </Paper>
@@ -1291,30 +1292,92 @@ const SelfAssessment = () => {
                       bgcolor: colors.background.secondary,
                     }}
                   >
+                    {/* Breadcrumb */}
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: colors.text.secondary,
+                        fontSize: "0.75rem",
+                        mb: 1.5,
+                        display: "block",
+                      }}
+                    >
+                      {selectedDomain && selectedSubdomain
+                        ? `D${selectedDomain.domainId} / SD${selectedDomain.domainId}.${
+                            selectedDomain.subDomain?.findIndex(
+                              (sd) =>
+                                (sd.subDomainId || sd.id) ===
+                                (selectedSubdomain?.subDomainId ||
+                                  selectedSubdomain?.id)
+                            ) !== -1
+                              ? selectedDomain.subDomain.findIndex(
+                                  (sd) =>
+                                    (sd.subDomainId || sd.id) ===
+                                    (selectedSubdomain?.subDomainId ||
+                                      selectedSubdomain?.id)
+                                ) + 1
+                              : 1
+                          }`
+                        : ""}
+                    </Typography>
+                    
                     <Box
                       sx={{
                         display: "flex",
-                        alignItems: "center",
+                        alignItems: "flex-start",
                         justifyContent: "space-between",
                         mb: 2,
                       }}
                     >
-                      <Box>
+                      <Box sx={{ flex: 1 }}>
                         <Typography
-                          variant="h6"
-                          sx={{ fontWeight: 700, color: colors.text.primary }}
+                          variant="h5"
+                          sx={{ fontWeight: 700, color: colors.text.primary, mb: 0.5 }}
                         >
-                          Questions
+                          {getSubdomainName(selectedSubdomain)}
                         </Typography>
                         <Typography
                           variant="body2"
                           color="text.secondary"
-                          sx={{ mt: 0.5 }}
+                          sx={{ fontSize: "0.875rem" }}
                         >
-                          {getDomainName(selectedDomain)} -{" "}
-                          {getSubdomainName(selectedSubdomain)}
+                          Assessment of {getSubdomainName(selectedSubdomain).toLowerCase()}
                         </Typography>
                       </Box>
+                      
+                      {/* Progress Card */}
+                      <Card
+                        sx={{
+                          minWidth: 140,
+                          p: 1.5,
+                          borderRadius: 2,
+                          bgcolor: colors.background.primary,
+                          border: `1px solid ${colors.neutral.gray200}`,
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: colors.text.secondary,
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            mb: 1,
+                            display: "block",
+                          }}
+                        >
+                          Progress
+                        </Typography>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 700,
+                            color: colors.text.primary,
+                            fontSize: "1rem",
+                          }}
+                        >
+                          {allQuestions.filter((q) => answers[q.questionId]).length}/{allQuestions.length}
+                        </Typography>
+                      </Card>
                     </Box>
 
                     {/* Question Batch Tabs */}
@@ -1560,210 +1623,343 @@ const SelfAssessment = () => {
                       >
                         {currentQuestions.map((question, index) => {
                           const options = parseOptions(question.options);
-                          // Get selected answer - prioritize user selection, fallback to API's selectedOptionId
-                          const userSelectedAnswer =
-                            answers[question.questionId];
+                          const userSelectedAnswer = answers[question.questionId];
                           const apiSelectedAnswer = question.selectedOptionId
                             ? String(question.selectedOptionId)
                             : null;
-                          const selectedAnswer =
-                            userSelectedAnswer || apiSelectedAnswer;
+                          const selectedAnswer = userSelectedAnswer || apiSelectedAnswer;
+                          const isExpanded = expandedQuestions[question.questionId] ?? true;
+                          const questionProgress = selectedAnswer ? 100 : 0;
+                          const rating = questionRatings[question.questionId] || 0;
+                          const remarks = questionRemarks[question.questionId] || "";
 
                           return (
                             <Card
                               key={question.questionId}
                               elevation={1}
                               sx={{
-                                borderRadius: 2.5,
+                                borderRadius: 2,
                                 border: "1px solid rgba(0,0,0,0.08)",
                                 transition: "all 0.2s ease",
                                 boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                                overflow: "hidden",
                                 "&:hover": {
-                                  boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
-                                  transform: "translateY(-2px)",
+                                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                                 },
                               }}
                             >
-                              <CardContent sx={{ p: { xs: 2.5, md: 3.5 } }}>
-                                <Box
+                              {/* Question Header - Always Visible */}
+                              <Box
+                                onClick={() => toggleQuestionExpansion(question.questionId)}
+                                sx={{
+                                  p: 2.5,
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 2,
+                                  bgcolor: colors.background.primary,
+                                  borderBottom: isExpanded ? `1px solid ${colors.neutral.gray200}` : "none",
+                                  "&:hover": {
+                                    bgcolor: colors.background.secondary,
+                                  },
+                                }}
+                              >
+                                <Chip
+                                  label={`S${index + 1} Standard ${index + 1}`}
+                                  size="small"
                                   sx={{
-                                    display: "flex",
-                                    alignItems: "flex-start",
-                                    gap: 2.5,
-                                    mb: 2.5,
+                                    bgcolor: colors.primary.blue,
+                                    color: "white",
+                                    fontWeight: 700,
+                                    minWidth: "100px",
+                                    height: "28px",
+                                    fontSize: "0.75rem",
                                   }}
-                                >
-                                  <Chip
-                                    label={`Q${index + 1}`}
-                                    size="small"
+                                />
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography
+                                    variant="body2"
                                     sx={{
-                                      bgcolor: colors.primary.blue,
-                                      color: "white",
-                                      fontWeight: 700,
-                                      minWidth: "44px",
-                                      height: "28px",
-                                      fontSize: "0.75rem",
+                                      fontWeight: 500,
+                                      fontSize: "0.875rem",
+                                      color: colors.text.primary,
+                                      lineHeight: 1.5,
                                     }}
-                                  />
-                                  <Box sx={{ flex: 1 }}>
-                                    <Typography
-                                      variant="body1"
+                                  >
+                                    {getQuestionText(question)}
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                                  {/* Circular Progress */}
+                                  <Box sx={{ position: "relative", display: "inline-flex" }}>
+                                    <CircularProgress
+                                      variant="determinate"
+                                      value={questionProgress}
+                                      size={40}
+                                      thickness={4}
                                       sx={{
-                                        fontWeight: 600,
-                                        fontSize: "1rem",
-                                        lineHeight: 1.7,
-                                        mb: 2.5,
-                                        color: colors.text.primary,
+                                        color: questionProgress === 100 ? colors.accent.green : colors.neutral.gray300,
                                       }}
-                                    >
-                                      {getQuestionText(question)}
-                                    </Typography>
-                                    {question.isClassroomObservation === 1 &&
-                                      question.observationCount && (
-                                        <Chip
-                                          label={`Observation Count: ${question.observationCount}`}
-                                          size="small"
-                                          sx={{
-                                            bgcolor:
-                                              colors.semantic.warning + "20",
-                                            color: colors.semantic.warning,
-                                            fontWeight: 600,
-                                            fontSize: "0.75rem",
-                                            mb: 2,
-                                          }}
-                                        />
-                                      )}
-
-                                    {options && options.length > 0 && (
-                                      <FormControl
-                                        component="fieldset"
-                                        fullWidth
-                                      >
-                                        <RadioGroup
-                                          value={selectedAnswer || ""}
-                                          onChange={(e) =>
-                                            handleAnswerChange(
-                                              question.questionId,
-                                              e.target.value
-                                            )
-                                          }
-                                        >
-                                          {options.map((option, optIndex) => (
-                                            <FormControlLabel
-                                              key={option.optionId || optIndex}
-                                              value={String(option.optionId)}
-                                              control={
-                                                <Radio
-                                                  sx={{
-                                                    color: colors.primary.blue,
-                                                    "&.Mui-checked": {
-                                                      color:
-                                                        colors.primary.blue,
-                                                    },
-                                                  }}
-                                                />
-                                              }
-                                              label={
-                                                <Box
-                                                  sx={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    gap: 1,
-                                                  }}
-                                                >
-                                                  <Chip
-                                                    label={String.fromCharCode(
-                                                      65 + optIndex
-                                                    )}
-                                                    size="small"
-                                                    sx={{
-                                                      bgcolor:
-                                                        colors.primary.lightest,
-                                                      color:
-                                                        colors.primary.blue,
-                                                      fontWeight: 600,
-                                                      minWidth: "28px",
-                                                      height: "28px",
-                                                    }}
-                                                  />
-                                                  <Typography variant="body2">
-                                                    {getOptionText(option)}
-                                                  </Typography>
-                                                </Box>
-                                              }
-                                              sx={{
-                                                mb: 1.5,
-                                                p: 2,
-                                                borderRadius: 2,
-                                                bgcolor:
-                                                  selectedAnswer ===
-                                                  String(option.optionId)
-                                                    ? colors.primary.lightest
-                                                    : "transparent",
-                                                border: "1.5px solid",
-                                                borderColor:
-                                                  selectedAnswer ===
-                                                  String(option.optionId)
-                                                    ? colors.primary.blue
-                                                    : colors.neutral.gray200,
-                                                transition: "all 0.2s ease",
-                                                "&:hover": {
-                                                  bgcolor:
-                                                    colors.primary.lightest +
-                                                    "80",
-                                                  borderColor:
-                                                    colors.primary.blue,
-                                                },
-                                              }}
-                                            />
-                                          ))}
-                                        </RadioGroup>
-                                      </FormControl>
-                                    )}
-
-                                    {/* Submit Button for Individual Question */}
+                                    />
                                     <Box
                                       sx={{
+                                        top: 0,
+                                        left: 0,
+                                        bottom: 0,
+                                        right: 0,
+                                        position: "absolute",
                                         display: "flex",
-                                        justifyContent: "flex-end",
-                                        mt: 2.5,
-                                        pt: 2,
-                                        borderTop: `1px solid ${colors.neutral.gray200}`,
+                                        alignItems: "center",
+                                        justifyContent: "center",
                                       }}
                                     >
-                                      <Button
-                                        variant="contained"
-                                        onClick={() =>
-                                          handleSubmitQuestion(question)
-                                        }
-                                        disabled={
-                                          !selectedAnswer ||
-                                          submitAnswerMutation.isPending
-                                        }
+                                      <Typography
+                                        variant="caption"
+                                        component="div"
                                         sx={{
-                                          bgcolor: colors.accent.green,
-                                          "&:hover": {
-                                            bgcolor: colors.accent.greenDark,
-                                          },
-                                          "&:disabled": {
-                                            bgcolor: colors.neutral.gray300,
-                                            color: colors.neutral.gray600,
-                                          },
-                                          textTransform: "none",
+                                          fontSize: "0.65rem",
                                           fontWeight: 600,
-                                          px: 3,
-                                          py: 1,
-                                          borderRadius: 2,
+                                          color: colors.text.secondary,
                                         }}
                                       >
-                                        {submitAnswerMutation.isPending
-                                          ? "Submitting..."
-                                          : "Save Answer"}
-                                      </Button>
+                                        {questionProgress}%
+                                      </Typography>
                                     </Box>
                                   </Box>
+                                  <IconButton
+                                    size="small"
+                                    sx={{
+                                      color: colors.text.secondary,
+                                    }}
+                                  >
+                                    {isExpanded ? <ExpandLess /> : <ExpandMore />}
+                                  </IconButton>
                                 </Box>
-                              </CardContent>
+                              </Box>
+
+                              {/* Question Content - Expandable */}
+                              {isExpanded && (
+                                <CardContent sx={{ p: 3, pt: 2.5 }}>
+                                  {question.isClassroomObservation === 1 &&
+                                    question.observationCount && (
+                                      <Chip
+                                        label={`Observation Count: ${question.observationCount}`}
+                                        size="small"
+                                        sx={{
+                                          bgcolor: colors.semantic.warning + "20",
+                                          color: colors.semantic.warning,
+                                          fontWeight: 600,
+                                          fontSize: "0.75rem",
+                                          mb: 2.5,
+                                        }}
+                                      />
+                                    )}
+
+                                  {options && options.length > 0 && (
+                                    <FormControl component="fieldset" fullWidth sx={{ mb: 3 }}>
+                                      <RadioGroup
+                                        value={selectedAnswer || ""}
+                                        onChange={(e) =>
+                                          handleAnswerChange(
+                                            question.questionId,
+                                            e.target.value
+                                          )
+                                        }
+                                      >
+                                        {options.map((option, optIndex) => (
+                                          <FormControlLabel
+                                            key={option.optionId || optIndex}
+                                            value={String(option.optionId)}
+                                            control={
+                                              <Radio
+                                                sx={{
+                                                  color: colors.primary.blue,
+                                                  "&.Mui-checked": {
+                                                    color: colors.primary.blue,
+                                                  },
+                                                }}
+                                              />
+                                            }
+                                            label={
+                                              <Box
+                                                sx={{
+                                                  display: "flex",
+                                                  alignItems: "center",
+                                                  gap: 1,
+                                                }}
+                                              >
+                                                <Chip
+                                                  label={String.fromCharCode(65 + optIndex)}
+                                                  size="small"
+                                                  sx={{
+                                                    bgcolor: colors.primary.lightest,
+                                                    color: colors.primary.blue,
+                                                    fontWeight: 600,
+                                                    minWidth: "28px",
+                                                    height: "28px",
+                                                  }}
+                                                />
+                                                <Typography variant="body2">
+                                                  {getOptionText(option)}
+                                                </Typography>
+                                              </Box>
+                                            }
+                                            sx={{
+                                              mb: 1.5,
+                                              p: 2,
+                                              borderRadius: 2,
+                                              bgcolor:
+                                                selectedAnswer === String(option.optionId)
+                                                  ? colors.primary.lightest
+                                                  : "transparent",
+                                              border: "1.5px solid",
+                                              borderColor:
+                                                selectedAnswer === String(option.optionId)
+                                                  ? colors.primary.blue
+                                                  : colors.neutral.gray200,
+                                              transition: "all 0.2s ease",
+                                              "&:hover": {
+                                                bgcolor: colors.primary.lightest + "80",
+                                                borderColor: colors.primary.blue,
+                                              },
+                                            }}
+                                          />
+                                        ))}
+                                      </RadioGroup>
+                                    </FormControl>
+                                  )}
+
+                                  {/* Overall Rating */}
+                                  <Box sx={{ mb: 3 }}>
+                                    <Typography
+                                      variant="subtitle2"
+                                      sx={{
+                                        fontWeight: 600,
+                                        color: colors.text.primary,
+                                        mb: 1.5,
+                                      }}
+                                    >
+                                      Overall Rating
+                                    </Typography>
+                                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                                      {[0, 1, 2, 3, 4, 5].map((value) => (
+                                        <Button
+                                          key={value}
+                                          variant={rating === value ? "contained" : "outlined"}
+                                          onClick={() => {
+                                            setQuestionRatings((prev) => ({
+                                              ...prev,
+                                              [question.questionId]: value,
+                                            }));
+                                          }}
+                                          sx={{
+                                            minWidth: "48px",
+                                            height: "48px",
+                                            borderRadius: 2,
+                                            fontWeight: 700,
+                                            fontSize: "1rem",
+                                            bgcolor:
+                                              rating === value
+                                                ? colors.primary.blue
+                                                : "transparent",
+                                            color:
+                                              rating === value
+                                                ? "white"
+                                                : colors.text.primary,
+                                            borderColor: colors.neutral.gray300,
+                                            "&:hover": {
+                                              bgcolor:
+                                                rating === value
+                                                  ? colors.primary.blue
+                                                  : colors.primary.lightest,
+                                              borderColor: colors.primary.blue,
+                                            },
+                                          }}
+                                        >
+                                          {value}
+                                        </Button>
+                                      ))}
+                                    </Box>
+                                  </Box>
+
+                                  {/* Remarks / Justification */}
+                                  <Box sx={{ mb: 2.5 }}>
+                                    <Typography
+                                      variant="subtitle2"
+                                      sx={{
+                                        fontWeight: 600,
+                                        color: colors.text.primary,
+                                        mb: 1.5,
+                                      }}
+                                    >
+                                      Remarks / Justification
+                                    </Typography>
+                                    <Box
+                                      component="textarea"
+                                      value={remarks}
+                                      onChange={(e) => {
+                                        setQuestionRemarks((prev) => ({
+                                          ...prev,
+                                          [question.questionId]: e.target.value,
+                                        }));
+                                      }}
+                                      placeholder="Provide observations, evidence, or justification for the rating..."
+                                      sx={{
+                                        width: "100%",
+                                        minHeight: "120px",
+                                        p: 2,
+                                        border: `1.5px solid ${colors.neutral.gray300}`,
+                                        borderRadius: 2,
+                                        fontSize: "0.875rem",
+                                        fontFamily: "inherit",
+                                        resize: "vertical",
+                                        "&:focus": {
+                                          outline: "none",
+                                          borderColor: colors.primary.blue,
+                                          borderWidth: 2,
+                                        },
+                                      }}
+                                    />
+                                  </Box>
+
+                                  {/* Submit Button for Individual Question */}
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      justifyContent: "flex-end",
+                                      pt: 2.5,
+                                      borderTop: `1px solid ${colors.neutral.gray200}`,
+                                    }}
+                                  >
+                                    <Button
+                                      variant="contained"
+                                      onClick={() => handleSubmitQuestion(question)}
+                                      disabled={
+                                        !selectedAnswer || submitAnswerMutation.isPending
+                                      }
+                                      sx={{
+                                        bgcolor: colors.accent.green,
+                                        "&:hover": {
+                                          bgcolor: colors.accent.greenDark,
+                                        },
+                                        "&:disabled": {
+                                          bgcolor: colors.neutral.gray300,
+                                          color: colors.neutral.gray600,
+                                        },
+                                        textTransform: "none",
+                                        fontWeight: 600,
+                                        px: 3,
+                                        py: 1,
+                                        borderRadius: 2,
+                                      }}
+                                    >
+                                      {submitAnswerMutation.isPending
+                                        ? "Submitting..."
+                                        : "Save Answer"}
+                                    </Button>
+                                  </Box>
+                                </CardContent>
+                              )}
                             </Card>
                           );
                         })}

@@ -19,11 +19,13 @@ import { DRAWER_WIDTH } from "../../constants/menuItems";
 import AssessmentManagement from "./assessment-management/AssessmentManagement";
 import Verifier from "./verifier/Verifier";
 import SchoolAllocation from "./school-allocation/SchoolAllocation";
+import DistrictNodalOfficers from "./district-nodal-officers/DistrictNodalOfficers";
 import {
   ADMIN_DASHBOARD_URL,
   ADMIN_VERIFIER_URL,
   ADMIN_ASSESSMENT_MANAGEMENT_URL,
   ADMIN_SCHOOL_ALLOCATION_URL,
+  ADMIN_DISTRICT_NODAL_OFFICERS_URL,
 } from "../../routes/routeUrls";
 import "./admin-dashboard.css";
 
@@ -63,6 +65,8 @@ const AdminDashboard = () => {
       return "assessment";
     } else if (location.pathname === ADMIN_SCHOOL_ALLOCATION_URL) {
       return "allocation";
+    } else if (location.pathname === ADMIN_DISTRICT_NODAL_OFFICERS_URL) {
+      return "district-nodal-officers";
     }
     return "dashboard";
   };
@@ -96,15 +100,24 @@ const AdminDashboard = () => {
       >
         <AppBar
           position="fixed"
-          className="bg-white shadow-lg border-b border-gray-200 backdrop-blur-sm"
           sx={{
-            backgroundColor: "rgba(255, 255, 255, 0.95)",
+            background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
             backdropFilter: "blur(10px)",
             zIndex: theme.zIndex.drawer + 1,
             boxShadow:
               "0 4px 20px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)",
             borderBottom: "1px solid rgba(0,0,0,0.06)",
             height: "64px",
+            // position: "relative",
+            // "&::before": {
+            //   content: '""',
+            //   position: "absolute",
+            //   top: 0,
+            //   left: 0,
+            //   right: 0,
+            //   height: "3px",
+            //   background: "linear-gradient(90deg, #3b82f6 0%, #2563eb 50%, #3b82f6 100%)",
+            // },
             width:
               drawerOpen && !matchDownMD
                 ? `calc(100% - ${DRAWER_WIDTH.xs}px)`
@@ -121,54 +134,98 @@ const AdminDashboard = () => {
             }),
           }}
         >
-          <Toolbar className="h-16 px-6">
+          <Toolbar
+            sx={{
+              height: "64px",
+              minHeight: "64px !important",
+              px: { xs: 2, sm: 3, md: 4 },
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
             <IconButton
               onClick={handleDrawerToggle}
-              className="mr-4 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200"
               edge="start"
               sx={{
                 color: "#4b5563",
                 borderRadius: "12px",
+                width: "40px",
+                height: "40px",
+                backgroundColor: "rgba(255,255,255,0.8)",
+                border: "1px solid rgba(0,0,0,0.06)",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
                 "&:hover": {
-                  backgroundColor: "#eff6ff",
+                  backgroundColor: "#ffffff",
                   color: "#2563eb",
                   transform: "scale(1.05)",
+                  boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
                 },
+                transition: "all 0.2s ease",
               }}
             >
               <Menu />
             </IconButton>
-            <Box className="flex items-center gap-3 mr-6">
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                mr: 2,
+              }}
+            >
               <Box
-                className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 transition-all duration-200 hover:scale-105"
                 sx={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "12px",
                   background:
                     "linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #4f46e5 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    transform: "scale(1.05) rotate(5deg)",
+                    boxShadow: "0 6px 16px rgba(59, 130, 246, 0.4)",
+                  },
                 }}
               >
-                <AdminIcon className="text-white text-lg" />
+                <AdminIcon
+                  sx={{
+                    color: "white",
+                    fontSize: "1.5rem",
+                  }}
+                />
               </Box>
               <Box>
                 <Typography
                   variant="h6"
                   component="div"
-                  className="font-bold text-gray-900"
                   sx={{
                     fontSize: "1.125rem",
-                    fontWeight: 700,
+                    fontWeight: 800,
                     color: "#111827",
-                    letterSpacing: "-0.01em",
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1.2,
+                    background:
+                      "linear-gradient(135deg, #3b82f6 0%, #111827 100%)",
+                    backgroundClip: "text",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
                   }}
                 >
                   GSQAC Admin
                 </Typography>
                 <Typography
                   variant="caption"
-                  className="text-gray-500 text-xs"
                   sx={{
                     fontSize: "0.7rem",
                     color: "#6b7280",
                     fontWeight: 500,
+                    letterSpacing: "0.5px",
+                    textTransform: "uppercase",
                   }}
                 >
                   Dashboard
@@ -177,22 +234,33 @@ const AdminDashboard = () => {
             </Box>
             <Box sx={{ flexGrow: 1 }} />
             {user && (
-              <Box className="flex items-center gap-4 mr-4">
-                <Box className="text-right hidden sm:block">
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  mr: 2,
+                }}
+              >
+                <Box
+                  sx={{
+                    textAlign: "right",
+                    display: { xs: "none", sm: "block" },
+                  }}
+                >
                   <Typography
                     variant="body2"
-                    className="font-semibold text-gray-900 text-sm"
                     sx={{
                       fontSize: "0.875rem",
                       fontWeight: 600,
                       color: "#111827",
+                      lineHeight: 1.2,
                     }}
                   >
                     {user.name}
                   </Typography>
                   <Typography
                     variant="caption"
-                    className="text-gray-500 text-xs"
                     sx={{
                       fontSize: "0.75rem",
                       color: "#6b7280",
@@ -203,10 +271,25 @@ const AdminDashboard = () => {
                   </Typography>
                 </Box>
                 <Box
-                  className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-400 via-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-blue-500/30 hover:shadow-blue-500/40 transition-all duration-200 hover:scale-105 cursor-pointer"
                   sx={{
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "12px",
                     background:
                       "linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #4f46e5 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontWeight: 700,
+                    fontSize: "1rem",
+                    boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      transform: "scale(1.05)",
+                      boxShadow: "0 6px 16px rgba(59, 130, 246, 0.4)",
+                    },
                   }}
                 >
                   {user.name?.charAt(0)?.toUpperCase() || "A"}
@@ -215,18 +298,25 @@ const AdminDashboard = () => {
             )}
             <Button
               onClick={handleLogout}
-              className="text-gray-700 hover:bg-red-50 hover:text-red-600 font-semibold px-5 py-2 rounded-xl transition-all duration-200 hover:scale-105"
               sx={{
                 color: "#374151",
                 textTransform: "none",
                 fontWeight: 600,
                 fontSize: "0.875rem",
                 borderRadius: "12px",
+                px: 2.5,
+                py: 1,
+                backgroundColor: "rgba(255,255,255,0.8)",
+                border: "1px solid rgba(0,0,0,0.06)",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
                 "&:hover": {
                   backgroundColor: "#fef2f2",
                   color: "#dc2626",
+                  borderColor: "#fecaca",
                   transform: "scale(1.05)",
+                  boxShadow: "0 4px 8px rgba(220, 38, 38, 0.15)",
                 },
+                transition: "all 0.2s ease",
               }}
             >
               Logout
@@ -248,6 +338,9 @@ const AdminDashboard = () => {
             {currentView === "verifier" && <Verifier />}
             {currentView === "assessment" && <AssessmentManagement />}
             {currentView === "allocation" && <SchoolAllocation />}
+            {currentView === "district-nodal-officers" && (
+              <DistrictNodalOfficers />
+            )}
             {currentView === "dashboard" && (
               <Box>
                 <Typography
