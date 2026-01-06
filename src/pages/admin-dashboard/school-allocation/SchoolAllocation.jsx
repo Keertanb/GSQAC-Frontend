@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   useGetAllDistrictsQuery,
   useGetDistrictWiseBlocksQuery,
-  useGetClustersByBlockIdQuery,
   useGetVerifiersQuery,
 } from "../../../services/adminService";
 import AppTable from "../../../components/AppTable/AppTable";
+import AppButton from "../../../components/AppButton/AppButton";
+import AppDropdown from "../../../components/AppDropdown/AppDropdown";
+import { exportToExcel } from "../../../utils/exportToExcel";
 import "./SchoolAllocation.css";
 
 // Static data for now
@@ -58,8 +60,10 @@ const SchoolAllocation = () => {
     schoolName: "",
     districtId: "",
     blockId: "",
-    clusterId: "",
   });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   // Store assignments for each school: { schoolId: { verifierId, verifierCode, date } }
   const [schoolAssignments, setSchoolAssignments] = useState({});
@@ -73,10 +77,6 @@ const SchoolAllocation = () => {
     filters.districtId
   );
   const blocks = blocksData?.data || [];
-
-  // Fetch clusters when block is selected
-  const { data: clustersData } = useGetClustersByBlockIdQuery(filters.blockId);
-  const clusters = clustersData?.data || [];
 
   // Fetch verifiers with pagination
   const { data: verifiersData } = useGetVerifiersQuery({
@@ -99,15 +99,9 @@ const SchoolAllocation = () => {
     const matchesDistrict =
       !filters.districtId || school.district === filters.districtId;
     const matchesBlock = !filters.blockId || school.block === filters.blockId;
-    const matchesCluster =
-      !filters.clusterId || school.cluster === filters.clusterId;
 
     return (
-      matchesSchoolId &&
-      matchesSchoolName &&
-      matchesDistrict &&
-      matchesBlock &&
-      matchesCluster
+      matchesSchoolId && matchesSchoolName && matchesDistrict && matchesBlock
     );
   });
 
@@ -117,10 +111,6 @@ const SchoolAllocation = () => {
       // Reset dependent filters
       if (field === "districtId") {
         newFilters.blockId = "";
-        newFilters.clusterId = "";
-      }
-      if (field === "blockId") {
-        newFilters.clusterId = "";
       }
       return newFilters;
     });
@@ -150,15 +140,79 @@ const SchoolAllocation = () => {
     alert("Assignment saved successfully!");
   };
 
+  // Handle Excel export
+  const handleExportToExcel = () => {
+    if (filteredSchools.length === 0) {
+      alert("No data to export");
+      return;
+    }
+
+    // Prepare columns for export
+    const exportColumns = [
+      { key: "schoolName", label: "School Name" },
+      { key: "udiseCode", label: "UDISE Code" },
+      { key: "district", label: "District" },
+      { key: "block", label: "Block" },
+      { key: "verifier", label: "Verifier" },
+      { key: "verifierCode", label: "Verifier Code" },
+      { key: "assignmentDate", label: "Assignment Date" },
+    ];
+
+    // Transform data for export
+    const exportData = filteredSchools.map((school) => {
+      const assignment = schoolAssignments[school.schoolId] || {};
+      const verifier = verifiers.find(
+        (v) => v.userId === assignment.verifierId
+      );
+      return {
+        schoolName: school.schoolName || "-",
+        udiseCode: school.udiseCode || "-",
+        district: school.district || "-",
+        block: school.block || "-",
+        verifier: verifier
+          ? `${verifier.userName} (${verifier.mobileNumber})`
+          : "-",
+        verifierCode: assignment.verifierCode || "-",
+        assignmentDate: assignment.date || "-",
+      };
+    });
+
+    exportToExcel(
+      exportData,
+      exportColumns,
+      "school-allocation",
+      "School Allocation"
+    );
+  };
+
   return (
     <div className="school-allocation-container">
       {/* Header */}
       <div className="allocation-header">
-        <div>
-          <h1 className="allocation-title">School Allocation</h1>
-          <p className="allocation-subtitle">
-            Manage school assignments and verifier allocations
-          </p>
+        <div className="allocation-header-content">
+          <div>
+            <h1 className="allocation-title">School Allocation</h1>
+            <p className="allocation-subtitle">
+              Manage school assignments and verifier allocations
+            </p>
+          </div>
+          <AppButton
+            variant="plain"
+            size="icon"
+            iconOnly
+            onClick={handleExportToExcel}
+            title="Export to Excel"
+            icon={
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            }
+          />
         </div>
       </div>
 
@@ -188,227 +242,219 @@ const SchoolAllocation = () => {
           </div>
 
           <div className="filter-group">
-            <label className="filter-label">District</label>
-            <select
-              value={filters.districtId}
-              onChange={(e) => handleFilterChange("districtId", e.target.value)}
-              className="filter-select"
-            >
-              <option value="">All Districts</option>
-              {districts.map((district) => (
-                <option key={district.value} value={district.value}>
-                  {district.name}
-                </option>
-              ))}
-            </select>
+            <AppDropdown
+              label="District"
+              options={[
+                { value: "", label: "All Districts" },
+                ...districts.map((district) => ({
+                  value: String(district.value),
+                  label: district.name,
+                })),
+              ]}
+              value={filters.districtId ? String(filters.districtId) : ""}
+              onChange={(value) => handleFilterChange("districtId", value)}
+              placeholder="All Districts"
+              valueKey="value"
+              labelKey="label"
+            />
           </div>
 
           <div className="filter-group">
-            <label className="filter-label">Block</label>
-            <select
-              value={filters.blockId}
-              onChange={(e) => handleFilterChange("blockId", e.target.value)}
-              className="filter-select"
+            <AppDropdown
+              label="Block"
+              options={[
+                { value: "", label: "All Blocks" },
+                ...blocks.map((block) => ({
+                  value: String(block.value || block.blockId),
+                  label: block.name || block.blockName,
+                })),
+              ]}
+              value={filters.blockId ? String(filters.blockId) : ""}
+              onChange={(value) => handleFilterChange("blockId", value)}
+              placeholder="All Blocks"
               disabled={!filters.districtId}
-            >
-              <option value="">All Blocks</option>
-              {blocks.map((block) => (
-                <option
-                  key={block.value || block.blockId}
-                  value={block.value || block.blockId}
-                >
-                  {block.name || block.blockName}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label className="filter-label">Cluster</label>
-            <select
-              value={filters.clusterId}
-              onChange={(e) => handleFilterChange("clusterId", e.target.value)}
-              className="filter-select"
-              disabled={!filters.blockId}
-            >
-              <option value="">All Clusters</option>
-              {clusters.map((cluster) => (
-                <option
-                  key={cluster.value || cluster.clusterId}
-                  value={cluster.value || cluster.clusterId}
-                >
-                  {cluster.name || cluster.clusterName}
-                </option>
-              ))}
-            </select>
+              valueKey="value"
+              labelKey="label"
+            />
           </div>
         </div>
       </div>
 
-      {/* Schools List */}
-      <div className="schools-cards-container">
-        {filteredSchools.length === 0 ? (
-          <div className="empty-container">
-            <div className="empty-icon-container">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                />
-              </svg>
-            </div>
-            <p className="empty-title">No schools found</p>
-            <p className="empty-subtitle">
-              {filters.schoolId || filters.schoolName || filters.districtId
-                ? "Try adjusting your filters"
-                : "No schools available"}
-            </p>
+      {/* Schools Table */}
+      {filteredSchools.length === 0 ? (
+        <div className="empty-container">
+          <div className="empty-icon-container">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
           </div>
-        ) : (
-          filteredSchools.map((school) => {
-            const assignment = schoolAssignments[school.schoolId] || {};
-            return (
-              <div key={school.schoolId} className="school-card">
-                <div className="school-card-header">
-                  <div className="school-card-title-section">
-                    <h3 className="school-card-title">{school.schoolName}</h3>
-                    <div className="school-card-meta">
-                      <span className="school-meta-item">
-                        <svg
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          className="meta-icon"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
-                          />
-                        </svg>
-                        {school.udiseCode}
-                      </span>
-                      <span className="school-meta-item">
-                        <svg
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          className="meta-icon"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
-                        {school.district} / {school.block} / {school.cluster}
-                      </span>
-                    </div>
-                  </div>
+          <p className="empty-title">No schools found</p>
+          <p className="empty-subtitle">
+            {filters.schoolId || filters.schoolName || filters.districtId
+              ? "Try adjusting your filters"
+              : "No schools available"}
+          </p>
+        </div>
+      ) : (
+        <AppTable
+          columns={[
+            {
+              id: "schoolName",
+              label: "School Name",
+              render: (school) => (
+                <div className="school-name-cell">
+                  <div className="school-name-text">{school.schoolName}</div>
+                  <div className="school-udise-code">{school.udiseCode}</div>
                 </div>
-
-                <div className="school-card-content">
-                  <div className="school-form-grid">
-                    <div className="school-form-group">
-                      <label className="school-form-label">
-                        Verifier <span className="form-label-required">*</span>
-                      </label>
-                      <select
-                        value={assignment.verifierId || ""}
-                        onChange={(e) =>
-                          handleAssignmentChange(
-                            school.schoolId,
-                            "verifierId",
-                            e.target.value
-                          )
-                        }
-                        className="school-form-select"
-                      >
-                        <option value="">Select Verifier</option>
-                        {verifiers.map((verifier) => (
-                          <option key={verifier.userId} value={verifier.userId}>
-                            {verifier.userName} ({verifier.mobileNumber})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="school-form-group">
-                      <label className="school-form-label">Verifier Code</label>
-                      <input
-                        type="text"
-                        value={assignment.verifierCode || ""}
-                        onChange={(e) =>
-                          handleAssignmentChange(
-                            school.schoolId,
-                            "verifierCode",
-                            e.target.value
-                          )
-                        }
-                        className="school-form-input"
-                        placeholder="Enter verifier code"
+              ),
+            },
+            {
+              id: "district",
+              label: "District",
+              render: (school) => (
+                <div className="school-district-cell">{school.district}</div>
+              ),
+            },
+            {
+              id: "block",
+              label: "Block",
+              render: (school) => (
+                <div className="school-block-cell">{school.block}</div>
+              ),
+            },
+            {
+              id: "verifier",
+              label: "Verifier",
+              render: (school) => {
+                const assignment = schoolAssignments[school.schoolId] || {};
+                return (
+                  <AppDropdown
+                    options={[
+                      { value: "", label: "Select Verifier" },
+                      ...verifiers.map((verifier) => ({
+                        value: String(verifier.userId),
+                        label: `${verifier.userName} (${verifier.mobileNumber})`,
+                      })),
+                    ]}
+                    value={
+                      assignment.verifierId ? String(assignment.verifierId) : ""
+                    }
+                    onChange={(value) =>
+                      handleAssignmentChange(
+                        school.schoolId,
+                        "verifierId",
+                        value
+                      )
+                    }
+                    placeholder="Select Verifier"
+                    valueKey="value"
+                    labelKey="label"
+                    className="table-dropdown"
+                  />
+                );
+              },
+            },
+            {
+              id: "verifierCode",
+              label: "Verifier Code",
+              render: (school) => {
+                const assignment = schoolAssignments[school.schoolId] || {};
+                return (
+                  <input
+                    type="text"
+                    value={assignment.verifierCode || ""}
+                    onChange={(e) =>
+                      handleAssignmentChange(
+                        school.schoolId,
+                        "verifierCode",
+                        e.target.value
+                      )
+                    }
+                    className="table-input"
+                    placeholder="Enter code"
+                  />
+                );
+              },
+            },
+            {
+              id: "assignmentDate",
+              label: "Assignment Date",
+              render: (school) => {
+                const assignment = schoolAssignments[school.schoolId] || {};
+                return (
+                  <input
+                    type="date"
+                    value={assignment.date || ""}
+                    onChange={(e) =>
+                      handleAssignmentChange(
+                        school.schoolId,
+                        "date",
+                        e.target.value
+                      )
+                    }
+                    className="table-input"
+                    min={new Date().toISOString().split("T")[0]}
+                  />
+                );
+              },
+            },
+            {
+              id: "actions",
+              label: "Actions",
+              render: (school) => {
+                const assignment = schoolAssignments[school.schoolId] || {};
+                return (
+                  <button
+                    onClick={() => handleSaveAssignment(school.schoolId)}
+                    className="table-save-button"
+                    disabled={!assignment.verifierId || !assignment.date}
+                    title={
+                      !assignment.verifierId || !assignment.date
+                        ? "Please select verifier and date"
+                        : "Save assignment"
+                    }
+                  >
+                    <svg
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      className="save-icon"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
                       />
-                    </div>
-
-                    <div className="school-form-group">
-                      <label className="school-form-label">
-                        Assignment Date{" "}
-                        <span className="form-label-required">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={assignment.date || ""}
-                        onChange={(e) =>
-                          handleAssignmentChange(
-                            school.schoolId,
-                            "date",
-                            e.target.value
-                          )
-                        }
-                        className="school-form-input"
-                        min={new Date().toISOString().split("T")[0]}
-                      />
-                    </div>
-
-                    <div className="school-form-group school-form-action">
-                      <button
-                        onClick={() => handleSaveAssignment(school.schoolId)}
-                        className="school-save-button"
-                        disabled={!assignment.verifierId || !assignment.date}
-                      >
-                        <svg
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          className="button-icon"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                        Save Assignment
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+                    </svg>
+                    Save
+                  </button>
+                );
+              },
+            },
+          ]}
+          data={filteredSchools}
+          rowKey="schoolId"
+          loading={false}
+          isError={false}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+          totalCount={filteredSchools.length}
+          serverSidePagination={false}
+          emptyTitle="No schools found"
+          emptySubtitle={
+            filters.schoolId || filters.schoolName || filters.districtId
+              ? "Try adjusting your filters"
+              : "No schools available"
+          }
+        />
+      )}
     </div>
   );
 };

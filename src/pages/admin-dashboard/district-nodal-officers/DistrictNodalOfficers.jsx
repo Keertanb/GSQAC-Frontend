@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   useGetDistrictNodalOfficersQuery,
   useUpsertDistrictNodalOfficerMutation,
@@ -9,13 +9,15 @@ import * as Yup from "yup";
 import FormikWrapper from "../../../components/FormikWrapper/FormikWrapper";
 import FormikField from "../../../components/FormikWrapper/FormikField";
 import AppTable from "../../../components/AppTable/AppTable";
+import AppButton from "../../../components/AppButton/AppButton";
+import { exportToExcel } from "../../../utils/exportToExcel";
 import "./DistrictNodalOfficers.css";
 
 const DistrictNodalOfficers = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOfficer, setEditingOfficer] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage] = useState(10);
 
   const queryClient = useQueryClient();
@@ -116,11 +118,6 @@ const DistrictNodalOfficers = () => {
   // Since API handles search, we use officers directly (no client-side filtering)
   // If API doesn't support search, we can add client-side filtering back
   const filteredOfficers = officers;
-
-  // Reset to first page when search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
 
   // Helper function to parse districtIds
   const parseDistrictIds = (officer) => {
@@ -315,6 +312,56 @@ const DistrictNodalOfficers = () => {
     (o) => o.isActive === false || o.isActive === 0
   ).length;
 
+  // Handle Excel export
+  const handleExportToExcel = () => {
+    if (filteredOfficers.length === 0) {
+      alert("No data to export");
+      return;
+    }
+
+    // Prepare columns for export
+    const exportColumns = [
+      { key: "userName", label: "Name" },
+      { key: "mobileNumber", label: "Mobile Number" },
+      { key: "districts", label: "Districts" },
+      { key: "status", label: "Status" },
+    ];
+
+    // Transform data for export
+    const exportData = filteredOfficers.map((officer) => {
+      const districtArray = parseDistrictIds(officer);
+      const districtNames =
+        districtArray.length > 0
+          ? districtArray
+              .map((districtValue) => {
+                const district = districts.find(
+                  (d) => d.value === districtValue
+                );
+                return district ? district.name : null;
+              })
+              .filter(Boolean)
+              .join(", ")
+          : officer.district || "-";
+
+      return {
+        userName: officer.userName || "-",
+        mobileNumber: officer.mobileNumber || "-",
+        districts: districtNames,
+        status:
+          officer.isActive === true || officer.isActive === 1
+            ? "Active"
+            : "Inactive",
+      };
+    });
+
+    exportToExcel(
+      exportData,
+      exportColumns,
+      "district-nodal-officers",
+      "Nodal Officers"
+    );
+  };
+
   const handleOpenModal = () => {
     setEditingOfficer(null);
     setIsModalOpen(true);
@@ -384,17 +431,42 @@ const DistrictNodalOfficers = () => {
               Manage district nodal officers and their details
             </p>
           </div>
-          <button onClick={handleOpenModal} className="add-button">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add Nodal Officer
-          </button>
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            <AppButton
+              variant="plain"
+              size="icon"
+              iconOnly
+              onClick={handleExportToExcel}
+              title="Export to Excel"
+              icon={
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              }
+            />
+            <AppButton
+              variant="blue"
+              size="sm"
+              onClick={handleOpenModal}
+              icon={
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+              }
+            >
+              Add Nodal Officer
+            </AppButton>
+          </div>
         </div>
 
         {/* Statistics Cards */}
@@ -470,7 +542,10 @@ const DistrictNodalOfficers = () => {
             type="text"
             placeholder="Search by name, mobile, or district..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(0); // Reset to first page when search changes
+            }}
             className="search-input"
           />
         </div>
@@ -515,8 +590,8 @@ const DistrictNodalOfficers = () => {
           isError={isError}
           renderActions={renderActions}
           itemsPerPage={itemsPerPage}
-          currentPage={currentPage}
-          onPageChange={setCurrentPage}
+          currentPage={currentPage + 1}
+          onPageChange={(page) => setCurrentPage(page - 1)}
           totalCount={totalCount}
           serverSidePagination={true}
           emptyTitle="No district nodal officers found"

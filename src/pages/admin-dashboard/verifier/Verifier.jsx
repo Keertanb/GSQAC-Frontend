@@ -1,23 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   useGetVerifiersQuery,
   useUpsertVerifierMutation,
+  useGetAllDistrictsQuery,
 } from "../../../services/adminService";
 import { useQueryClient } from "@tanstack/react-query";
 import AppTable from "../../../components/AppTable/AppTable";
+import AppButton from "../../../components/AppButton/AppButton";
+import { exportToExcel } from "../../../utils/exportToExcel";
 import "./Verifier.css";
 
 const Verifier = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingVerifier, setEditingVerifier] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage] = useState(10);
   const [formData, setFormData] = useState({
     userId: null,
     userName: "",
     mobileNumber: "",
     isActive: 1,
+    districts: [],
   });
 
   const queryClient = useQueryClient();
@@ -29,6 +33,9 @@ const Verifier = () => {
     page: currentPage,
     limit: itemsPerPage,
   });
+
+  const { data: districtsData } = useGetAllDistrictsQuery();
+  const districts = districtsData?.data || [];
   const upsertMutation = useUpsertVerifierMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "verifiers"] });
@@ -36,7 +43,6 @@ const Verifier = () => {
     },
   });
 
-  // Handle API response - could be paginated or direct array
   const verifiers = verifiersData?.data?.data || verifiersData?.data || [];
 
   const filteredVerifiers = verifiers.filter(
@@ -47,11 +53,6 @@ const Verifier = () => {
 
   // Use filtered count for client-side pagination
   const totalCount = filteredVerifiers.length;
-
-  // Reset to first page when search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
 
   // Table columns definition
   const columns = [
@@ -71,6 +72,40 @@ const Verifier = () => {
       id: "mobileNumber",
       label: "Mobile",
       render: (verifier) => verifier.mobileNumber,
+    },
+    {
+      id: "district",
+      label: "Districts",
+      render: (verifier) => {
+        const districtArray = parseDistrictIds(verifier);
+        if (districtArray.length > 0) {
+          return (
+            <div className="district-badges-container">
+              {districtArray.map((districtValue) => {
+                const district = districts.find(
+                  (d) => d.value === districtValue
+                );
+                return district ? (
+                  <span key={districtValue} className="district-badge">
+                    {district.name}
+                  </span>
+                ) : null;
+              })}
+            </div>
+          );
+        } else if (verifier.districtId) {
+          // Backward compatibility for single districtId
+          const district = districts.find(
+            (d) => d.value === verifier.districtId
+          );
+          return district ? (
+            <span className="district-badge">{district.name}</span>
+          ) : (
+            "-"
+          );
+        }
+        return <span className="text-muted">-</span>;
+      },
     },
     {
       id: "status",
@@ -186,6 +221,57 @@ const Verifier = () => {
     (v) => v.isActive === false || v.isActive === 0
   ).length;
 
+  // Handle Excel export
+  const handleExportToExcel = () => {
+    if (filteredVerifiers.length === 0) {
+      alert("No data to export");
+      return;
+    }
+
+    // Prepare columns for export
+    const exportColumns = [
+      { key: "userName", label: "Name" },
+      { key: "mobileNumber", label: "Mobile Number" },
+      { key: "districts", label: "Districts" },
+      { key: "status", label: "Status" },
+    ];
+
+    // Transform data for export
+    const exportData = filteredVerifiers.map((verifier) => {
+      const districtArray = parseDistrictIds(verifier);
+      const districtNames =
+        districtArray.length > 0
+          ? districtArray
+              .map((districtValue) => {
+                const district = districts.find(
+                  (d) => d.value === districtValue
+                );
+                return district ? district.name : null;
+              })
+              .filter(Boolean)
+              .join(", ")
+          : verifier.districtId
+          ? (() => {
+              const district = districts.find(
+                (d) => d.value === verifier.districtId
+              );
+              return district?.name || "-";
+            })()
+          : "-";
+      return {
+        userName: verifier.userName || "-",
+        mobileNumber: verifier.mobileNumber || "-",
+        districts: districtNames,
+        status:
+          verifier.isActive === true || verifier.isActive === 1
+            ? "Active"
+            : "Inactive",
+      };
+    });
+
+    exportToExcel(exportData, exportColumns, "verifiers", "Verifiers");
+  };
+
   const handleOpenModal = () => {
     setEditingVerifier(null);
     setFormData({
@@ -193,6 +279,7 @@ const Verifier = () => {
       userName: "",
       mobileNumber: "",
       isActive: 1,
+      districts: [],
     });
     setIsModalOpen(true);
   };
@@ -205,33 +292,86 @@ const Verifier = () => {
       userName: "",
       mobileNumber: "",
       isActive: 1,
+      districts: [],
     });
+  };
+
+  // Helper function to parse districtIds
+  const parseDistrictIds = (verifier) => {
+    let districtArray = [];
+    if (typeof verifier.districtIds === "string") {
+      try {
+        const parsed = JSON.parse(verifier.districtIds);
+        if (Array.isArray(parsed)) {
+          districtArray = parsed
+            .map((item) => (typeof item === "object" ? item.districtId : item))
+            .filter((id) => id !== undefined && id !== null);
+        }
+      } catch {
+        // If parsing fails, try other formats
+      }
+    } else if (Array.isArray(verifier.districtIds)) {
+      if (
+        verifier.districtIds.length > 0 &&
+        typeof verifier.districtIds[0] === "object" &&
+        verifier.districtIds[0].districtId !== undefined
+      ) {
+        districtArray = verifier.districtIds.map((item) => item.districtId);
+      } else {
+        districtArray = verifier.districtIds;
+      }
+    } else if (verifier.districtId) {
+      // Single districtId (for backward compatibility)
+      districtArray = [Number(verifier.districtId)];
+    } else if (Array.isArray(verifier.districts)) {
+      districtArray = verifier.districts;
+    }
+    return districtArray.map((id) => Number(id));
   };
 
   const handleEdit = (verifier) => {
     setEditingVerifier(verifier);
+    const districtArray = parseDistrictIds(verifier);
     setFormData({
       userId: verifier.userId,
       userName: verifier.userName || "",
       mobileNumber: verifier.mobileNumber || "",
       isActive: verifier.isActive === true || verifier.isActive === 1 ? 1 : 0,
+      districts: districtArray,
     });
     setIsModalOpen(true);
   };
 
   const handleToggleStatus = (verifier) => {
+    // Parse districtIds from verifier
+    const districtIds = parseDistrictIds(verifier);
+
     const updatedData = {
       userId: verifier.userId,
       userName: verifier.userName,
       mobileNumber: verifier.mobileNumber,
       isActive: verifier.isActive === true || verifier.isActive === 1 ? 0 : 1,
+      districtIds: districtIds,
     };
     upsertMutation.mutate(updatedData);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    upsertMutation.mutate(formData);
+    // Ensure districts is always an array
+    const districtIds = Array.isArray(formData.districts)
+      ? formData.districts
+      : [];
+
+    const payload = {
+      userId: formData.userId || null,
+      userName: formData.userName,
+      mobileNumber: formData.mobileNumber,
+      isActive: formData.isActive,
+      districtIds: districtIds,
+    };
+
+    upsertMutation.mutate(payload);
   };
 
   const handleInputChange = (e) => {
@@ -253,17 +393,42 @@ const Verifier = () => {
               Manage verifiers and their assignments
             </p>
           </div>
-          <button onClick={handleOpenModal} className="verifier-add-button">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add Verifier
-          </button>
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            <AppButton
+              variant="plain"
+              size="icon"
+              iconOnly
+              onClick={handleExportToExcel}
+              title="Export to Excel"
+              icon={
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              }
+            />
+            <AppButton
+              variant="blue"
+              size="sm"
+              onClick={handleOpenModal}
+              icon={
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+              }
+            >
+              Add Verifier
+            </AppButton>
+          </div>
         </div>
 
         {/* Statistics Cards */}
@@ -351,7 +516,10 @@ const Verifier = () => {
             type="text"
             placeholder="Search by name or mobile number..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(0); // Reset to first page when search changes
+            }}
             className="verifier-search-input"
           />
         </div>
@@ -396,8 +564,8 @@ const Verifier = () => {
           isError={isError}
           renderActions={renderActions}
           itemsPerPage={itemsPerPage}
-          currentPage={currentPage}
-          onPageChange={setCurrentPage}
+          currentPage={currentPage + 1}
+          onPageChange={(page) => setCurrentPage(page - 1)}
           totalCount={totalCount}
           serverSidePagination={false}
           emptyTitle="No verifiers found"
@@ -473,6 +641,108 @@ const Verifier = () => {
                   className="verifier-form-input"
                   placeholder="Enter mobile number"
                 />
+              </div>
+
+              <div className="verifier-form-group">
+                <div className="verifier-form-label-container">
+                  <label className="verifier-form-label">
+                    Districts{" "}
+                    <span className="verifier-form-label-required">*</span>
+                  </label>
+                  {formData.districts?.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          districts: [],
+                        }));
+                      }}
+                      className="verifier-clear-districts-button"
+                      title="Clear all districts"
+                    >
+                      <svg
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                {districts.length === 0 ? (
+                  <div className="verifier-form-loading">
+                    Loading districts...
+                  </div>
+                ) : (
+                  <div className="district-multiselect-container">
+                    <div className="district-multiselect">
+                      {districts.map((district) => {
+                        const isSelected = formData.districts?.includes(
+                          Number(district.value)
+                        );
+                        return (
+                          <label
+                            key={district.value}
+                            className={`district-checkbox-label ${
+                              isSelected ? "district-checkbox-selected" : ""
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {
+                                const districtValueNum = Number(district.value);
+                                const currentDistricts =
+                                  formData.districts || [];
+                                const isSelected =
+                                  currentDistricts.includes(districtValueNum);
+
+                                if (isSelected) {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    districts: currentDistricts.filter(
+                                      (id) => id !== districtValueNum
+                                    ),
+                                  }));
+                                } else {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    districts: [
+                                      ...currentDistricts,
+                                      districtValueNum,
+                                    ],
+                                  }));
+                                }
+                              }}
+                              className="district-checkbox"
+                            />
+                            <span className="district-checkbox-text">
+                              {district.name}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {formData.districts?.length > 0 && (
+                      <div className="selected-districts-info">
+                        {formData.districts.length} district
+                        {formData.districts.length > 1 ? "s" : ""} selected
+                      </div>
+                    )}
+                    {formData.districts?.length === 0 && (
+                      <div className="verifier-form-error">
+                        At least one district must be selected
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="verifier-form-group">

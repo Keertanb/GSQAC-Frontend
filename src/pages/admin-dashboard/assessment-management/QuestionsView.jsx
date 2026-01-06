@@ -552,190 +552,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
           </Button>
         </Box>
 
-        {/* Add/Edit Question Form */}
-        {showAddQuestion && (
-          <Fade in={showAddQuestion}>
-            <Card
-              elevation={2}
-              sx={{
-                mb: 3,
-                p: 3,
-                borderRadius: 2,
-                bgcolor: "#f9fafb",
-              }}
-            >
-              <Typography
-                variant="h6"
-                gutterBottom
-                sx={{ fontWeight: 700, mb: 3 }}
-              >
-                {editingQuestion
-                  ? t("assessment.question.editQuestion")
-                  : t("assessment.question.addQuestion")}
-              </Typography>
-              <Box
-                sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}
-              >
-                <FormControl fullWidth size="small">
-                  <InputLabel>{t("assessment.domain.selectRole")}</InputLabel>
-                  <Select
-                    value={selectedQuestionRole}
-                    onChange={(e) => setSelectedQuestionRole(e.target.value)}
-                    label={t("assessment.domain.selectRole")}
-                  >
-                    <MenuItem value="admin">Admin</MenuItem>
-                    <MenuItem value="school">School</MenuItem>
-                    <MenuItem value="inspector">School Verifier</MenuItem>
-                    <MenuItem value="parent">Parent</MenuItem>
-                  </Select>
-                </FormControl>
-                <Box sx={{ display: "flex", gap: 2 }}>
-                  <TextField
-                    fullWidth
-                    label={`${t("assessment.question.questionText")} (English)`}
-                    value={newQuestionText.en}
-                    onChange={(e) =>
-                      setNewQuestionText({
-                        ...newQuestionText,
-                        en: e.target.value,
-                      })
-                    }
-                    variant="outlined"
-                    size="small"
-                    required
-                    multiline
-                    rows={3}
-                  />
-                  <TextField
-                    fullWidth
-                    label={`${t("assessment.question.questionText")} (Hindi)`}
-                    value={newQuestionText.hi}
-                    onChange={(e) =>
-                      setNewQuestionText({
-                        ...newQuestionText,
-                        hi: e.target.value,
-                      })
-                    }
-                    variant="outlined"
-                    size="small"
-                    multiline
-                    rows={3}
-                  />
-                  <TextField
-                    fullWidth
-                    label={`${t(
-                      "assessment.question.questionText"
-                    )} (Gujarati)`}
-                    value={newQuestionText.gu}
-                    onChange={(e) =>
-                      setNewQuestionText({
-                        ...newQuestionText,
-                        gu: e.target.value,
-                      })
-                    }
-                    variant="outlined"
-                    size="small"
-                    multiline
-                    rows={3}
-                  />
-                </Box>
-                <FormControl component="fieldset">
-                  <FormLabel component="legend" sx={{ mb: 1 }}>
-                    Is Classroom Observation
-                  </FormLabel>
-                  <RadioGroup
-                    row
-                    value={isClassroomObservation}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value, 10);
-                      setIsClassroomObservation(value);
-                      // Reset observationCount when switching to No
-                      if (value === 0) {
-                        setObservationCount("");
-                      }
-                    }}
-                  >
-                    <FormControlLabel
-                      value={1}
-                      control={<Radio />}
-                      label="Yes"
-                    />
-                    <FormControlLabel
-                      value={0}
-                      control={<Radio />}
-                      label="No"
-                    />
-                  </RadioGroup>
-                </FormControl>
-                {isClassroomObservation === 1 && (
-                  <TextField
-                    fullWidth
-                    label="Observation Count"
-                    type="number"
-                    value={observationCount}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      // Only allow positive integers
-                      if (value === "" || /^\d+$/.test(value)) {
-                        setObservationCount(value);
-                      }
-                    }}
-                    variant="outlined"
-                    size="small"
-                    inputProps={{ min: 1 }}
-                    helperText="Enter the number of observations"
-                  />
-                )}
-              </Box>
-
-              {/* Question Submit Button */}
-              <Box sx={{ mb: 3, display: "flex", gap: 2 }}>
-                <Button
-                  variant="contained"
-                  startIcon={
-                    upsertQuestionMutation.isPending ? (
-                      <CircularProgress size={20} color="inherit" />
-                    ) : (
-                      <Add />
-                    )
-                  }
-                  onClick={handleAddQuestion}
-                  disabled={upsertQuestionMutation.isPending}
-                  sx={{
-                    bgcolor: colors.primary.blue,
-                    "&:hover": { bgcolor: colors.primary.dark },
-                  }}
-                >
-                  {upsertQuestionMutation.isPending
-                    ? "Saving Question..."
-                    : editingQuestion
-                    ? "Update Question"
-                    : "Add Question"}
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    setShowAddQuestion(false);
-                    setShowOptionsForm(false);
-                    setNewQuestionText({ en: "", hi: "", gu: "" });
-                    setNewOptions([
-                      { id: 1, text: { en: "", hi: "", gu: "" } },
-                      { id: 2, text: { en: "", hi: "", gu: "" } },
-                    ]);
-                    setIsClassroomObservation(0);
-                    setObservationCount("");
-                    setEditingQuestion(null);
-                    setCurrentQuestionId(null);
-                  }}
-                  disabled={upsertQuestionMutation.isPending}
-                >
-                  {t("common.cancel")}
-                </Button>
-              </Box>
-            </Card>
-          </Fade>
-        )}
-
         {/* Options Form - Separate Card */}
         {showOptionsForm && (
           <Fade in={showOptionsForm}>
@@ -929,6 +745,207 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {questions.map((question, index) => {
               const options = parseOptions(question.options);
+              const isEditingThisQuestion =
+                editingQuestion &&
+                editingQuestion.questionId === question.questionId;
+
+              // If editing this question, show edit form instead of question card
+              if (isEditingThisQuestion && showAddQuestion) {
+                return (
+                  <Fade in={showAddQuestion} key={`edit-${question.questionId}`}>
+                    <Card
+                      elevation={2}
+                      sx={{
+                        borderRadius: 2,
+                        bgcolor: "#f9fafb",
+                        border: `2px solid ${colors.primary.blue}`,
+                      }}
+                    >
+                      <CardContent sx={{ p: 3 }}>
+                        <Typography
+                          variant="h6"
+                          gutterBottom
+                          sx={{ fontWeight: 700, mb: 3 }}
+                        >
+                          {t("assessment.question.editQuestion")}
+                        </Typography>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 2,
+                            mb: 2,
+                          }}
+                        >
+                          <FormControl fullWidth size="small">
+                            <InputLabel>
+                              {t("assessment.domain.selectRole")}
+                            </InputLabel>
+                            <Select
+                              value={selectedQuestionRole}
+                              onChange={(e) =>
+                                setSelectedQuestionRole(e.target.value)
+                              }
+                              label={t("assessment.domain.selectRole")}
+                            >
+                              <MenuItem value="admin">Admin</MenuItem>
+                              <MenuItem value="school">School</MenuItem>
+                              <MenuItem value="inspector">School Verifier</MenuItem>
+                              <MenuItem value="parent">Parent</MenuItem>
+                            </Select>
+                          </FormControl>
+                          <Box sx={{ display: "flex", gap: 2 }}>
+                            <TextField
+                              fullWidth
+                              label={`${t(
+                                "assessment.question.questionText"
+                              )} (English)`}
+                              value={newQuestionText.en}
+                              onChange={(e) =>
+                                setNewQuestionText({
+                                  ...newQuestionText,
+                                  en: e.target.value,
+                                })
+                              }
+                              variant="outlined"
+                              size="small"
+                              required
+                              multiline
+                              rows={3}
+                            />
+                            <TextField
+                              fullWidth
+                              label={`${t(
+                                "assessment.question.questionText"
+                              )} (Hindi)`}
+                              value={newQuestionText.hi}
+                              onChange={(e) =>
+                                setNewQuestionText({
+                                  ...newQuestionText,
+                                  hi: e.target.value,
+                                })
+                              }
+                              variant="outlined"
+                              size="small"
+                              multiline
+                              rows={3}
+                            />
+                            <TextField
+                              fullWidth
+                              label={`${t(
+                                "assessment.question.questionText"
+                              )} (Gujarati)`}
+                              value={newQuestionText.gu}
+                              onChange={(e) =>
+                                setNewQuestionText({
+                                  ...newQuestionText,
+                                  gu: e.target.value,
+                                })
+                              }
+                              variant="outlined"
+                              size="small"
+                              multiline
+                              rows={3}
+                            />
+                          </Box>
+                          <FormControl component="fieldset">
+                            <FormLabel component="legend" sx={{ mb: 1 }}>
+                              Is Classroom Observation
+                            </FormLabel>
+                            <RadioGroup
+                              row
+                              value={isClassroomObservation}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value, 10);
+                                setIsClassroomObservation(value);
+                                // Reset observationCount when switching to No
+                                if (value === 0) {
+                                  setObservationCount("");
+                                }
+                              }}
+                            >
+                              <FormControlLabel
+                                value={1}
+                                control={<Radio />}
+                                label="Yes"
+                              />
+                              <FormControlLabel
+                                value={0}
+                                control={<Radio />}
+                                label="No"
+                              />
+                            </RadioGroup>
+                          </FormControl>
+                          {isClassroomObservation === 1 && (
+                            <TextField
+                              fullWidth
+                              label="Observation Count"
+                              type="number"
+                              value={observationCount}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                // Only allow positive integers
+                                if (value === "" || /^\d+$/.test(value)) {
+                                  setObservationCount(value);
+                                }
+                              }}
+                              variant="outlined"
+                              size="small"
+                              inputProps={{ min: 1 }}
+                              helperText="Enter the number of observations"
+                            />
+                          )}
+                        </Box>
+
+                        {/* Question Submit Button */}
+                        <Box sx={{ mb: 3, display: "flex", gap: 2 }}>
+                          <Button
+                            variant="contained"
+                            startIcon={
+                              upsertQuestionMutation.isPending ? (
+                                <CircularProgress size={20} color="inherit" />
+                              ) : (
+                                <Add />
+                              )
+                            }
+                            onClick={handleAddQuestion}
+                            disabled={upsertQuestionMutation.isPending}
+                            sx={{
+                              bgcolor: colors.primary.blue,
+                              "&:hover": { bgcolor: colors.primary.dark },
+                            }}
+                          >
+                            {upsertQuestionMutation.isPending
+                              ? "Updating Question..."
+                              : "Update Question"}
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            onClick={() => {
+                              setShowAddQuestion(false);
+                              setShowOptionsForm(false);
+                              setNewQuestionText({ en: "", hi: "", gu: "" });
+                              setNewOptions([
+                                { id: 1, text: { en: "", hi: "", gu: "" } },
+                                { id: 2, text: { en: "", hi: "", gu: "" } },
+                              ]);
+                              setIsClassroomObservation(0);
+                              setObservationCount("");
+                              setEditingQuestion(null);
+                              setCurrentQuestionId(null);
+                            }}
+                            disabled={upsertQuestionMutation.isPending}
+                          >
+                            {t("common.cancel")}
+                          </Button>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Fade>
+                );
+              }
+
+              // Normal question card display
               return (
                 <Card
                   key={question.questionId}
@@ -987,16 +1004,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                                 mt: 0.5,
                               }}
                             >
-                              {/* <Chip
-                                label="Classroom Observation"
-                                size="small"
-                                sx={{
-                                  bgcolor: colors.semantic.warning + "20",
-                                  color: colors.semantic.warning,
-                                  fontWeight: 600,
-                                  fontSize: "0.75rem",
-                                }}
-                              /> */}
                               <Chip
                                 label={`Observation Count: ${question.observationCount}`}
                                 size="small"
@@ -1106,6 +1113,197 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                 </Card>
               );
             })}
+
+            {/* Add Question Form at the bottom */}
+            {showAddQuestion && !editingQuestion && (
+              <Fade in={showAddQuestion}>
+                <Card
+                  elevation={2}
+                  sx={{
+                    p: 3,
+                    borderRadius: 2,
+                    bgcolor: "#f9fafb",
+                    border: `2px solid ${colors.primary.blue}`,
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ fontWeight: 700, mb: 3 }}
+                  >
+                    {t("assessment.question.addQuestion")}
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 2,
+                      mb: 2,
+                    }}
+                  >
+                    <FormControl fullWidth size="small">
+                      <InputLabel>
+                        {t("assessment.domain.selectRole")}
+                      </InputLabel>
+                      <Select
+                        value={selectedQuestionRole}
+                        onChange={(e) =>
+                          setSelectedQuestionRole(e.target.value)
+                        }
+                        label={t("assessment.domain.selectRole")}
+                      >
+                        <MenuItem value="admin">Admin</MenuItem>
+                        <MenuItem value="school">School</MenuItem>
+                        <MenuItem value="inspector">School Verifier</MenuItem>
+                        <MenuItem value="parent">Parent</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <Box sx={{ display: "flex", gap: 2 }}>
+                      <TextField
+                        fullWidth
+                        label={`${t(
+                          "assessment.question.questionText"
+                        )} (English)`}
+                        value={newQuestionText.en}
+                        onChange={(e) =>
+                          setNewQuestionText({
+                            ...newQuestionText,
+                            en: e.target.value,
+                          })
+                        }
+                        variant="outlined"
+                        size="small"
+                        required
+                        multiline
+                        rows={3}
+                      />
+                      <TextField
+                        fullWidth
+                        label={`${t("assessment.question.questionText")} (Hindi)`}
+                        value={newQuestionText.hi}
+                        onChange={(e) =>
+                          setNewQuestionText({
+                            ...newQuestionText,
+                            hi: e.target.value,
+                          })
+                        }
+                        variant="outlined"
+                        size="small"
+                        multiline
+                        rows={3}
+                      />
+                      <TextField
+                        fullWidth
+                        label={`${t(
+                          "assessment.question.questionText"
+                        )} (Gujarati)`}
+                        value={newQuestionText.gu}
+                        onChange={(e) =>
+                          setNewQuestionText({
+                            ...newQuestionText,
+                            gu: e.target.value,
+                          })
+                        }
+                        variant="outlined"
+                        size="small"
+                        multiline
+                        rows={3}
+                      />
+                    </Box>
+                    <FormControl component="fieldset">
+                      <FormLabel component="legend" sx={{ mb: 1 }}>
+                        Is Classroom Observation
+                      </FormLabel>
+                      <RadioGroup
+                        row
+                        value={isClassroomObservation}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value, 10);
+                          setIsClassroomObservation(value);
+                          // Reset observationCount when switching to No
+                          if (value === 0) {
+                            setObservationCount("");
+                          }
+                        }}
+                      >
+                        <FormControlLabel
+                          value={1}
+                          control={<Radio />}
+                          label="Yes"
+                        />
+                        <FormControlLabel
+                          value={0}
+                          control={<Radio />}
+                          label="No"
+                        />
+                      </RadioGroup>
+                    </FormControl>
+                    {isClassroomObservation === 1 && (
+                      <TextField
+                        fullWidth
+                        label="Observation Count"
+                        type="number"
+                        value={observationCount}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Only allow positive integers
+                          if (value === "" || /^\d+$/.test(value)) {
+                            setObservationCount(value);
+                          }
+                        }}
+                        variant="outlined"
+                        size="small"
+                        inputProps={{ min: 1 }}
+                        helperText="Enter the number of observations"
+                      />
+                    )}
+                  </Box>
+
+                  {/* Question Submit Button */}
+                  <Box sx={{ mb: 3, display: "flex", gap: 2 }}>
+                    <Button
+                      variant="contained"
+                      startIcon={
+                        upsertQuestionMutation.isPending ? (
+                          <CircularProgress size={20} color="inherit" />
+                        ) : (
+                          <Add />
+                        )
+                      }
+                      onClick={handleAddQuestion}
+                      disabled={upsertQuestionMutation.isPending}
+                      sx={{
+                        bgcolor: colors.primary.blue,
+                        "&:hover": { bgcolor: colors.primary.dark },
+                      }}
+                    >
+                      {upsertQuestionMutation.isPending
+                        ? "Saving Question..."
+                        : "Add Question"}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      onClick={() => {
+                        setShowAddQuestion(false);
+                        setShowOptionsForm(false);
+                        setNewQuestionText({ en: "", hi: "", gu: "" });
+                        setNewOptions([
+                          { id: 1, text: { en: "", hi: "", gu: "" } },
+                          { id: 2, text: { en: "", hi: "", gu: "" } },
+                        ]);
+                        setIsClassroomObservation(0);
+                        setObservationCount("");
+                        setEditingQuestion(null);
+                        setCurrentQuestionId(null);
+                      }}
+                      disabled={upsertQuestionMutation.isPending}
+                    >
+                      {t("common.cancel")}
+                    </Button>
+                  </Box>
+                </Card>
+              </Fade>
+            )}
           </Box>
         ) : (
           <Box
@@ -1115,9 +1313,201 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
               color: "text.secondary",
             }}
           >
-            <Typography variant="body1">
+            <Typography variant="body1" sx={{ mb: 3 }}>
               {t("assessment.question.noQuestions")}
             </Typography>
+            {/* Add Question Form when no questions exist */}
+            {showAddQuestion && !editingQuestion && (
+              <Fade in={showAddQuestion}>
+                <Card
+                  elevation={2}
+                  sx={{
+                    p: 3,
+                    borderRadius: 2,
+                    bgcolor: "#f9fafb",
+                    border: `2px solid ${colors.primary.blue}`,
+                    maxWidth: "100%",
+                    mt: 2,
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ fontWeight: 700, mb: 3 }}
+                  >
+                    {t("assessment.question.addQuestion")}
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 2,
+                      mb: 2,
+                    }}
+                  >
+                    <FormControl fullWidth size="small">
+                      <InputLabel>
+                        {t("assessment.domain.selectRole")}
+                      </InputLabel>
+                      <Select
+                        value={selectedQuestionRole}
+                        onChange={(e) =>
+                          setSelectedQuestionRole(e.target.value)
+                        }
+                        label={t("assessment.domain.selectRole")}
+                      >
+                        <MenuItem value="admin">Admin</MenuItem>
+                        <MenuItem value="school">School</MenuItem>
+                        <MenuItem value="inspector">School Verifier</MenuItem>
+                        <MenuItem value="parent">Parent</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <Box sx={{ display: "flex", gap: 2 }}>
+                      <TextField
+                        fullWidth
+                        label={`${t(
+                          "assessment.question.questionText"
+                        )} (English)`}
+                        value={newQuestionText.en}
+                        onChange={(e) =>
+                          setNewQuestionText({
+                            ...newQuestionText,
+                            en: e.target.value,
+                          })
+                        }
+                        variant="outlined"
+                        size="small"
+                        required
+                        multiline
+                        rows={3}
+                      />
+                      <TextField
+                        fullWidth
+                        label={`${t("assessment.question.questionText")} (Hindi)`}
+                        value={newQuestionText.hi}
+                        onChange={(e) =>
+                          setNewQuestionText({
+                            ...newQuestionText,
+                            hi: e.target.value,
+                          })
+                        }
+                        variant="outlined"
+                        size="small"
+                        multiline
+                        rows={3}
+                      />
+                      <TextField
+                        fullWidth
+                        label={`${t(
+                          "assessment.question.questionText"
+                        )} (Gujarati)`}
+                        value={newQuestionText.gu}
+                        onChange={(e) =>
+                          setNewQuestionText({
+                            ...newQuestionText,
+                            gu: e.target.value,
+                          })
+                        }
+                        variant="outlined"
+                        size="small"
+                        multiline
+                        rows={3}
+                      />
+                    </Box>
+                    <FormControl component="fieldset">
+                      <FormLabel component="legend" sx={{ mb: 1 }}>
+                        Is Classroom Observation
+                      </FormLabel>
+                      <RadioGroup
+                        row
+                        value={isClassroomObservation}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value, 10);
+                          setIsClassroomObservation(value);
+                          // Reset observationCount when switching to No
+                          if (value === 0) {
+                            setObservationCount("");
+                          }
+                        }}
+                      >
+                        <FormControlLabel
+                          value={1}
+                          control={<Radio />}
+                          label="Yes"
+                        />
+                        <FormControlLabel
+                          value={0}
+                          control={<Radio />}
+                          label="No"
+                        />
+                      </RadioGroup>
+                    </FormControl>
+                    {isClassroomObservation === 1 && (
+                      <TextField
+                        fullWidth
+                        label="Observation Count"
+                        type="number"
+                        value={observationCount}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Only allow positive integers
+                          if (value === "" || /^\d+$/.test(value)) {
+                            setObservationCount(value);
+                          }
+                        }}
+                        variant="outlined"
+                        size="small"
+                        inputProps={{ min: 1 }}
+                        helperText="Enter the number of observations"
+                      />
+                    )}
+                  </Box>
+
+                  {/* Question Submit Button */}
+                  <Box sx={{ mb: 3, display: "flex", gap: 2 }}>
+                    <Button
+                      variant="contained"
+                      startIcon={
+                        upsertQuestionMutation.isPending ? (
+                          <CircularProgress size={20} color="inherit" />
+                        ) : (
+                          <Add />
+                        )
+                      }
+                      onClick={handleAddQuestion}
+                      disabled={upsertQuestionMutation.isPending}
+                      sx={{
+                        bgcolor: colors.primary.blue,
+                        "&:hover": { bgcolor: colors.primary.dark },
+                      }}
+                    >
+                      {upsertQuestionMutation.isPending
+                        ? "Saving Question..."
+                        : "Add Question"}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      onClick={() => {
+                        setShowAddQuestion(false);
+                        setShowOptionsForm(false);
+                        setNewQuestionText({ en: "", hi: "", gu: "" });
+                        setNewOptions([
+                          { id: 1, text: { en: "", hi: "", gu: "" } },
+                          { id: 2, text: { en: "", hi: "", gu: "" } },
+                        ]);
+                        setIsClassroomObservation(0);
+                        setObservationCount("");
+                        setEditingQuestion(null);
+                        setCurrentQuestionId(null);
+                      }}
+                      disabled={upsertQuestionMutation.isPending}
+                    >
+                      {t("common.cancel")}
+                    </Button>
+                  </Box>
+                </Card>
+              </Fade>
+            )}
           </Box>
         )}
       </Paper>

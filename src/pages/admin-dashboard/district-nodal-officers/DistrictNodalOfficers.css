@@ -98,6 +98,61 @@
   height: 1.25rem;
 }
 
+.export-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border: 2px solid #059669;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.export-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.export-button:hover::before {
+  left: 100%;
+}
+
+.export-button:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  border-color: #047857;
+  box-shadow: 0 6px 12px -2px rgba(16, 185, 129, 0.4);
+  transform: translateY(-2px);
+}
+
+.export-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px -1px rgba(16, 185, 129, 0.3);
+}
+
+.export-button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  transition: transform 0.3s;
+}
+
+.export-button:hover svg {
+  transform: translateY(-2px);
+}
+
 /* Statistics Cards */
 .stats-grid {
   display: grid;

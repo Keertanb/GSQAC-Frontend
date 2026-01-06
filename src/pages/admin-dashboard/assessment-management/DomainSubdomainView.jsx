@@ -302,21 +302,17 @@ const DomainSubdomainView = ({
                         alignItems: "center",
                       }}
                     >
-                      <Button
+                      <IconButton
                         size="small"
-                        variant="contained"
-                        startIcon={<Visibility />}
+                        color="primary"
                         onClick={() => onNavigateToCriteria(subdomain)}
                         sx={{
-                          bgcolor: colors.primary.blue,
-                          textTransform: "none",
-                          "&:hover": {
-                            bgcolor: colors.primary.dark,
-                          },
+                          bgcolor: colors.primary.blue + "15",
+                          "&:hover": { bgcolor: colors.primary.blue + "25" },
                         }}
                       >
-                        {t("assessment.question.viewQuestions")}
-                      </Button>
+                        <Visibility />
+                      </IconButton>
                       <IconButton
                         size="small"
                         color="primary"

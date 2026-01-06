@@ -25,13 +25,12 @@ axiosInstance.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Map role string to roleId number and add to headers
-    if (role) {
-      const roleId = roleIdMap[role];
-      if (roleId) {
-        config.headers.roleId = roleId;
-      }
-    }
+    // if (role) {
+    //   const roleId = roleIdMap[role];
+    //   if (roleId) {
+    //     config.headers.roleId = roleId;
+    //   }
+    // }
 
     config.headers["Content-Type"] = "application/json";
 

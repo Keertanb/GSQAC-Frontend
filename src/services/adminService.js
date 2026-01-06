@@ -2,14 +2,25 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import axiosInstance from "../config/axios";
 import { queryKeys } from "../config/queryClient";
 import { enqueueSnackbar } from "notistack";
+import useAuthStore from "../store/useAuthStore";
 
 /**
  * Get domains and subdomains
- * @param {Object} params - { roleId: number, languageCode?: string }
+ * @param {Object} params - { roleId?: number, languageCode?: string }
  * @returns {Promise} API response
  */
-export const getDomains = async (params) => {
-  const response = await axiosInstance.get("/questionnaire/domain", { params });
+export const getDomains = async (params = {}) => {
+  const { roleId, languageCode, ...otherParams } = params;
+  const config = {
+    params: { languageCode, ...otherParams },
+    headers: {},
+  };
+
+  if (roleId) {
+    config.headers.roleId = roleId;
+  }
+
+  const response = await axiosInstance.get("/questionnaire/domain", config);
   return response.data;
 };
 
@@ -19,9 +30,25 @@ export const getDomains = async (params) => {
  * @returns {Promise} API response
  */
 export const getSubdomainQuestions = async (params) => {
-  const response = await axiosInstance.get("/questionnaire/question", {
-    params,
-  });
+  const { roleId, subDomainId, languageCode, userId, ...otherParams } = params;
+  const config = {
+    params: { subDomainId, languageCode, ...otherParams },
+    headers: {},
+  };
+
+  // Set roleId in header if provided
+  if (roleId) {
+    config.headers.roleId = roleId;
+  }
+
+  // Get userId from auth store if not provided in params, and set in header if present
+  const authState = useAuthStore.getState();
+  const userIdToSend = userId || authState.userId;
+  if (userIdToSend) {
+    config.headers.userId = userIdToSend;
+  }
+
+  const response = await axiosInstance.get("/questionnaire/question", config);
   return response.data;
 };
 
@@ -124,7 +151,7 @@ export const submitAnswer = async (payload) => {
 /**
  * React Query hook for getting domains
  * @param {Object} options - Query options
- * @param {number} options.roleId - Role ID
+ * @param {number} options.roleId - Role ID (will be sent in header)
  * @param {string} options.languageCode - Language code (EN, HI, GU)
  * @param {boolean} options.enabled - Whether the query should run
  * @returns {Object} Query object from React Query
@@ -138,7 +165,7 @@ export const useGetDomainsQuery = ({
     queryKey: queryKeys.admin.domains(roleId, languageCode),
     queryFn: () => getDomains({ roleId, languageCode }),
     enabled: enabled && !!roleId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -156,7 +183,7 @@ export const useGetSubdomainQuestionsQuery = ({
   subDomainId,
   roleId,
   languageCode,
-  userId,
+
   enabled = true,
 }) => {
   return useQuery({
@@ -165,10 +192,9 @@ export const useGetSubdomainQuestionsQuery = ({
       roleId,
       languageCode
     ),
-    queryFn: () =>
-      getSubdomainQuestions({ subDomainId, roleId, languageCode, userId }),
+    queryFn: () => getSubdomainQuestions({ subDomainId, roleId, languageCode }),
     enabled: enabled && !!subDomainId && !!roleId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 };
 
