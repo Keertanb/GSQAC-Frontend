@@ -1,26 +1,21 @@
-/* Clean Modern Drawer Styling - Matching Example Design */
+/* Modern Clean Drawer Styling */
 
 .drawer-header {
   position: relative;
   flex-shrink: 0;
-  height: 64px;
-  min-height: 64px;
-  max-height: 64px;
   display: flex;
   align-items: center;
-  padding: 0 24px;
   overflow: hidden;
-  background: #ffffff;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .MuiDrawer-paper {
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.06) !important;
-  border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
-  background: #ffffff !important;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08) !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+  backdrop-filter: blur(20px);
 }
 
-/* Clean scrollbar */
+/* Modern scrollbar */
 .MuiBox-root::-webkit-scrollbar {
   width: 6px;
 }
@@ -30,20 +25,20 @@
 }
 
 .MuiBox-root::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.12);
   border-radius: 10px;
   transition: background 0.2s ease;
 }
 
 .MuiBox-root::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.2);
 }
 
-/* Menu item animations */
+/* Smooth menu item animations */
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateX(-4px);
+    transform: translateX(-8px);
   }
   to {
     opacity: 1;
@@ -52,15 +47,27 @@
 }
 
 .MuiListItemButton-root {
-  animation: slideIn 0.15s ease-out;
+  animation: slideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Clean hover effects */
+/* Enhanced hover effects */
 .MuiListItemButton-root:hover:not(.Mui-selected) {
-  background-color: rgba(0, 0, 0, 0.02) !important;
+  background-color: rgba(0, 0, 0, 0.03) !important;
 }
 
-/* Active state - simple blue background */
+/* Active state styling */
 .btn-active {
   position: relative;
+}
+
+/* Icon container hover effect */
+.item-icon {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for all interactive elements */
+.MuiListItemButton-root,
+.MuiListItemIcon-root,
+.item-icon .icon {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }

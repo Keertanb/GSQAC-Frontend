@@ -101,23 +101,23 @@ const AdminDashboard = () => {
         <AppBar
           position="fixed"
           sx={{
-            background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-            backdropFilter: "blur(10px)",
+            background: "rgba(255, 255, 255, 0.85)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
             zIndex: theme.zIndex.drawer + 1,
-            boxShadow:
-              "0 4px 20px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
             borderBottom: "1px solid rgba(0,0,0,0.06)",
-            height: "64px",
-            // position: "relative",
-            // "&::before": {
-            //   content: '""',
-            //   position: "absolute",
-            //   top: 0,
-            //   left: 0,
-            //   right: 0,
-            //   height: "3px",
-            //   background: "linear-gradient(90deg, #3b82f6 0%, #2563eb 50%, #3b82f6 100%)",
-            // },
+            [`@media (min-width:${theme.breakpoints.values.xl}px)`]: {
+              left: drawerOpen && !matchDownMD ? `${DRAWER_WIDTH.xl}px` : 0,
+            },
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "4px",
+            },
             width:
               drawerOpen && !matchDownMD
                 ? `calc(100% - ${DRAWER_WIDTH.xs}px)`
@@ -128,7 +128,7 @@ const AdminDashboard = () => {
                   ? `calc(100% - ${DRAWER_WIDTH.xl}px)`
                   : "100%",
             },
-            transition: theme.transitions.create(["width", "margin"], {
+            transition: theme.transitions.create(["width", "left"], {
               easing: theme.transitions.easing.sharp,
               duration: theme.transitions.duration.enteringScreen,
             }),
@@ -136,8 +136,8 @@ const AdminDashboard = () => {
         >
           <Toolbar
             sx={{
-              height: "64px",
-              minHeight: "64px !important",
+              height: "72px",
+              minHeight: "72px !important",
               px: { xs: 2, sm: 3, md: 4 },
               display: "flex",
               alignItems: "center",
@@ -148,20 +148,21 @@ const AdminDashboard = () => {
               onClick={handleDrawerToggle}
               edge="start"
               sx={{
-                color: "#4b5563",
+                color: "#64748b",
                 borderRadius: "12px",
-                width: "40px",
-                height: "40px",
-                backgroundColor: "rgba(255,255,255,0.8)",
-                border: "1px solid rgba(0,0,0,0.06)",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
+                width: "44px",
+                height: "44px",
+                backgroundColor: "rgba(255,255,255,0.9)",
+                border: "1px solid rgba(0,0,0,0.05)",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
                 "&:hover": {
                   backgroundColor: "#ffffff",
                   color: "#2563eb",
-                  transform: "scale(1.05)",
-                  boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
+                  transform: "scale(1.08)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  borderColor: "rgba(59, 130, 246, 0.2)",
                 },
-                transition: "all 0.2s ease",
+                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
               <Menu />
@@ -170,32 +171,32 @@ const AdminDashboard = () => {
               sx={{
                 display: "flex",
                 alignItems: "center",
-                gap: 2,
+                gap: 2.5,
                 mr: 2,
               }}
             >
               <Box
                 sx={{
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "12px",
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "14px",
                   background:
                     "linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #4f46e5 100%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    transform: "scale(1.05) rotate(5deg)",
-                    boxShadow: "0 6px 16px rgba(59, 130, 246, 0.4)",
-                  },
+                  boxShadow: "0 4px 16px rgba(59, 130, 246, 0.35)",
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  // "&:hover": {
+                  //   transform: "scale(1.08) rotate(5deg)",
+                  //   boxShadow: "0 6px 20px rgba(59, 130, 246, 0.45)",
+                  // },
                 }}
               >
                 <AdminIcon
                   sx={{
                     color: "white",
-                    fontSize: "1.5rem",
+                    fontSize: "1.625rem",
                   }}
                 />
               </Box>
@@ -205,15 +206,17 @@ const AdminDashboard = () => {
                   component="div"
                   sx={{
                     fontSize: "1.125rem",
-                    fontWeight: 800,
-                    color: "#111827",
+                    fontWeight: 700,
+                    color: "#0f172a",
                     letterSpacing: "-0.02em",
                     lineHeight: 1.2,
+                    fontFamily:
+                      "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
                     background:
-                      "linear-gradient(135deg, #3b82f6 0%, #111827 100%)",
-                    backgroundClip: "text",
+                      "linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
                   }}
                 >
                   GSQAC Admin
@@ -221,11 +224,16 @@ const AdminDashboard = () => {
                 <Typography
                   variant="caption"
                   sx={{
-                    fontSize: "0.7rem",
-                    color: "#6b7280",
-                    fontWeight: 500,
-                    letterSpacing: "0.5px",
+                    fontSize: "0.6875rem",
+                    color: "#64748b",
+                    fontWeight: 600,
+                    letterSpacing: "0.05em",
                     textTransform: "uppercase",
+                    fontFamily:
+                      "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
+                    lineHeight: 1.4,
+                    mt: 0.25,
+                    display: "block",
                   }}
                 >
                   Dashboard
@@ -233,12 +241,12 @@ const AdminDashboard = () => {
               </Box>
             </Box>
             <Box sx={{ flexGrow: 1 }} />
-            {user && (
+            {/* {user && (
               <Box
                 sx={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 2,
+                  gap: 2.5,
                   mr: 2,
                 }}
               >
@@ -251,10 +259,13 @@ const AdminDashboard = () => {
                   <Typography
                     variant="body2"
                     sx={{
-                      fontSize: "0.875rem",
+                      fontSize: "0.9375rem",
                       fontWeight: 600,
-                      color: "#111827",
-                      lineHeight: 1.2,
+                      color: "#0f172a",
+                      lineHeight: 1.4,
+                      fontFamily:
+                        "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
+                      letterSpacing: "-0.01em",
                     }}
                   >
                     {user.name}
@@ -263,8 +274,11 @@ const AdminDashboard = () => {
                     variant="caption"
                     sx={{
                       fontSize: "0.75rem",
-                      color: "#6b7280",
+                      color: "#64748b",
                       fontWeight: 500,
+                      fontFamily:
+                        "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
+                      lineHeight: 1.4,
                     }}
                   >
                     Administrator
@@ -272,9 +286,9 @@ const AdminDashboard = () => {
                 </Box>
                 <Box
                   sx={{
-                    width: "44px",
-                    height: "44px",
-                    borderRadius: "12px",
+                    width: "48px",
+                    height: "48px",
+                    borderRadius: "14px",
                     background:
                       "linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #4f46e5 100%)",
                     display: "flex",
@@ -282,41 +296,44 @@ const AdminDashboard = () => {
                     justifyContent: "center",
                     color: "white",
                     fontWeight: 700,
-                    fontSize: "1rem",
-                    boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                    fontSize: "1.125rem",
+                    boxShadow: "0 4px 16px rgba(59, 130, 246, 0.35)",
                     cursor: "pointer",
-                    transition: "all 0.3s ease",
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                     "&:hover": {
-                      transform: "scale(1.05)",
-                      boxShadow: "0 6px 16px rgba(59, 130, 246, 0.4)",
+                      transform: "scale(1.08)",
+                      boxShadow: "0 6px 20px rgba(59, 130, 246, 0.45)",
                     },
                   }}
                 >
                   {user.name?.charAt(0)?.toUpperCase() || "A"}
                 </Box>
               </Box>
-            )}
+            )} */}
             <Button
               onClick={handleLogout}
               sx={{
-                color: "#374151",
+                color: "#475569",
                 textTransform: "none",
                 fontWeight: 600,
                 fontSize: "0.875rem",
                 borderRadius: "12px",
-                px: 2.5,
-                py: 1,
-                backgroundColor: "rgba(255,255,255,0.8)",
+                px: 3,
+                py: 1.25,
+                backgroundColor: "rgba(255,255,255,0.9)",
                 border: "1px solid rgba(0,0,0,0.06)",
                 boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
+                fontFamily:
+                  "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
+                letterSpacing: "-0.01em",
                 "&:hover": {
                   backgroundColor: "#fef2f2",
                   color: "#dc2626",
                   borderColor: "#fecaca",
-                  transform: "scale(1.05)",
                   boxShadow: "0 4px 8px rgba(220, 38, 38, 0.15)",
+                  transform: "translateY(-1px)",
                 },
-                transition: "all 0.2s ease",
+                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
               Logout
@@ -324,7 +341,7 @@ const AdminDashboard = () => {
           </Toolbar>
         </AppBar>
 
-        <Box sx={{ mt: 8 }}>
+        <Box sx={{ mt: 9 }}>
           <Box
             sx={{
               pl: drawerOpen && !matchDownMD ? 0 : { xs: 2, sm: 2, md: 3 },

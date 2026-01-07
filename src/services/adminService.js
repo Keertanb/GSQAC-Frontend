@@ -665,3 +665,105 @@ export const useUpsertDistrictNodalOfficerMutation = (options = {}) => {
     ...options,
   });
 };
+
+/**
+ * Get school list
+ * @param {Object} params - { blockId?: number, clusterId?: string, villageId?: number, page?: number, limit?: number }
+ * @returns {Promise} API response
+ */
+export const getSchoolList = async (params = {}) => {
+  const response = await axiosInstance.get("/school/school-list", { params });
+  return response.data;
+};
+
+/**
+ * React Query hook for getting school list
+ * @param {Object} params - { blockId?: number, clusterId?: string, villageId?: number, page?: number, limit?: number }
+ * @param {boolean} enabled - Whether the query should run
+ * @returns {Object} Query object from React Query
+ */
+export const useGetSchoolListQuery = (params = {}, enabled = true) => {
+  return useQuery({
+    queryKey: [
+      "school",
+      "school-list",
+      params.blockId,
+      params.clusterId,
+      params.villageId,
+      params.status,
+      params.page,
+      params.limit,
+    ],
+    queryFn: () => getSchoolList(params),
+    enabled: enabled,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * Get verifiers by district
+ * @param {number} districtId - District ID
+ * @returns {Promise} API response
+ */
+export const getVerifiersByDistrict = async (districtId) => {
+  const response = await axiosInstance.get("/admin/verifier-by-district", {
+    params: { districtId },
+  });
+  return response.data;
+};
+
+/**
+ * React Query hook for getting verifiers by district
+ * @param {number} districtId - District ID
+ * @returns {Object} Query object from React Query
+ */
+export const useGetVerifiersByDistrictQuery = (districtId) => {
+  return useQuery({
+    queryKey: ["admin", "verifiers-by-district", districtId],
+    queryFn: () => getVerifiersByDistrict(districtId),
+    enabled: !!districtId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * Save school allocation
+ * @param {Object} payload - { id?: number | null, schoolId: string, userId: number, status: string, allocatedDate: string }
+ * @returns {Promise} API response
+ */
+export const saveSchoolAllocation = async (payload) => {
+  const response = await axiosInstance.post("/admin/school-allocated", payload);
+  return response.data;
+};
+
+/**
+ * React Query hook for saving school allocation
+ * @param {Object} options - Mutation options
+ * @returns {Object} Mutation object from React Query
+ */
+export const useSaveSchoolAllocationMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => saveSchoolAllocation(data),
+    mutationKey: ["admin", "save-school-allocation"],
+    onSuccess: (data) => {
+      enqueueSnackbar(data?.message || "School allocation saved successfully", {
+        variant: "success",
+      });
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to save school allocation",
+        {
+          variant: "error",
+        }
+      );
+      if (options.onError) {
+        options.onError(error);
+      }
+    },
+    ...options,
+  });
+};

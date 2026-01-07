@@ -14,6 +14,7 @@ import "./AppTable.css";
  * @param {number} props.itemsPerPage - Number of items per page (default: 10)
  * @param {number} props.currentPage - Current page number (default: 1)
  * @param {Function} props.onPageChange - Handler for page change (page) => void
+ * @param {Function} props.onItemsPerPageChange - Handler for items per page change (itemsPerPage) => void (optional)
  * @param {number} props.totalCount - Total count for server-side pagination (optional)
  * @param {boolean} props.serverSidePagination - Use server-side pagination (default: false)
  * @param {string} props.emptyTitle - Title for empty state
@@ -32,6 +33,7 @@ const AppTable = ({
   itemsPerPage = 10,
   currentPage = 1,
   onPageChange,
+  onItemsPerPageChange,
   totalCount,
   serverSidePagination = false,
   emptyTitle = "No records found",
@@ -46,7 +48,6 @@ const AppTable = ({
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  // For server-side pagination, use data as-is; for client-side, slice it
   const paginatedData = serverSidePagination
     ? data
     : data.slice(startIndex, endIndex);
@@ -154,94 +155,114 @@ const AppTable = ({
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && onPageChange && (
+      {(totalPages > 1 || onItemsPerPageChange) && onPageChange && (
         <div className="app-table-pagination-container">
-          <div className="app-table-pagination-info">
-            Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{" "}
-            {totalItems} {totalItems === 1 ? "item" : "items"}
-          </div>
-          <div className="app-table-pagination-controls">
-            <button
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="app-table-pagination-button app-table-pagination-prev"
-            >
-              <svg
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                className="app-table-pagination-icon"
+          {onItemsPerPageChange && (
+            <div className="app-table-pagination-rows-per-page">
+              <label className="app-table-pagination-rows-label">
+                Rows per page:
+              </label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
+                className="app-table-pagination-rows-select"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-              Previous
-            </button>
-
-            <div className="app-table-pagination-numbers">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => {
-                  if (
-                    page === 1 ||
-                    page === totalPages ||
-                    (page >= currentPage - 1 && page <= currentPage + 1)
-                  ) {
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => onPageChange(page)}
-                        className={`app-table-pagination-number ${
-                          currentPage === page
-                            ? "app-table-pagination-active"
-                            : ""
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    );
-                  } else if (
-                    page === currentPage - 2 ||
-                    page === currentPage + 2
-                  ) {
-                    return (
-                      <span
-                        key={page}
-                        className="app-table-pagination-ellipsis"
-                      >
-                        ...
-                      </span>
-                    );
-                  }
-                  return null;
-                }
-              )}
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+              </select>
             </div>
-
-            <button
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="app-table-pagination-button app-table-pagination-next"
-            >
-              Next
-              <svg
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                className="app-table-pagination-icon"
+          )}
+          {totalPages > 1 && (
+            <div className="app-table-pagination-info">
+              Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{" "}
+              {totalItems} {totalItems === 1 ? "item" : "items"}
+            </div>
+          )}
+          {totalPages > 1 && (
+            <div className="app-table-pagination-controls">
+              <button
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="app-table-pagination-button app-table-pagination-prev"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          </div>
+                <svg
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  className="app-table-pagination-icon"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+                Previous
+              </button>
+
+              <div className="app-table-pagination-numbers">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => {
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => onPageChange(page)}
+                          className={`app-table-pagination-number ${
+                            currentPage === page
+                              ? "app-table-pagination-active"
+                              : ""
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (
+                      page === currentPage - 2 ||
+                      page === currentPage + 2
+                    ) {
+                      return (
+                        <span
+                          key={page}
+                          className="app-table-pagination-ellipsis"
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  }
+                )}
+              </div>
+
+              <button
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="app-table-pagination-button app-table-pagination-next"
+              >
+                Next
+                <svg
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  className="app-table-pagination-icon"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

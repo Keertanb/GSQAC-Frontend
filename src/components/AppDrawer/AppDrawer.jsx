@@ -116,47 +116,59 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
   const primaryColor = roleData?.color || theme.palette.primary.main;
 
   const drawer = (
-    <Box className="flex flex-col h-screen bg-white">
+    <Box
+      className="flex flex-col h-screen"
+      sx={{
+        background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+        position: "relative",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "4px",
+          background: `linear-gradient(90deg, ${primaryColor} 0%, ${primaryColor}dd 50%, ${primaryColor} 100%)`,
+          zIndex: 1,
+        },
+      }}
+    >
       <Box
-        className="drawer-header relative flex-shrink-0 h-16 flex items-center px-6"
+        className="drawer-header relative flex-shrink-0 flex items-center"
         sx={{
-          height: "64px",
-          minHeight: "64px",
-          background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+          height: "72px",
+          minHeight: "72px",
+          maxHeight: "72px",
+          background: "rgba(255, 255, 255, 0.8)",
+          backdropFilter: "blur(20px)",
           borderBottom: "1px solid rgba(0,0,0,0.06)",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
           position: "relative",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: "3px",
-            background: `linear-gradient(90deg, ${primaryColor} 0%, ${primaryColor}dd 50%, ${primaryColor} 100%)`,
-          },
+          zIndex: 1301,
+          px: 3,
         }}
       >
         {!matchDownMD && (
           <IconButton
             onClick={handleDrawerToggle}
-            className="absolute top-1/2 right-3 transform -translate-y-1/2"
+            className="absolute top-1/2 right-2 transform -translate-y-1/2"
             size="small"
             sx={{
-              color: "#6b7280",
+              color: "#64748b",
               borderRadius: "10px",
-              width: "32px",
-              height: "32px",
-              backgroundColor: "rgba(255,255,255,0.8)",
-              border: "1px solid rgba(0,0,0,0.06)",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
+              width: "36px",
+              height: "36px",
+              backgroundColor: "rgba(255,255,255,0.9)",
+              border: "1px solid rgba(0,0,0,0.05)",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
               "&:hover": {
-                backgroundColor: "rgba(255,255,255,1)",
+                backgroundColor: "#ffffff",
                 color: primaryColor,
-                transform: "translateY(-50%) scale(1.05)",
-                boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
+                transform: "translateY(-50%) scale(1.08)",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                borderColor: "rgba(59, 130, 246, 0.2)",
               },
-              transition: "all 0.2s ease",
+              transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
             }}
           >
             {open ? <ChevronLeft /> : <ChevronRight />}
@@ -165,41 +177,110 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
 
         <Box className="flex items-center gap-3 flex-1">
           {open && (
-            <Box>
-              <Typography
-                className="font-bold text-gray-900"
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Box
                 sx={{
-                  fontSize: "1.25rem",
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "12px",
+                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}dd 100%)`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: `0 4px 12px ${primaryColor}30`,
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    transform: "scale(1.05) rotate(5deg)",
+                    boxShadow: `0 6px 16px ${primaryColor}40`,
+                  },
+                }}
+              >
+                <Typography
+                  sx={{
+                    color: "white",
+                    fontWeight: 800,
+                    fontSize: "1.25rem",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  G
+                </Typography>
+              </Box>
+              <Box>
+                <Typography
+                  sx={{
+                    fontSize: "1.125rem",
+                    fontWeight: 700,
+                    color: "#0f172a",
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1.2,
+                    fontFamily:
+                      "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
+                    background: `linear-gradient(135deg, ${primaryColor} 0%, #1e40af 100%)`,
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  GSQAC
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontSize: "0.6875rem",
+                    color: "#64748b",
+                    fontWeight: 600,
+                    letterSpacing: "0.05em",
+                    textTransform: "uppercase",
+                    fontFamily:
+                      "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
+                    lineHeight: 1.4,
+                    mt: 0.25,
+                    display: "block",
+                  }}
+                >
+                  {roleData?.label || "Dashboard"}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+          {!open && (
+            <Box
+              sx={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "12px",
+                background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}dd 100%)`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: `0 4px 12px ${primaryColor}30`,
+                mx: "auto",
+              }}
+            >
+              <Typography
+                sx={{
+                  color: "white",
                   fontWeight: 800,
-                  color: "#111827",
+                  fontSize: "1.25rem",
                   letterSpacing: "-0.02em",
-                  lineHeight: 1.2,
-                  background: `linear-gradient(135deg, ${primaryColor} 0%, #111827 100%)`,
-                  backgroundClip: "text",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
                 }}
               >
-                GSQAC
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  fontSize: "0.65rem",
-                  color: "#6b7280",
-                  fontWeight: 500,
-                  letterSpacing: "0.5px",
-                  textTransform: "uppercase",
-                }}
-              >
-                {roleData?.label || "Dashboard"}
+                G
               </Typography>
             </Box>
           )}
         </Box>
       </Box>
-      <Box className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 bg-white">
-        <List className="py-4 px-3">
+      <Box
+        className="flex-1 overflow-y-auto overflow-x-hidden min-h-0"
+        sx={{
+          background: "transparent",
+          px: open ? 2 : 1,
+          py: 2,
+        }}
+      >
+        <List sx={{ py: 0 }}>
           {menuItems.map((item) => {
             const isActive = item?.activeFinder?.some((path) =>
               location.pathname.includes(path)
@@ -207,51 +288,97 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
             const IconComponent = item.icon;
 
             return (
-              <Box key={item.id} className="mb-2">
+              <Box key={item.id} sx={{ mb: 1 }}>
                 <ListItem disableGutters disablePadding>
                   <ListItemButton
-                    className={`group relative transition-all duration-200 ${
-                      isActive ? "bg-blue-50" : "hover:bg-gray-50"
-                    }`}
+                    className="group relative"
                     onClick={
                       item.hasSubMenu
                         ? handleSubmenuToggle(item.id)
                         : handleNavigate(item.url)
                     }
                     sx={{
-                      paddingBlock: 1.25,
-                      paddingInline: open ? 1.5 : 1.5,
-                      padding: open ? 3 : 4,
-                      borderRadius: "10px",
-                      marginX: open ? "8px" : "4px",
+                      padding: open ? "12px 16px" : "12px",
+                      borderRadius: "12px",
+                      marginX: open ? "4px" : "0px",
+                      position: "relative",
+                      minHeight: "48px",
+                      transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
                       ...(isActive && {
-                        backgroundColor: "#eff6ff",
+                        background: `linear-gradient(135deg, ${primaryColor}15 0%, ${primaryColor}08 100%)`,
                         color: `${primaryColor} !important`,
+                        fontWeight: 600,
+                        "&::before": {
+                          content: '""',
+                          position: "absolute",
+                          left: 0,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          width: "4px",
+                          height: "60%",
+                          background: `linear-gradient(180deg, ${primaryColor} 0%, ${primaryColor}dd 100%)`,
+                          borderRadius: "0 4px 4px 0",
+                          boxShadow: `0 0 12px ${primaryColor}50`,
+                        },
                         "&:hover": {
-                          backgroundColor: "#dbeafe",
+                          background: `linear-gradient(135deg, ${primaryColor}20 0%, ${primaryColor}12 100%)`,
+                          transform: "translateX(4px)",
+                          boxShadow: `0 4px 12px ${primaryColor}20`,
                         },
                         "& .MuiListItemIcon-root": {
                           color: `${primaryColor} !important`,
                         },
+                        boxShadow: `0 2px 8px ${primaryColor}15`,
                       }),
+                      "&:hover:not(.Mui-selected)": {
+                        backgroundColor: "rgba(0, 0, 0, 0.03)",
+                        transform: "translateX(4px)",
+                        ...(!isActive && {
+                          "& .MuiListItemIcon-root": {
+                            color: "#475569",
+                          },
+                        }),
+                      },
                     }}
                   >
                     <ListItemIcon
                       className="item-icon"
                       sx={{
-                        minWidth: open ? 40 : 24,
+                        minWidth: open ? 40 : "auto",
                         justifyContent: open ? "flex-start" : "center",
-                        color: isActive ? primaryColor : "#6b7280",
-                        marginRight: open ? "16px" : "0px",
+                        color: isActive ? primaryColor : "#64748b",
+                        marginRight: open ? "12px" : "0px",
+                        transition: "all 0.25s ease",
                       }}
                     >
-                      <IconComponent
-                        className="icon"
+                      <Box
                         sx={{
-                          fontSize: "1.5rem",
-                          color: isActive ? primaryColor : "#6b7280",
+                          width: "40px",
+                          height: "40px",
+                          borderRadius: "10px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: isActive
+                            ? `${primaryColor}15`
+                            : "rgba(0, 0, 0, 0.02)",
+                          transition: "all 0.25s ease",
+                          "&:hover": {
+                            background: isActive
+                              ? `${primaryColor}25`
+                              : "rgba(0, 0, 0, 0.05)",
+                          },
                         }}
-                      />
+                      >
+                        <IconComponent
+                          className="icon"
+                          sx={{
+                            fontSize: "1.375rem",
+                            color: isActive ? primaryColor : "#64748b",
+                            transition: "all 0.25s ease",
+                          }}
+                        />
+                      </Box>
                     </ListItemIcon>
                     {open && (
                       <ListItemText
@@ -261,7 +388,11 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
                           style: { textWrap: "wrap" },
                           fontWeight: isActive ? 600 : 500,
                           fontSize: "0.9375rem",
-                          color: isActive ? primaryColor : "#374151",
+                          color: isActive ? primaryColor : "#334155",
+                          fontFamily:
+                            "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
+                          letterSpacing: "-0.01em",
+                          lineHeight: 1.5,
                         }}
                         sx={{
                           margin: 0,
@@ -270,18 +401,20 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
                     )}
                     {open && item?.hasSubMenu && (
                       <Box
-                        className="ml-auto transition-transform duration-200"
+                        className="ml-auto"
                         sx={{
                           transform:
                             openSubmenuId === item.id
                               ? "rotate(180deg)"
                               : "rotate(0deg)",
+                          transition:
+                            "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
                         }}
                       >
                         <ExpandMore
                           sx={{
                             fontSize: "1.25rem",
-                            color: isActive ? primaryColor : "#9ca3af",
+                            color: isActive ? primaryColor : "#94a3b8",
                           }}
                         />
                       </Box>
@@ -289,9 +422,26 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
                   </ListItemButton>
                 </ListItem>
                 {open && item?.hasSubMenu && (
-                  <Collapse in={openSubmenuId === item.id} timeout="auto">
-                    <Box className="ml-6 mr-2 mt-2 mb-2 rounded-lg bg-gray-50">
-                      <List component="div" className="py-2">
+                  <Collapse
+                    in={openSubmenuId === item.id}
+                    timeout="auto"
+                    sx={{
+                      mt: 1,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        ml: 5,
+                        mr: 1,
+                        mt: 0.5,
+                        mb: 0.5,
+                        borderRadius: "12px",
+                        background: "rgba(0, 0, 0, 0.02)",
+                        border: "1px solid rgba(0, 0, 0, 0.04)",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <List component="div" sx={{ py: 1 }}>
                         {item.subMenu?.map((menuItem) => {
                           const isMenuItemActive = menuItem?.activeFinder?.some(
                             (path) => location.pathname.includes(path)
@@ -303,28 +453,51 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
                               disableGutters
                               disablePadding
                               key={menuItem?.id}
-                              className="px-2 mb-1"
+                              sx={{ px: 1.5, mb: 0.5 }}
                             >
                               <ListItemButton
-                                className={`group relative rounded-lg transition-all duration-200 ${
-                                  isMenuItemActive
-                                    ? "bg-blue-50"
-                                    : "hover:bg-gray-100"
-                                }`}
+                                className="group relative"
                                 sx={{
-                                  paddingBlock: 1,
-                                  paddingInline: 2.5,
-                                  borderRadius: "8px",
+                                  padding: "10px 14px",
+                                  borderRadius: "10px",
+                                  position: "relative",
+                                  minHeight: "44px",
+                                  transition:
+                                    "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
                                   ...(isMenuItemActive && {
-                                    backgroundColor: "#eff6ff",
+                                    background: `linear-gradient(135deg, ${primaryColor}12 0%, ${primaryColor}06 100%)`,
                                     color: `${primaryColor} !important`,
+                                    fontWeight: 600,
+                                    "&::before": {
+                                      content: '""',
+                                      position: "absolute",
+                                      left: 0,
+                                      top: "50%",
+                                      transform: "translateY(-50%)",
+                                      width: "3px",
+                                      height: "50%",
+                                      background: `linear-gradient(180deg, ${primaryColor} 0%, ${primaryColor}dd 100%)`,
+                                      borderRadius: "0 3px 3px 0",
+                                      boxShadow: `0 0 8px ${primaryColor}40`,
+                                    },
                                     "&:hover": {
-                                      backgroundColor: "#dbeafe",
+                                      background: `linear-gradient(135deg, ${primaryColor}18 0%, ${primaryColor}10 100%)`,
+                                      transform: "translateX(4px)",
                                     },
                                     "& .MuiListItemIcon-root": {
                                       color: `${primaryColor} !important`,
                                     },
+                                    boxShadow: `0 2px 6px ${primaryColor}12`,
                                   }),
+                                  "&:hover:not(.Mui-selected)": {
+                                    backgroundColor: "rgba(0, 0, 0, 0.04)",
+                                    transform: "translateX(4px)",
+                                    ...(!isMenuItemActive && {
+                                      "& .MuiListItemIcon-root": {
+                                        color: "#475569",
+                                      },
+                                    }),
+                                  },
                                 }}
                                 onClick={handleNavigate(menuItem.url)}
                               >
@@ -332,20 +505,20 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
                                   <ListItemIcon
                                     className="item-icon"
                                     sx={{
-                                      minWidth: 36,
-                                      marginRight: "12px",
+                                      minWidth: 32,
+                                      marginRight: "10px",
                                       color: isMenuItemActive
                                         ? primaryColor
-                                        : "#9ca3af",
+                                        : "#94a3b8",
                                     }}
                                   >
                                     <SubIconComponent
                                       className="icon"
                                       sx={{
-                                        fontSize: "1.25rem",
+                                        fontSize: "1.125rem",
                                         color: isMenuItemActive
                                           ? primaryColor
-                                          : "#9ca3af",
+                                          : "#94a3b8",
                                       }}
                                     />
                                   </ListItemIcon>
@@ -359,7 +532,11 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
                                     fontSize: "0.875rem",
                                     color: isMenuItemActive
                                       ? primaryColor
-                                      : "#6b7280",
+                                      : "#64748b",
+                                    fontFamily:
+                                      "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
+                                    letterSpacing: "-0.01em",
+                                    lineHeight: 1.5,
                                   }}
                                   sx={{
                                     margin: 0,

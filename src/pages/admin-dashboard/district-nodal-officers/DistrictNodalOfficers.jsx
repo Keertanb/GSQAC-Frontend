@@ -378,21 +378,18 @@ const DistrictNodalOfficers = () => {
   };
 
   const handleToggleStatus = (officer) => {
-    // Ensure districtIds is always an array
     let districtIds = [];
     if (Array.isArray(officer.districtIds)) {
       districtIds = officer.districtIds;
     } else if (Array.isArray(officer.districts)) {
       districtIds = officer.districts;
     } else if (officer.district) {
-      // If district is a string, try to find the district ID
       const district = districts.find((d) => d.name === officer.district);
       districtIds = district ? [district.value] : [];
     }
 
     const updatedData = {
       userId: officer.userId,
-      roleId: 5,
       userName: officer.userName,
       mobileNumber: officer.mobileNumber,
       isActive: officer.isActive === true || officer.isActive === 1 ? 0 : 1,
@@ -402,7 +399,6 @@ const DistrictNodalOfficers = () => {
   };
 
   const handleFormSubmit = (values, { setSubmitting }) => {
-    // Ensure districtIds is always an array
     const districtIds = Array.isArray(values.districts) ? values.districts : [];
 
     const payload = {

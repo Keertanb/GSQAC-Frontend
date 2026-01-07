@@ -5,16 +5,43 @@
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   border: 1px solid #e5e7eb;
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .app-table-wrapper {
   overflow-x: auto;
+  overflow-y: visible;
+  width: 100%;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.app-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.app-table-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.app-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .app-table {
   width: 100%;
+  min-width: 100%;
   border-collapse: collapse;
   background: white;
+  table-layout: auto;
 }
 
 .app-table-header {
@@ -52,6 +79,12 @@
   font-size: 0.875rem;
   color: #374151;
   vertical-align: middle;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.app-table-cell > * {
+  max-width: 100%;
 }
 
 .app-table-actions-cell {
@@ -293,6 +326,41 @@
   border-top: 1px solid #e5e7eb;
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+.app-table-pagination-rows-per-page {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-table-pagination-rows-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.app-table-pagination-rows-select {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.app-table-pagination-rows-select:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.app-table-pagination-rows-select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .app-table-pagination-info {

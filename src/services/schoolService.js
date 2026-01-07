@@ -124,3 +124,48 @@ export const useSubmitSubdomainWiseAnswersMutation = (options = {}) => {
     ...options,
   });
 };
+
+/**
+ * Submit assessment
+ * @param {Object} payload - { userId: number, isSubmitted: number }
+ * @returns {Promise} API response
+ */
+export const submitAssessment = async (payload) => {
+  const response = await axiosInstance.post("/school/submit-assessment", payload);
+  return response.data;
+};
+
+/**
+ * React Query hook for submitting assessment
+ * @param {Object} options - Mutation options
+ * @returns {Object} Mutation object from React Query
+ */
+export const useSubmitAssessmentMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => submitAssessment(data),
+    mutationKey: ["school", "submit-assessment"],
+    onSuccess: (data) => {
+      enqueueSnackbar(
+        data?.message || "Assessment submitted successfully",
+        {
+          variant: "success",
+        }
+      );
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to submit assessment",
+        {
+          variant: "error",
+        }
+      );
+      if (options.onError) {
+        options.onError(error);
+      }
+    },
+    ...options,
+  });
+};

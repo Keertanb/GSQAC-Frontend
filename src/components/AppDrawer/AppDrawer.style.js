@@ -12,22 +12,20 @@ export const DrawerWrapper = styled(Drawer)`
     border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
     display: flex !important;
     flex-direction: column !important;
-    background: #ffffff !important;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08) !important;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08) !important;
+    backdrop-filter: blur(20px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   }
 
   .drawer-header {
     position: relative;
     flex-shrink: 0;
-    height: 64px;
-    min-height: 64px;
-    max-height: 64px;
     display: flex;
     align-items: center;
-    padding: 0 24px;
     overflow: hidden;
-    background: #ffffff;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
   }
 
   .logo-text {
@@ -47,31 +45,31 @@ export const DrawerWrapper = styled(Drawer)`
 
   .btn-active {
     .MuiListItemIcon-root {
-      color: white !important;
+      color: inherit !important;
     }
 
     .MuiListItemText-primary {
-      color: white !important;
-      font-weight: 700 !important;
+      color: inherit !important;
+      font-weight: 600 !important;
     }
   }
 
   .item-icon {
     min-width: 40px;
     padding-right: 12px;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
     .icon {
       width: 1.5rem;
       height: 1.5rem;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
   .MuiListItemText-primary {
     font-size: 0.95rem;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 `;
 

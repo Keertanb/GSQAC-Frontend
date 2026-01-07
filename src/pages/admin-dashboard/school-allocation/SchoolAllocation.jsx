@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   useGetAllDistrictsQuery,
   useGetDistrictWiseBlocksQuery,
-  useGetVerifiersQuery,
+  useGetSchoolListQuery,
+  useGetVerifiersByDistrictQuery,
+  useSaveSchoolAllocationMutation,
 } from "../../../services/adminService";
 import AppTable from "../../../components/AppTable/AppTable";
 import AppButton from "../../../components/AppButton/AppButton";
@@ -10,63 +12,40 @@ import AppDropdown from "../../../components/AppDropdown/AppDropdown";
 import { exportToExcel } from "../../../utils/exportToExcel";
 import "./SchoolAllocation.css";
 
-// Static data for now
-const staticSchools = [
-  {
-    schoolId: 1,
-    schoolName: "ABC Primary School",
-    udiseCode: "240701001",
-    district: "AHMEDABAD",
-    block: "AHMEDABAD CITY",
-    cluster: "CLUSTER 1",
-  },
-  {
-    schoolId: 2,
-    schoolName: "XYZ High School",
-    udiseCode: "240701002",
-    district: "AHMEDABAD",
-    block: "AHMEDABAD CITY",
-    cluster: "CLUSTER 1",
-  },
-  {
-    schoolId: 3,
-    schoolName: "DEF Secondary School",
-    udiseCode: "240701003",
-    district: "AHMEDABAD",
-    block: "AHMEDABAD CITY",
-    cluster: "CLUSTER 2",
-  },
-  {
-    schoolId: 4,
-    schoolName: "GHI Primary School",
-    udiseCode: "240701004",
-    district: "SURAT",
-    block: "SURAT CITY",
-    cluster: "CLUSTER 1",
-  },
-  {
-    schoolId: 5,
-    schoolName: "JKL High School",
-    udiseCode: "240701005",
-    district: "SURAT",
-    block: "SURAT CITY",
-    cluster: "CLUSTER 1",
-  },
-];
-
 const SchoolAllocation = () => {
   const [filters, setFilters] = useState({
     schoolId: "",
     schoolName: "",
     districtId: "",
     blockId: "",
+    clusterId: "",
+    villageId: "",
+    status: "",
   });
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Store assignments for each school: { schoolId: { verifierId, verifierCode, date } }
+  // Store assignments for each school: { schoolId: { id, verifierId, verifierCode, date, status } }
   const [schoolAssignments, setSchoolAssignments] = useState({});
+
+  // Mutation for saving school allocation
+  const saveAllocationMutation = useSaveSchoolAllocationMutation({
+    onSuccess: (data, payload) => {
+      // Update the assignment with the returned id and status if available
+      const returnedId = data?.data?.id || data?.data?.allocationId || data?.id;
+      if (payload?.schoolId) {
+        setSchoolAssignments((prev) => ({
+          ...prev,
+          [payload.schoolId]: {
+            ...prev[payload.schoolId],
+            id: returnedId || prev[payload.schoolId]?.id,
+            status: payload.status || "Allocated",
+          },
+        }));
+      }
+    },
+  });
 
   // Fetch districts
   const { data: districtsData } = useGetAllDistrictsQuery();
@@ -78,32 +57,122 @@ const SchoolAllocation = () => {
   );
   const blocks = blocksData?.data || [];
 
-  // Fetch verifiers with pagination
-  const { data: verifiersData } = useGetVerifiersQuery({
-    page: currentPage,
-    limit: itemsPerPage,
-  });
-  const verifiers = verifiersData?.data?.data || verifiersData?.data || [];
-
-  // Filter schools based on filters
-  const filteredSchools = staticSchools.filter((school) => {
-    const matchesSchoolId =
-      !filters.schoolId ||
-      school.schoolId.toString().includes(filters.schoolId) ||
-      school.udiseCode.includes(filters.schoolId);
-    const matchesSchoolName =
-      !filters.schoolName ||
-      school.schoolName
-        .toLowerCase()
-        .includes(filters.schoolName.toLowerCase());
-    const matchesDistrict =
-      !filters.districtId || school.district === filters.districtId;
-    const matchesBlock = !filters.blockId || school.block === filters.blockId;
-
-    return (
-      matchesSchoolId && matchesSchoolName && matchesDistrict && matchesBlock
+  // Fetch schools based on filters
+  const { data: schoolsData, isLoading: isLoadingSchools } =
+    useGetSchoolListQuery(
+      {
+        blockId: filters.blockId ? Number(filters.blockId) : undefined,
+        clusterId: filters.clusterId || undefined,
+        villageId: filters.villageId ? Number(filters.villageId) : undefined,
+        status: filters.status || undefined,
+        page: currentPage,
+        limit: itemsPerPage,
+      },
+      true
     );
-  });
+
+  const schools = schoolsData?.data?.rows || [];
+  const totalSchools = schoolsData?.data?.total || 0;
+
+  // Initialize school assignments from API data when schools are loaded
+  useEffect(() => {
+    if (schools.length > 0) {
+      setSchoolAssignments((prev) => {
+        const updated = { ...prev };
+        schools.forEach((school) => {
+          // If school has allocation data (status is "Allocated"), pre-fill the assignment
+          if (
+            school.status === "Allocated" &&
+            school.userId &&
+            school.allocatedDate
+          ) {
+            // Check if we need to update (only if not manually edited or if data changed)
+            const existingAssignment = updated[school.schoolId];
+            const shouldUpdate =
+              !existingAssignment ||
+              existingAssignment.verifierId !== String(school.userId) ||
+              existingAssignment.date !== school.allocatedDate;
+
+            if (shouldUpdate) {
+              updated[school.schoolId] = {
+                verifierId: String(school.userId),
+                date: school.allocatedDate,
+                status: school.status,
+                // If there's an id field in the response, include it
+                id:
+                  school.id ||
+                  school.allocationId ||
+                  existingAssignment?.id ||
+                  null,
+              };
+            } else {
+              // Preserve existing assignment but ensure status is set
+              updated[school.schoolId] = {
+                ...existingAssignment,
+                status: school.status,
+              };
+            }
+          } else if (school.status === "Pending" || !school.status) {
+            // Set status to Pending if not allocated
+            const existingAssignment = updated[school.schoolId];
+            if (!existingAssignment) {
+              updated[school.schoolId] = {
+                status: "Pending",
+              };
+            } else if (!existingAssignment.status) {
+              updated[school.schoolId] = {
+                ...existingAssignment,
+                status: "Pending",
+              };
+            }
+          }
+        });
+        return updated;
+      });
+    }
+  }, [schools]);
+
+  // Get district ID from selected district filter
+  const selectedDistrictId = useMemo(() => {
+    if (!filters.districtId) return null;
+    const district = districts.find(
+      (d) => String(d.value) === String(filters.districtId)
+    );
+    return district?.value || null;
+  }, [filters.districtId, districts]);
+
+  // Fetch verifiers by district
+  const { data: verifiersData } =
+    useGetVerifiersByDistrictQuery(selectedDistrictId);
+  const verifiers = verifiersData?.data || [];
+
+  // Filter schools based on client-side filters (schoolId, schoolName, status)
+  const filteredSchools = useMemo(() => {
+    return schools.filter((school) => {
+      const matchesSchoolId =
+        !filters.schoolId ||
+        school.schoolId.toString().includes(filters.schoolId) ||
+        school.schoolId.includes(filters.schoolId);
+      const matchesSchoolName =
+        !filters.schoolName ||
+        school.schoolName
+          .toLowerCase()
+          .includes(filters.schoolName.toLowerCase());
+
+      // Filter by status
+      const assignment = schoolAssignments[school.schoolId] || {};
+      const schoolStatus = assignment.status || school.status || "Pending";
+      const matchesStatus = !filters.status || schoolStatus === filters.status;
+
+      return matchesSchoolId && matchesSchoolName && matchesStatus;
+    });
+  }, [
+    schools,
+    filters.schoolId,
+    filters.schoolName,
+    filters.status,
+    schoolAssignments,
+  ]);
 
   const handleFilterChange = (field, value) => {
     setFilters((prev) => {
@@ -111,9 +180,22 @@ const SchoolAllocation = () => {
       // Reset dependent filters
       if (field === "districtId") {
         newFilters.blockId = "";
+        newFilters.clusterId = "";
+        newFilters.villageId = "";
       }
+      if (field === "blockId") {
+        newFilters.clusterId = "";
+        newFilters.villageId = "";
+      }
+      // Reset to first page when filters change
+      setCurrentPage(0);
       return newFilters;
     });
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(0); // Reset to first page when changing items per page
   };
 
   const handleAssignmentChange = (schoolId, field, value) => {
@@ -132,12 +214,18 @@ const SchoolAllocation = () => {
       alert("Please select verifier and assignment date");
       return;
     }
-    // API call will be added here
-    console.log("Saving assignment for school:", {
-      schoolId,
-      ...assignment,
-    });
-    alert("Assignment saved successfully!");
+
+    // Prepare payload according to API specification
+    const payload = {
+      id: assignment.id || null,
+      schoolId: schoolId,
+      userId: Number(assignment.verifierId),
+      status: "Allocated",
+      allocatedDate: assignment.date,
+    };
+
+    // Call the API
+    saveAllocationMutation.mutate(payload);
   };
 
   // Handle Excel export
@@ -150,11 +238,10 @@ const SchoolAllocation = () => {
     // Prepare columns for export
     const exportColumns = [
       { key: "schoolName", label: "School Name" },
-      { key: "udiseCode", label: "UDISE Code" },
+      { key: "schoolId", label: "School ID" },
       { key: "district", label: "District" },
       { key: "block", label: "Block" },
       { key: "verifier", label: "Verifier" },
-      { key: "verifierCode", label: "Verifier Code" },
       { key: "assignmentDate", label: "Assignment Date" },
     ];
 
@@ -162,17 +249,14 @@ const SchoolAllocation = () => {
     const exportData = filteredSchools.map((school) => {
       const assignment = schoolAssignments[school.schoolId] || {};
       const verifier = verifiers.find(
-        (v) => v.userId === assignment.verifierId
+        (v) => String(v.userId) === String(assignment.verifierId)
       );
       return {
         schoolName: school.schoolName || "-",
-        udiseCode: school.udiseCode || "-",
-        district: school.district || "-",
-        block: school.block || "-",
-        verifier: verifier
-          ? `${verifier.userName} (${verifier.mobileNumber})`
-          : "-",
-        verifierCode: assignment.verifierCode || "-",
+        schoolId: school.schoolId || "-",
+        district: school.districtName || "-",
+        block: school.blockName || "-",
+        verifier: verifier ? verifier.userName : "-",
         assignmentDate: assignment.date || "-",
       };
     });
@@ -277,6 +361,22 @@ const SchoolAllocation = () => {
               labelKey="label"
             />
           </div>
+
+          <div className="filter-group">
+            <AppDropdown
+              label="Status"
+              options={[
+                { value: "", label: "All Status" },
+                { value: "Pending", label: "Pending" },
+                { value: "Allocated", label: "Allocated" },
+              ]}
+              value={filters.status || ""}
+              onChange={(value) => handleFilterChange("status", value)}
+              placeholder="All Status"
+              valueKey="value"
+              labelKey="label"
+            />
+          </div>
         </div>
       </div>
 
@@ -295,7 +395,10 @@ const SchoolAllocation = () => {
           </div>
           <p className="empty-title">No schools found</p>
           <p className="empty-subtitle">
-            {filters.schoolId || filters.schoolName || filters.districtId
+            {filters.schoolId ||
+            filters.schoolName ||
+            filters.districtId ||
+            filters.blockId
               ? "Try adjusting your filters"
               : "No schools available"}
           </p>
@@ -309,23 +412,52 @@ const SchoolAllocation = () => {
               render: (school) => (
                 <div className="school-name-cell">
                   <div className="school-name-text">{school.schoolName}</div>
-                  <div className="school-udise-code">{school.udiseCode}</div>
+                  <div className="school-udise-code">{school.schoolId}</div>
                 </div>
               ),
             },
             {
               id: "district",
               label: "District",
-              render: (school) => (
-                <div className="school-district-cell">{school.district}</div>
-              ),
+              render: (school) => {
+                const district = districts.find(
+                  (d) => d.value === school.districtId
+                );
+                return (
+                  <div className="school-district-cell">
+                    {district?.name || school.districtName || "-"}
+                  </div>
+                );
+              },
             },
             {
               id: "block",
               label: "Block",
               render: (school) => (
-                <div className="school-block-cell">{school.block}</div>
+                <div className="school-block-cell">
+                  {school.blockName || "-"}
+                </div>
               ),
+            },
+            {
+              id: "status",
+              label: "Status",
+              render: (school) => {
+                const assignment = schoolAssignments[school.schoolId] || {};
+                const status = assignment.status || school.status || "Pending";
+                const isAllocated = status === "Allocated";
+                return (
+                  <span
+                    className={`status-chip ${
+                      isAllocated
+                        ? "status-chip-allocated"
+                        : "status-chip-pending"
+                    }`}
+                  >
+                    {status}
+                  </span>
+                );
+              },
             },
             {
               id: "verifier",
@@ -338,7 +470,7 @@ const SchoolAllocation = () => {
                       { value: "", label: "Select Verifier" },
                       ...verifiers.map((verifier) => ({
                         value: String(verifier.userId),
-                        label: `${verifier.userName} (${verifier.mobileNumber})`,
+                        label: verifier.userName || `User ${verifier.userId}`,
                       })),
                     ]}
                     value={
@@ -355,28 +487,7 @@ const SchoolAllocation = () => {
                     valueKey="value"
                     labelKey="label"
                     className="table-dropdown"
-                  />
-                );
-              },
-            },
-            {
-              id: "verifierCode",
-              label: "Verifier Code",
-              render: (school) => {
-                const assignment = schoolAssignments[school.schoolId] || {};
-                return (
-                  <input
-                    type="text"
-                    value={assignment.verifierCode || ""}
-                    onChange={(e) =>
-                      handleAssignmentChange(
-                        school.schoolId,
-                        "verifierCode",
-                        e.target.value
-                      )
-                    }
-                    className="table-input"
-                    placeholder="Enter code"
+                    disabled={!selectedDistrictId}
                   />
                 );
               },
@@ -408,31 +519,51 @@ const SchoolAllocation = () => {
               label: "Actions",
               render: (school) => {
                 const assignment = schoolAssignments[school.schoolId] || {};
+                const isSaving = saveAllocationMutation.isPending;
+                const isDisabled =
+                  !assignment.verifierId || !assignment.date || isSaving;
                 return (
                   <button
                     onClick={() => handleSaveAssignment(school.schoolId)}
-                    className="table-save-button"
-                    disabled={!assignment.verifierId || !assignment.date}
+                    className="table-save-icon-button"
+                    disabled={isDisabled}
                     title={
                       !assignment.verifierId || !assignment.date
                         ? "Please select verifier and date"
+                        : assignment.id
+                        ? "Update assignment"
                         : "Save assignment"
                     }
                   >
-                    <svg
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      className="save-icon"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    Save
+                    {isSaving ? (
+                      <svg
+                        className="save-icon save-icon-spinner"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        className="save-icon"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    )}
                   </button>
                 );
               },
@@ -440,16 +571,24 @@ const SchoolAllocation = () => {
           ]}
           data={filteredSchools}
           rowKey="schoolId"
-          loading={false}
+          loading={isLoadingSchools}
           isError={false}
           itemsPerPage={itemsPerPage}
-          currentPage={currentPage}
-          onPageChange={setCurrentPage}
-          totalCount={filteredSchools.length}
-          serverSidePagination={false}
+          currentPage={currentPage + 1}
+          onPageChange={(page) => setCurrentPage(page - 1)}
+          onItemsPerPageChange={handleItemsPerPageChange}
+          totalCount={
+            filters.schoolId || filters.schoolName
+              ? filteredSchools.length
+              : totalSchools
+          }
+          serverSidePagination={!(filters.schoolId || filters.schoolName)}
           emptyTitle="No schools found"
           emptySubtitle={
-            filters.schoolId || filters.schoolName || filters.districtId
+            filters.schoolId ||
+            filters.schoolName ||
+            filters.districtId ||
+            filters.blockId
               ? "Try adjusting your filters"
               : "No schools available"
           }

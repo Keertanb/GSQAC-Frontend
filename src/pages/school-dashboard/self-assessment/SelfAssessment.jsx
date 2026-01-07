@@ -59,6 +59,7 @@ import {
   useGetSchoolDataQuery,
   useGetClassWiseSectionsQuery,
   useSubmitSubdomainWiseAnswersMutation,
+  useSubmitAssessmentMutation,
 } from "../../../services/schoolService";
 
 const SelfAssessment = () => {
@@ -539,6 +540,22 @@ const SelfAssessment = () => {
         console.log("Subdomain answers submitted successfully:", data);
       },
     });
+
+  const submitAssessmentMutation = useSubmitAssessmentMutation({
+    onSuccess: (data) => {
+      console.log("Assessment submitted successfully:", data);
+      // Optionally refresh domains to show updated progress
+    },
+  });
+
+  // Check if all domains have 100% progress
+  const allDomainsComplete = useMemo(() => {
+    if (!domains || domains.length === 0) return false;
+    return domains.every((domain) => {
+      const progress = getDomainProgress(domain);
+      return Math.round(progress) === 100;
+    });
+  }, [domains, getDomainProgress]);
 
   // Handle individual question submission
   const handleSubmitQuestion = (question) => {
@@ -2318,7 +2335,7 @@ const SelfAssessment = () => {
                 </Paper>
               )}
 
-              {/* Empty State - No Domain Selected */}
+              {/* Domains Overview - No Domain Selected */}
               {!selectedDomain && (
                 <Paper
                   elevation={2}
@@ -2327,28 +2344,263 @@ const SelfAssessment = () => {
                     borderRadius: 3,
                     bgcolor: "white",
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minHeight: "400px",
+                    flexDirection: "column",
+                    overflow: "hidden",
+                    minWidth: 0,
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
                   }}
                 >
-                  <Box sx={{ textAlign: "center" }}>
-                    <Assessment
-                      sx={{
-                        fontSize: 64,
-                        color: colors.neutral.gray300,
-                        mb: 2,
-                      }}
-                    />
+                  {/* Header */}
+                  <Box
+                    sx={{
+                      p: 3,
+                      borderBottom: `2px solid ${colors.neutral.gray200}`,
+                      bgcolor: colors.background.secondary,
+                    }}
+                  >
                     <Typography
-                      variant="h6"
-                      sx={{ color: colors.text.secondary, mb: 1 }}
+                      variant="h5"
+                      sx={{
+                        fontWeight: 700,
+                        color: colors.text.primary,
+                        mb: 0.5,
+                      }}
                     >
-                      Select a Domain
+                      Assessment Overview
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Choose a domain from the left panel to view subdomains
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontSize: "0.875rem" }}
+                    >
+                      Review all domains and submit your assessment
                     </Typography>
+                  </Box>
+
+                  {/* Domains List */}
+                  <Box
+                    sx={{
+                      flex: 1,
+                      overflowY: "auto",
+                      p: { xs: 2.5, md: 3.5 },
+                    }}
+                  >
+                    {domains.length > 0 ? (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2.5,
+                        }}
+                      >
+                        {domains.map((domain) => {
+                          const progress = getDomainProgress(domain);
+                          const DomainIcon = getDomainIcon(domain);
+
+                          return (
+                            <Card
+                              key={domain.domainId}
+                              elevation={1}
+                              sx={{
+                                borderRadius: 2,
+                                border: "1.5px solid",
+                                borderColor: colors.neutral.gray200,
+                                bgcolor: colors.background.primary,
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                                transition: "all 0.3s ease",
+                                "&:hover": {
+                                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                  borderColor: colors.primary.blue,
+                                },
+                              }}
+                            >
+                              <CardContent sx={{ p: 2.5 }}>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 2,
+                                    mb: 2,
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      width: 48,
+                                      height: 48,
+                                      borderRadius: 2,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      flexShrink: 0,
+                                      bgcolor: colors.primary.lightest,
+                                      color: colors.primary.blue,
+                                    }}
+                                  >
+                                    {DomainIcon}
+                                  </Box>
+                                  <Box sx={{ flex: 1 }}>
+                                    <Typography
+                                      variant="body1"
+                                      sx={{
+                                        fontWeight: 600,
+                                        color: colors.text.primary,
+                                        fontSize: "0.9375rem",
+                                        mb: 0.5,
+                                      }}
+                                    >
+                                      D{domain.domainId} {getDomainName(domain)}
+                                    </Typography>
+                                    {domain.subDomain &&
+                                      domain.subDomain.length > 0 && (
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            color: colors.text.secondary,
+                                            fontSize: "0.75rem",
+                                          }}
+                                        >
+                                          {domain.subDomain.length} Subdomain
+                                          {domain.subDomain.length !== 1
+                                            ? "s"
+                                            : ""}
+                                        </Typography>
+                                      )}
+                                  </Box>
+                                  {progress === 100 && (
+                                    <CheckCircle
+                                      sx={{
+                                        color: colors.accent.green,
+                                        fontSize: 24,
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+                                {/* Progress Bar */}
+                                <Box sx={{ mt: 1.5 }}>
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      mb: 0.75,
+                                    }}
+                                  >
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        fontSize: "0.75rem",
+                                        color: colors.text.secondary,
+                                        fontWeight: 500,
+                                      }}
+                                    >
+                                      Progress
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        fontSize: "0.75rem",
+                                        color: getProgressColor(progress),
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      {Math.round(progress)}%
+                                    </Typography>
+                                  </Box>
+                                  <LinearProgress
+                                    variant="determinate"
+                                    value={progress}
+                                    sx={{
+                                      height: 8,
+                                      borderRadius: 4,
+                                      bgcolor: colors.neutral.gray200,
+                                      "& .MuiLinearProgress-bar": {
+                                        borderRadius: 4,
+                                        bgcolor: getProgressColor(progress),
+                                      },
+                                    }}
+                                  />
+                                </Box>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </Box>
+                    ) : (
+                      <Box sx={{ textAlign: "center", py: 8 }}>
+                        <Typography variant="body1" color="text.secondary">
+                          No domains available
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {/* Submit Assessment Button */}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        gap: 2,
+                        mt: 4,
+                        pt: 3.5,
+                        borderTop: `1.5px solid ${colors.neutral.gray200}`,
+                      }}
+                    >
+                      <Button
+                        variant="contained"
+                        endIcon={<ArrowForward />}
+                        onClick={() => {
+                          if (!userId) {
+                            enqueueSnackbar(
+                              "User ID is missing. Please login again.",
+                              {
+                                variant: "error",
+                              }
+                            );
+                            return;
+                          }
+
+                          const payload = {
+                            userId: Number(userId),
+                            isSubmitted: 1,
+                          };
+
+                          submitAssessmentMutation.mutate(payload);
+                        }}
+                        disabled={
+                          submitAssessmentMutation.isPending ||
+                          !allDomainsComplete
+                        }
+                        title={
+                          !allDomainsComplete
+                            ? "Please complete all domains (100%) before submitting"
+                            : "Submit your assessment"
+                        }
+                        sx={{
+                          bgcolor: colors.accent.green,
+                          "&:hover": {
+                            bgcolor: colors.accent.greenDark,
+                            "&:disabled": {
+                              bgcolor: colors.neutral.gray300,
+                            },
+                          },
+                          "&:disabled": {
+                            bgcolor: colors.neutral.gray300,
+                            color: colors.neutral.gray600,
+                            cursor: "not-allowed",
+                          },
+                          textTransform: "none",
+                          fontWeight: 600,
+                          px: 4,
+                          py: 1.5,
+                          borderRadius: 2,
+                        }}
+                      >
+                        {submitAssessmentMutation.isPending
+                          ? "Submitting..."
+                          : !allDomainsComplete
+                          ? "Complete All Domains to Submit"
+                          : "Submit Assessment"}
+                      </Button>
+                    </Box>
                   </Box>
                 </Paper>
               )}
