@@ -774,15 +774,13 @@ const SelfAssessment = () => {
       >
         <AppBar
           position="fixed"
-          className="bg-white shadow-lg border-b border-gray-200 backdrop-blur-sm"
           sx={{
-            backgroundColor: "rgba(255, 255, 255, 0.95)",
-            backdropFilter: "blur(10px)",
+            background: "rgba(255, 255, 255, 0.85)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
             zIndex: theme.zIndex.drawer + 1,
-            boxShadow:
-              "0 4px 20px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
             borderBottom: "1px solid rgba(0,0,0,0.06)",
-            height: "64px",
             width:
               drawerOpen && !matchDownMD
                 ? `calc(100% - ${DRAWER_WIDTH.xs}px)`
@@ -799,54 +797,102 @@ const SelfAssessment = () => {
             }),
           }}
         >
-          <Toolbar className="h-16 px-6">
+          <Toolbar
+            sx={{
+              height: "72px",
+              minHeight: "72px !important",
+              px: { xs: 2, sm: 3, md: 4 },
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
             <IconButton
               onClick={handleDrawerToggle}
-              className="mr-4 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200"
               edge="start"
               sx={{
-                color: "#4b5563",
+                color: "#64748b",
                 borderRadius: "12px",
+                width: "44px",
+                height: "44px",
+                backgroundColor: "rgba(255,255,255,0.9)",
+                border: "1px solid rgba(0,0,0,0.05)",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
                 "&:hover": {
-                  backgroundColor: "#eff6ff",
+                  backgroundColor: "#ffffff",
                   color: "#2563eb",
-                  transform: "scale(1.05)",
+                  transform: "scale(1.08)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  borderColor: "rgba(59, 130, 246, 0.2)",
                 },
+                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
               <Menu />
             </IconButton>
-            <Box className="flex items-center gap-3 mr-6">
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2.5,
+                mr: 2,
+              }}
+            >
               <Box
-                className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 transition-all duration-200 hover:scale-105"
                 sx={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "14px",
                   background:
                     "linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #4f46e5 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 4px 16px rgba(59, 130, 246, 0.35)",
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                 }}
               >
-                <Assessment className="text-white text-lg" />
+                <Assessment
+                  sx={{
+                    color: "white",
+                    fontSize: "1.625rem",
+                  }}
+                />
               </Box>
               <Box>
                 <Typography
                   variant="h6"
                   component="div"
-                  className="font-bold text-gray-900"
                   sx={{
                     fontSize: "1.125rem",
                     fontWeight: 700,
-                    color: "#111827",
-                    letterSpacing: "-0.01em",
+                    color: "#0f172a",
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1.2,
+                    fontFamily:
+                      "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
+                    background:
+                      "linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
                   }}
                 >
                   Self-Assessment
                 </Typography>
                 <Typography
                   variant="caption"
-                  className="text-gray-500 text-xs"
                   sx={{
-                    fontSize: "0.7rem",
-                    color: "#6b7280",
-                    fontWeight: 500,
+                    fontSize: "0.6875rem",
+                    color: "#64748b",
+                    fontWeight: 600,
+                    letterSpacing: "0.05em",
+                    textTransform: "uppercase",
+                    fontFamily:
+                      "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
+                    lineHeight: 1.4,
+                    mt: 0.25,
+                    display: "block",
                   }}
                 >
                   School Assessment
@@ -854,57 +900,30 @@ const SelfAssessment = () => {
               </Box>
             </Box>
             <Box sx={{ flexGrow: 1 }} />
-            {user && (
-              <Box className="flex items-center gap-4 mr-4">
-                <Box className="text-right hidden sm:block">
-                  <Typography
-                    variant="body2"
-                    className="font-semibold text-gray-900 text-sm"
-                    sx={{
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      color: "#111827",
-                    }}
-                  >
-                    {user.name}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    className="text-gray-500 text-xs"
-                    sx={{
-                      fontSize: "0.75rem",
-                      color: "#6b7280",
-                      fontWeight: 500,
-                    }}
-                  >
-                    School
-                  </Typography>
-                </Box>
-                <Box
-                  className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-400 via-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-blue-500/30 hover:shadow-blue-500/40 transition-all duration-200 hover:scale-105 cursor-pointer"
-                  sx={{
-                    background:
-                      "linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #4f46e5 100%)",
-                  }}
-                >
-                  {user.name?.charAt(0)?.toUpperCase() || "S"}
-                </Box>
-              </Box>
-            )}
             <Button
               onClick={handleLogout}
-              className="text-gray-700 hover:bg-red-50 hover:text-red-600 font-semibold px-5 py-2 rounded-xl transition-all duration-200 hover:scale-105"
               sx={{
-                color: "#374151",
+                color: "#475569",
                 textTransform: "none",
                 fontWeight: 600,
                 fontSize: "0.875rem",
                 borderRadius: "12px",
+                px: 3,
+                py: 1.25,
+                backgroundColor: "rgba(255,255,255,0.9)",
+                border: "1px solid rgba(0,0,0,0.06)",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
+                fontFamily:
+                  "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
+                letterSpacing: "-0.01em",
                 "&:hover": {
                   backgroundColor: "#fef2f2",
                   color: "#dc2626",
-                  transform: "scale(1.05)",
+                  borderColor: "#fecaca",
+                  boxShadow: "0 4px 8px rgba(220, 38, 38, 0.15)",
+                  transform: "translateY(-1px)",
                 },
+                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
               Logout
@@ -982,7 +1001,6 @@ const SelfAssessment = () => {
             >
               {/* Left Panel - Domains and Subdomains */}
               <Paper
-                elevation={2}
                 sx={{
                   width: { xs: "100%", md: "380px" },
                   minWidth: { md: "380px" },
@@ -1065,9 +1083,6 @@ const SelfAssessment = () => {
                                   transform: "translateX(4px)",
                                   boxShadow: `0 6px 16px ${colors.primary.blue}25`,
                                   borderColor: colors.primary.blue,
-                                  bgcolor: isDomainSelected
-                                    ? colors.primary.blue + "12"
-                                    : colors.primary.lightest + "40",
                                 },
                               }}
                             >
@@ -1199,24 +1214,22 @@ const SelfAssessment = () => {
                                         }
                                         sx={{
                                           cursor: "pointer",
+                                          mb: 1,
                                           transition: "all 0.3s ease",
-                                          border: "1.5px solid",
+                                          border: "1px solid",
                                           borderColor: isSubdomainSelected
-                                            ? colors.accent.green
-                                            : "transparent",
-                                          borderRadius: 2,
+                                            ? colors.primary.blue
+                                            : colors.neutral.gray200,
+                                          borderRadius: 1.5,
                                           bgcolor: isSubdomainSelected
-                                            ? colors.accent.green + "10"
-                                            : colors.background.primary,
+                                            ? colors.primary.blue + "05"
+                                            : "white",
                                           boxShadow: isSubdomainSelected
-                                            ? `0 4px 12px ${colors.accent.green}20`
-                                            : "0 2px 8px rgba(0,0,0,0.04)",
-                                          mb: 1.5,
+                                            ? `0 2px 8px ${colors.primary.blue}10`
+                                            : "none",
                                           "&:hover": {
-                                            transform: "translateX(4px)",
-                                            boxShadow: `0 6px 16px ${colors.accent.green}25`,
-                                            borderColor: colors.accent.green,
-                                            bgcolor: colors.accent.green + "15",
+                                            borderColor: colors.primary.blue,
+                                            bgcolor: colors.primary.blue + "05",
                                           },
                                         }}
                                       >
@@ -1357,7 +1370,6 @@ const SelfAssessment = () => {
               {/* Right Panel - Questions */}
               {selectedSubdomain && (
                 <Paper
-                  elevation={2}
                   sx={{
                     flex: 1,
                     borderRadius: 3,
@@ -1733,12 +1745,12 @@ const SelfAssessment = () => {
                           return (
                             <Card
                               key={question.questionId}
-                              elevation={1}
                               sx={{
                                 borderRadius: 2,
-                                border: "1px solid rgba(0,0,0,0.08)",
+                                border: "1px solid",
+                                borderColor: colors.neutral.gray200,
                                 transition: "all 0.2s ease",
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
                                 overflow: "hidden",
                                 "&:hover": {
                                   boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
@@ -2070,7 +2082,6 @@ const SelfAssessment = () => {
               {/* Domain View - When Domain Selected but No Subdomain */}
               {selectedDomain && !selectedSubdomain && (
                 <Paper
-                  elevation={2}
                   sx={{
                     flex: 1,
                     borderRadius: 3,
@@ -2208,20 +2219,18 @@ const SelfAssessment = () => {
                             <Card
                               key={subdomainId}
                               onClick={() => handleSubdomainSelect(subdomain)}
-                              elevation={1}
                               sx={{
                                 cursor: "pointer",
                                 transition: "all 0.3s ease",
-                                border: "1.5px solid",
+                                border: "1px solid",
                                 borderColor: colors.neutral.gray200,
                                 borderRadius: 2,
                                 bgcolor: colors.background.primary,
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
                                 "&:hover": {
                                   transform: "translateY(-2px)",
                                   boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                                   borderColor: colors.primary.blue,
-                                  bgcolor: colors.primary.lightest + "40",
                                 },
                               }}
                             >
@@ -2338,7 +2347,6 @@ const SelfAssessment = () => {
               {/* Domains Overview - No Domain Selected */}
               {!selectedDomain && (
                 <Paper
-                  elevation={2}
                   sx={{
                     flex: 1,
                     borderRadius: 3,
@@ -2400,13 +2408,12 @@ const SelfAssessment = () => {
                           return (
                             <Card
                               key={domain.domainId}
-                              elevation={1}
                               sx={{
                                 borderRadius: 2,
-                                border: "1.5px solid",
+                                border: "1px solid",
                                 borderColor: colors.neutral.gray200,
                                 bgcolor: colors.background.primary,
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
                                 transition: "all 0.3s ease",
                                 "&:hover": {
                                   boxShadow: "0 4px 12px rgba(0,0,0,0.1)",

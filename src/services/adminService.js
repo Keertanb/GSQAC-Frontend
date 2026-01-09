@@ -767,3 +767,66 @@ export const useSaveSchoolAllocationMutation = (options = {}) => {
     ...options,
   });
 };
+
+/**
+ * Get all roles
+ * @returns {Promise} API response
+ */
+export const getRoles = async () => {
+  const response = await axiosInstance.get("/admin/roles");
+  return response.data;
+};
+
+/**
+ * Update role status
+ * @param {Object} payload - { roleId: number, isActive: number }
+ * @returns {Promise} API response
+ */
+export const updateRoleStatus = async (payload) => {
+  const response = await axiosInstance.put("/admin/roles", payload);
+  return response.data;
+};
+
+/**
+ * React Query hook for getting all roles
+ * @returns {Object} Query object from React Query
+ */
+export const useGetRolesQuery = () => {
+  return useQuery({
+    queryKey: ["admin", "roles"],
+    queryFn: getRoles,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * React Query hook for updating role status
+ * @param {Object} options - Mutation options
+ * @returns {Object} Mutation object from React Query
+ */
+export const useUpdateRoleStatusMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => updateRoleStatus(data),
+    mutationKey: ["admin", "update-role-status"],
+    onSuccess: (data) => {
+      enqueueSnackbar(data?.message || "Role status updated successfully", {
+        variant: "success",
+      });
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to update role status",
+        {
+          variant: "error",
+        }
+      );
+      if (options.onError) {
+        options.onError(error);
+      }
+    },
+    ...options,
+  });
+};

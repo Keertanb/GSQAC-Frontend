@@ -34,5 +34,7 @@ export const queryKeys = {
     schoolData: (schoolId, academicYear) => ["school", "school-data", schoolId, academicYear],
     classWiseSections: (userId, classNumber) => ["school", "class-wise-sections", userId, classNumber],
     submitSubdomainWiseAnswers: () => ["school", "submit-subdomain-wise-answers"],
+    infrastructure: (schoolId) => ["school", "infrastructure", schoolId],
+    updateInfrastructure: () => ["school", "update-infrastructure"],
   },
 };

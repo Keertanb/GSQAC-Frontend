@@ -12,6 +12,7 @@ import {
   VerifiedUser,
   Business,
   AccountCircle,
+  ManageAccounts,
 } from "@mui/icons-material";
 
 const DRAWER_WIDTH = {
@@ -100,25 +101,18 @@ export const parentMenuItems = [
 // Inspector Menu Items
 export const inspectorMenuItems = [
   {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: Dashboard,
-    url: "/inspector-dashboard",
-    activeFinder: ["/inspector-dashboard"],
+    id: "allocated-schools",
+    label: "Allocated Schools",
+    icon: School,
+    url: "/inspector-dashboard/allocated-schools",
+    activeFinder: ["/inspector-dashboard/allocated-schools"],
   },
   {
-    id: "pending",
-    label: "Pending Inspections",
-    icon: List,
-    url: "/inspector-dashboard/pending",
-    activeFinder: ["/inspector-dashboard/pending"],
-  },
-  {
-    id: "verification",
-    label: "Verification Tasks",
+    id: "school-verification",
+    label: "School Verification",
     icon: Assignment,
-    url: "/inspector-dashboard/verification",
-    activeFinder: ["/inspector-dashboard/verification"],
+    url: "/inspector-dashboard/school-verification",
+    activeFinder: ["/inspector-dashboard/school-verification"],
   },
   {
     id: "completed",
@@ -165,6 +159,13 @@ export const adminMenuItems = [
     icon: AccountCircle,
     url: "/admin-dashboard/district-nodal-officers",
     activeFinder: ["/admin-dashboard/district-nodal-officers"],
+  },
+  {
+    id: "role-management",
+    label: "Role Management",
+    icon: ManageAccounts,
+    url: "/admin-dashboard/role-management",
+    activeFinder: ["/admin-dashboard/role-management"],
   },
 ];
 

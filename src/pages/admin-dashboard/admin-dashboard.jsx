@@ -20,11 +20,13 @@ import AssessmentManagement from "./assessment-management/AssessmentManagement";
 import Verifier from "./verifier/Verifier";
 import SchoolAllocation from "./school-allocation/SchoolAllocation";
 import DistrictNodalOfficers from "./district-nodal-officers/DistrictNodalOfficers";
+import RoleManagement from "./role-management/RoleManagement";
 import {
   ADMIN_DASHBOARD_URL,
   ADMIN_VERIFIER_URL,
   ADMIN_ASSESSMENT_MANAGEMENT_URL,
   ADMIN_SCHOOL_ALLOCATION_URL,
+  ADMIN_ROLE_MANAGEMENT_URL,
   ADMIN_DISTRICT_NODAL_OFFICERS_URL,
 } from "../../routes/routeUrls";
 import "./admin-dashboard.css";
@@ -67,6 +69,8 @@ const AdminDashboard = () => {
       return "allocation";
     } else if (location.pathname === ADMIN_DISTRICT_NODAL_OFFICERS_URL) {
       return "district-nodal-officers";
+    } else if (location.pathname === ADMIN_ROLE_MANAGEMENT_URL) {
+      return "role-management";
     }
     return "dashboard";
   };
@@ -358,6 +362,7 @@ const AdminDashboard = () => {
             {currentView === "district-nodal-officers" && (
               <DistrictNodalOfficers />
             )}
+            {currentView === "role-management" && <RoleManagement />}
             {currentView === "dashboard" && (
               <Box>
                 <Typography

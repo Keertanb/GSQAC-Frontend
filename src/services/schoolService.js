@@ -169,3 +169,77 @@ export const useSubmitAssessmentMutation = (options = {}) => {
     ...options,
   });
 };
+
+/**
+ * Get school infrastructure details
+ * @param {Object} params - { schoolId: string }
+ * @returns {Promise} API response
+ */
+export const getSchoolInfrastructure = async (params) => {
+  const response = await axiosInstance.get("/school/school-details", { params });
+  return response.data;
+};
+
+/**
+ * Update school infrastructure details
+ * @param {Object} payload - { schoolId: string, drinkingWater: number, puccaBuilding: number, electricity: number, functionalToilets: number }
+ * @returns {Promise} API response
+ */
+export const updateSchoolInfrastructure = async (payload) => {
+  const response = await axiosInstance.post("/school/school-details", payload);
+  return response.data;
+};
+
+/**
+ * React Query hook for getting school infrastructure details
+ * @param {Object} options - Query options
+ * @param {string} options.schoolId - School ID
+ * @param {boolean} options.enabled - Whether the query should run
+ * @returns {Object} Query object from React Query
+ */
+export const useGetSchoolInfrastructureQuery = ({
+  schoolId,
+  enabled = true,
+}) => {
+  return useQuery({
+    queryKey: queryKeys.school.infrastructure(schoolId),
+    queryFn: () => getSchoolInfrastructure({ schoolId }),
+    enabled: enabled && !!schoolId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * React Query hook for updating school infrastructure details
+ * @param {Object} options - Mutation options
+ * @returns {Object} Mutation object from React Query
+ */
+export const useUpdateSchoolInfrastructureMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => updateSchoolInfrastructure(data),
+    mutationKey: queryKeys.school.updateInfrastructure(),
+    onSuccess: (data) => {
+      enqueueSnackbar(
+        data?.message || "Infrastructure details updated successfully",
+        {
+          variant: "success",
+        }
+      );
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to update infrastructure details",
+        {
+          variant: "error",
+        }
+      );
+      if (options.onError) {
+        options.onError(error);
+      }
+    },
+    ...options,
+  });
+};

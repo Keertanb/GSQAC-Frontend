@@ -149,6 +149,36 @@ export const inspectorRoutes = [
           </ProtectedRoute>
         ),
       },
+      {
+        path: ROUTE_URLS.INSPECTOR_ALLOCATED_SCHOOLS_URL,
+        element: (
+          <ProtectedRoute requiredRole="inspector">
+            <Suspense fallback={<LazyLoad />}>
+              <InspectorDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTE_URLS.INSPECTOR_SCHOOL_VERIFICATION_URL,
+        element: (
+          <ProtectedRoute requiredRole="inspector">
+            <Suspense fallback={<LazyLoad />}>
+              <InspectorDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTE_URLS.INSPECTOR_COMPLETED_URL,
+        element: (
+          <ProtectedRoute requiredRole="inspector">
+            <Suspense fallback={<LazyLoad />}>
+              <InspectorDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
   {
@@ -204,6 +234,16 @@ export const adminRoutes = [
       },
       {
         path: ROUTE_URLS.ADMIN_DISTRICT_NODAL_OFFICERS_URL,
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <Suspense fallback={<LazyLoad />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTE_URLS.ADMIN_ROLE_MANAGEMENT_URL,
         element: (
           <ProtectedRoute requiredRole="admin">
             <Suspense fallback={<LazyLoad />}>
