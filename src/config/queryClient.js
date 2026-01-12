@@ -15,7 +15,7 @@ export const queryKeys = {
       roleId,
       languageCode,
     ],
-    subdomainQuestions: (subDomainId, roleId, languageCode) => [
+    subdomainQuestions: (subDomainId, roleId, languageCode = null) => [
       "admin",
       "subdomain-questions",
       subDomainId,

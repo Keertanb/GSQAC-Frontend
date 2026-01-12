@@ -22,6 +22,8 @@ import {
   Select,
   FormControl,
   InputLabel,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
 import {
   ExpandMore,
@@ -29,6 +31,7 @@ import {
   Visibility,
   Add,
   Delete,
+  Language,
 } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import DomainSubdomainView from "./DomainSubdomainView";
@@ -314,19 +317,43 @@ const AssessmentManagement = () => {
           gap: 2,
         }}
       >
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          {["en", "hi", "gu"].map((lang) => (
-            <Chip
-              key={lang}
-              label={lang.toUpperCase()}
-              onClick={() => handleLanguageChange(lang)}
-              color={currentLanguage === lang ? "primary" : "default"}
-              sx={{
-                cursor: "pointer",
-                fontWeight: currentLanguage === lang ? 700 : 400,
-              }}
-            />
-          ))}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {/* <Language sx={{ color: colors.primary.blue, fontSize: 20 }} /> */}
+          <ToggleButtonGroup
+            value={currentLanguage}
+            exclusive
+            onChange={(e, newLanguage) => {
+              if (newLanguage !== null) {
+                handleLanguageChange(newLanguage);
+              }
+            }}
+            size="small"
+            sx={{
+              "& .MuiToggleButton-root": {
+                px: 2,
+                py: 0.5,
+                fontSize: "0.8125rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                borderColor: colors.primary.blue + "40",
+                color: colors.text.secondary,
+                "&.Mui-selected": {
+                  bgcolor: colors.primary.blue,
+                  color: "white",
+                  "&:hover": {
+                    bgcolor: colors.primary.dark,
+                  },
+                },
+                "&:hover": {
+                  bgcolor: colors.primary.lightest,
+                },
+              },
+            }}
+          >
+            <ToggleButton value="en">EN</ToggleButton>
+            <ToggleButton value="hi">हिं</ToggleButton>
+            <ToggleButton value="gu">ગુ</ToggleButton>
+          </ToggleButtonGroup>
         </Box>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <FormControl size="small" sx={{ minWidth: 150 }}>

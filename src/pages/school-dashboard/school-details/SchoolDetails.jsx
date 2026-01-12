@@ -199,6 +199,7 @@ const InfoField = ({
           borderRadius: 1.5,
           border: `1.5px solid ${colors.neutral.gray200}`,
           transition: "all 0.2s ease",
+          minWidth: 0,
           "&:hover": {
             borderColor: colors.primary.lightest,
             bgcolor: `${colors.primary.lightest}15`,
@@ -212,6 +213,8 @@ const InfoField = ({
             fontWeight: 600,
             fontSize: "0.9375rem",
             lineHeight: 1.6,
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
           }}
         >
           {value || "—"}
@@ -397,6 +400,13 @@ const SchoolDetails = () => {
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
   const { logout, user, userId } = useAuthStore();
 
+  // Grid item styles for equal width cards (4 per row)
+  const gridItemStyles = {
+    minWidth: 0,
+    flexBasis: { md: "25%", lg: "25%" },
+    maxWidth: { md: "25%", lg: "25%" },
+  };
+
   // Get current academic year (default to current year)
   const currentYear = new Date().getFullYear();
   // eslint-disable-next-line no-unused-vars
@@ -432,7 +442,7 @@ const SchoolDetails = () => {
     isError,
     error,
   } = useGetSchoolDataQuery({
-    schoolId: "24060100401",
+    schoolId: "24091502136",
   });
 
   // Initialize school data with API response or default values
@@ -851,40 +861,89 @@ const SchoolDetails = () => {
                   </Box>
                   <CardContent sx={{ p: 3 }}>
                     <Grid container spacing={2.5}>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="SCHOOL NAME"
                           value={schoolData.schoolName}
                           icon={School}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="UDISE CODE"
                           value={schoolData.udiseCode}
                           icon={Badge}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="DISTRICT"
                           value={schoolData.district}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField label="BLOCK" value={schoolData.block} />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField label="STATE" value={schoolData.state} />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="CATEGORY"
                           value={schoolData.category}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
-                        <Box
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
+                        <Card
                           sx={{
                             bgcolor: colors.background.primary,
                             border: `1px solid ${colors.neutral.gray200}`,
@@ -925,7 +984,7 @@ const SchoolDetails = () => {
                               borderRadius: 1.5,
                             }}
                           />
-                        </Box>
+                        </Card>
                       </Grid>
                     </Grid>
                   </CardContent>
@@ -1007,26 +1066,54 @@ const SchoolDetails = () => {
                   </Box>
                   <CardContent sx={{ p: 3 }}>
                     <Grid container spacing={2.5}>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="Management Type"
                           value={schoolData.managementType}
                           icon={Business}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="School Type"
                           value={schoolData.schoolType}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="Medium of Instruction"
                           value={schoolData.mediumOfInstruction}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="Location Type (Rural/Urban)"
                           value={schoolData.locationType}
@@ -1044,7 +1131,14 @@ const SchoolDetails = () => {
                           }
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="Students (Boys & Girls)"
                           value={schoolData.studentsType}
@@ -1063,7 +1157,14 @@ const SchoolDetails = () => {
                           }
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="Classes (Range) From"
                           value={schoolData.classesFrom}
@@ -1081,7 +1182,14 @@ const SchoolDetails = () => {
                           }
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="Classes (Range) To"
                           value={schoolData.classesTo}
@@ -1167,7 +1275,14 @@ const SchoolDetails = () => {
                   </Box>
                   <CardContent sx={{ p: 3 }}>
                     <Grid container spacing={2.5}>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <StatCard
                           label="TOTAL TEACHERS"
                           value={schoolData.totalTeachers}
@@ -1175,7 +1290,14 @@ const SchoolDetails = () => {
                           color={colors.primary.blue}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <StatCard
                           label="TOTAL STUDENTS"
                           value={schoolData.totalStudents}
@@ -1263,7 +1385,14 @@ const SchoolDetails = () => {
                   </Box>
                   <CardContent sx={{ p: 3 }}>
                     <Grid container spacing={2.5}>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <FacilityCard
                           label="Drinking Water"
                           value={schoolData.drinkingWater}
@@ -1273,7 +1402,14 @@ const SchoolDetails = () => {
                           }
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <FacilityCard
                           label="Pucca Building"
                           value={schoolData.puccaBuilding}
@@ -1283,7 +1419,14 @@ const SchoolDetails = () => {
                           }
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <FacilityCard
                           label="Electricity"
                           value={schoolData.electricity}
@@ -1293,7 +1436,14 @@ const SchoolDetails = () => {
                           }
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <FacilityCard
                           label="Functional Toilets"
                           value={schoolData.functionalToilets}
@@ -1386,7 +1536,14 @@ const SchoolDetails = () => {
                   </Box>
                   <CardContent sx={{ p: 3 }}>
                     <Grid container spacing={2.5}>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="Principal/Head Name"
                           value={schoolData.principalName}
@@ -1400,7 +1557,14 @@ const SchoolDetails = () => {
                           }
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="Designation"
                           value={schoolData.designation}
@@ -1411,7 +1575,14 @@ const SchoolDetails = () => {
                           }
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="Mobile Number"
                           value={schoolData.mobileNumber}
@@ -1422,7 +1593,14 @@ const SchoolDetails = () => {
                           }
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        lg={3}
+                        sx={gridItemStyles}
+                      >
                         <InfoField
                           label="Email Address"
                           value={schoolData.emailAddress}

@@ -22,8 +22,10 @@ import {
   FormControlLabel,
   Radio,
   FormLabel,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
-import { ArrowBack, Add, Edit, Delete } from "@mui/icons-material";
+import { ArrowBack, Add, Edit, Delete, Language } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import {
   useGetSubdomainQuestionsQuery,
@@ -44,13 +46,20 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
   // eslint-disable-next-line no-unused-vars
   const { userId } = useAuthStore();
 
+  // Refs for scrolling to sections
+  const addQuestionRef = React.useRef(null);
+  const optionsFormRef = React.useRef(null);
+
   // Map language code: en -> EN, hi -> HI, gu -> GU
   const languageCodeMap = {
     en: "EN",
     hi: "HI",
     gu: "GU",
   };
-  const languageCode = languageCodeMap[currentLanguage] || "EN";
+  
+  // Local language state for QuestionsView (independent of parent)
+  const [selectedLanguage, setSelectedLanguage] = useState(currentLanguage || "en");
+  const languageCode = languageCodeMap[selectedLanguage] || "EN";
 
   const subDomainId = subdomainData?.subDomainId || subdomainData?.id;
 
@@ -87,6 +96,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
     getRoleByRoleId(roleId)
   );
 
+  // Fetch questions without languageCode to get all language fields (en, hi, gu)
   const {
     data: questionsData,
     isLoading,
@@ -95,7 +105,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
   } = useGetSubdomainQuestionsQuery({
     subDomainId,
     roleId,
-    languageCode,
+    // Don't pass languageCode to get all language fields
     enabled: !!subdomainData && !!subDomainId,
   });
 
@@ -109,8 +119,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.subdomainQuestions(
           subDomainId,
-          roleId,
-          languageCode
+          roleId
         ),
       });
       // Close modal
@@ -127,8 +136,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.subdomainQuestions(
           subDomainId,
-          roleId,
-          languageCode
+          roleId
         ),
       });
     },
@@ -275,8 +283,13 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
         }
       );
 
-      // DO NOT invalidate queries here - this causes a re-render that can interfere
-      // with the options form display. We'll invalidate after options are added instead.
+      // Scroll to options form after state update
+      setTimeout(() => {
+        optionsFormRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
     } catch (error) {
       console.error("Error adding question:", error);
       enqueueSnackbar(
@@ -341,8 +354,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.subdomainQuestions(
           subDomainId,
-          roleId,
-          languageCode
+          roleId
         ),
       });
 
@@ -369,18 +381,22 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
   };
 
   const handleEditQuestion = (question) => {
+    // Question already has all language fields since we fetch without languageCode
     setEditingQuestion(question);
     setCurrentQuestionId(question.questionId);
-    // Set question text for all languages
+
     setNewQuestionText({
       en: question.questionTextEn || question.questionText || "",
-      hi: question.questionTextHi || question.questionText || "",
-      gu: question.questionTextGu || question.questionText || "",
+      hi: question.questionTextHi || "",
+      gu: question.questionTextGu || "",
     });
+
     // Set classroom observation fields
     setIsClassroomObservation(question.isClassroomObservation || 0);
     setObservationCount(
-      question.observationCount ? String(question.observationCount) : ""
+      question.observationCount
+        ? String(question.observationCount)
+        : ""
     );
 
     // Parse and set options
@@ -391,12 +407,12 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
         optionId: opt.optionId,
         text: {
           en: opt.optionTextEn || opt.optionText || "",
-          hi: opt.optionTextHi || opt.optionText || "",
-          gu: opt.optionTextGu || opt.optionText || "",
+          hi: opt.optionTextHi || "",
+          gu: opt.optionTextGu || "",
         },
       }));
       setNewOptions(formattedOptions);
-      setShowOptionsForm(true); // Show options form when editing
+      setShowOptionsForm(true);
     } else {
       setNewOptions([
         { id: 1, text: { en: "", hi: "", gu: "" } },
@@ -410,6 +426,14 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
       setSelectedQuestionRole(getRoleByRoleId(question.roleId));
     }
     setShowAddQuestion(true);
+
+    // Scroll to edit form
+    setTimeout(() => {
+      addQuestionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
   };
 
   const handleDeleteQuestion = (question) => {
@@ -435,13 +459,31 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
   };
 
   const getQuestionText = (question) => {
-    // API returns questionText directly (not language-specific in the new format)
-    return question.questionText || "";
+    // Display question based on selected language
+    switch (selectedLanguage) {
+      case "en":
+        return question.questionTextEn || question.questionText || "";
+      case "hi":
+        return question.questionTextHi || question.questionText || "";
+      case "gu":
+        return question.questionTextGu || question.questionText || "";
+      default:
+        return question.questionTextEn || question.questionText || "";
+    }
   };
 
   const getOptionText = (option) => {
-    // API returns optionText directly (not language-specific in the new format)
-    return option.optionText || "";
+    // Display option based on selected language
+    switch (selectedLanguage) {
+      case "en":
+        return option.optionTextEn || option.optionText || "";
+      case "hi":
+        return option.optionTextHi || option.optionText || "";
+      case "gu":
+        return option.optionTextGu || option.optionText || "";
+      default:
+        return option.optionTextEn || option.optionText || "";
+    }
   };
 
   if (isLoading) {
@@ -483,6 +525,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
           alignItems: "center",
           justifyContent: "space-between",
           mb: 3,
+          gap: 2,
         }}
       >
         <Button
@@ -493,13 +536,53 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
         >
           {t("common.back")}
         </Button>
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>
-          {subdomainData?.subDomainNameEn ||
-            subdomainData?.subDomainName ||
-            subdomainData?.name?.[currentLanguage] ||
-            subdomainData?.name?.en ||
-            "Subdomain"}
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
+          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+            {subdomainData?.subDomainNameEn ||
+              subdomainData?.subDomainName ||
+              subdomainData?.name?.[currentLanguage] ||
+              subdomainData?.name?.en ||
+              "Subdomain"}
+          </Typography>
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {/* <Language sx={{ color: colors.primary.blue, fontSize: 20 }} /> */}
+          <ToggleButtonGroup
+            value={selectedLanguage}
+            exclusive
+            onChange={(e, newLanguage) => {
+              if (newLanguage !== null) {
+                setSelectedLanguage(newLanguage);
+              }
+            }}
+            size="small"
+            sx={{
+              "& .MuiToggleButton-root": {
+                px: 2,
+                py: 0.5,
+                fontSize: "0.8125rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                borderColor: colors.primary.blue + "40",
+                color: colors.text.secondary,
+                "&.Mui-selected": {
+                  bgcolor: colors.primary.blue,
+                  color: "white",
+                  "&:hover": {
+                    bgcolor: colors.primary.dark,
+                  },
+                },
+                "&:hover": {
+                  bgcolor: colors.primary.lightest,
+                },
+              },
+            }}
+          >
+            <ToggleButton value="en">EN</ToggleButton>
+            <ToggleButton value="hi">हिं</ToggleButton>
+            <ToggleButton value="gu">ગુ</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
       </Box>
 
       <Paper
@@ -542,6 +625,14 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
               setIsClassroomObservation(0);
               setObservationCount("");
               setShowAddQuestion(!showAddQuestion);
+
+              // Scroll to add question section after state update
+              setTimeout(() => {
+                addQuestionRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }, 100);
             }}
             sx={{
               bgcolor: colors.primary.blue,
@@ -551,195 +642,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
             {t("assessment.question.addQuestion")}
           </Button>
         </Box>
-
-        {/* Options Form - Separate Card */}
-        {showOptionsForm && (
-          <Fade in={showOptionsForm}>
-            <Card
-              elevation={2}
-              sx={{
-                mb: 3,
-                p: 3,
-                borderRadius: 2,
-                bgcolor: "#f9fafb",
-              }}
-            >
-              <Typography
-                variant="h6"
-                gutterBottom
-                sx={{ fontWeight: 700, mb: 3 }}
-              >
-                {editingQuestion
-                  ? t("assessment.question.editOptions")
-                  : t("assessment.question.addOptions")}
-              </Typography>
-              <Box sx={{ mb: 2 }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    mb: 2,
-                  }}
-                >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    {t("assessment.question.options")}
-                  </Typography>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<Add />}
-                    onClick={handleAddOption}
-                    sx={{
-                      borderColor: colors.primary.blue,
-                      color: colors.primary.blue,
-                      "&:hover": {
-                        borderColor: colors.primary.dark,
-                        bgcolor: colors.primary.blue + "10",
-                      },
-                    }}
-                  >
-                    {t("assessment.question.addOption")}
-                  </Button>
-                </Box>
-
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  {newOptions.map((option, optIndex) => (
-                    <Card
-                      key={option.id}
-                      elevation={1}
-                      sx={{
-                        p: 2,
-                        borderRadius: 2,
-                        bgcolor: "white",
-                        border: "1px solid rgba(0,0,0,0.08)",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          mb: 1.5,
-                        }}
-                      >
-                        <Chip
-                          label={`${t("assessment.question.options")} ${
-                            optIndex + 1
-                          }`}
-                          size="small"
-                          sx={{
-                            bgcolor: colors.primary.lightest,
-                            color: colors.primary.blue,
-                            fontWeight: 600,
-                          }}
-                        />
-                        {newOptions.length > 2 && (
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleDeleteOption(option.id)}
-                            sx={{
-                              bgcolor: colors.semantic.error + "15",
-                              "&:hover": {
-                                bgcolor: colors.semantic.error + "25",
-                              },
-                            }}
-                          >
-                            <Delete fontSize="small" />
-                          </IconButton>
-                        )}
-                      </Box>
-                      <Box sx={{ display: "flex", gap: 2 }}>
-                        <TextField
-                          fullWidth
-                          label={`${t(
-                            "assessment.question.options"
-                          )} (English)`}
-                          value={option.text.en}
-                          onChange={(e) =>
-                            handleOptionChange(option.id, "en", e.target.value)
-                          }
-                          variant="outlined"
-                          size="small"
-                          required
-                          multiline
-                          rows={2}
-                        />
-                        <TextField
-                          fullWidth
-                          label={`${t("assessment.question.options")} (Hindi)`}
-                          value={option.text.hi}
-                          onChange={(e) =>
-                            handleOptionChange(option.id, "hi", e.target.value)
-                          }
-                          variant="outlined"
-                          size="small"
-                          multiline
-                          rows={2}
-                        />
-                        <TextField
-                          fullWidth
-                          label={`${t(
-                            "assessment.question.options"
-                          )} (Gujarati)`}
-                          value={option.text.gu}
-                          onChange={(e) =>
-                            handleOptionChange(option.id, "gu", e.target.value)
-                          }
-                          variant="outlined"
-                          size="small"
-                          multiline
-                          rows={2}
-                        />
-                      </Box>
-                    </Card>
-                  ))}
-                </Box>
-
-                {/* Options Submit Button */}
-                <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
-                  <Button
-                    variant="contained"
-                    startIcon={
-                      upsertQuestionOptionMutation.isPending ? (
-                        <CircularProgress size={20} color="inherit" />
-                      ) : (
-                        <Add />
-                      )
-                    }
-                    onClick={handleAddOptions}
-                    disabled={upsertQuestionOptionMutation.isPending}
-                    sx={{
-                      bgcolor: colors.accent.green,
-                      "&:hover": { bgcolor: colors.accent.greenDark },
-                    }}
-                  >
-                    {upsertQuestionOptionMutation.isPending
-                      ? "Saving Options..."
-                      : editingQuestion
-                      ? "Update Options"
-                      : "Add Options"}
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    onClick={() => {
-                      setShowOptionsForm(false);
-                      setNewOptions([
-                        { id: 1, text: { en: "", hi: "", gu: "" } },
-                        { id: 2, text: { en: "", hi: "", gu: "" } },
-                      ]);
-                      setCurrentQuestionId(null);
-                    }}
-                    disabled={upsertQuestionOptionMutation.isPending}
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                </Box>
-              </Box>
-            </Card>
-          </Fade>
-        )}
 
         {questions && questions.length > 0 ? (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -752,7 +654,10 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
               // If editing this question, show edit form instead of question card
               if (isEditingThisQuestion && showAddQuestion) {
                 return (
-                  <Fade in={showAddQuestion} key={`edit-${question.questionId}`}>
+                  <Fade
+                    in={showAddQuestion}
+                    key={`edit-${question.questionId}`}
+                  >
                     <Card
                       elevation={2}
                       sx={{
@@ -790,7 +695,9 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                             >
                               <MenuItem value="admin">Admin</MenuItem>
                               <MenuItem value="school">School</MenuItem>
-                              <MenuItem value="inspector">School Verifier</MenuItem>
+                              <MenuItem value="inspector">
+                                School Verifier
+                              </MenuItem>
                               <MenuItem value="parent">Parent</MenuItem>
                             </Select>
                           </FormControl>
@@ -945,172 +852,391 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                 );
               }
 
-              // Normal question card display
-              return (
-                <Card
-                  key={question.questionId}
-                  elevation={1}
-                  sx={{
-                    borderRadius: 2,
-                    border: "1px solid rgba(0,0,0,0.08)",
-                    transition: "all 0.2s ease",
-                    "&:hover": {
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box
+              // Show options form after edit form if editing this question
+              const optionsFormForThisQuestion =
+                isEditingThisQuestion && showOptionsForm ? (
+                  <Fade
+                    in={showOptionsForm}
+                    key={`options-${question.questionId}`}
+                  >
+                    <Card
+                      elevation={2}
                       sx={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 2,
-                        mb: 2,
+                        mb: 3,
+                        p: 3,
+                        borderRadius: 2,
+                        bgcolor: "#f9fafb",
+                        border: `2px solid ${colors.accent.green}`,
                       }}
                     >
-                      <Chip
-                        label={`Q${index + 1}`}
-                        size="small"
-                        sx={{
-                          bgcolor: colors.primary.blue,
-                          color: "white",
-                          fontWeight: 700,
-                          minWidth: "40px",
-                        }}
-                      />
-                      <Box sx={{ flex: 1 }}>
-                        <Typography
-                          variant="body1"
+                      <Typography
+                        variant="h6"
+                        gutterBottom
+                        sx={{ fontWeight: 700, mb: 3 }}
+                      >
+                        {t("assessment.question.editOptions")}
+                      </Typography>
+                      <Box sx={{ mb: 2 }}>
+                        <Box
                           sx={{
-                            fontWeight: 600,
-                            fontSize: "1rem",
-                            lineHeight: 1.6,
-                            mb:
-                              question.isClassroomObservation === 1 &&
-                              question.observationCount
-                                ? 0.5
-                                : 0,
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            mb: 2,
                           }}
                         >
-                          {getQuestionText(question)}
-                        </Typography>
-                        {question.isClassroomObservation === 1 &&
-                          question.observationCount && (
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                mt: 0.5,
-                              }}
-                            >
-                              <Chip
-                                label={`Observation Count: ${question.observationCount}`}
-                                size="small"
-                                sx={{
-                                  bgcolor: colors.primary.blue + "20",
-                                  color: colors.primary.blue,
-                                  fontWeight: 600,
-                                  fontSize: "0.75rem",
-                                }}
-                              />
-                            </Box>
-                          )}
-                      </Box>
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => handleEditQuestion(question)}
-                        sx={{
-                          bgcolor: colors.accent.green + "15",
-                          "&:hover": { bgcolor: colors.accent.green + "25" },
-                        }}
-                      >
-                        <Edit fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDeleteQuestion(question)}
-                        sx={{
-                          bgcolor: colors.semantic.error + "15",
-                          "&:hover": { bgcolor: colors.semantic.error + "25" },
-                        }}
-                      >
-                        <Delete fontSize="small" />
-                      </IconButton>
-                    </Box>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ fontWeight: 600 }}
+                          >
+                            {t("assessment.question.options")}
+                          </Typography>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<Add />}
+                            onClick={handleAddOption}
+                            sx={{
+                              borderColor: colors.primary.blue,
+                              color: colors.primary.blue,
+                              "&:hover": {
+                                borderColor: colors.primary.dark,
+                                bgcolor: colors.primary.blue + "10",
+                              },
+                            }}
+                          >
+                            {t("assessment.question.addOption")}
+                          </Button>
+                        </Box>
 
-                    {options && options.length > 0 && (
-                      <Box sx={{ mt: 2 }}>
-                        <Typography
-                          variant="subtitle2"
-                          sx={{
-                            fontWeight: 600,
-                            mb: 1.5,
-                            color: "text.secondary",
-                          }}
-                        >
-                          {t("assessment.question.options")}:
-                        </Typography>
                         <Box
                           sx={{
                             display: "flex",
                             flexDirection: "column",
-                            gap: 1.5,
+                            gap: 2,
                           }}
                         >
-                          {options.map((option, optIndex) => (
-                            <Box
-                              key={option.optionId || optIndex}
+                          {newOptions.map((option, optIndex) => (
+                            <Card
+                              key={option.id}
+                              elevation={1}
                               sx={{
                                 p: 2,
-                                borderRadius: 1.5,
-                                bgcolor: "#f9fafb",
-                                border: "1px solid rgba(0,0,0,0.06)",
-                                transition: "all 0.2s ease",
-                                "&:hover": {
-                                  bgcolor: "#f3f4f6",
-                                  borderColor: colors.primary.lightest,
-                                },
+                                borderRadius: 2,
+                                bgcolor: "white",
+                                border: "1px solid rgba(0,0,0,0.08)",
                               }}
                             >
                               <Box
                                 sx={{
                                   display: "flex",
-                                  alignItems: "flex-start",
-                                  gap: 1.5,
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  mb: 1.5,
                                 }}
                               >
                                 <Chip
-                                  label={String.fromCharCode(65 + optIndex)}
+                                  label={`${t("assessment.question.options")} ${
+                                    optIndex + 1
+                                  }`}
                                   size="small"
                                   sx={{
                                     bgcolor: colors.primary.lightest,
                                     color: colors.primary.blue,
                                     fontWeight: 600,
-                                    minWidth: "28px",
-                                    height: "28px",
                                   }}
                                 />
-                                <Typography
-                                  variant="body2"
-                                  sx={{
-                                    flex: 1,
-                                    lineHeight: 1.6,
-                                    color: "text.primary",
-                                  }}
-                                >
-                                  {getOptionText(option)}
-                                </Typography>
+                                {newOptions.length > 2 && (
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={() =>
+                                      handleDeleteOption(option.id)
+                                    }
+                                    sx={{
+                                      bgcolor: colors.semantic.error + "15",
+                                      "&:hover": {
+                                        bgcolor: colors.semantic.error + "25",
+                                      },
+                                    }}
+                                  >
+                                    <Delete fontSize="small" />
+                                  </IconButton>
+                                )}
                               </Box>
-                            </Box>
+                              <Box sx={{ display: "flex", gap: 2 }}>
+                                <TextField
+                                  fullWidth
+                                  label={`${t(
+                                    "assessment.question.options"
+                                  )} (English)`}
+                                  value={option.text.en}
+                                  onChange={(e) =>
+                                    handleOptionChange(
+                                      option.id,
+                                      "en",
+                                      e.target.value
+                                    )
+                                  }
+                                  variant="outlined"
+                                  size="small"
+                                  required
+                                  multiline
+                                  rows={2}
+                                />
+                                <TextField
+                                  fullWidth
+                                  label={`${t(
+                                    "assessment.question.options"
+                                  )} (Hindi)`}
+                                  value={option.text.hi}
+                                  onChange={(e) =>
+                                    handleOptionChange(
+                                      option.id,
+                                      "hi",
+                                      e.target.value
+                                    )
+                                  }
+                                  variant="outlined"
+                                  size="small"
+                                  multiline
+                                  rows={2}
+                                />
+                                <TextField
+                                  fullWidth
+                                  label={`${t(
+                                    "assessment.question.options"
+                                  )} (Gujarati)`}
+                                  value={option.text.gu}
+                                  onChange={(e) =>
+                                    handleOptionChange(
+                                      option.id,
+                                      "gu",
+                                      e.target.value
+                                    )
+                                  }
+                                  variant="outlined"
+                                  size="small"
+                                  multiline
+                                  rows={2}
+                                />
+                              </Box>
+                            </Card>
                           ))}
                         </Box>
+
+                        {/* Options Submit Button */}
+                        <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
+                          <Button
+                            variant="contained"
+                            startIcon={
+                              upsertQuestionOptionMutation.isPending ? (
+                                <CircularProgress size={20} color="inherit" />
+                              ) : (
+                                <Add />
+                              )
+                            }
+                            onClick={handleAddOptions}
+                            disabled={upsertQuestionOptionMutation.isPending}
+                            sx={{
+                              bgcolor: colors.accent.green,
+                              "&:hover": { bgcolor: colors.accent.greenDark },
+                            }}
+                          >
+                            {upsertQuestionOptionMutation.isPending
+                              ? "Saving Options..."
+                              : "Update Options"}
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            onClick={() => {
+                              setShowOptionsForm(false);
+                              setNewOptions([
+                                { id: 1, text: { en: "", hi: "", gu: "" } },
+                                { id: 2, text: { en: "", hi: "", gu: "" } },
+                              ]);
+                              setCurrentQuestionId(null);
+                            }}
+                            disabled={upsertQuestionOptionMutation.isPending}
+                          >
+                            {t("common.cancel")}
+                          </Button>
+                        </Box>
                       </Box>
-                    )}
-                  </CardContent>
-                </Card>
+                    </Card>
+                  </Fade>
+                ) : null;
+
+              // Normal question card display
+              return (
+                <React.Fragment key={question.questionId}>
+                  <Card
+                    elevation={1}
+                    sx={{
+                      borderRadius: 2,
+                      border: "1px solid rgba(0,0,0,0.08)",
+                      transition: "all 0.2s ease",
+                      "&:hover": {
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ p: 3 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 2,
+                          mb: 2,
+                        }}
+                      >
+                        <Chip
+                          label={`Q${index + 1}`}
+                          size="small"
+                          sx={{
+                            bgcolor: colors.primary.blue,
+                            color: "white",
+                            fontWeight: 700,
+                            minWidth: "40px",
+                          }}
+                        />
+                        <Box sx={{ flex: 1 }}>
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              fontWeight: 600,
+                              fontSize: "1rem",
+                              lineHeight: 1.6,
+                              mb:
+                                question.isClassroomObservation === 1 &&
+                                question.observationCount
+                                  ? 0.5
+                                  : 0,
+                            }}
+                          >
+                            {getQuestionText(question)}
+                          </Typography>
+                          {question.isClassroomObservation === 1 &&
+                            question.observationCount && (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                  mt: 0.5,
+                                }}
+                              >
+                                <Chip
+                                  label={`Observation Count: ${question.observationCount}`}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: colors.primary.blue + "20",
+                                    color: colors.primary.blue,
+                                    fontWeight: 600,
+                                    fontSize: "0.75rem",
+                                  }}
+                                />
+                              </Box>
+                            )}
+                        </Box>
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => handleEditQuestion(question)}
+                          sx={{
+                            bgcolor: colors.accent.green + "15",
+                            "&:hover": { bgcolor: colors.accent.green + "25" },
+                          }}
+                        >
+                          <Edit fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDeleteQuestion(question)}
+                          sx={{
+                            bgcolor: colors.semantic.error + "15",
+                            "&:hover": {
+                              bgcolor: colors.semantic.error + "25",
+                            },
+                          }}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </Box>
+
+                      {options && options.length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              fontWeight: 600,
+                              mb: 1.5,
+                              color: "text.secondary",
+                            }}
+                          >
+                            {t("assessment.question.options")}:
+                          </Typography>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 1.5,
+                            }}
+                          >
+                            {options.map((option, optIndex) => (
+                              <Box
+                                key={option.optionId || optIndex}
+                                sx={{
+                                  p: 2,
+                                  borderRadius: 1.5,
+                                  bgcolor: "#f9fafb",
+                                  border: "1px solid rgba(0,0,0,0.06)",
+                                  transition: "all 0.2s ease",
+                                  "&:hover": {
+                                    bgcolor: "#f3f4f6",
+                                    borderColor: colors.primary.lightest,
+                                  },
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "flex-start",
+                                    gap: 1.5,
+                                  }}
+                                >
+                                  <Chip
+                                    label={String.fromCharCode(65 + optIndex)}
+                                    size="small"
+                                    sx={{
+                                      bgcolor: colors.primary.lightest,
+                                      color: colors.primary.blue,
+                                      fontWeight: 600,
+                                      minWidth: "28px",
+                                      height: "28px",
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      flex: 1,
+                                      lineHeight: 1.6,
+                                      color: "text.primary",
+                                    }}
+                                  >
+                                    {getOptionText(option)}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            ))}
+                          </Box>
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                  {optionsFormForThisQuestion}
+                </React.Fragment>
               );
             })}
 
@@ -1118,6 +1244,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
             {showAddQuestion && !editingQuestion && (
               <Fade in={showAddQuestion}>
                 <Card
+                  ref={addQuestionRef}
                   elevation={2}
                   sx={{
                     p: 3,
@@ -1179,7 +1306,9 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                       />
                       <TextField
                         fullWidth
-                        label={`${t("assessment.question.questionText")} (Hindi)`}
+                        label={`${t(
+                          "assessment.question.questionText"
+                        )} (Hindi)`}
                         value={newQuestionText.hi}
                         onChange={(e) =>
                           setNewQuestionText({
@@ -1304,6 +1433,212 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                 </Card>
               </Fade>
             )}
+
+            {/* Options Form - Appears after Add Question Form */}
+            {showOptionsForm && !editingQuestion && (
+              <Fade in={showOptionsForm}>
+                <Card
+                  ref={optionsFormRef}
+                  elevation={2}
+                  sx={{
+                    p: 3,
+                    borderRadius: 2,
+                    bgcolor: "#f9fafb",
+                    border: `2px solid ${colors.accent.green}`,
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ fontWeight: 700, mb: 3 }}
+                  >
+                    {editingQuestion
+                      ? t("assessment.question.editOptions")
+                      : t("assessment.question.addOptions")}
+                  </Typography>
+                  <Box sx={{ mb: 2 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        mb: 2,
+                      }}
+                    >
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {t("assessment.question.options")}
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Add />}
+                        onClick={handleAddOption}
+                        sx={{
+                          borderColor: colors.primary.blue,
+                          color: colors.primary.blue,
+                          "&:hover": {
+                            borderColor: colors.primary.dark,
+                            bgcolor: colors.primary.blue + "10",
+                          },
+                        }}
+                      >
+                        {t("assessment.question.addOption")}
+                      </Button>
+                    </Box>
+
+                    <Box
+                      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                    >
+                      {newOptions.map((option, optIndex) => (
+                        <Card
+                          key={option.id}
+                          elevation={1}
+                          sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            bgcolor: "white",
+                            border: "1px solid rgba(0,0,0,0.08)",
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              mb: 1.5,
+                            }}
+                          >
+                            <Chip
+                              label={`${t("assessment.question.options")} ${
+                                optIndex + 1
+                              }`}
+                              size="small"
+                              sx={{
+                                bgcolor: colors.primary.lightest,
+                                color: colors.primary.blue,
+                                fontWeight: 600,
+                              }}
+                            />
+                            {newOptions.length > 2 && (
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleDeleteOption(option.id)}
+                                sx={{
+                                  bgcolor: colors.semantic.error + "15",
+                                  "&:hover": {
+                                    bgcolor: colors.semantic.error + "25",
+                                  },
+                                }}
+                              >
+                                <Delete fontSize="small" />
+                              </IconButton>
+                            )}
+                          </Box>
+                          <Box sx={{ display: "flex", gap: 2 }}>
+                            <TextField
+                              fullWidth
+                              label={`${t(
+                                "assessment.question.options"
+                              )} (English)`}
+                              value={option.text.en}
+                              onChange={(e) =>
+                                handleOptionChange(
+                                  option.id,
+                                  "en",
+                                  e.target.value
+                                )
+                              }
+                              variant="outlined"
+                              size="small"
+                              required
+                              multiline
+                              rows={2}
+                            />
+                            <TextField
+                              fullWidth
+                              label={`${t(
+                                "assessment.question.options"
+                              )} (Hindi)`}
+                              value={option.text.hi}
+                              onChange={(e) =>
+                                handleOptionChange(
+                                  option.id,
+                                  "hi",
+                                  e.target.value
+                                )
+                              }
+                              variant="outlined"
+                              size="small"
+                              multiline
+                              rows={2}
+                            />
+                            <TextField
+                              fullWidth
+                              label={`${t(
+                                "assessment.question.options"
+                              )} (Gujarati)`}
+                              value={option.text.gu}
+                              onChange={(e) =>
+                                handleOptionChange(
+                                  option.id,
+                                  "gu",
+                                  e.target.value
+                                )
+                              }
+                              variant="outlined"
+                              size="small"
+                              multiline
+                              rows={2}
+                            />
+                          </Box>
+                        </Card>
+                      ))}
+                    </Box>
+
+                    {/* Options Submit Button */}
+                    <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
+                      <Button
+                        variant="contained"
+                        startIcon={
+                          upsertQuestionOptionMutation.isPending ? (
+                            <CircularProgress size={20} color="inherit" />
+                          ) : (
+                            <Add />
+                          )
+                        }
+                        onClick={handleAddOptions}
+                        disabled={upsertQuestionOptionMutation.isPending}
+                        sx={{
+                          bgcolor: colors.accent.green,
+                          "&:hover": { bgcolor: colors.accent.greenDark },
+                        }}
+                      >
+                        {upsertQuestionOptionMutation.isPending
+                          ? "Saving Options..."
+                          : editingQuestion
+                          ? "Update Options"
+                          : "Add Options"}
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={() => {
+                          setShowOptionsForm(false);
+                          setNewOptions([
+                            { id: 1, text: { en: "", hi: "", gu: "" } },
+                            { id: 2, text: { en: "", hi: "", gu: "" } },
+                          ]);
+                          setCurrentQuestionId(null);
+                        }}
+                        disabled={upsertQuestionOptionMutation.isPending}
+                      >
+                        {t("common.cancel")}
+                      </Button>
+                    </Box>
+                  </Box>
+                </Card>
+              </Fade>
+            )}
           </Box>
         ) : (
           <Box
@@ -1320,6 +1655,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
             {showAddQuestion && !editingQuestion && (
               <Fade in={showAddQuestion}>
                 <Card
+                  ref={addQuestionRef}
                   elevation={2}
                   sx={{
                     p: 3,
@@ -1383,7 +1719,9 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                       />
                       <TextField
                         fullWidth
-                        label={`${t("assessment.question.questionText")} (Hindi)`}
+                        label={`${t(
+                          "assessment.question.questionText"
+                        )} (Hindi)`}
                         value={newQuestionText.hi}
                         onChange={(e) =>
                           setNewQuestionText({
@@ -1504,6 +1842,214 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                     >
                       {t("common.cancel")}
                     </Button>
+                  </Box>
+                </Card>
+              </Fade>
+            )}
+
+            {/* Options Form for No Questions Case */}
+            {showOptionsForm && !editingQuestion && (
+              <Fade in={showOptionsForm}>
+                <Card
+                  ref={optionsFormRef}
+                  elevation={2}
+                  sx={{
+                    p: 3,
+                    borderRadius: 2,
+                    bgcolor: "#f9fafb",
+                    border: `2px solid ${colors.accent.green}`,
+                    maxWidth: "100%",
+                    mt: 2,
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ fontWeight: 700, mb: 3 }}
+                  >
+                    {editingQuestion
+                      ? t("assessment.question.editOptions")
+                      : t("assessment.question.addOptions")}
+                  </Typography>
+                  <Box sx={{ mb: 2 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        mb: 2,
+                      }}
+                    >
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {t("assessment.question.options")}
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Add />}
+                        onClick={handleAddOption}
+                        sx={{
+                          borderColor: colors.primary.blue,
+                          color: colors.primary.blue,
+                          "&:hover": {
+                            borderColor: colors.primary.dark,
+                            bgcolor: colors.primary.blue + "10",
+                          },
+                        }}
+                      >
+                        {t("assessment.question.addOption")}
+                      </Button>
+                    </Box>
+
+                    <Box
+                      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                    >
+                      {newOptions.map((option, optIndex) => (
+                        <Card
+                          key={option.id}
+                          elevation={1}
+                          sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            bgcolor: "white",
+                            border: "1px solid rgba(0,0,0,0.08)",
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              mb: 1.5,
+                            }}
+                          >
+                            <Chip
+                              label={`${t("assessment.question.options")} ${
+                                optIndex + 1
+                              }`}
+                              size="small"
+                              sx={{
+                                bgcolor: colors.primary.lightest,
+                                color: colors.primary.blue,
+                                fontWeight: 600,
+                              }}
+                            />
+                            {newOptions.length > 2 && (
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleDeleteOption(option.id)}
+                                sx={{
+                                  bgcolor: colors.semantic.error + "15",
+                                  "&:hover": {
+                                    bgcolor: colors.semantic.error + "25",
+                                  },
+                                }}
+                              >
+                                <Delete fontSize="small" />
+                              </IconButton>
+                            )}
+                          </Box>
+                          <Box sx={{ display: "flex", gap: 2 }}>
+                            <TextField
+                              fullWidth
+                              label={`${t(
+                                "assessment.question.options"
+                              )} (English)`}
+                              value={option.text.en}
+                              onChange={(e) =>
+                                handleOptionChange(
+                                  option.id,
+                                  "en",
+                                  e.target.value
+                                )
+                              }
+                              variant="outlined"
+                              size="small"
+                              required
+                              multiline
+                              rows={2}
+                            />
+                            <TextField
+                              fullWidth
+                              label={`${t(
+                                "assessment.question.options"
+                              )} (Hindi)`}
+                              value={option.text.hi}
+                              onChange={(e) =>
+                                handleOptionChange(
+                                  option.id,
+                                  "hi",
+                                  e.target.value
+                                )
+                              }
+                              variant="outlined"
+                              size="small"
+                              multiline
+                              rows={2}
+                            />
+                            <TextField
+                              fullWidth
+                              label={`${t(
+                                "assessment.question.options"
+                              )} (Gujarati)`}
+                              value={option.text.gu}
+                              onChange={(e) =>
+                                handleOptionChange(
+                                  option.id,
+                                  "gu",
+                                  e.target.value
+                                )
+                              }
+                              variant="outlined"
+                              size="small"
+                              multiline
+                              rows={2}
+                            />
+                          </Box>
+                        </Card>
+                      ))}
+                    </Box>
+
+                    {/* Options Submit Button */}
+                    <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
+                      <Button
+                        variant="contained"
+                        startIcon={
+                          upsertQuestionOptionMutation.isPending ? (
+                            <CircularProgress size={20} color="inherit" />
+                          ) : (
+                            <Add />
+                          )
+                        }
+                        onClick={handleAddOptions}
+                        disabled={upsertQuestionOptionMutation.isPending}
+                        sx={{
+                          bgcolor: colors.accent.green,
+                          "&:hover": { bgcolor: colors.accent.greenDark },
+                        }}
+                      >
+                        {upsertQuestionOptionMutation.isPending
+                          ? "Saving Options..."
+                          : editingQuestion
+                          ? "Update Options"
+                          : "Add Options"}
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={() => {
+                          setShowOptionsForm(false);
+                          setNewOptions([
+                            { id: 1, text: { en: "", hi: "", gu: "" } },
+                            { id: 2, text: { en: "", hi: "", gu: "" } },
+                          ]);
+                          setCurrentQuestionId(null);
+                        }}
+                        disabled={upsertQuestionOptionMutation.isPending}
+                      >
+                        {t("common.cancel")}
+                      </Button>
+                    </Box>
                   </Box>
                 </Card>
               </Fade>

@@ -1,6 +1,5 @@
 import axios from "axios";
 import useAuthStore from "../store/useAuthStore";
-import { roleIdMap } from "../constants/roles";
 
 // Base URL for API
 const BASE_URL =
@@ -19,7 +18,6 @@ axiosInstance.interceptors.request.use(
   (config) => {
     const state = useAuthStore.getState();
     const token = state.token;
-    const role = state.role;
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

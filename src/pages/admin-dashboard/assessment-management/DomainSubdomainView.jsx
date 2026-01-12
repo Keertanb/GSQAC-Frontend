@@ -19,8 +19,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
-import { Visibility, Add, Delete } from "@mui/icons-material";
+import { Visibility, Add, Delete, Language } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import { useUpsertSubdomainMutation } from "../../../services/adminService";
 import { roleIdMap, getRoleId } from "../../../constants/roles";
@@ -34,6 +36,18 @@ const DomainSubdomainView = ({
   onSubdomainAdded,
 }) => {
   const { t } = useTranslation();
+  
+  // Map language code: EN -> en, HI -> hi, GU -> gu
+  const languageCodeToLower = {
+    EN: "en",
+    HI: "hi",
+    GU: "gu",
+  };
+  const initialLanguage = languageCodeToLower[languageCode] || "en";
+  
+  // Local language state for DomainSubdomainView
+  const [selectedLanguage, setSelectedLanguage] = useState(initialLanguage);
+  
   const [showAddSubdomain, setShowAddSubdomain] = useState(false);
   const [newSubdomainName, setNewSubdomainName] = useState({
     en: "",
@@ -62,12 +76,15 @@ const DomainSubdomainView = ({
   });
 
   const getSubdomainName = (subdomain) => {
-    if (languageCode === "EN") {
-      return subdomain.subDomainNameEn || subdomain.subDomainName;
-    } else if (languageCode === "HI") {
-      return subdomain.subDomainNameHi || subdomain.subDomainName;
-    } else {
-      return subdomain.subDomainNameGu || subdomain.subDomainName;
+    switch (selectedLanguage) {
+      case "en":
+        return subdomain.subDomainNameEn || subdomain.subDomainName || "";
+      case "hi":
+        return subdomain.subDomainNameHi || subdomain.subDomainName || "";
+      case "gu":
+        return subdomain.subDomainNameGu || subdomain.subDomainName || "";
+      default:
+        return subdomain.subDomainNameEn || subdomain.subDomainName || "";
     }
   };
 
@@ -142,8 +159,8 @@ const DomainSubdomainView = ({
 
   return (
     <Box>
-      {/* Add Subdomain Button */}
-      <Box sx={{ mb: 2 }}>
+      {/* Language Selector and Add Subdomain Button */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
         <Button
           variant="outlined"
           size="small"
@@ -160,6 +177,8 @@ const DomainSubdomainView = ({
         >
           {t("assessment.subdomain.addSubdomain")}
         </Button>
+        
+   
       </Box>
 
       {/* Add/Edit Subdomain Form */}
