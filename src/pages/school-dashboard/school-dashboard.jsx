@@ -12,6 +12,10 @@ import {
   Button,
   useTheme,
   useMediaQuery,
+  CircularProgress,
+  LinearProgress,
+  Chip,
+  Paper,
 } from "@mui/material";
 import {
   School as SchoolIcon,
@@ -19,9 +23,15 @@ import {
   Assessment,
   People,
   Settings,
+  ArrowForward,
+  CheckCircle,
+  TrendingUp,
+  Description,
+  PersonOutline,
 } from "@mui/icons-material";
 import useAuthStore from "../../store/useAuthStore";
 import { useLogoutMutation } from "../../services/authService";
+import { useGetSchoolDataQuery } from "../../services/schoolService";
 import AppDrawer from "../../components/AppDrawer/AppDrawer";
 import { DRAWER_WIDTH } from "../../constants/menuItems";
 import "./school-dashboard.css";
@@ -32,6 +42,17 @@ const SchoolDashboard = () => {
   const matchDownMD = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
   const { logout, user } = useAuthStore();
+
+  // Fetch school data
+  const {
+    data: schoolDataResponse,
+    isLoading: isLoadingSchoolData,
+  } = useGetSchoolDataQuery({
+    schoolId: "24091502136",
+    enabled: true,
+  });
+
+  const schoolData = schoolDataResponse?.data || {};
 
   const logoutMutation = useLogoutMutation({
     onSuccess: () => {
@@ -63,7 +84,7 @@ const SchoolDashboard = () => {
           width: "100%",
           marginLeft: drawerOpen && !matchDownMD ? 0 : 0,
           [`@media (min-width:${theme.breakpoints.values.xl}px)`]: {
-            marginLeft: drawerOpen && !matchDownMD ? `${DRAWER_WIDTH.xl}px` : 0,
+            marginLeft: drawerOpen && !matchDownMD ? `${30}px`  : 0,
           },
           transition: theme.transitions.create(["margin-left"], {
             easing: theme.transitions.easing.sharp,
@@ -230,87 +251,413 @@ const SchoolDashboard = () => {
           </Toolbar>
         </AppBar>
 
-        <Box sx={{ mt: 9 }}>
+        <Box sx={{ mt: 9, bgcolor: "#f8fafc", minHeight: "calc(100vh - 72px)" }}>
           <Box
             sx={{
               pl: drawerOpen && !matchDownMD ? 0 : { xs: 2, sm: 2, md: 3 },
               pr: { xs: 2, sm: 2, md: 3 },
-              py: 3,
+              py: 4,
               maxWidth: "xl",
               mx: "auto",
             }}
           >
-            {/* Welcome Section */}
-            <Box sx={{ mb: 4 }}>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 700,
-                  color: "#0f172a",
-                  mb: 1,
-                  fontSize: { xs: "1.75rem", md: "2.125rem" },
-                }}
-              >
-                Welcome{user?.name ? `, ${user.name}` : ""}
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  color: "#64748b",
-                  fontSize: "1rem",
-                }}
-              >
-                Manage your school's quality assessment and information
-              </Typography>
-            </Box>
+            {isLoadingSchoolData ? (
+              <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "400px" }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <>
+                {/* Welcome Section with School Info */}
+                <Paper
+                  elevation={0}
+                  sx={{
+                    mb: 4,
+                    p: 4,
+                    borderRadius: 3,
+                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    position: "relative",
+                    overflow: "hidden",
+                    "&::before": {
+                      content: '""',
+                      position: "absolute",
+                      top: -100,
+                      right: -100,
+                      width: 300,
+                      height: 300,
+                      borderRadius: "50%",
+                      background: "rgba(255,255,255,0.1)",
+                    },
+                  }}
+                >
+                  <Box sx={{ position: "relative", zIndex: 1 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+                      <Box
+                        sx={{
+                          width: 64,
+                          height: 64,
+                          borderRadius: 2,
+                          bgcolor: "rgba(255,255,255,0.2)",
+                          backdropFilter: "blur(10px)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <SchoolIcon sx={{ fontSize: 36, color: "white" }} />
+                      </Box>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography
+                          variant="h4"
+                          sx={{
+                            fontWeight: 700,
+                            color: "white",
+                            mb: 0.5,
+                            fontSize: { xs: "1.5rem", md: "2rem" },
+                          }}
+                        >
+                          {schoolData.schoolName || "School Dashboard"}
+                        </Typography>
+                        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
+                          <Chip
+                            label={schoolData.districtName || "District"}
+                            size="small"
+                            sx={{
+                              bgcolor: "rgba(255,255,255,0.2)",
+                              color: "white",
+                              fontWeight: 600,
+                              backdropFilter: "blur(10px)",
+                            }}
+                          />
+                          <Chip
+                            label={schoolData.schoolCategoryName || "Category"}
+                            size="small"
+                            sx={{
+                              bgcolor: "rgba(255,255,255,0.2)",
+                              color: "white",
+                              fontWeight: 600,
+                              backdropFilter: "blur(10px)",
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Paper>
 
+                {/* Quick Stats */}
+                <Grid container spacing={2} sx={{ mb: 4 }}>
+                  <Grid item xs={12} sm={6} md={3} lg={3}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 0,
+                        borderRadius: 3,
+                        overflow: "hidden",
+                        position: "relative",
+                        border: "1px solid #e2e8f0",
+                        bgcolor: "white",
+                        transition: "all 0.3s ease",
+                        height: "100%",
+                        "&:hover": {
+                          transform: "translateY(-4px)",
+                          boxShadow: "0 12px 28px rgba(59, 130, 246, 0.15)",
+                          borderColor: "#3b82f6",
+                        },
+                        "&::before": {
+                          content: '""',
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: "4px",
+                          background: "linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%)",
+                        },
+                      }}
+                    >
+                      <Box sx={{ p: 3 }}>
+                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2.5 }}>
+                          <Box
+                            sx={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: 2,
+                              background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                            }}
+                          >
+                            <People sx={{ fontSize: 26, color: "white" }} />
+                          </Box>
+                          <TrendingUp sx={{ fontSize: 20, color: "#10b981" }} />
+                        </Box>
+                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 0.5 }}>
+                          Total Students
+                        </Typography>
+                        <Typography variant="h3" sx={{ fontWeight: 700, color: "#0f172a", fontSize: "2.25rem", lineHeight: 1.2 }}>
+                          {schoolData.studentCount || "-"}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ px: 3, py: 1.5, bgcolor: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
+                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.6875rem", display: "flex", alignItems: "center", gap: 0.5 }}>
+                          <Box component="span" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#10b981" }} />
+                          Active Enrollment
+                        </Typography>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3} lg={3}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 0,
+                        borderRadius: 3,
+                        overflow: "hidden",
+                        position: "relative",
+                        border: "1px solid #e2e8f0",
+                        bgcolor: "white",
+                        transition: "all 0.3s ease",
+                        height: "100%",
+                        "&:hover": {
+                          transform: "translateY(-4px)",
+                          boxShadow: "0 12px 28px rgba(16, 185, 129, 0.15)",
+                          borderColor: "#10b981",
+                        },
+                        "&::before": {
+                          content: '""',
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: "4px",
+                          background: "linear-gradient(90deg, #10b981 0%, #34d399 100%)",
+                        },
+                      }}
+                    >
+                      <Box sx={{ p: 3 }}>
+                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2.5 }}>
+                          <Box
+                            sx={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: 2,
+                              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
+                            }}
+                          >
+                            <PersonOutline sx={{ fontSize: 26, color: "white" }} />
+                          </Box>
+                          <TrendingUp sx={{ fontSize: 20, color: "#10b981" }} />
+                        </Box>
+                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 0.5 }}>
+                          Total Teachers
+                        </Typography>
+                        <Typography variant="h3" sx={{ fontWeight: 700, color: "#0f172a", fontSize: "2.25rem", lineHeight: 1.2 }}>
+                          {schoolData.teacherCount || "-"}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ px: 3, py: 1.5, bgcolor: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
+                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.6875rem", display: "flex", alignItems: "center", gap: 0.5 }}>
+                          <Box component="span" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#10b981" }} />
+                          Teaching Staff
+                        </Typography>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3} lg={3}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 0,
+                        borderRadius: 3,
+                        overflow: "hidden",
+                        position: "relative",
+                        border: "1px solid #e2e8f0",
+                        bgcolor: "white",
+                        transition: "all 0.3s ease",
+                        height: "100%",
+                        "&:hover": {
+                          transform: "translateY(-4px)",
+                          boxShadow: "0 12px 28px rgba(245, 158, 11, 0.15)",
+                          borderColor: "#f59e0b",
+                        },
+                        "&::before": {
+                          content: '""',
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: "4px",
+                          background: "linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)",
+                        },
+                      }}
+                    >
+                      <Box sx={{ p: 3 }}>
+                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2.5 }}>
+                          <Box
+                            sx={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: 2,
+                              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
+                            }}
+                          >
+                            <Description sx={{ fontSize: 26, color: "white" }} />
+                          </Box>
+                          <Assessment sx={{ fontSize: 20, color: "#f59e0b" }} />
+                        </Box>
+                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 0.5 }}>
+                          Class Range
+                        </Typography>
+                        <Typography variant="h3" sx={{ fontWeight: 700, color: "#0f172a", fontSize: "2.25rem", lineHeight: 1.2 }}>
+                          {`${schoolData.lowerClass || 1}-${schoolData.upperClass || 12}`}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ px: 3, py: 1.5, bgcolor: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
+                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.6875rem", display: "flex", alignItems: "center", gap: 0.5 }}>
+                          <Box component="span" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#f59e0b" }} />
+                          Grade Levels
+                        </Typography>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3} lg={3}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 0,
+                        borderRadius: 3,
+                        overflow: "hidden",
+                        position: "relative",
+                        border: "1px solid #e2e8f0",
+                        bgcolor: "white",
+                        transition: "all 0.3s ease",
+                        height: "100%",
+                        "&:hover": {
+                          transform: "translateY(-4px)",
+                          boxShadow: "0 12px 28px rgba(99, 102, 241, 0.15)",
+                          borderColor: "#6366f1",
+                        },
+                        "&::before": {
+                          content: '""',
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: "4px",
+                          background: "linear-gradient(90deg, #6366f1 0%, #818cf8 100%)",
+                        },
+                      }}
+                    >
+                      <Box sx={{ p: 3 }}>
+                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2.5 }}>
+                          <Box
+                            sx={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: 2,
+                              background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
+                            }}
+                          >
+                            <CheckCircle sx={{ fontSize: 26, color: "white" }} />
+                          </Box>
+                          <Box
+                            sx={{
+                              px: 1,
+                              py: 0.5,
+                              borderRadius: 1,
+                              bgcolor: "#fef3c7",
+                              border: "1px solid #fde68a",
+                            }}
+                          >
+                            <Typography variant="caption" sx={{ color: "#f59e0b", fontSize: "0.625rem", fontWeight: 700 }}>
+                              PENDING
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 0.5 }}>
+                          Assessment
+                        </Typography>
+                        <Typography variant="h3" sx={{ fontWeight: 700, color: "#0f172a", fontSize: "2.25rem", lineHeight: 1.2 }}>
+                          0%
+                        </Typography>
+                      </Box>
+                      <Box sx={{ px: 3, py: 1.5, bgcolor: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
+                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.6875rem", display: "flex", alignItems: "center", gap: 0.5 }}>
+                          <Box component="span" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#ef4444" }} />
+                          Not Started
+                        </Typography>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                </Grid>
+              </>
+            )}
+
+            {/* Action Cards */}
+            <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a", mb: 2.5, fontSize: "1.125rem" }}>
+              Quick Actions
+            </Typography>
             <Grid container spacing={3}>
               {/* Self-Assessment Card */}
               <Grid item xs={12} md={6} lg={4}>
                 <Card
+                  elevation={0}
                   sx={{
                     height: "100%",
-                    borderRadius: 3,
+                    borderRadius: 2.5,
                     border: "1px solid #e2e8f0",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                    bgcolor: "white",
                     transition: "all 0.3s ease",
                     cursor: "pointer",
                     position: "relative",
                     overflow: "hidden",
                     "&:hover": {
                       transform: "translateY(-4px)",
-                      boxShadow: "0 8px 24px rgba(59, 130, 246, 0.15)",
+                      boxShadow: "0 12px 28px rgba(59, 130, 246, 0.12)",
                       borderColor: "#3b82f6",
-                    },
-                    "&::before": {
-                      content: '""',
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: "4px",
-                      background:
-                        "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                      "& .action-arrow": {
+                        transform: "translateX(4px)",
+                      },
                     },
                   }}
                   onClick={() => navigate("/school-dashboard/self-assessment")}
                 >
                   <CardContent sx={{ p: 3 }}>
-                    <Box
-                      sx={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: 2,
-                        background:
-                          "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        mb: 2.5,
-                        boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
-                      }}
-                    >
-                      <Assessment sx={{ fontSize: 32, color: "white" }} />
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
+                      <Box
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 2,
+                          bgcolor: "#dbeafe",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Assessment sx={{ fontSize: 28, color: "#3b82f6" }} />
+                      </Box>
+                      <ArrowForward
+                        className="action-arrow"
+                        sx={{
+                          fontSize: 20,
+                          color: "#94a3b8",
+                          transition: "transform 0.3s ease",
+                        }}
+                      />
                     </Box>
                     <Typography
                       variant="h6"
@@ -318,7 +665,7 @@ const SchoolDashboard = () => {
                         fontWeight: 700,
                         color: "#0f172a",
                         mb: 1,
-                        fontSize: "1.125rem",
+                        fontSize: "1rem",
                       }}
                     >
                       Self-Assessment
@@ -327,68 +674,42 @@ const SchoolDashboard = () => {
                       variant="body2"
                       sx={{
                         color: "#64748b",
-                        fontSize: "0.875rem",
+                        fontSize: "0.8125rem",
                         lineHeight: 1.6,
-                        mb: 2,
+                        mb: 2.5,
+                        minHeight: 40,
                       }}
                     >
-                      Complete your school's quality assessment across multiple
-                      domains and subdomains
+                      Complete quality assessment across 5 domains
                     </Typography>
                     <Box
                       sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        pt: 2,
-                        borderTop: "1px solid #e2e8f0",
+                        bgcolor: "#f8fafc",
+                        borderRadius: 1.5,
+                        p: 1.5,
                       }}
                     >
-                      <Box
-                        sx={{
-                          flex: 1,
-                          textAlign: "center",
-                        }}
-                      >
-                        <Typography
-                          variant="h6"
-                          sx={{ fontWeight: 700, color: "#3b82f6" }}
-                        >
-                          5
+                      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                        <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 600 }}>
+                          Progress
                         </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{ color: "#64748b", fontSize: "0.75rem" }}
-                        >
-                          Domains
-                        </Typography>
-                      </Box>
-                      <Box
-                        sx={{
-                          width: "1px",
-                          height: "40px",
-                          bgcolor: "#e2e8f0",
-                        }}
-                      />
-                      <Box
-                        sx={{
-                          flex: 1,
-                          textAlign: "center",
-                        }}
-                      >
-                        <Typography
-                          variant="h6"
-                          sx={{ fontWeight: 700, color: "#10b981" }}
-                        >
+                        <Typography variant="caption" sx={{ color: "#3b82f6", fontWeight: 700 }}>
                           0%
                         </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{ color: "#64748b", fontSize: "0.75rem" }}
-                        >
-                          Complete
-                        </Typography>
                       </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={0}
+                        sx={{
+                          height: 6,
+                          borderRadius: 3,
+                          bgcolor: "#e2e8f0",
+                          "& .MuiLinearProgress-bar": {
+                            bgcolor: "#3b82f6",
+                            borderRadius: 3,
+                          },
+                        }}
+                      />
                     </Box>
                   </CardContent>
                 </Card>
@@ -397,49 +718,50 @@ const SchoolDashboard = () => {
               {/* School Details Card */}
               <Grid item xs={12} md={6} lg={4}>
                 <Card
+                  elevation={0}
                   sx={{
                     height: "100%",
-                    borderRadius: 3,
+                    borderRadius: 2.5,
                     border: "1px solid #e2e8f0",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                    bgcolor: "white",
                     transition: "all 0.3s ease",
                     cursor: "pointer",
                     position: "relative",
                     overflow: "hidden",
                     "&:hover": {
                       transform: "translateY(-4px)",
-                      boxShadow: "0 8px 24px rgba(16, 185, 129, 0.15)",
+                      boxShadow: "0 12px 28px rgba(16, 185, 129, 0.12)",
                       borderColor: "#10b981",
-                    },
-                    "&::before": {
-                      content: '""',
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: "4px",
-                      background:
-                        "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                      "& .action-arrow": {
+                        transform: "translateX(4px)",
+                      },
                     },
                   }}
                   onClick={() => navigate("/school-dashboard/school-details")}
                 >
                   <CardContent sx={{ p: 3 }}>
-                    <Box
-                      sx={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: 2,
-                        background:
-                          "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        mb: 2.5,
-                        boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
-                      }}
-                    >
-                      <SchoolIcon sx={{ fontSize: 32, color: "white" }} />
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
+                      <Box
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 2,
+                          bgcolor: "#d1fae5",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <SchoolIcon sx={{ fontSize: 28, color: "#10b981" }} />
+                      </Box>
+                      <ArrowForward
+                        className="action-arrow"
+                        sx={{
+                          fontSize: 20,
+                          color: "#94a3b8",
+                          transition: "transform 0.3s ease",
+                        }}
+                      />
                     </Box>
                     <Typography
                       variant="h6"
@@ -447,7 +769,7 @@ const SchoolDashboard = () => {
                         fontWeight: 700,
                         color: "#0f172a",
                         mb: 1,
-                        fontSize: "1.125rem",
+                        fontSize: "1rem",
                       }}
                     >
                       School Details
@@ -456,64 +778,60 @@ const SchoolDashboard = () => {
                       variant="body2"
                       sx={{
                         color: "#64748b",
-                        fontSize: "0.875rem",
+                        fontSize: "0.8125rem",
                         lineHeight: 1.6,
-                        mb: 2,
+                        mb: 2.5,
+                        minHeight: 40,
                       }}
                     >
-                      View and update your school's profile, contact information
-                      and basic details
+                      View profile, contact info and infrastructure details
                     </Typography>
                     <Box
                       sx={{
                         display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        pt: 2,
-                        borderTop: "1px solid #e2e8f0",
+                        gap: 1.5,
                       }}
                     >
                       <Box
                         sx={{
                           flex: 1,
+                          bgcolor: "#f8fafc",
+                          borderRadius: 1.5,
+                          p: 1.5,
                           textAlign: "center",
                         }}
                       >
                         <Typography
                           variant="h6"
-                          sx={{ fontWeight: 700, color: "#10b981" }}
+                          sx={{ fontWeight: 700, color: "#10b981", fontSize: "1.25rem" }}
                         >
-                          -
+                          {schoolData.studentCount || "-"}
                         </Typography>
                         <Typography
                           variant="caption"
-                          sx={{ color: "#64748b", fontSize: "0.75rem" }}
+                          sx={{ color: "#64748b", fontSize: "0.6875rem", fontWeight: 600 }}
                         >
                           Students
                         </Typography>
                       </Box>
                       <Box
                         sx={{
-                          width: "1px",
-                          height: "40px",
-                          bgcolor: "#e2e8f0",
-                        }}
-                      />
-                      <Box
-                        sx={{
                           flex: 1,
+                          bgcolor: "#f8fafc",
+                          borderRadius: 1.5,
+                          p: 1.5,
                           textAlign: "center",
                         }}
                       >
                         <Typography
                           variant="h6"
-                          sx={{ fontWeight: 700, color: "#10b981" }}
+                          sx={{ fontWeight: 700, color: "#10b981", fontSize: "1.25rem" }}
                         >
-                          -
+                          {schoolData.teacherCount || "-"}
                         </Typography>
                         <Typography
                           variant="caption"
-                          sx={{ color: "#64748b", fontSize: "0.75rem" }}
+                          sx={{ color: "#64748b", fontSize: "0.6875rem", fontWeight: 600 }}
                         >
                           Teachers
                         </Typography>
@@ -526,48 +844,49 @@ const SchoolDashboard = () => {
               {/* Settings Card */}
               <Grid item xs={12} md={6} lg={4}>
                 <Card
+                  elevation={0}
                   sx={{
                     height: "100%",
-                    borderRadius: 3,
+                    borderRadius: 2.5,
                     border: "1px solid #e2e8f0",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                    bgcolor: "white",
                     transition: "all 0.3s ease",
                     cursor: "pointer",
                     position: "relative",
                     overflow: "hidden",
                     "&:hover": {
                       transform: "translateY(-4px)",
-                      boxShadow: "0 8px 24px rgba(139, 92, 246, 0.15)",
+                      boxShadow: "0 12px 28px rgba(139, 92, 246, 0.12)",
                       borderColor: "#8b5cf6",
-                    },
-                    "&::before": {
-                      content: '""',
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: "4px",
-                      background:
-                        "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                      "& .action-arrow": {
+                        transform: "translateX(4px)",
+                      },
                     },
                   }}
                 >
                   <CardContent sx={{ p: 3 }}>
-                    <Box
-                      sx={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: 2,
-                        background:
-                          "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        mb: 2.5,
-                        boxShadow: "0 4px 12px rgba(139, 92, 246, 0.3)",
-                      }}
-                    >
-                      <Settings sx={{ fontSize: 32, color: "white" }} />
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
+                      <Box
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 2,
+                          bgcolor: "#ede9fe",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Settings sx={{ fontSize: 28, color: "#8b5cf6" }} />
+                      </Box>
+                      <ArrowForward
+                        className="action-arrow"
+                        sx={{
+                          fontSize: 20,
+                          color: "#94a3b8",
+                          transition: "transform 0.3s ease",
+                        }}
+                      />
                     </Box>
                     <Typography
                       variant="h6"
@@ -575,7 +894,7 @@ const SchoolDashboard = () => {
                         fontWeight: 700,
                         color: "#0f172a",
                         mb: 1,
-                        fontSize: "1.125rem",
+                        fontSize: "1rem",
                       }}
                     >
                       Settings
@@ -584,64 +903,56 @@ const SchoolDashboard = () => {
                       variant="body2"
                       sx={{
                         color: "#64748b",
-                        fontSize: "0.875rem",
+                        fontSize: "0.8125rem",
                         lineHeight: 1.6,
-                        mb: 2,
+                        mb: 2.5,
+                        minHeight: 40,
                       }}
                     >
-                      Configure your school profile, preferences, and manage
-                      account settings
+                      Configure profile, preferences and account settings
                     </Typography>
                     <Box
                       sx={{
                         display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        pt: 2,
-                        borderTop: "1px solid #e2e8f0",
+                        gap: 1.5,
                       }}
                     >
                       <Box
                         sx={{
                           flex: 1,
-                          textAlign: "center",
+                          bgcolor: "#f8fafc",
+                          borderRadius: 1.5,
+                          p: 1.5,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 0.5,
                         }}
                       >
-                        <Typography
-                          variant="h6"
-                          sx={{ fontWeight: 700, color: "#8b5cf6" }}
-                        >
-                          <Settings sx={{ fontSize: 24 }} />
-                        </Typography>
+                        <Settings sx={{ fontSize: 24, color: "#8b5cf6" }} />
                         <Typography
                           variant="caption"
-                          sx={{ color: "#64748b", fontSize: "0.75rem" }}
+                          sx={{ color: "#64748b", fontSize: "0.6875rem", fontWeight: 600 }}
                         >
                           Configure
                         </Typography>
                       </Box>
                       <Box
                         sx={{
-                          width: "1px",
-                          height: "40px",
-                          bgcolor: "#e2e8f0",
-                        }}
-                      />
-                      <Box
-                        sx={{
                           flex: 1,
-                          textAlign: "center",
+                          bgcolor: "#f8fafc",
+                          borderRadius: 1.5,
+                          p: 1.5,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 0.5,
                         }}
                       >
-                        <Typography
-                          variant="h6"
-                          sx={{ fontWeight: 700, color: "#8b5cf6" }}
-                        >
-                          <People sx={{ fontSize: 24 }} />
-                        </Typography>
+                        <People sx={{ fontSize: 24, color: "#8b5cf6" }} />
                         <Typography
                           variant="caption"
-                          sx={{ color: "#64748b", fontSize: "0.75rem" }}
+                          sx={{ color: "#64748b", fontSize: "0.6875rem", fontWeight: 600 }}
                         >
                           Manage
                         </Typography>

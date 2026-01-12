@@ -32,6 +32,7 @@ import {
   Add,
   Delete,
   Language,
+  Translate,
 } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import DomainSubdomainView from "./DomainSubdomainView";
@@ -40,6 +41,7 @@ import {
   useGetDomainsQuery,
   useUpsertDomainMutation,
   useDeleteDomainMutation,
+  useTranslateTextMutation,
 } from "../../../services/adminService";
 import { roleIdMap, getRoleId } from "../../../constants/roles";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
@@ -51,7 +53,7 @@ const AssessmentManagement = () => {
   const [expandedDomain, setExpandedDomain] = useState(null);
   const [currentView, setCurrentView] = useState("domains"); // domains, questions
   const [selectedSubdomain, setSelectedSubdomain] = useState(null);
-  const [currentLanguage, setCurrentLanguage] = useState("en");
+  const [currentLanguage, setCurrentLanguage] = useState("gu");
   const [showAddDomain, setShowAddDomain] = useState(false);
   const [newDomainName, setNewDomainName] = useState({
     en: "",
@@ -62,6 +64,7 @@ const AssessmentManagement = () => {
   const [editingDomain, setEditingDomain] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [domainToDelete, setDomainToDelete] = useState(null);
+  const [translationId, setTranslationId] = useState(null);
 
   const languageCodeMap = {
     en: "EN",
@@ -164,6 +167,7 @@ const AssessmentManagement = () => {
       setNewDomainName({ en: "", hi: "", gu: "" });
       setShowAddDomain(false);
       setEditingDomain(null);
+      setTranslationId(null);
     },
   });
 
@@ -181,6 +185,33 @@ const AssessmentManagement = () => {
       // Close expanded domain if it was deleted
       if (expandedDomain === domainId) {
         setExpandedDomain(null);
+      }
+    },
+  });
+
+  const translateTextMutation = useTranslateTextMutation({
+    onSuccess: (data) => {
+      // Extract translation data from response
+      const translatedData = data?.data || data;
+
+      // Store translation ID for future updates
+      if (translatedData?.id) {
+        setTranslationId(translatedData.id);
+      }
+
+      // Populate English and Hindi fields with translated text
+      if (translatedData?.transEn) {
+        setNewDomainName((prev) => ({
+          ...prev,
+          en: translatedData.transEn,
+        }));
+      }
+      // API returns transHn for Hindi
+      if (translatedData?.transHn || translatedData?.transHi) {
+        setNewDomainName((prev) => ({
+          ...prev,
+          hi: translatedData.transHn || translatedData.transHi,
+        }));
       }
     },
   });
@@ -244,6 +275,25 @@ const AssessmentManagement = () => {
     i18n.changeLanguage(lang);
     // Refetch data when language changes
     refetch();
+  };
+
+  const handleTranslateDomain = async () => {
+    if (!newDomainName.gu.trim()) {
+      // Use snackbar if available
+      alert("Please enter Gujarati text to translate.");
+      return;
+    }
+
+    try {
+      const payload = {
+        id: translationId || null,
+        transGu: newDomainName.gu.trim(),
+      };
+
+      await translateTextMutation.mutateAsync(payload);
+    } catch (error) {
+      console.error("Error translating domain:", error);
+    }
   };
 
   const getDomainName = (domain) => {
@@ -350,9 +400,9 @@ const AssessmentManagement = () => {
               },
             }}
           >
+            <ToggleButton value="gu">ગુ</ToggleButton>
             <ToggleButton value="en">EN</ToggleButton>
             <ToggleButton value="hi">हिं</ToggleButton>
-            <ToggleButton value="gu">ગુ</ToggleButton>
           </ToggleButtonGroup>
         </Box>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
@@ -389,6 +439,7 @@ const AssessmentManagement = () => {
             onClick={() => {
               setEditingDomain(null);
               setNewDomainName({ en: "", hi: "", gu: "" });
+              setTranslationId(null);
               setShowAddDomain(!showAddDomain);
             }}
             sx={{
@@ -412,16 +463,51 @@ const AssessmentManagement = () => {
               borderRadius: 3,
             }}
           >
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: 700, mb: 3 }}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 3,
+              }}
             >
-              {editingDomain
-                ? t("assessment.domain.editDomain")
-                : t("assessment.domain.addDomain")}
-            </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                {editingDomain
+                  ? t("assessment.domain.editDomain")
+                  : t("assessment.domain.addDomain")}
+              </Typography>
+              <Button
+                variant="outlined"
+                onClick={handleTranslateDomain}
+                disabled={
+                  !newDomainName.gu.trim() || translateTextMutation.isPending
+                }
+                startIcon={<Translate />}
+                size="small"
+                sx={{
+                  borderColor: colors.primary.blue,
+                  color: colors.primary.blue,
+                  "&:hover": {
+                    borderColor: colors.primary.dark,
+                    bgcolor: colors.primary.blue + "10",
+                  },
+                }}
+              >
+                Translate to EN & HI
+              </Button>
+            </Box>
             <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+              <TextField
+                fullWidth
+                label={`${t("assessment.domain.domainName")} (Gujarati)`}
+                value={newDomainName.gu}
+                onChange={(e) =>
+                  setNewDomainName({ ...newDomainName, gu: e.target.value })
+                }
+                variant="outlined"
+                size="small"
+                required
+              />
               <TextField
                 fullWidth
                 label={`${t("assessment.domain.domainName")} (English)`}
@@ -431,7 +517,6 @@ const AssessmentManagement = () => {
                 }
                 variant="outlined"
                 size="small"
-                required
               />
               <TextField
                 fullWidth
@@ -439,16 +524,6 @@ const AssessmentManagement = () => {
                 value={newDomainName.hi}
                 onChange={(e) =>
                   setNewDomainName({ ...newDomainName, hi: e.target.value })
-                }
-                variant="outlined"
-                size="small"
-              />
-              <TextField
-                fullWidth
-                label={`${t("assessment.domain.domainName")} (Gujarati)`}
-                value={newDomainName.gu}
-                onChange={(e) =>
-                  setNewDomainName({ ...newDomainName, gu: e.target.value })
                 }
                 variant="outlined"
                 size="small"
@@ -476,6 +551,7 @@ const AssessmentManagement = () => {
                   setNewDomainName({ en: "", hi: "", gu: "" });
                   setEditingDomain(null);
                   setSelectedRole("admin");
+                  setTranslationId(null);
                 }}
                 disabled={upsertDomainMutation.isPending}
               >

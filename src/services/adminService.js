@@ -830,3 +830,45 @@ export const useUpdateRoleStatusMutation = (options = {}) => {
     ...options,
   });
 };
+
+/**
+ * Translate Gujarati text to English and Hindi
+ * @param {Object} payload - { id: number|null, transGu: string }
+ * @returns {Promise} API response
+ */
+export const translateText = async (payload) => {
+  const response = await axiosInstance.post("/translation/upsert-translation", payload);
+  return response.data;
+};
+
+/**
+ * React Query hook for translating text
+ * @param {Object} options - Mutation options
+ * @returns {Object} Mutation object from React Query
+ */
+export const useTranslateTextMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => translateText(data),
+    mutationKey: ["admin", "translate-text"],
+    onSuccess: (data) => {
+      enqueueSnackbar(data?.message || "Translation successful", {
+        variant: "success",
+      });
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Translation failed",
+        {
+          variant: "error",
+        }
+      );
+      if (options.onError) {
+        options.onError(error);
+      }
+    },
+    ...options,
+  });
+};

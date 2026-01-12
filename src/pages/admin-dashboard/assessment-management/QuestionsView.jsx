@@ -25,7 +25,7 @@ import {
   ToggleButtonGroup,
   ToggleButton,
 } from "@mui/material";
-import { ArrowBack, Add, Edit, Delete, Language } from "@mui/icons-material";
+import { ArrowBack, Add, Edit, Delete, Language, Translate } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import {
   useGetSubdomainQuestionsQuery,
@@ -33,6 +33,8 @@ import {
   useUpsertQuestionOptionMutation,
   useDeleteQuestionMutation,
   useDeleteQuestionOptionMutation,
+  useTranslateTextMutation,
+  translateText,
 } from "../../../services/adminService";
 import { queryKeys } from "../../../config/queryClient";
 import useAuthStore from "../../../store/useAuthStore";
@@ -84,6 +86,8 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
   const [observationCount, setObservationCount] = useState("");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState(null);
+  const [translationId, setTranslationId] = useState(null); // Store translation ID for subsequent calls
+  const [optionTranslationIds, setOptionTranslationIds] = useState({}); // Store translation IDs for each option
 
   // Initialize selected role based on roleId
   const getRoleByRoleId = (rId) => {
@@ -142,6 +146,33 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
     },
   });
 
+  const translateTextMutation = useTranslateTextMutation({
+    onSuccess: (data) => {
+      // Extract translation data from response
+      const translatedData = data?.data || data;
+      
+      // Store translation ID for future updates
+      if (translatedData?.id) {
+        setTranslationId(translatedData.id);
+      }
+      
+      // Populate English and Hindi fields with translated text
+      if (translatedData?.transEn) {
+        setNewQuestionText(prev => ({
+          ...prev,
+          en: translatedData.transEn
+        }));
+      }
+      // API returns transHn for Hindi
+      if (translatedData?.transHn || translatedData?.transHi) {
+        setNewQuestionText(prev => ({
+          ...prev,
+          hi: translatedData.transHn || translatedData.transHi
+        }));
+      }
+    },
+  });
+
   // Helper function to extract questionId from API response
   const extractQuestionId = (response) => {
     // Try various response structures
@@ -193,7 +224,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
 
   // Step 1: Add/Update the question first
   const handleAddQuestion = async () => {
-    if (!newQuestionText.en.trim() || !selectedQuestionRole) {
+    if (!newQuestionText.en.trim()) {
       enqueueSnackbar(
         "Please fill in the question text (English is required)",
         {
@@ -206,7 +237,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
     try {
       const questionPayload = {
         subDomainId,
-        roleId: getRoleId(selectedQuestionRole),
         questionTextEn: newQuestionText.en.trim(),
         questionTextHi: newQuestionText.hi.trim(),
         questionTextGu: newQuestionText.gu.trim(),
@@ -447,6 +477,79 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
     }
   };
 
+  const handleTranslateQuestion = () => {
+    if (!newQuestionText.gu.trim()) {
+      enqueueSnackbar("Please enter Gujarati text first", {
+        variant: "warning",
+      });
+      return;
+    }
+
+    const payload = {
+      id: translationId || null,
+      transGu: newQuestionText.gu.trim(),
+    };
+
+    translateTextMutation.mutate(payload);
+  };
+
+  const handleTranslateOption = async (optionId) => {
+    const option = newOptions.find(opt => opt.id === optionId);
+    if (!option || !option.text.gu.trim()) {
+      enqueueSnackbar("Please enter Gujarati text for this option first", {
+        variant: "warning",
+      });
+      return;
+    }
+
+    try {
+      const payload = {
+        id: optionTranslationIds[optionId] || null,
+        transGu: option.text.gu.trim(),
+      };
+
+      const response = await translateText(payload);
+      const translatedData = response?.data || response;
+
+      // Store translation ID for this option
+      if (translatedData?.id) {
+        setOptionTranslationIds(prev => ({
+          ...prev,
+          [optionId]: translatedData.id
+        }));
+      }
+
+      // Update the option with translated text
+      // API returns transHn for Hindi
+      setNewOptions(prevOptions =>
+        prevOptions.map(opt => {
+          if (opt.id === optionId) {
+            return {
+              ...opt,
+              text: {
+                ...opt.text,
+                en: translatedData?.transEn || opt.text.en,
+                hi: translatedData?.transHn || translatedData?.transHi || opt.text.hi,
+              }
+            };
+          }
+          return opt;
+        })
+      );
+
+      enqueueSnackbar("Option translated successfully", {
+        variant: "success",
+      });
+    } catch (error) {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Translation failed",
+        {
+          variant: "error",
+        }
+      );
+    }
+  };
+
   // eslint-disable-next-line no-unused-vars
   const handleDeleteQuestionOption = (questionId) => {
     if (
@@ -578,9 +681,9 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
               },
             }}
           >
+            <ToggleButton value="gu">ગુ</ToggleButton>
             <ToggleButton value="en">EN</ToggleButton>
             <ToggleButton value="hi">हिं</ToggleButton>
-            <ToggleButton value="gu">ગુ</ToggleButton>
           </ToggleButtonGroup>
         </Box>
       </Box>
@@ -692,6 +795,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                                 setSelectedQuestionRole(e.target.value)
                               }
                               label={t("assessment.domain.selectRole")}
+                              disabled
                             >
                               <MenuItem value="admin">Admin</MenuItem>
                               <MenuItem value="school">School</MenuItem>
@@ -706,6 +810,24 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                               fullWidth
                               label={`${t(
                                 "assessment.question.questionText"
+                              )} (Gujarati)`}
+                              value={newQuestionText.gu}
+                              onChange={(e) =>
+                                setNewQuestionText({
+                                  ...newQuestionText,
+                                  gu: e.target.value,
+                                })
+                              }
+                              variant="outlined"
+                              size="small"
+                              required
+                              multiline
+                              rows={3}
+                            />
+                            <TextField
+                              fullWidth
+                              label={`${t(
+                                "assessment.question.questionText"
                               )} (English)`}
                               value={newQuestionText.en}
                               onChange={(e) =>
@@ -716,7 +838,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                               }
                               variant="outlined"
                               size="small"
-                              required
                               multiline
                               rows={3}
                             />
@@ -737,24 +858,33 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                               multiline
                               rows={3}
                             />
-                            <TextField
-                              fullWidth
-                              label={`${t(
-                                "assessment.question.questionText"
-                              )} (Gujarati)`}
-                              value={newQuestionText.gu}
-                              onChange={(e) =>
-                                setNewQuestionText({
-                                  ...newQuestionText,
-                                  gu: e.target.value,
-                                })
-                              }
-                              variant="outlined"
-                              size="small"
-                              multiline
-                              rows={3}
-                            />
                           </Box>
+                          {/* Translation Button */}
+                          {newQuestionText.gu.trim() && (
+                            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={translateTextMutation.isPending ? (
+                                  <CircularProgress size={16} />
+                                ) : (
+                                  <Translate />
+                                )}
+                                onClick={handleTranslateQuestion}
+                                disabled={translateTextMutation.isPending}
+                                sx={{
+                                  borderColor: colors.accent.green,
+                                  color: colors.accent.green,
+                                  "&:hover": {
+                                    borderColor: colors.accent.greenDark,
+                                    bgcolor: colors.accent.green + "10",
+                                  },
+                                }}
+                              >
+                                {translateTextMutation.isPending ? "Translating..." : "Translate to English & Hindi"}
+                              </Button>
+                            </Box>
+                          )}
                           <FormControl component="fieldset">
                             <FormLabel component="legend" sx={{ mb: 1 }}>
                               Is Classroom Observation
@@ -964,7 +1094,26 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                                   </IconButton>
                                 )}
                               </Box>
-                              <Box sx={{ display: "flex", gap: 2 }}>
+                              <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
+                                <TextField
+                                  fullWidth
+                                  label={`${t(
+                                    "assessment.question.options"
+                                  )} (Gujarati)`}
+                                  value={option.text.gu}
+                                  onChange={(e) =>
+                                    handleOptionChange(
+                                      option.id,
+                                      "gu",
+                                      e.target.value
+                                    )
+                                  }
+                                  variant="outlined"
+                                  size="small"
+                                  required
+                                  multiline
+                                  rows={2}
+                                />
                                 <TextField
                                   fullWidth
                                   label={`${t(
@@ -980,7 +1129,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                                   }
                                   variant="outlined"
                                   size="small"
-                                  required
                                   multiline
                                   rows={2}
                                 />
@@ -1002,25 +1150,26 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                                   multiline
                                   rows={2}
                                 />
-                                <TextField
-                                  fullWidth
-                                  label={`${t(
-                                    "assessment.question.options"
-                                  )} (Gujarati)`}
-                                  value={option.text.gu}
-                                  onChange={(e) =>
-                                    handleOptionChange(
-                                      option.id,
-                                      "gu",
-                                      e.target.value
-                                    )
-                                  }
-                                  variant="outlined"
-                                  size="small"
-                                  multiline
-                                  rows={2}
-                                />
                               </Box>
+                              {/* Translation Button for Option */}
+                              {option.text.gu.trim() && (
+                                <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                                  <Button
+                                    size="small"
+                                    variant="text"
+                                    startIcon={<Translate />}
+                                    onClick={() => handleTranslateOption(option.id)}
+                                    sx={{
+                                      color: colors.accent.green,
+                                      "&:hover": {
+                                        bgcolor: colors.accent.green + "10",
+                                      },
+                                    }}
+                                  >
+                                    Translate
+                                  </Button>
+                                </Box>
+                              )}
                             </Card>
                           ))}
                         </Box>
@@ -1278,6 +1427,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                           setSelectedQuestionRole(e.target.value)
                         }
                         label={t("assessment.domain.selectRole")}
+                        disabled
                       >
                         <MenuItem value="admin">Admin</MenuItem>
                         <MenuItem value="school">School</MenuItem>
@@ -1286,6 +1436,24 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                       </Select>
                     </FormControl>
                     <Box sx={{ display: "flex", gap: 2 }}>
+                      <TextField
+                        fullWidth
+                        label={`${t(
+                          "assessment.question.questionText"
+                        )} (Gujarati)`}
+                        value={newQuestionText.gu}
+                        onChange={(e) =>
+                          setNewQuestionText({
+                            ...newQuestionText,
+                            gu: e.target.value,
+                          })
+                        }
+                        variant="outlined"
+                        size="small"
+                        required
+                        multiline
+                        rows={3}
+                      />
                       <TextField
                         fullWidth
                         label={`${t(
@@ -1300,7 +1468,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                         }
                         variant="outlined"
                         size="small"
-                        required
                         multiline
                         rows={3}
                       />
@@ -1321,24 +1488,33 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                         multiline
                         rows={3}
                       />
-                      <TextField
-                        fullWidth
-                        label={`${t(
-                          "assessment.question.questionText"
-                        )} (Gujarati)`}
-                        value={newQuestionText.gu}
-                        onChange={(e) =>
-                          setNewQuestionText({
-                            ...newQuestionText,
-                            gu: e.target.value,
-                          })
-                        }
-                        variant="outlined"
-                        size="small"
-                        multiline
-                        rows={3}
-                      />
                     </Box>
+                    {/* Translation Button */}
+                    {newQuestionText.gu.trim() && (
+                      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={translateTextMutation.isPending ? (
+                            <CircularProgress size={16} />
+                          ) : (
+                            <Translate />
+                          )}
+                          onClick={handleTranslateQuestion}
+                          disabled={translateTextMutation.isPending}
+                          sx={{
+                            borderColor: colors.accent.green,
+                            color: colors.accent.green,
+                            "&:hover": {
+                              borderColor: colors.accent.greenDark,
+                              bgcolor: colors.accent.green + "10",
+                            },
+                          }}
+                        >
+                          {translateTextMutation.isPending ? "Translating..." : "Translate to English & Hindi"}
+                        </Button>
+                      </Box>
+                    )}
                     <FormControl component="fieldset">
                       <FormLabel component="legend" sx={{ mb: 1 }}>
                         Is Classroom Observation
@@ -1535,7 +1711,26 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                               </IconButton>
                             )}
                           </Box>
-                          <Box sx={{ display: "flex", gap: 2 }}>
+                          <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
+                            <TextField
+                              fullWidth
+                              label={`${t(
+                                "assessment.question.options"
+                              )} (Gujarati)`}
+                              value={option.text.gu}
+                              onChange={(e) =>
+                                handleOptionChange(
+                                  option.id,
+                                  "gu",
+                                  e.target.value
+                                )
+                              }
+                              variant="outlined"
+                              size="small"
+                              required
+                              multiline
+                              rows={2}
+                            />
                             <TextField
                               fullWidth
                               label={`${t(
@@ -1551,7 +1746,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                               }
                               variant="outlined"
                               size="small"
-                              required
                               multiline
                               rows={2}
                             />
@@ -1573,25 +1767,26 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                               multiline
                               rows={2}
                             />
-                            <TextField
-                              fullWidth
-                              label={`${t(
-                                "assessment.question.options"
-                              )} (Gujarati)`}
-                              value={option.text.gu}
-                              onChange={(e) =>
-                                handleOptionChange(
-                                  option.id,
-                                  "gu",
-                                  e.target.value
-                                )
-                              }
-                              variant="outlined"
-                              size="small"
-                              multiline
-                              rows={2}
-                            />
                           </Box>
+                          {/* Translation Button for Option */}
+                          {option.text.gu.trim() && (
+                            <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                              <Button
+                                size="small"
+                                variant="text"
+                                startIcon={<Translate />}
+                                onClick={() => handleTranslateOption(option.id)}
+                                sx={{
+                                  color: colors.accent.green,
+                                  "&:hover": {
+                                    bgcolor: colors.accent.green + "10",
+                                  },
+                                }}
+                              >
+                                Translate
+                              </Button>
+                            </Box>
+                          )}
                         </Card>
                       ))}
                     </Box>
@@ -1691,6 +1886,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                           setSelectedQuestionRole(e.target.value)
                         }
                         label={t("assessment.domain.selectRole")}
+                        disabled
                       >
                         <MenuItem value="admin">Admin</MenuItem>
                         <MenuItem value="school">School</MenuItem>
@@ -1699,6 +1895,24 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                       </Select>
                     </FormControl>
                     <Box sx={{ display: "flex", gap: 2 }}>
+                      <TextField
+                        fullWidth
+                        label={`${t(
+                          "assessment.question.questionText"
+                        )} (Gujarati)`}
+                        value={newQuestionText.gu}
+                        onChange={(e) =>
+                          setNewQuestionText({
+                            ...newQuestionText,
+                            gu: e.target.value,
+                          })
+                        }
+                        variant="outlined"
+                        size="small"
+                        required
+                        multiline
+                        rows={3}
+                      />
                       <TextField
                         fullWidth
                         label={`${t(
@@ -1713,7 +1927,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                         }
                         variant="outlined"
                         size="small"
-                        required
                         multiline
                         rows={3}
                       />
@@ -1734,24 +1947,33 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                         multiline
                         rows={3}
                       />
-                      <TextField
-                        fullWidth
-                        label={`${t(
-                          "assessment.question.questionText"
-                        )} (Gujarati)`}
-                        value={newQuestionText.gu}
-                        onChange={(e) =>
-                          setNewQuestionText({
-                            ...newQuestionText,
-                            gu: e.target.value,
-                          })
-                        }
-                        variant="outlined"
-                        size="small"
-                        multiline
-                        rows={3}
-                      />
                     </Box>
+                    {/* Translation Button */}
+                    {newQuestionText.gu.trim() && (
+                      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={translateTextMutation.isPending ? (
+                            <CircularProgress size={16} />
+                          ) : (
+                            <Translate />
+                          )}
+                          onClick={handleTranslateQuestion}
+                          disabled={translateTextMutation.isPending}
+                          sx={{
+                            borderColor: colors.accent.green,
+                            color: colors.accent.green,
+                            "&:hover": {
+                              borderColor: colors.accent.greenDark,
+                              bgcolor: colors.accent.green + "10",
+                            },
+                          }}
+                        >
+                          {translateTextMutation.isPending ? "Translating..." : "Translate to English & Hindi"}
+                        </Button>
+                      </Box>
+                    )}
                     <FormControl component="fieldset">
                       <FormLabel component="legend" sx={{ mb: 1 }}>
                         Is Classroom Observation
@@ -1950,7 +2172,26 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                               </IconButton>
                             )}
                           </Box>
-                          <Box sx={{ display: "flex", gap: 2 }}>
+                          <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
+                            <TextField
+                              fullWidth
+                              label={`${t(
+                                "assessment.question.options"
+                              )} (Gujarati)`}
+                              value={option.text.gu}
+                              onChange={(e) =>
+                                handleOptionChange(
+                                  option.id,
+                                  "gu",
+                                  e.target.value
+                                )
+                              }
+                              variant="outlined"
+                              size="small"
+                              required
+                              multiline
+                              rows={2}
+                            />
                             <TextField
                               fullWidth
                               label={`${t(
@@ -1966,7 +2207,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                               }
                               variant="outlined"
                               size="small"
-                              required
                               multiline
                               rows={2}
                             />
@@ -1988,25 +2228,26 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                               multiline
                               rows={2}
                             />
-                            <TextField
-                              fullWidth
-                              label={`${t(
-                                "assessment.question.options"
-                              )} (Gujarati)`}
-                              value={option.text.gu}
-                              onChange={(e) =>
-                                handleOptionChange(
-                                  option.id,
-                                  "gu",
-                                  e.target.value
-                                )
-                              }
-                              variant="outlined"
-                              size="small"
-                              multiline
-                              rows={2}
-                            />
                           </Box>
+                          {/* Translation Button for Option */}
+                          {option.text.gu.trim() && (
+                            <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                              <Button
+                                size="small"
+                                variant="text"
+                                startIcon={<Translate />}
+                                onClick={() => handleTranslateOption(option.id)}
+                                sx={{
+                                  color: colors.accent.green,
+                                  "&:hover": {
+                                    bgcolor: colors.accent.green + "10",
+                                  },
+                                }}
+                              >
+                                Translate
+                              </Button>
+                            </Box>
+                          )}
                         </Card>
                       ))}
                     </Box>

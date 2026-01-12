@@ -22,9 +22,9 @@ import {
   ToggleButtonGroup,
   ToggleButton,
 } from "@mui/material";
-import { Visibility, Add, Delete, Language } from "@mui/icons-material";
+import { Visibility, Add, Delete, Language, Translate } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
-import { useUpsertSubdomainMutation } from "../../../services/adminService";
+import { useUpsertSubdomainMutation, useTranslateTextMutation } from "../../../services/adminService";
 import { roleIdMap, getRoleId } from "../../../constants/roles";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
 
@@ -63,17 +63,64 @@ const DomainSubdomainView = ({
   const [editingSubdomain, setEditingSubdomain] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [subdomainToDelete, setSubdomainToDelete] = useState(null);
+  const [translationId, setTranslationId] = useState(null);
 
   const upsertSubdomainMutation = useUpsertSubdomainMutation({
     onSuccess: () => {
       setNewSubdomainName({ en: "", hi: "", gu: "" });
       setShowAddSubdomain(false);
       setEditingSubdomain(null);
+      setTranslationId(null);
       if (onSubdomainAdded) {
         onSubdomainAdded();
       }
     },
   });
+
+  const translateTextMutation = useTranslateTextMutation({
+    onSuccess: (data) => {
+      // Extract translation data from response
+      const translatedData = data?.data || data;
+      
+      // Store translation ID for future updates
+      if (translatedData?.id) {
+        setTranslationId(translatedData.id);
+      }
+      
+      // Populate English and Hindi fields with translated text
+      if (translatedData?.transEn) {
+        setNewSubdomainName(prev => ({
+          ...prev,
+          en: translatedData.transEn
+        }));
+      }
+      // API returns transHn for Hindi
+      if (translatedData?.transHn || translatedData?.transHi) {
+        setNewSubdomainName(prev => ({
+          ...prev,
+          hi: translatedData.transHn || translatedData.transHi
+        }));
+      }
+    },
+  });
+
+  const handleTranslateSubdomain = async () => {
+    if (!newSubdomainName.gu.trim()) {
+      alert("Please enter Gujarati text to translate.");
+      return;
+    }
+
+    try {
+      const payload = {
+        id: translationId || null,
+        transGu: newSubdomainName.gu.trim(),
+      };
+      
+      await translateTextMutation.mutateAsync(payload);
+    } catch (error) {
+      console.error("Error translating subdomain:", error);
+    }
+  };
 
   const getSubdomainName = (subdomain) => {
     switch (selectedLanguage) {
@@ -91,13 +138,12 @@ const DomainSubdomainView = ({
   const subdomains = domain.subDomain || [];
 
   const handleAddSubdomain = () => {
-    if (!newSubdomainName.en.trim() || !selectedSubdomainRole) {
+    if (!newSubdomainName.en.trim()) {
       return;
     }
 
     const payload = {
       domainId: domain.domainId,
-      roleId: getRoleId(selectedSubdomainRole),
       subDomainNameEn: newSubdomainName.en.trim(),
       subDomainNameHi: newSubdomainName.hi.trim(),
       subDomainNameGu: newSubdomainName.gu.trim(),
@@ -193,11 +239,30 @@ const DomainSubdomainView = ({
               bgcolor: "#f9fafb",
             }}
           >
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-              {editingSubdomain
-                ? t("assessment.subdomain.editSubdomain")
-                : t("assessment.subdomain.addSubdomain")}
-            </Typography>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+              <Typography variant="subtitle2" fontWeight={600}>
+                {editingSubdomain
+                  ? t("assessment.subdomain.editSubdomain")
+                  : t("assessment.subdomain.addSubdomain")}
+              </Typography>
+              <Button
+                variant="outlined"
+                onClick={handleTranslateSubdomain}
+                disabled={!newSubdomainName.gu.trim() || translateTextMutation.isPending}
+                startIcon={<Translate />}
+                size="small"
+                sx={{
+                  borderColor: colors.primary.blue,
+                  color: colors.primary.blue,
+                  "&:hover": {
+                    borderColor: colors.primary.dark,
+                    bgcolor: colors.primary.blue + "10",
+                  },
+                }}
+              >
+                Translate to EN & HI
+              </Button>
+            </Box>
             <Box
               sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}
             >
@@ -207,6 +272,7 @@ const DomainSubdomainView = ({
                   value={selectedSubdomainRole}
                   onChange={(e) => setSelectedSubdomainRole(e.target.value)}
                   label={t("assessment.domain.selectRole")}
+                  disabled
                 >
                   <MenuItem value="admin">Admin</MenuItem>
                   <MenuItem value="school">School</MenuItem>
@@ -215,6 +281,22 @@ const DomainSubdomainView = ({
                 </Select>
               </FormControl>
               <Box sx={{ display: "flex", gap: 2 }}>
+                <TextField
+                  fullWidth
+                  label={`${t(
+                    "assessment.subdomain.subdomainName"
+                  )} (Gujarati)`}
+                  value={newSubdomainName.gu}
+                  onChange={(e) =>
+                    setNewSubdomainName({
+                      ...newSubdomainName,
+                      gu: e.target.value,
+                    })
+                  }
+                  variant="outlined"
+                  size="small"
+                  required
+                />
                 <TextField
                   fullWidth
                   label={`${t("assessment.subdomain.subdomainName")} (English)`}
@@ -241,21 +323,6 @@ const DomainSubdomainView = ({
                   variant="outlined"
                   size="small"
                 />
-                <TextField
-                  fullWidth
-                  label={`${t(
-                    "assessment.subdomain.subdomainName"
-                  )} (Gujarati)`}
-                  value={newSubdomainName.gu}
-                  onChange={(e) =>
-                    setNewSubdomainName({
-                      ...newSubdomainName,
-                      gu: e.target.value,
-                    })
-                  }
-                  variant="outlined"
-                  size="small"
-                />
               </Box>
             </Box>
             <Box sx={{ display: "flex", gap: 2 }}>
@@ -273,6 +340,7 @@ const DomainSubdomainView = ({
                   setShowAddSubdomain(false);
                   setNewSubdomainName({ en: "", hi: "", gu: "" });
                   setEditingSubdomain(null);
+                  setTranslationId(null);
                 }}
                 disabled={upsertSubdomainMutation.isPending}
               >

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
-  Container,
   Typography,
   AppBar,
   Toolbar,
@@ -355,7 +354,6 @@ const AdminDashboard = () => {
               mx: "auto",
             }}
           >
-            {/* Content based on current route */}
             {currentView === "verifier" && <Verifier />}
             {currentView === "assessment" && <AssessmentManagement />}
             {currentView === "allocation" && <SchoolAllocation />}

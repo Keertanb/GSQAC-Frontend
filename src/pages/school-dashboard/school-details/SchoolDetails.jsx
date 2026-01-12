@@ -44,37 +44,15 @@ import AppDrawer from "../../../components/AppDrawer/AppDrawer";
 import { DRAWER_WIDTH } from "../../../constants/menuItems";
 import useAuthStore from "../../../store/useAuthStore";
 import { useLogoutMutation } from "../../../services/authService";
-import { useGetSchoolDataQuery } from "../../../services/schoolService";
+import {
+  useGetSchoolDataQuery,
+  useUpdateSchoolInfrastructureMutation,
+} from "../../../services/schoolService";
 import { CircularProgress, Alert } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import "./SchoolDetails.css";
 
 // Helper Components - defined outside to avoid recreation on each render
-const SectionHeader = ({ title, icon: Icon, color }) => (
-  <Box
-    sx={{
-      display: "flex",
-      alignItems: "center",
-      gap: 1.5,
-      mb: 3,
-      pb: 1.5,
-      borderBottom: `3px solid ${color}`,
-    }}
-  >
-    {Icon && <Icon sx={{ fontSize: 28, color }} />}
-    <Typography
-      variant="h6"
-      sx={{
-        fontWeight: 700,
-        color: colors.text.primary,
-        fontSize: "1.125rem",
-      }}
-    >
-      {title}
-    </Typography>
-  </Box>
-);
-
 const InfoField = ({
   label,
   value,
@@ -84,50 +62,25 @@ const InfoField = ({
   options = [],
   onChange,
 }) => (
-  <Card
+  <Box
     sx={{
-      bgcolor: colors.background.primary,
-      border: `1px solid ${colors.neutral.gray200}`,
-      borderRadius: 1.5,
-      p: 2.5,
       height: "100%",
-      transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-      "&:hover": {
-        boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-        transform: "translateY(-3px)",
-        borderColor: colors.primary.light,
-      },
     }}
   >
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.5 }}>
-      {Icon && (
-        <Box
-          sx={{
-            bgcolor: `${colors.primary.blue}10`,
-            borderRadius: 1,
-            p: 0.75,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Icon sx={{ fontSize: 16, color: colors.primary.blue }} />
-        </Box>
-      )}
-      <Typography
-        variant="body2"
-        sx={{
-          fontWeight: 600,
-          color: colors.text.secondary,
-          fontSize: "0.8125rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-        }}
-      >
-        {label}
-      </Typography>
-    </Box>
+    <Typography
+      variant="caption"
+      sx={{
+        fontWeight: 600,
+        color: colors.text.secondary,
+        fontSize: "0.6875rem",
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        mb: 0.75,
+        display: "block",
+      }}
+    >
+      {label}
+    </Typography>
     {editable ? (
       type === "select" ? (
         <FormControl fullWidth size="small">
@@ -135,11 +88,11 @@ const InfoField = ({
             value={value}
             onChange={(e) => onChange && onChange(e.target.value)}
             sx={{
-              bgcolor: colors.background.secondary,
+              bgcolor: "white",
               borderRadius: 1.5,
               "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: colors.neutral.gray300,
-                borderWidth: "1.5px",
+                borderColor: colors.neutral.gray200,
+                borderWidth: "1px",
               },
               "&:hover .MuiOutlinedInput-notchedOutline": {
                 borderColor: colors.primary.blue,
@@ -149,9 +102,9 @@ const InfoField = ({
                 borderWidth: "2px",
               },
               "& .MuiSelect-select": {
-                py: 1.25,
-                fontWeight: 500,
-                fontSize: "0.9375rem",
+                py: 1,
+                fontWeight: 600,
+                fontSize: "0.875rem",
               },
             }}
           >
@@ -170,11 +123,11 @@ const InfoField = ({
           onChange={(e) => onChange && onChange(e.target.value)}
           variant="outlined"
           sx={{
-            bgcolor: colors.background.secondary,
-            borderRadius: 2,
+            bgcolor: "white",
+            borderRadius: 1.5,
             "& .MuiOutlinedInput-notchedOutline": {
-              borderColor: colors.neutral.gray300,
-              borderWidth: "1.5px",
+              borderColor: colors.neutral.gray200,
+              borderWidth: "1px",
             },
             "&:hover .MuiOutlinedInput-notchedOutline": {
               borderColor: colors.primary.blue,
@@ -184,110 +137,84 @@ const InfoField = ({
               borderWidth: "2px",
             },
             "& .MuiInputBase-input": {
-              py: 1.25,
-              fontWeight: 500,
-              fontSize: "0.9375rem",
+              py: 1,
+              fontWeight: 600,
+              fontSize: "0.875rem",
             },
           }}
         />
       )
     ) : (
-      <Box
+      <Typography
+        variant="body1"
         sx={{
-          bgcolor: colors.background.secondary,
-          p: 1.75,
-          borderRadius: 1.5,
-          border: `1.5px solid ${colors.neutral.gray200}`,
-          transition: "all 0.2s ease",
-          minWidth: 0,
-          "&:hover": {
-            borderColor: colors.primary.lightest,
-            bgcolor: `${colors.primary.lightest}15`,
-          },
+          color: colors.text.primary,
+          fontWeight: 600,
+          fontSize: "0.9375rem",
+          lineHeight: 1.5,
+          wordBreak: "break-word",
+          overflowWrap: "break-word",
         }}
       >
-        <Typography
-          variant="body1"
-          sx={{
-            color: colors.text.primary,
-            fontWeight: 600,
-            fontSize: "0.9375rem",
-            lineHeight: 1.6,
-            wordBreak: "break-word",
-            overflowWrap: "break-word",
-          }}
-        >
-          {value || "—"}
-        </Typography>
-      </Box>
+        {value || "—"}
+      </Typography>
     )}
-  </Card>
+  </Box>
 );
 
 const StatCard = ({ label, value, icon: Icon, color }) => (
-  <Card
+  <Box
     sx={{
-      bgcolor: colors.background.primary,
-      border: `1px solid ${colors.neutral.gray200}`,
-      borderRadius: 1.5,
-      p: 3,
+      bgcolor: `${color}08`,
+      borderRadius: 2,
+      p: 2.5,
       height: "100%",
       position: "relative",
       overflow: "hidden",
-      transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-      "&::before": {
-        content: '""',
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        height: "3px",
-        background: `linear-gradient(90deg, ${color}, ${color}80)`,
-      },
+      border: `1px solid ${color}20`,
+      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
       "&:hover": {
-        boxShadow: `0 6px 20px ${color}25`,
-        transform: "translateY(-3px)",
-        borderColor: `${color}40`,
+        transform: "translateY(-4px)",
+        boxShadow: `0 12px 24px ${color}25`,
+        bgcolor: `${color}12`,
       },
     }}
   >
-    <Box sx={{ display: "flex", alignItems: "center", gap: 2.5 }}>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
       <Box
         sx={{
-          bgcolor: `${color}12`,
-          borderRadius: 2.5,
-          p: 2,
+          bgcolor: color,
+          borderRadius: 1.5,
+          p: 1.5,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          minWidth: 64,
-          minHeight: 64,
-          border: `1.5px solid ${color}30`,
+          minWidth: 48,
+          minHeight: 48,
         }}
       >
-        {Icon && <Icon sx={{ fontSize: 32, color }} />}
+        {Icon && <Icon sx={{ fontSize: 24, color: "white" }} />}
       </Box>
       <Box sx={{ flex: 1 }}>
         <Typography
           variant="body2"
           sx={{
             color: colors.text.secondary,
-            mb: 0.75,
+            mb: 0.25,
             fontWeight: 600,
-            fontSize: "0.75rem",
+            fontSize: "0.6875rem",
             textTransform: "uppercase",
-            letterSpacing: "0.05em",
+            letterSpacing: "0.08em",
           }}
         >
           {label}
         </Typography>
         <Typography
-          variant="h3"
+          variant="h4"
           sx={{
             color: colors.text.primary,
-            fontWeight: 800,
-            fontSize: "2.25rem",
+            fontWeight: 700,
+            fontSize: "1.75rem",
             lineHeight: 1.2,
             letterSpacing: "-0.02em",
           }}
@@ -296,101 +223,95 @@ const StatCard = ({ label, value, icon: Icon, color }) => (
         </Typography>
       </Box>
     </Box>
-  </Card>
+  </Box>
 );
 
 const FacilityCard = ({ label, value, icon: Icon, onChange }) => (
-  <Card
+  <Box
     sx={{
-      bgcolor: colors.background.primary,
-      border: `1px solid ${colors.neutral.gray200}`,
-      borderRadius: 1.5,
-      p: 2.5,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 2,
       height: "100%",
-      transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-      "&:hover": {
-        boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
-        transform: "translateY(-3px)",
-        borderColor: `${colors.accent.green}40`,
-      },
     }}
   >
     <Box
       sx={{
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
-        gap: 2,
+        gap: 1.5,
+        flex: 1,
+        minWidth: 0,
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
-        <Box
-          sx={{
-            bgcolor: `${colors.accent.green}12`,
-            borderRadius: 2,
-            p: 1.5,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            minWidth: 52,
-            minHeight: 52,
-            border: `1.5px solid ${colors.accent.green}30`,
-          }}
-        >
-          {Icon && <Icon sx={{ fontSize: 24, color: colors.accent.green }} />}
-        </Box>
-        <Typography
-          variant="body1"
-          sx={{
-            color: colors.text.primary,
-            fontWeight: 600,
-            fontSize: "0.9375rem",
-          }}
-        >
-          {label}
-        </Typography>
-      </Box>
-      <FormControl
-        size="small"
+      <Box
         sx={{
-          minWidth: 140,
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 2,
-            bgcolor: colors.background.secondary,
-            "& .MuiOutlinedInput-notchedOutline": {
-              borderColor: colors.neutral.gray300,
-              borderWidth: "1.5px",
-            },
-            "&:hover .MuiOutlinedInput-notchedOutline": {
-              borderColor: colors.accent.green,
-            },
-            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-              borderColor: colors.accent.green,
-              borderWidth: "2px",
-            },
+          bgcolor: `${colors.accent.green}15`,
+          borderRadius: 1.5,
+          p: 1.25,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minWidth: 40,
+          minHeight: 40,
+        }}
+      >
+        {Icon && <Icon sx={{ fontSize: 20, color: colors.accent.green }} />}
+      </Box>
+      <Typography
+        variant="body2"
+        sx={{
+          color: colors.text.primary,
+          fontWeight: 600,
+          fontSize: "0.875rem",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </Typography>
+    </Box>
+    <FormControl
+      size="small"
+      sx={{
+        minWidth: 120,
+        "& .MuiOutlinedInput-root": {
+          borderRadius: 1.5,
+          bgcolor: "white",
+          "& .MuiOutlinedInput-notchedOutline": {
+            borderColor: colors.neutral.gray200,
+            borderWidth: "1px",
+          },
+          "&:hover .MuiOutlinedInput-notchedOutline": {
+            borderColor: colors.accent.green,
+          },
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderColor: colors.accent.green,
+            borderWidth: "2px",
+          },
+        },
+      }}
+    >
+      <Select
+        value={value}
+        onChange={(e) => onChange && onChange(e.target.value)}
+        sx={{
+          fontWeight: 600,
+          fontSize: "0.8125rem",
+          "& .MuiSelect-select": {
+            py: 0.875,
           },
         }}
       >
-        <Select
-          value={value}
-          onChange={(e) => onChange && onChange(e.target.value)}
-          sx={{
-            fontWeight: 600,
-            fontSize: "0.875rem",
-            "& .MuiSelect-select": {
-              py: 1,
-            },
-          }}
-        >
-          <MenuItem value="Yes">Yes</MenuItem>
-          <MenuItem value="No">No</MenuItem>
-          <MenuItem value="Available">Available</MenuItem>
-          <MenuItem value="Not Available">Not Available</MenuItem>
-        </Select>
-      </FormControl>
-    </Box>
-  </Card>
+        <MenuItem value="Yes">Yes</MenuItem>
+        <MenuItem value="No">No</MenuItem>
+        <MenuItem value="Available">Available</MenuItem>
+        <MenuItem value="Not Available">Not Available</MenuItem>
+      </Select>
+    </FormControl>
+  </Box>
 );
 
 const SchoolDetails = () => {
@@ -424,6 +345,12 @@ const SchoolDetails = () => {
       console.error("Logout API error:", error);
       logout();
       navigate("/login");
+    },
+  });
+
+  const updateInfrastructureMutation = useUpdateSchoolInfrastructureMutation({
+    onSuccess: () => {
+      // Optionally refetch school data after successful update
     },
   });
 
@@ -482,11 +409,15 @@ const SchoolDetails = () => {
     emailAddress: "",
   });
 
-  // Helper function to extract value from formatted string (e.g., "1 - RURAL" -> "RURAL")
+  // Helper function to extract value from formatted string (e.g., "2 - URBAN" -> "Urban")
   const extractValue = (value) => {
     if (!value) return "";
     if (typeof value === "string" && value.includes(" - ")) {
-      return value.split(" - ")[1]?.trim() || value;
+      const extracted = value.split(" - ")[1]?.trim() || value;
+      // Capitalize first letter, lowercase rest for consistent display
+      return (
+        extracted.charAt(0).toUpperCase() + extracted.slice(1).toLowerCase()
+      );
     }
     return value;
   };
@@ -557,10 +488,54 @@ const SchoolDetails = () => {
     }));
   };
 
+  const handleFacilityChange = (field, value) => {
+    // Update local state
+    setSchoolData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+
+    // Auto-save infrastructure changes
+    const convertToNumber = (val) => {
+      return val === "Yes" || val === "Available" ? 1 : 0;
+    };
+
+    // Create payload with updated value
+    const payload = {
+      schoolId: schoolData.udiseCode || "24091502136",
+      drinkingWater: convertToNumber(
+        field === "drinkingWater" ? value : schoolData.drinkingWater
+      ),
+      puccaBuilding: convertToNumber(
+        field === "puccaBuilding" ? value : schoolData.puccaBuilding
+      ),
+      electricity: convertToNumber(
+        field === "electricity" ? value : schoolData.electricity
+      ),
+      functionalToilets: convertToNumber(
+        field === "functionalToilets" ? value : schoolData.functionalToilets
+      ),
+    };
+
+    // Call API to save
+    updateInfrastructureMutation.mutate(payload);
+  };
+
   const handleSave = () => {
-    // TODO: Replace with API call
-    console.log("Saving school details:", schoolData);
-    // Show success message
+    // Convert facility values to numbers for API
+    const convertToNumber = (value) => {
+      return value === "Yes" || value === "Available" ? 1 : 0;
+    };
+
+    const payload = {
+      schoolId: schoolData.udiseCode || "24091502136",
+      drinkingWater: convertToNumber(schoolData.drinkingWater),
+      puccaBuilding: convertToNumber(schoolData.puccaBuilding),
+      electricity: convertToNumber(schoolData.electricity),
+      functionalToilets: convertToNumber(schoolData.functionalToilets),
+    };
+
+    updateInfrastructureMutation.mutate(payload);
   };
 
   // Helper function to get field name from label
@@ -614,15 +589,13 @@ const SchoolDetails = () => {
       >
         <AppBar
           position="fixed"
-          className="bg-white shadow-lg border-b border-gray-200 backdrop-blur-sm"
           sx={{
-            backgroundColor: "rgba(255, 255, 255, 0.95)",
+            backgroundColor: "rgba(255, 255, 255, 0.98)",
             backdropFilter: "blur(10px)",
             zIndex: theme.zIndex.drawer + 1,
-            boxShadow:
-              "0 4px 20px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)",
-            borderBottom: "1px solid rgba(0,0,0,0.06)",
-            height: "64px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+            borderBottom: `1px solid ${colors.neutral.gray200}`,
+            height: "72px",
             width:
               drawerOpen && !matchDownMD
                 ? `calc(100% - ${DRAWER_WIDTH.xs}px)`
@@ -639,111 +612,74 @@ const SchoolDetails = () => {
             }),
           }}
         >
-          <Toolbar className="h-16 px-6">
+          <Toolbar sx={{ height: "72px", px: 3 }}>
             <IconButton
               onClick={handleDrawerToggle}
-              className="mr-4 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200"
               edge="start"
               sx={{
-                color: "#4b5563",
-                borderRadius: "12px",
+                color: colors.text.secondary,
+                borderRadius: 2,
+                mr: 2,
                 "&:hover": {
-                  backgroundColor: "#eff6ff",
-                  color: "#2563eb",
-                  transform: "scale(1.05)",
+                  bgcolor: colors.primary.lightest,
+                  color: colors.primary.blue,
                 },
               }}
             >
               <Menu />
             </IconButton>
-            <Box className="flex items-center gap-3 mr-6">
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
               <Box
-                className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 transition-all duration-200 hover:scale-105"
                 sx={{
-                  background:
-                    "linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #4f46e5 100%)",
+                  width: 40,
+                  height: 40,
+                  borderRadius: 2,
+                  bgcolor: colors.primary.blue,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <School className="text-white text-lg" />
+                <School sx={{ fontSize: 22, color: "white" }} />
               </Box>
               <Box>
                 <Typography
                   variant="h6"
-                  component="div"
-                  className="font-bold text-gray-900"
                   sx={{
-                    fontSize: "1.125rem",
+                    fontSize: "1rem",
                     fontWeight: 700,
-                    color: "#111827",
-                    letterSpacing: "-0.01em",
+                    color: colors.text.primary,
+                    lineHeight: 1.2,
                   }}
                 >
                   School Details
                 </Typography>
                 <Typography
                   variant="caption"
-                  className="text-gray-500 text-xs"
                   sx={{
-                    fontSize: "0.7rem",
-                    color: "#6b7280",
+                    fontSize: "0.75rem",
+                    color: colors.text.secondary,
                     fontWeight: 500,
                   }}
                 >
-                  School Information
+                  Manage Information
                 </Typography>
               </Box>
             </Box>
             <Box sx={{ flexGrow: 1 }} />
-            {user && (
-              <Box className="flex items-center gap-4 mr-4">
-                <Box className="text-right hidden sm:block">
-                  <Typography
-                    variant="body2"
-                    className="font-semibold text-gray-900 text-sm"
-                    sx={{
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      color: "#111827",
-                    }}
-                  >
-                    {user.name}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    className="text-gray-500 text-xs"
-                    sx={{
-                      fontSize: "0.75rem",
-                      color: "#6b7280",
-                      fontWeight: 500,
-                    }}
-                  >
-                    School
-                  </Typography>
-                </Box>
-                <Box
-                  className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-400 via-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-blue-500/30 hover:shadow-blue-500/40 transition-all duration-200 hover:scale-105 cursor-pointer"
-                  sx={{
-                    background:
-                      "linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #4f46e5 100%)",
-                  }}
-                >
-                  {user.name?.charAt(0)?.toUpperCase() || "S"}
-                </Box>
-              </Box>
-            )}
             <Button
               onClick={handleLogout}
-              className="text-gray-700 hover:bg-red-50 hover:text-red-600 font-semibold px-5 py-2 rounded-xl transition-all duration-200 hover:scale-105"
               sx={{
-                color: "#374151",
+                color: colors.text.secondary,
                 textTransform: "none",
                 fontWeight: 600,
                 fontSize: "0.875rem",
-                borderRadius: "12px",
+                borderRadius: 2,
+                px: 3,
+                py: 1,
                 "&:hover": {
-                  backgroundColor: "#fef2f2",
-                  color: "#dc2626",
-                  transform: "scale(1.05)",
+                  bgcolor: `${colors.semantic.error}10`,
+                  color: colors.semantic.error,
                 },
               }}
             >
@@ -786,71 +722,43 @@ const SchoolDetails = () => {
             {!isLoading && (
               <>
                 {/* Basic Identification Section */}
-                <Card
+                <Paper
+                  elevation={0}
                   sx={{
-                    mb: 4,
-                    bgcolor: colors.background.primary,
-                    borderRadius: 2,
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                    mb: 3,
+                    bgcolor: "white",
+                    borderRadius: 2.5,
                     overflow: "hidden",
                     border: `1px solid ${colors.neutral.gray200}`,
-                    transition: "all 0.25s ease",
-                    "&:hover": {
-                      boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-                    },
                   }}
                 >
                   <Box
                     sx={{
-                      bgcolor: "transparent",
-                      background: `linear-gradient(135deg, ${colors.primary.blue}08 0%, ${colors.primary.dark}05 100%)`,
-                      backdropFilter: "blur(10px)",
-                      borderBottom: `2px solid ${colors.primary.blue}20`,
-                      p: 3.5,
-                      color: colors.text.primary,
-                      position: "relative",
-                      overflow: "hidden",
-                      "&::before": {
-                        content: '""',
-                        position: "absolute",
-                        top: -60,
-                        right: -60,
-                        width: 240,
-                        height: 240,
-                        borderRadius: "50%",
-                        bgcolor: `${colors.primary.blue}05`,
-                      },
+                      bgcolor: `${colors.primary.blue}08`,
+                      p: 3,
+                      borderBottom: `1px solid ${colors.neutral.gray200}`,
                     }}
                   >
                     <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                        position: "relative",
-                        zIndex: 1,
-                      }}
+                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
                     >
                       <Box
                         sx={{
-                          bgcolor: `${colors.primary.blue}15`,
+                          bgcolor: colors.primary.blue,
                           borderRadius: 1.5,
-                          p: 1.5,
+                          p: 1,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          border: `1.5px solid ${colors.primary.blue}30`,
                         }}
                       >
-                        <School
-                          sx={{ fontSize: 28, color: colors.primary.blue }}
-                        />
+                        <School sx={{ fontSize: 20, color: "white" }} />
                       </Box>
                       <Typography
-                        variant="h5"
+                        variant="h6"
                         sx={{
                           fontWeight: 700,
-                          fontSize: "1.5rem",
+                          fontSize: "1.125rem",
                           letterSpacing: "-0.01em",
                           color: colors.text.primary,
                         }}
@@ -859,8 +767,8 @@ const SchoolDetails = () => {
                       </Typography>
                     </Box>
                   </Box>
-                  <CardContent sx={{ p: 3 }}>
-                    <Grid container spacing={2.5}>
+                  <Box sx={{ p: 3 }}>
+                    <Grid container spacing={3}>
                       <Grid
                         item
                         xs={12}
@@ -943,32 +851,17 @@ const SchoolDetails = () => {
                         lg={3}
                         sx={gridItemStyles}
                       >
-                        <Card
-                          sx={{
-                            bgcolor: colors.background.primary,
-                            border: `1px solid ${colors.neutral.gray200}`,
-                            borderRadius: 1.5,
-                            p: 2.5,
-                            height: "100%",
-                            transition:
-                              "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                            "&:hover": {
-                              boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-                              transform: "translateY(-3px)",
-                              borderColor: colors.primary.light,
-                            },
-                          }}
-                        >
+                        <Box>
                           <Typography
-                            variant="body2"
+                            variant="caption"
                             sx={{
                               fontWeight: 600,
                               color: colors.text.secondary,
-                              mb: 1.5,
-                              fontSize: "0.8125rem",
+                              mb: 0.75,
+                              fontSize: "0.6875rem",
                               textTransform: "uppercase",
-                              letterSpacing: "0.05em",
+                              letterSpacing: "0.08em",
+                              display: "block",
                             }}
                           >
                             CURRENT APPLICATION STATUS
@@ -978,84 +871,58 @@ const SchoolDetails = () => {
                             sx={{
                               bgcolor: colors.semantic.warning + "15",
                               color: colors.semantic.warning,
-                              fontWeight: 600,
+                              fontWeight: 700,
                               fontSize: "0.875rem",
                               border: `1px solid ${colors.semantic.warning}30`,
                               borderRadius: 1.5,
+                              px: 1.5,
+                              height: 32,
                             }}
                           />
-                        </Card>
+                        </Box>
                       </Grid>
                     </Grid>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Paper>
 
                 {/* School Profile */}
-                <Card
+                <Paper
+                  elevation={0}
                   sx={{
-                    mb: 4,
-                    bgcolor: colors.background.primary,
-                    borderRadius: 2,
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                    mb: 3,
+                    bgcolor: "white",
+                    borderRadius: 2.5,
                     overflow: "hidden",
                     border: `1px solid ${colors.neutral.gray200}`,
-                    transition: "all 0.25s ease",
-                    "&:hover": {
-                      boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-                    },
                   }}
                 >
                   <Box
                     sx={{
-                      bgcolor: "transparent",
-                      background: `linear-gradient(135deg, ${colors.neutral.gray700}08 0%, ${colors.neutral.gray800}05 100%)`,
-                      backdropFilter: "blur(10px)",
-                      borderBottom: `2px solid ${colors.neutral.gray700}20`,
-                      p: 3.5,
-                      color: colors.text.primary,
-                      position: "relative",
-                      overflow: "hidden",
-                      "&::before": {
-                        content: '""',
-                        position: "absolute",
-                        top: -60,
-                        right: -60,
-                        width: 240,
-                        height: 240,
-                        borderRadius: "50%",
-                        bgcolor: `${colors.neutral.gray700}05`,
-                      },
+                      bgcolor: `${colors.neutral.gray700}06`,
+                      p: 3,
+                      borderBottom: `1px solid ${colors.neutral.gray200}`,
                     }}
                   >
                     <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                        position: "relative",
-                        zIndex: 1,
-                      }}
+                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
                     >
                       <Box
                         sx={{
-                          bgcolor: `${colors.neutral.gray700}15`,
+                          bgcolor: colors.neutral.gray700,
                           borderRadius: 1.5,
-                          p: 1.5,
+                          p: 1,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          border: `1.5px solid ${colors.neutral.gray700}30`,
                         }}
                       >
-                        <Business
-                          sx={{ fontSize: 28, color: colors.neutral.gray700 }}
-                        />
+                        <Business sx={{ fontSize: 20, color: "white" }} />
                       </Box>
                       <Typography
-                        variant="h5"
+                        variant="h6"
                         sx={{
                           fontWeight: 700,
-                          fontSize: "1.5rem",
+                          fontSize: "1.125rem",
                           letterSpacing: "-0.01em",
                           color: colors.text.primary,
                         }}
@@ -1064,8 +931,8 @@ const SchoolDetails = () => {
                       </Typography>
                     </Box>
                   </Box>
-                  <CardContent sx={{ p: 3 }}>
-                    <Grid container spacing={2.5}>
+                  <Box sx={{ p: 3 }}>
+                    <Grid container spacing={3}>
                       <Grid
                         item
                         xs={12}
@@ -1117,18 +984,6 @@ const SchoolDetails = () => {
                         <InfoField
                           label="Location Type (Rural/Urban)"
                           value={schoolData.locationType}
-                          editable
-                          type="select"
-                          options={[
-                            { value: "Rural", label: "Rural" },
-                            { value: "Urban", label: "Urban" },
-                          ]}
-                          onChange={(value) =>
-                            handleChange(
-                              getFieldName("Location Type (Rural/Urban)"),
-                              value
-                            )
-                          }
                         />
                       </Grid>
                       <Grid
@@ -1142,19 +997,6 @@ const SchoolDetails = () => {
                         <InfoField
                           label="Students (Boys & Girls)"
                           value={schoolData.studentsType}
-                          editable
-                          type="select"
-                          options={[
-                            { value: "Co-Ed", label: "Co-Ed" },
-                            { value: "Boys", label: "Boys" },
-                            { value: "Girls", label: "Girls" },
-                          ]}
-                          onChange={(value) =>
-                            handleChange(
-                              getFieldName("Students (Boys & Girls)"),
-                              value
-                            )
-                          }
                         />
                       </Grid>
                       <Grid
@@ -1168,18 +1010,6 @@ const SchoolDetails = () => {
                         <InfoField
                           label="Classes (Range) From"
                           value={schoolData.classesFrom}
-                          editable
-                          type="select"
-                          options={Array.from({ length: 12 }, (_, i) => ({
-                            value: String(i + 1),
-                            label: String(i + 1),
-                          }))}
-                          onChange={(value) =>
-                            handleChange(
-                              getFieldName("Classes (Range) From"),
-                              value
-                            )
-                          }
                         />
                       </Grid>
                       <Grid
@@ -1196,75 +1026,47 @@ const SchoolDetails = () => {
                         />
                       </Grid>
                     </Grid>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Paper>
 
                 {/* Statistics */}
-                <Card
+                <Paper
+                  elevation={0}
                   sx={{
-                    mb: 4,
-                    bgcolor: colors.background.primary,
-                    borderRadius: 2,
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                    mb: 3,
+                    bgcolor: "white",
+                    borderRadius: 2.5,
                     overflow: "hidden",
                     border: `1px solid ${colors.neutral.gray200}`,
-                    transition: "all 0.25s ease",
-                    "&:hover": {
-                      boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-                    },
                   }}
                 >
                   <Box
                     sx={{
-                      bgcolor: "transparent",
-                      background: `linear-gradient(135deg, ${colors.semantic.warning}08 0%, ${colors.accent.orange}05 100%)`,
-                      backdropFilter: "blur(10px)",
-                      borderBottom: `2px solid ${colors.semantic.warning}20`,
-                      p: 3.5,
-                      color: colors.text.primary,
-                      position: "relative",
-                      overflow: "hidden",
-                      "&::before": {
-                        content: '""',
-                        position: "absolute",
-                        top: -60,
-                        right: -60,
-                        width: 240,
-                        height: 240,
-                        borderRadius: "50%",
-                        bgcolor: `${colors.semantic.warning}05`,
-                      },
+                      bgcolor: `${colors.semantic.warning}08`,
+                      p: 3,
+                      borderBottom: `1px solid ${colors.neutral.gray200}`,
                     }}
                   >
                     <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                        position: "relative",
-                        zIndex: 1,
-                      }}
+                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
                     >
                       <Box
                         sx={{
-                          bgcolor: `${colors.semantic.warning}15`,
+                          bgcolor: colors.semantic.warning,
                           borderRadius: 1.5,
-                          p: 1.5,
+                          p: 1,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          border: `1.5px solid ${colors.semantic.warning}30`,
                         }}
                       >
-                        <BarChart
-                          sx={{ fontSize: 28, color: colors.semantic.warning }}
-                        />
+                        <BarChart sx={{ fontSize: 20, color: "white" }} />
                       </Box>
                       <Typography
-                        variant="h5"
+                        variant="h6"
                         sx={{
                           fontWeight: 700,
-                          fontSize: "1.5rem",
+                          fontSize: "1.125rem",
                           letterSpacing: "-0.01em",
                           color: colors.text.primary,
                         }}
@@ -1273,7 +1075,7 @@ const SchoolDetails = () => {
                       </Typography>
                     </Box>
                   </Box>
-                  <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ p: 3 }}>
                     <Grid container spacing={2.5}>
                       <Grid
                         item
@@ -1306,75 +1108,47 @@ const SchoolDetails = () => {
                         />
                       </Grid>
                     </Grid>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Paper>
 
                 {/* Infrastructure & Facilities */}
-                <Card
+                <Paper
+                  elevation={0}
                   sx={{
-                    mb: 4,
-                    bgcolor: colors.background.primary,
-                    borderRadius: 2,
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                    mb: 3,
+                    bgcolor: "white",
+                    borderRadius: 2.5,
                     overflow: "hidden",
                     border: `1px solid ${colors.neutral.gray200}`,
-                    transition: "all 0.25s ease",
-                    "&:hover": {
-                      boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-                    },
                   }}
                 >
                   <Box
                     sx={{
-                      bgcolor: "transparent",
-                      background: `linear-gradient(135deg, ${colors.accent.green}08 0%, ${colors.accent.greenDark}05 100%)`,
-                      backdropFilter: "blur(10px)",
-                      borderBottom: `2px solid ${colors.accent.green}20`,
-                      p: 3.5,
-                      color: colors.text.primary,
-                      position: "relative",
-                      overflow: "hidden",
-                      "&::before": {
-                        content: '""',
-                        position: "absolute",
-                        top: -60,
-                        right: -60,
-                        width: 240,
-                        height: 240,
-                        borderRadius: "50%",
-                        bgcolor: `${colors.accent.green}05`,
-                      },
+                      bgcolor: `${colors.accent.green}08`,
+                      p: 3,
+                      borderBottom: `1px solid ${colors.neutral.gray200}`,
                     }}
                   >
                     <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                        position: "relative",
-                        zIndex: 1,
-                      }}
+                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
                     >
                       <Box
                         sx={{
-                          bgcolor: `${colors.accent.green}15`,
+                          bgcolor: colors.accent.green,
                           borderRadius: 1.5,
-                          p: 1.5,
+                          p: 1,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          border: `1.5px solid ${colors.accent.green}30`,
                         }}
                       >
-                        <Build
-                          sx={{ fontSize: 28, color: colors.accent.green }}
-                        />
+                        <Build sx={{ fontSize: 20, color: "white" }} />
                       </Box>
                       <Typography
-                        variant="h5"
+                        variant="h6"
                         sx={{
                           fontWeight: 700,
-                          fontSize: "1.5rem",
+                          fontSize: "1.125rem",
                           letterSpacing: "-0.01em",
                           color: colors.text.primary,
                         }}
@@ -1383,7 +1157,7 @@ const SchoolDetails = () => {
                       </Typography>
                     </Box>
                   </Box>
-                  <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ p: 3 }}>
                     <Grid container spacing={2.5}>
                       <Grid
                         item
@@ -1398,7 +1172,10 @@ const SchoolDetails = () => {
                           value={schoolData.drinkingWater}
                           icon={WaterDrop}
                           onChange={(value) =>
-                            handleChange(getFieldName("Drinking Water"), value)
+                            handleFacilityChange(
+                              getFieldName("Drinking Water"),
+                              value
+                            )
                           }
                         />
                       </Grid>
@@ -1415,7 +1192,10 @@ const SchoolDetails = () => {
                           value={schoolData.puccaBuilding}
                           icon={Home}
                           onChange={(value) =>
-                            handleChange(getFieldName("Pucca Building"), value)
+                            handleFacilityChange(
+                              getFieldName("Pucca Building"),
+                              value
+                            )
                           }
                         />
                       </Grid>
@@ -1432,7 +1212,10 @@ const SchoolDetails = () => {
                           value={schoolData.electricity}
                           icon={Bolt}
                           onChange={(value) =>
-                            handleChange(getFieldName("Electricity"), value)
+                            handleFacilityChange(
+                              getFieldName("Electricity"),
+                              value
+                            )
                           }
                         />
                       </Grid>
@@ -1449,7 +1232,7 @@ const SchoolDetails = () => {
                           value={schoolData.functionalToilets}
                           icon={Wc}
                           onChange={(value) =>
-                            handleChange(
+                            handleFacilityChange(
                               getFieldName("Functional Toilets"),
                               value
                             )
@@ -1457,75 +1240,47 @@ const SchoolDetails = () => {
                         />
                       </Grid>
                     </Grid>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Paper>
 
                 {/* Contact Information */}
-                <Card
+                <Paper
+                  elevation={0}
                   sx={{
-                    mb: 4,
-                    bgcolor: colors.background.primary,
-                    borderRadius: 2,
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                    mb: 3,
+                    bgcolor: "white",
+                    borderRadius: 2.5,
                     overflow: "hidden",
                     border: `1px solid ${colors.neutral.gray200}`,
-                    transition: "all 0.25s ease",
-                    "&:hover": {
-                      boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-                    },
                   }}
                 >
                   <Box
                     sx={{
-                      bgcolor: "transparent",
-                      background: `linear-gradient(135deg, ${colors.primary.blue}08 0%, ${colors.primary.dark}05 100%)`,
-                      backdropFilter: "blur(10px)",
-                      borderBottom: `2px solid ${colors.primary.blue}20`,
-                      p: 3.5,
-                      color: colors.text.primary,
-                      position: "relative",
-                      overflow: "hidden",
-                      "&::before": {
-                        content: '""',
-                        position: "absolute",
-                        top: -60,
-                        right: -60,
-                        width: 240,
-                        height: 240,
-                        borderRadius: "50%",
-                        bgcolor: `${colors.primary.blue}05`,
-                      },
+                      bgcolor: `${colors.primary.blue}08`,
+                      p: 3,
+                      borderBottom: `1px solid ${colors.neutral.gray200}`,
                     }}
                   >
                     <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                        position: "relative",
-                        zIndex: 1,
-                      }}
+                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
                     >
                       <Box
                         sx={{
-                          bgcolor: `${colors.primary.blue}15`,
+                          bgcolor: colors.primary.blue,
                           borderRadius: 1.5,
-                          p: 1.5,
+                          p: 1,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          border: `1.5px solid ${colors.primary.blue}30`,
                         }}
                       >
-                        <Person
-                          sx={{ fontSize: 28, color: colors.primary.blue }}
-                        />
+                        <Person sx={{ fontSize: 20, color: "white" }} />
                       </Box>
                       <Typography
-                        variant="h5"
+                        variant="h6"
                         sx={{
                           fontWeight: 700,
-                          fontSize: "1.5rem",
+                          fontSize: "1.125rem",
                           letterSpacing: "-0.01em",
                           color: colors.text.primary,
                         }}
@@ -1534,8 +1289,8 @@ const SchoolDetails = () => {
                       </Typography>
                     </Box>
                   </Box>
-                  <CardContent sx={{ p: 3 }}>
-                    <Grid container spacing={2.5}>
+                  <Box sx={{ p: 3 }}>
+                    <Grid container spacing={3}>
                       <Grid
                         item
                         xs={12}
@@ -1548,16 +1303,9 @@ const SchoolDetails = () => {
                           label="Principal/Head Name"
                           value={schoolData.principalName}
                           icon={Person}
-                          editable
-                          onChange={(value) =>
-                            handleChange(
-                              getFieldName("Principal/Head Name"),
-                              value
-                            )
-                          }
                         />
                       </Grid>
-                      <Grid
+                      {/* <Grid
                         item
                         xs={12}
                         sm={6}
@@ -1569,12 +1317,8 @@ const SchoolDetails = () => {
                           label="Designation"
                           value={schoolData.designation}
                           icon={Badge}
-                          editable
-                          onChange={(value) =>
-                            handleChange(getFieldName("Designation"), value)
-                          }
                         />
-                      </Grid>
+                      </Grid> */}
                       <Grid
                         item
                         xs={12}
@@ -1587,10 +1331,6 @@ const SchoolDetails = () => {
                           label="Mobile Number"
                           value={schoolData.mobileNumber}
                           icon={Phone}
-                          editable
-                          onChange={(value) =>
-                            handleChange(getFieldName("Mobile Number"), value)
-                          }
                         />
                       </Grid>
                       <Grid
@@ -1605,76 +1345,83 @@ const SchoolDetails = () => {
                           label="Email Address"
                           value={schoolData.emailAddress}
                           icon={Email}
-                          editable
-                          onChange={(value) =>
-                            handleChange(getFieldName("Email Address"), value)
-                          }
                         />
                       </Grid>
                     </Grid>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Paper>
 
-                {/* Action Buttons */}
-                <Box
+                {/* Info Banner */}
+                {/* <Box
                   sx={{
                     display: "flex",
-                    justifyContent: "flex-end",
-                    gap: 2.5,
-                    mt: 5,
-                    pt: 4,
-                    borderTop: `2px solid ${colors.neutral.gray200}`,
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    bgcolor: `${colors.primary.blue}08`,
+                    border: `1px solid ${colors.primary.blue}20`,
+                    borderRadius: 2,
+                    p: 2.5,
+                    mt: 4,
                   }}
                 >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Box
+                      sx={{
+                        bgcolor: colors.primary.blue,
+                        borderRadius: 1.5,
+                        p: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Save sx={{ fontSize: 18, color: "white" }} />
+                    </Box>
+                    <Box>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 600,
+                          color: colors.text.primary,
+                          fontSize: "0.875rem",
+                          mb: 0.25,
+                        }}
+                      >
+                        Infrastructure & Facilities
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: colors.text.secondary,
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        Changes are automatically saved when you update facility values
+                      </Typography>
+                    </Box>
+                  </Box>
                   <Button
                     variant="outlined"
                     onClick={() => navigate("/school-dashboard")}
                     sx={{
-                      borderColor: colors.neutral.gray300,
-                      borderWidth: "1.5px",
-                      color: colors.text.primary,
-                      borderRadius: 2.5,
-                      px: 4.5,
-                      py: 1.5,
+                      borderColor: colors.primary.blue,
+                      color: colors.primary.blue,
+                      borderRadius: 2,
+                      px: 3,
+                      py: 1,
                       fontWeight: 600,
-                      fontSize: "0.9375rem",
+                      fontSize: "0.875rem",
                       textTransform: "none",
-                      transition: "all 0.3s ease",
+                      transition: "all 0.25s ease",
                       "&:hover": {
-                        borderColor: colors.primary.blue,
-                        borderWidth: "1.5px",
-                        bgcolor: colors.primary.lightest,
-                        transform: "translateY(-2px)",
-                        boxShadow: `0 4px 12px ${colors.primary.blue}20`,
+                        borderColor: colors.primary.dark,
+                        bgcolor: `${colors.primary.blue}10`,
                       },
                     }}
                   >
-                    Cancel
+                    Back to Dashboard
                   </Button>
-                  <Button
-                    variant="contained"
-                    startIcon={<Save />}
-                    onClick={handleSave}
-                    sx={{
-                      background: `linear-gradient(135deg, ${colors.accent.green} 0%, ${colors.accent.greenDark} 100%)`,
-                      borderRadius: 2.5,
-                      px: 5,
-                      py: 1.5,
-                      fontWeight: 700,
-                      fontSize: "0.9375rem",
-                      textTransform: "none",
-                      boxShadow: `0 4px 16px ${colors.accent.green}40`,
-                      transition: "all 0.3s ease",
-                      "&:hover": {
-                        background: `linear-gradient(135deg, ${colors.accent.greenDark} 0%, ${colors.accent.green} 100%)`,
-                        transform: "translateY(-2px)",
-                        boxShadow: `0 6px 20px ${colors.accent.green}50`,
-                      },
-                    }}
-                  >
-                    Save All Changes
-                  </Button>
-                </Box>
+                </Box> */}
               </>
             )}
           </Container>

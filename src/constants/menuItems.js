@@ -133,25 +133,11 @@ export const adminMenuItems = [
   //   activeFinder: ["/admin-dashboard"],
   // },
   {
-    id: "verifier",
-    label: "Verifier",
-    icon: VerifiedUser,
-    url: "/admin-dashboard/verifier",
-    activeFinder: ["/admin-dashboard/verifier"],
-  },
-  {
     id: "assessment-management",
     label: "Assessment Management",
     icon: Assessment,
     url: "/admin-dashboard/assessment-management",
     activeFinder: ["/admin-dashboard/assessment-management"],
-  },
-  {
-    id: "school-allocation",
-    label: "School Allocation",
-    icon: Business,
-    url: "/admin-dashboard/school-allocation",
-    activeFinder: ["/admin-dashboard/school-allocation"],
   },
   {
     id: "district-nodal-officers",
@@ -160,6 +146,22 @@ export const adminMenuItems = [
     url: "/admin-dashboard/district-nodal-officers",
     activeFinder: ["/admin-dashboard/district-nodal-officers"],
   },
+  {
+    id: "verifier",
+    label: "Verifier",
+    icon: VerifiedUser,
+    url: "/admin-dashboard/verifier",
+    activeFinder: ["/admin-dashboard/verifier"],
+  },
+
+  {
+    id: "school-allocation",
+    label: "School Allocation",
+    icon: Business,
+    url: "/admin-dashboard/school-allocation",
+    activeFinder: ["/admin-dashboard/school-allocation"],
+  },
+
   {
     id: "role-management",
     label: "Role Management",

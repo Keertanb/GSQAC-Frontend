@@ -296,11 +296,6 @@ const SelfAssessment = () => {
       return (answeredQuestions / totalQuestions) * 100;
     }
 
-    // Otherwise, check if we have saved answers for this subdomain
-    const subdomainAnswersData = subdomainAnswers[subdomainIdKey] || {};
-    const answeredCount = Object.keys(subdomainAnswersData).length;
-
-    // If we have saved answers but no API percentage, return 0 (will be updated when API data loads)
     return 0;
   };
 
@@ -620,9 +615,6 @@ const SelfAssessment = () => {
       return;
     }
 
-    const subDomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
-
-    // Check if there are any answers
     if (!answers || Object.keys(answers).length === 0) {
       enqueueSnackbar(
         "Please answer at least one question before submitting.",
