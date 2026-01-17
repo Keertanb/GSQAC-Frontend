@@ -60,7 +60,7 @@ const AssessmentManagement = () => {
     hi: "",
     gu: "",
   });
-  const [selectedRole, setSelectedRole] = useState("all");
+  const [selectedRole, setSelectedRole] = useState("school");
   const [editingDomain, setEditingDomain] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [domainToDelete, setDomainToDelete] = useState(null);
@@ -73,47 +73,7 @@ const AssessmentManagement = () => {
   };
   const languageCode = languageCodeMap[currentLanguage] || "EN";
 
-  const roleId = selectedRole === "all" ? null : getRoleId(selectedRole);
-
-  const {
-    data: domainsDataAdmin,
-    isLoading: isLoadingAdmin,
-    refetch: refetchAdmin,
-  } = useGetDomainsQuery({
-    roleId: 1, // Admin
-    languageCode,
-    enabled: selectedRole === "all" || selectedRole === "admin",
-  });
-
-  const {
-    data: domainsDataSchool,
-    isLoading: isLoadingSchool,
-    refetch: refetchSchool,
-  } = useGetDomainsQuery({
-    roleId: 2, // School
-    languageCode,
-    enabled: selectedRole === "all" || selectedRole === "school",
-  });
-
-  const {
-    data: domainsDataInspector,
-    isLoading: isLoadingInspector,
-    refetch: refetchInspector,
-  } = useGetDomainsQuery({
-    roleId: 3, // Inspector
-    languageCode,
-    enabled: selectedRole === "all" || selectedRole === "inspector",
-  });
-
-  const {
-    data: domainsDataParent,
-    isLoading: isLoadingParent,
-    refetch: refetchParent,
-  } = useGetDomainsQuery({
-    roleId: 4, // Parent
-    languageCode,
-    enabled: selectedRole === "all" || selectedRole === "parent",
-  });
+  const roleId = getRoleId(selectedRole);
 
   const {
     data: domainsData,
@@ -124,46 +84,14 @@ const AssessmentManagement = () => {
   } = useGetDomainsQuery({
     roleId,
     languageCode,
-    enabled: selectedRole !== "all" && !!roleId,
+    enabled: !!roleId,
   });
 
-  const allDomains = React.useMemo(() => {
-    if (selectedRole !== "all") {
-      return domainsData?.data || [];
-    }
-    const combined = [];
-    if (domainsDataAdmin?.data) combined.push(...domainsDataAdmin.data);
-    if (domainsDataSchool?.data) combined.push(...domainsDataSchool.data);
-    if (domainsDataInspector?.data) combined.push(...domainsDataInspector.data);
-    if (domainsDataParent?.data) combined.push(...domainsDataParent.data);
-    return combined;
-  }, [
-    selectedRole,
-    domainsData,
-    domainsDataAdmin,
-    domainsDataSchool,
-    domainsDataInspector,
-    domainsDataParent,
-  ]);
-
-  const isLoadingAll =
-    selectedRole === "all"
-      ? isLoadingAdmin ||
-        isLoadingSchool ||
-        isLoadingInspector ||
-        isLoadingParent
-      : isLoading;
+  const domains = domainsData?.data || [];
 
   const upsertDomainMutation = useUpsertDomainMutation({
     onSuccess: () => {
-      if (selectedRole === "all") {
-        refetchAdmin();
-        refetchSchool();
-        refetchInspector();
-        refetchParent();
-      } else {
-        refetch();
-      }
+      refetch();
       setNewDomainName({ en: "", hi: "", gu: "" });
       setShowAddDomain(false);
       setEditingDomain(null);
@@ -174,14 +102,7 @@ const AssessmentManagement = () => {
   const deleteDomainMutation = useDeleteDomainMutation({
     onSuccess: (data, domainId) => {
       // Refetch domains after deletion
-      if (selectedRole === "all") {
-        refetchAdmin();
-        refetchSchool();
-        refetchInspector();
-        refetchParent();
-      } else {
-        refetch();
-      }
+      refetch();
       // Close expanded domain if it was deleted
       if (expandedDomain === domainId) {
         setExpandedDomain(null);
@@ -215,8 +136,6 @@ const AssessmentManagement = () => {
       }
     },
   });
-
-  const domains = allDomains;
 
   const handleToggleDomain = (domainId) => {
     setExpandedDomain(expandedDomain === domainId ? null : domainId);
@@ -316,7 +235,7 @@ const AssessmentManagement = () => {
   //   }
   // };
 
-  if (isLoadingAll) {
+  if (isLoading) {
     return (
       <Box
         sx={{
@@ -413,24 +332,13 @@ const AssessmentManagement = () => {
               onChange={(e) => {
                 setSelectedRole(e.target.value);
                 // Refetch domains when role changes
-                if (e.target.value === "all") {
-                  setTimeout(() => {
-                    refetchAdmin();
-                    refetchSchool();
-                    refetchInspector();
-                    refetchParent();
-                  }, 100);
-                } else {
-                  setTimeout(() => refetch(), 100);
-                }
+                setTimeout(() => refetch(), 100);
               }}
               label={t("assessment.domain.selectRole")}
             >
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="admin">Admin</MenuItem>
               <MenuItem value="school">School</MenuItem>
               <MenuItem value="inspector">School Verifier</MenuItem>
-              <MenuItem value="parent">Parent</MenuItem>
+              <MenuItem value="parent">CRC</MenuItem>
             </Select>
           </FormControl>
           <Button
@@ -550,7 +458,7 @@ const AssessmentManagement = () => {
                   setShowAddDomain(false);
                   setNewDomainName({ en: "", hi: "", gu: "" });
                   setEditingDomain(null);
-                  setSelectedRole("admin");
+                  setSelectedRole("school");
                   setTranslationId(null);
                 }}
                 disabled={upsertDomainMutation.isPending}
@@ -686,14 +594,7 @@ const AssessmentManagement = () => {
                             setExpandedDomain(null);
                           }}
                           onSubdomainAdded={() => {
-                            if (selectedRole === "all") {
-                              refetchAdmin();
-                              refetchSchool();
-                              refetchInspector();
-                              refetchParent();
-                            } else {
-                              refetch();
-                            }
+                            refetch();
                           }}
                         />
                       </TableCell>

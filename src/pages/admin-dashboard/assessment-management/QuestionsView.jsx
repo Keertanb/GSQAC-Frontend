@@ -88,6 +88,16 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
   const [questionToDelete, setQuestionToDelete] = useState(null);
   const [translationId, setTranslationId] = useState(null); // Store translation ID for subsequent calls
   const [optionTranslationIds, setOptionTranslationIds] = useState({}); // Store translation IDs for each option
+  const [questionType, setQuestionType] = useState("single_choice"); // New state for question type
+  const [flnAnswer, setFlnAnswer] = useState(""); // State for FLN text field answer
+
+  // Map question type strings to numbers
+  const questionTypeMap = {
+    single_choice: 1,
+    classroom_observation: 2,
+    subject_observation: 3,
+    fln: 4,
+  };
 
   // Initialize selected role based on roleId
   const getRoleByRoleId = (rId) => {
@@ -237,16 +247,11 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
     try {
       const questionPayload = {
         subDomainId,
+        questionTextGu: newQuestionText.gu.trim(),
         questionTextEn: newQuestionText.en.trim(),
         questionTextHi: newQuestionText.hi.trim(),
-        questionTextGu: newQuestionText.gu.trim(),
-        isClassroomObservation: isClassroomObservation,
+        questionType: questionTypeMap[questionType] || 1,
       };
-
-      // Include observationCount only if isClassroomObservation is 1
-      if (isClassroomObservation === 1 && observationCount) {
-        questionPayload.observationCount = parseInt(observationCount, 10);
-      }
 
       // If editing, include questionId
       if (editingQuestion) {
@@ -395,6 +400,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
       ]);
       setIsClassroomObservation(0);
       setObservationCount("");
+      setQuestionType("single_choice");
       setShowAddQuestion(false);
       setShowOptionsForm(false);
       setEditingQuestion(null);
@@ -420,6 +426,15 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
       hi: question.questionTextHi || "",
       gu: question.questionTextGu || "",
     });
+
+    // Set question type based on questionType number
+    const typeMapping = {
+      1: "single_choice",
+      2: "classroom_observation",
+      3: "subject_observation",
+      4: "fln",
+    };
+    setQuestionType(typeMapping[question.questionType] || "single_choice");
 
     // Set classroom observation fields
     setIsClassroomObservation(question.isClassroomObservation || 0);
@@ -727,6 +742,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
               ]);
               setIsClassroomObservation(0);
               setObservationCount("");
+              setQuestionType("single_choice");
               setShowAddQuestion(!showAddQuestion);
 
               // Scroll to add question section after state update
@@ -785,26 +801,64 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                             mb: 2,
                           }}
                         >
-                          <FormControl fullWidth size="small">
-                            <InputLabel>
-                              {t("assessment.domain.selectRole")}
-                            </InputLabel>
-                            <Select
-                              value={selectedQuestionRole}
-                              onChange={(e) =>
-                                setSelectedQuestionRole(e.target.value)
-                              }
-                              label={t("assessment.domain.selectRole")}
-                              disabled
-                            >
-                              <MenuItem value="admin">Admin</MenuItem>
-                              <MenuItem value="school">School</MenuItem>
-                              <MenuItem value="inspector">
-                                School Verifier
-                              </MenuItem>
-                              <MenuItem value="parent">Parent</MenuItem>
-                            </Select>
-                          </FormControl>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>
+                        {t("assessment.domain.selectRole")}
+                      </InputLabel>
+                      <Select
+                        value={selectedQuestionRole}
+                        onChange={(e) =>
+                          setSelectedQuestionRole(e.target.value)
+                        }
+                        label={t("assessment.domain.selectRole")}
+                        disabled
+                      >
+                        <MenuItem value="admin">Admin</MenuItem>
+                        <MenuItem value="school">School</MenuItem>
+                        <MenuItem value="inspector">
+                          School Verifier
+                        </MenuItem>
+                        <MenuItem value="parent">Parent</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Question Type</InputLabel>
+                      <Select
+                        value={questionType}
+                        onChange={(e) => {
+                          setQuestionType(e.target.value);
+                          // Reset related fields when question type changes
+                          if (e.target.value === "fln") {
+                            setFlnAnswer("");
+                          } else {
+                            setNewOptions([
+                              { id: 1, text: { en: "", hi: "", gu: "" } },
+                              { id: 2, text: { en: "", hi: "", gu: "" } },
+                            ]);
+                          }
+                        }}
+                        label="Question Type"
+                        sx={{
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: colors.neutral.gray300,
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: colors.primary.blue,
+                          },
+                        }}
+                      >
+                        <MenuItem value="single_choice">
+                          Single Choice Question
+                        </MenuItem>
+                        <MenuItem value="classroom_observation">
+                          Classroom Observation
+                        </MenuItem>
+                        <MenuItem value="subject_observation">
+                          Subject Wise Observation
+                        </MenuItem>
+                        <MenuItem value="fln">FLN Question</MenuItem>
+                      </Select>
+                    </FormControl>
                           <Box sx={{ display: "flex", gap: 2 }}>
                             <TextField
                               fullWidth
@@ -968,6 +1022,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                               ]);
                               setIsClassroomObservation(0);
                               setObservationCount("");
+                              setQuestionType("single_choice");
                               setEditingQuestion(null);
                               setCurrentQuestionId(null);
                             }}
@@ -1435,6 +1490,37 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                         <MenuItem value="parent">Parent</MenuItem>
                       </Select>
                     </FormControl>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Question Type</InputLabel>
+                      <Select
+                        value={questionType}
+                        onChange={(e) => {
+                          setQuestionType(e.target.value);
+                          if (e.target.value === "fln") {
+                            setFlnAnswer("");
+                          } else {
+                            setNewOptions([
+                              { id: 1, text: { en: "", hi: "", gu: "" } },
+                              { id: 2, text: { en: "", hi: "", gu: "" } },
+                            ]);
+                          }
+                        }}
+                        label="Question Type"
+                        sx={{
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: colors.neutral.gray300,
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: colors.primary.blue,
+                          },
+                        }}
+                      >
+                        <MenuItem value="single_choice">Single Choice Question</MenuItem>
+                        <MenuItem value="classroom_observation">Classroom Observation</MenuItem>
+                        <MenuItem value="subject_observation">Subject Wise Observation</MenuItem>
+                        <MenuItem value="fln">FLN Question</MenuItem>
+                      </Select>
+                    </FormControl>
                     <Box sx={{ display: "flex", gap: 2 }}>
                       <TextField
                         fullWidth
@@ -1598,6 +1684,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                         ]);
                         setIsClassroomObservation(0);
                         setObservationCount("");
+                        setQuestionType("single_choice");
                         setEditingQuestion(null);
                         setCurrentQuestionId(null);
                       }}
@@ -1628,54 +1715,91 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                     gutterBottom
                     sx={{ fontWeight: 700, mb: 3 }}
                   >
-                    {editingQuestion
+                    {questionType === "fln"
+                      ? "Add FLN Answer"
+                      : editingQuestion
                       ? t("assessment.question.editOptions")
                       : t("assessment.question.addOptions")}
                   </Typography>
                   <Box sx={{ mb: 2 }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        mb: 2,
-                      }}
-                    >
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        {t("assessment.question.options")}
-                      </Typography>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<Add />}
-                        onClick={handleAddOption}
-                        sx={{
-                          borderColor: colors.primary.blue,
-                          color: colors.primary.blue,
-                          "&:hover": {
-                            borderColor: colors.primary.dark,
-                            bgcolor: colors.primary.blue + "10",
-                          },
-                        }}
-                      >
-                        {t("assessment.question.addOption")}
-                      </Button>
-                    </Box>
-
-                    <Box
-                      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-                    >
-                      {newOptions.map((option, optIndex) => (
-                        <Card
-                          key={option.id}
-                          elevation={1}
+                    {questionType === "fln" ? (
+                      // FLN Text Field
+                      <Box>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 600, mb: 2 }}
+                        >
+                          Enter Answer Text
+                        </Typography>
+                        <TextField
+                          fullWidth
+                          label="FLN Answer"
+                          value={flnAnswer}
+                          onChange={(e) => setFlnAnswer(e.target.value)}
+                          variant="outlined"
+                          multiline
+                          rows={4}
+                          placeholder="Enter the FLN answer text here..."
                           sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            bgcolor: "white",
-                            border: "1px solid rgba(0,0,0,0.08)",
+                            mb: 3,
+                            "& .MuiOutlinedInput-root": {
+                              bgcolor: "white",
+                            },
+                          }}
+                        />
+                      </Box>
+                    ) : (
+                      // Options Interface (for single_choice, classroom_observation, subject_observation)
+                      <>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            mb: 2,
                           }}
                         >
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ fontWeight: 600 }}
+                          >
+                            {t("assessment.question.options")}
+                          </Typography>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<Add />}
+                            onClick={handleAddOption}
+                            sx={{
+                              borderColor: colors.primary.blue,
+                              color: colors.primary.blue,
+                              "&:hover": {
+                                borderColor: colors.primary.dark,
+                                bgcolor: colors.primary.blue + "10",
+                              },
+                            }}
+                          >
+                            {t("assessment.question.addOption")}
+                          </Button>
+                        </Box>
+                      </>
+                    )}
+
+                    {questionType !== "fln" && (
+                      <Box
+                        sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                      >
+                        {newOptions.map((option, optIndex) => (
+                          <Card
+                            key={option.id}
+                            elevation={1}
+                            sx={{
+                              p: 2,
+                              borderRadius: 2,
+                              bgcolor: "white",
+                              border: "1px solid rgba(0,0,0,0.08)",
+                            }}
+                          >
                           <Box
                             sx={{
                               display: "flex",
@@ -1789,7 +1913,8 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                           )}
                         </Card>
                       ))}
-                    </Box>
+                      </Box>
+                    )}
 
                     {/* Options Submit Button */}
                     <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
@@ -2057,6 +2182,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                         ]);
                         setIsClassroomObservation(0);
                         setObservationCount("");
+                        setQuestionType("single_choice");
                         setEditingQuestion(null);
                         setCurrentQuestionId(null);
                       }}

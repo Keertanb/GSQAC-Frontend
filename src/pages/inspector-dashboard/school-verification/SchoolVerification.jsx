@@ -971,3 +971,4 @@ const SchoolVerification = () => {
 };
 
 export default SchoolVerification;
+

@@ -319,7 +319,7 @@ const SchoolDetails = () => {
   const theme = useTheme();
   const matchDownMD = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
-  const { logout, user, userId } = useAuthStore();
+  const { logout, user, userId, userName } = useAuthStore();
 
   // Grid item styles for equal width cards (4 per row)
   const gridItemStyles = {
@@ -333,8 +333,8 @@ const SchoolDetails = () => {
   // eslint-disable-next-line no-unused-vars
   const [academicYear] = useState(`${currentYear}-${currentYear + 1}`);
 
-  // eslint-disable-next-line no-unused-vars
-  const schoolId = user?.schoolId || user?.id || userId;
+  // Get schoolId from auth store (userName is typically the school login ID)
+  const schoolId = userName || user?.schoolId || user?.id || userId;
 
   const logoutMutation = useLogoutMutation({
     onSuccess: () => {
@@ -369,7 +369,7 @@ const SchoolDetails = () => {
     isError,
     error,
   } = useGetSchoolDataQuery({
-    schoolId: "24091502136",
+    schoolId: schoolId,
   });
 
   // Initialize school data with API response or default values
@@ -502,7 +502,7 @@ const SchoolDetails = () => {
 
     // Create payload with updated value
     const payload = {
-      schoolId: schoolData.udiseCode || "24091502136",
+      schoolId: schoolData.udiseCode || schoolId,
       drinkingWater: convertToNumber(
         field === "drinkingWater" ? value : schoolData.drinkingWater
       ),
@@ -528,7 +528,7 @@ const SchoolDetails = () => {
     };
 
     const payload = {
-      schoolId: schoolData.udiseCode || "24091502136",
+      schoolId: schoolData.udiseCode || schoolId,
       drinkingWater: convertToNumber(schoolData.drinkingWater),
       puccaBuilding: convertToNumber(schoolData.puccaBuilding),
       electricity: convertToNumber(schoolData.electricity),

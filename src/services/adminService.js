@@ -5,7 +5,7 @@ import { enqueueSnackbar } from "notistack";
 import useAuthStore from "../store/useAuthStore";
 
 /**
- * Get domains and subdomains
+ * Get domains and subdomains (admin)
  * @param {Object} params - { roleId?: number, languageCode?: string }
  * @returns {Promise} API response
  */
@@ -17,24 +17,46 @@ export const getDomains = async (params = {}) => {
   };
 
   if (roleId) {
-    config.headers.roleId = roleId;
+    config.params.roleId = roleId;
   }
 
-  const response = await axiosInstance.get("/questionnaire/domain", config);
+  const response = await axiosInstance.get("/admin/domain", config);
+  return response.data;
+};
+
+/**
+ * Get class-wise subjects
+ * @param {Object} params - { classId: number }
+ * @returns {Promise} API response
+ */
+export const getClassWiseSubjects = async (params) => {
+  const response = await axiosInstance.get("/admin/class-wise-subject", {
+    params,
+  });
   return response.data;
 };
 
 /**
  * Get questions for a subdomain
- * @param {Object} params - { subDomainId: number, roleId: number, languageCode?: string, userId?: number }
+ * @param {Object} params - { subDomainId: number, roleId: number, languageCode?: string, userId?: number, cls?: number, section?: string }
  * @returns {Promise} API response
  */
 export const getSubdomainQuestions = async (params) => {
-  const { roleId, subDomainId, languageCode, userId, ...otherParams } = params;
+  const { roleId, subDomainId, languageCode, userId, cls, section, ...otherParams } = params;
   const config = {
     params: { subDomainId, languageCode, ...otherParams },
     headers: {},
   };
+
+  // Add cls to params if provided
+  if (cls) {
+    config.params.cls = cls;
+  }
+
+  // Add section to params if provided
+  if (section) {
+    config.params.section = section;
+  }
 
   // Set roleId in header if provided
   if (roleId) {
@@ -183,17 +205,39 @@ export const useGetSubdomainQuestionsQuery = ({
   subDomainId,
   roleId,
   languageCode,
-
+  classNumber,
+  section,
   enabled = true,
 }) => {
   return useQuery({
     queryKey: queryKeys.admin.subdomainQuestions(
       subDomainId,
       roleId,
-      languageCode
+      languageCode,
+      classNumber,
+      section
     ),
-    queryFn: () => getSubdomainQuestions({ subDomainId, roleId, languageCode }),
+    queryFn: () => getSubdomainQuestions({ subDomainId, roleId, languageCode, cls: classNumber, section }),
     enabled: enabled && !!subDomainId && !!roleId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+/**
+ * React Query hook for getting class-wise subjects
+ * @param {Object} options - Query options
+ * @param {number} options.classId - Class ID
+ * @param {boolean} options.enabled - Whether the query should run
+ * @returns {Object} Query object from React Query
+ */
+export const useGetClassWiseSubjectsQuery = ({
+  classId,
+  enabled = true,
+}) => {
+  return useQuery({
+    queryKey: ["admin", "class-wise-subjects", classId],
+    queryFn: () => getClassWiseSubjects({ classId }),
+    enabled: enabled && !!classId,
     staleTime: 5 * 60 * 1000,
   });
 };
@@ -861,6 +905,70 @@ export const useTranslateTextMutation = (options = {}) => {
     onError: (error) => {
       enqueueSnackbar(
         error?.response?.data?.message || "Translation failed",
+        {
+          variant: "error",
+        }
+      );
+      if (options.onError) {
+        options.onError(error);
+      }
+    },
+    ...options,
+  });
+};
+
+/**
+ * Get assessments by academic year
+ * @param {string} academicYear - Academic year (e.g., "2024-25")
+ * @returns {Promise} API response
+ */
+export const getAssessments = async (academicYear) => {
+  const response = await axiosInstance.get("/admin/assessment", {
+    params: { academicYear },
+  });
+  return response.data;
+};
+
+/**
+ * Update assessment details
+ * @param {Object} payload - { assessmentId: number, round: number, roleId: number, isPublished: number, startDate: string, endDate: string }
+ * @returns {Promise} API response
+ */
+export const updateAssessment = async (payload) => {
+  const response = await axiosInstance.post("/admin/assessment", payload);
+  return response.data;
+};
+
+/**
+ * React Query hook to get assessments
+ */
+export const useGetAssessmentsQuery = (academicYear, options = {}) => {
+  return useQuery({
+    queryKey: queryKeys.admin.assessments(academicYear),
+    queryFn: () => getAssessments(academicYear),
+    enabled: !!academicYear,
+    ...options,
+  });
+};
+
+/**
+ * React Query hook to update assessment
+ */
+export const useUpdateAssessmentMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => updateAssessment(data),
+    mutationKey: ["admin", "update-assessment"],
+    onSuccess: (data) => {
+      enqueueSnackbar(data?.message || "Assessment updated successfully", {
+        variant: "success",
+      });
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to update assessment",
         {
           variant: "error",
         }

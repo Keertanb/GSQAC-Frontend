@@ -4,6 +4,47 @@ import { queryKeys } from "../config/queryClient";
 import { enqueueSnackbar } from "notistack";
 
 /**
+ * Get domains and subdomains for school
+ * @param {Object} params - { roleId?: number, languageCode?: string }
+ * @returns {Promise} API response
+ */
+export const getDomains = async (params = {}) => {
+  const { roleId, languageCode, ...otherParams } = params;
+  const config = {
+    params: { languageCode, ...otherParams },
+    headers: {},
+  };
+
+  if (roleId) {
+    config.headers.roleId = roleId;
+  }
+
+  const response = await axiosInstance.get("/questionnaire/domain", config);
+  return response.data;
+};
+
+/**
+ * React Query hook for getting domains (school)
+ * @param {Object} options - Query options
+ * @param {number} options.roleId - Role ID (will be sent in header)
+ * @param {string} options.languageCode - Language code (EN, HI, GU)
+ * @param {boolean} options.enabled - Whether the query should run
+ * @returns {Object} Query object from React Query
+ */
+export const useGetDomainsQuery = ({
+  roleId,
+  languageCode,
+  enabled = true,
+}) => {
+  return useQuery({
+    queryKey: queryKeys.school.domains(roleId, languageCode),
+    queryFn: () => getDomains({ roleId, languageCode }),
+    enabled: enabled && !!roleId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+/**
  * Get school data
  * @param {Object} params - { schoolId?: number, userName?: string, academicYear?: string }
  * @returns {Promise} API response
@@ -20,6 +61,18 @@ export const getSchoolData = async (params) => {
  */
 export const getClassWiseSections = async (params) => {
   const response = await axiosInstance.get("/school/class-wise-sections", {
+    params,
+  });
+  return response.data;
+};
+
+/**
+ * Get all sections by schoolId
+ * @param {Object} params - { schoolId: string }
+ * @returns {Promise} API response
+ */
+export const getSchoolSections = async (params) => {
+  const response = await axiosInstance.get("/school/section", {
     params,
   });
   return response.data;
@@ -89,6 +142,25 @@ export const useGetClassWiseSectionsQuery = ({
     queryKey: queryKeys.school.classWiseSections(userId, classNumber),
     queryFn: () => getClassWiseSections({ userId, class: classNumber }),
     enabled: enabled && !!userId && !!classNumber,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * React Query hook for getting all school sections
+ * @param {Object} options - Query options
+ * @param {string} options.schoolId - School ID
+ * @param {boolean} options.enabled - Whether the query should run
+ * @returns {Object} Query object from React Query
+ */
+export const useGetSchoolSectionsQuery = ({
+  schoolId,
+  enabled = true,
+}) => {
+  return useQuery({
+    queryKey: queryKeys.school.schoolSections(schoolId),
+    queryFn: () => getSchoolSections({ schoolId }),
+    enabled: enabled && !!schoolId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

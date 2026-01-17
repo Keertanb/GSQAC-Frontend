@@ -65,6 +65,13 @@
       "assessmentManagement": "मूल्यांकन प्रबंधन",
       "schoolAllocation": "स्कूल आवंटन"
     }
+  },
+  "selfAssessment": {
+    "title": "स्व-मूल्यांकन",
+    "assessmentDomains": "मूल्यांकन डोमेन",
+    "navigateSubtitle": "डोमेन और उप-डोमेन के माध्यम से नेविगेट करें",
+    "assessmentOverview": "मूल्यांकन अवलोकन",
+    "reviewSubtitle": "सभी डोमेन की समीक्षा करें और अपना मूल्यांकन जमा करें"
   }
 }
 

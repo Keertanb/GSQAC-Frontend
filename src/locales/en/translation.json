@@ -67,6 +67,13 @@
       "assessmentManagement": "Assessment Management",
       "schoolAllocation": "School Allocation"
     }
+  },
+  "selfAssessment": {
+    "title": "Self-Assessment",
+    "assessmentDomains": "Assessment Domains",
+    "navigateSubtitle": "Navigate through domains and sub-domains",
+    "assessmentOverview": "Assessment Overview",
+    "reviewSubtitle": "Review all domains and submit your assessment"
   }
 }
 

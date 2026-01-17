@@ -27,6 +27,7 @@ import {
   InputLabel,
   ToggleButtonGroup,
   ToggleButton,
+  TextField,
 } from "@mui/material";
 import {
   CheckCircle,
@@ -43,12 +44,16 @@ import {
   Business,
   School as SchoolIcon,
   Language,
+  Create,
 } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import {
   useGetDomainsQuery,
+} from "../../../services/schoolService";
+import {
   useGetSubdomainQuestionsQuery,
   useSubmitAnswerMutation,
+  useGetClassWiseSubjectsQuery,
 } from "../../../services/adminService";
 import { getRoleId } from "../../../constants/roles";
 import AppDrawer from "../../../components/AppDrawer/AppDrawer";
@@ -58,7 +63,7 @@ import { useLogoutMutation } from "../../../services/authService";
 import { enqueueSnackbar } from "notistack";
 import {
   useGetSchoolDataQuery,
-  useGetClassWiseSectionsQuery,
+  useGetSchoolSectionsQuery,
   useSubmitSubdomainWiseAnswersMutation,
   useSubmitAssessmentMutation,
 } from "../../../services/schoolService";
@@ -69,14 +74,18 @@ const SelfAssessment = () => {
   const matchDownMD = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
   const { logout, user, userId, userName } = useAuthStore();
-  const { i18n } = useTranslation();
-  const [currentLanguage, setCurrentLanguage] = useState("en");
+  const { t, i18n } = useTranslation();
+  const [currentLanguage, setCurrentLanguage] = useState("gu");
   const [selectedDomain, setSelectedDomain] = useState(null);
   const [selectedSubdomain, setSelectedSubdomain] = useState(null);
   const [answers, setAnswers] = useState({});
   const [subdomainAnswers, setSubdomainAnswers] = useState({});
+  const [classWiseAnswers, setClassWiseAnswers] = useState({}); // Store answers per class
+  const [classWiseTextAnswers, setClassWiseTextAnswers] = useState({}); // Store text answers per class
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [textAnswers, setTextAnswers] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
 
   const logoutMutation = useLogoutMutation({
@@ -126,6 +135,8 @@ const SelfAssessment = () => {
     subDomainId: selectedSubdomain?.subDomainId || selectedSubdomain?.id,
     roleId,
     languageCode,
+    classNumber: selectedClass ? Number(selectedClass) : undefined,
+    section: selectedSection || undefined,
     userId: userId ? Number(userId) : undefined,
     enabled: !!selectedSubdomain,
   });
@@ -157,31 +168,57 @@ const SelfAssessment = () => {
     return [];
   }, [lowerClass, upperClass]);
 
-  // Fetch class-wise sections when class is selected
+  // Fetch all school sections once
   const { data: sectionsData, isLoading: isLoadingSections } =
-    useGetClassWiseSectionsQuery({
-      userId: userId ? Number(userId) : undefined,
-      class: selectedClass ? Number(selectedClass) : undefined,
-      enabled: !!userId && !!selectedClass,
+    useGetSchoolSectionsQuery({
+      schoolId: userName || undefined,
+      enabled: !!userName,
     });
 
-  // Extract sections from API response - handle both array and object formats
+  // Fetch class-wise subjects when class is selected
+  const { data: subjectsData, isLoading: isLoadingSubjects } =
+    useGetClassWiseSubjectsQuery({
+      classId: selectedClass ? Number(selectedClass) : undefined,
+      enabled: !!selectedClass,
+    });
+
+  // Extract sections from API response - sections are grouped by classId
   const sections = useMemo(() => {
-    if (!sectionsData) return [];
-    // If data is an array, return it directly
-    if (Array.isArray(sectionsData.data)) {
-      return sectionsData.data;
+    if (!sectionsData || !selectedClass) return [];
+    
+    // Access sections for the selected class
+    // Response format: { data: { "1": [...], "2": [...], ... } }
+    const classKey = String(selectedClass);
+    
+    if (sectionsData.data && sectionsData.data[classKey]) {
+      return sectionsData.data[classKey];
     }
-    // If data is an object with a data property that's an array
-    if (sectionsData.data && Array.isArray(sectionsData.data)) {
-      return sectionsData.data;
+    
+    return [];
+  }, [sectionsData, selectedClass]);
+
+  // Auto-select first section when sections are loaded for a class
+  useEffect(() => {
+    if (sections && sections.length > 0 && selectedClass && !selectedSection) {
+      const firstSection = sections[0];
+      const sectionValue = firstSection.sectionName || firstSection.name || firstSection.value;
+      setSelectedSection(sectionValue);
+    }
+  }, [sections, selectedClass, selectedSection]);
+
+  // Extract subjects from API response - handle both array and object formats
+  const subjects = useMemo(() => {
+    if (!subjectsData) return [];
+    // If data is an array, return it directly
+    if (Array.isArray(subjectsData.data)) {
+      return subjectsData.data;
     }
     // If data itself is an array
-    if (Array.isArray(sectionsData)) {
-      return sectionsData;
+    if (Array.isArray(subjectsData)) {
+      return subjectsData;
     }
     return [];
-  }, [sectionsData]);
+  }, [subjectsData]);
 
   const staticDomains = [
     {
@@ -264,12 +301,37 @@ const SelfAssessment = () => {
     return [];
   }, [questionsData?.data]);
 
-  const classBasedQuestions = allQuestions.filter(
-    (q) => q.isClassroomObservation === 1
+  const singleChoiceQuestions = allQuestions.filter(
+    (q) => q.questionType === 1 || q.questionType === "1"
   );
-  const generalQuestions = allQuestions.filter(
-    (q) => q.isClassroomObservation !== 1 || q.isClassroomObservation == null
+  const classroomObservationQuestions = allQuestions.filter(
+    (q) => q.questionType === 2 || q.questionType === "2"
   );
+  const subjectObservationQuestions = allQuestions.filter(
+    (q) => q.questionType === 3 || q.questionType === "3"
+  );
+  const flnQuestions = allQuestions.filter(
+    (q) => q.questionType === 4 || q.questionType === "4"
+  );
+
+  // Legacy support - if questionType is not set, use isClassroomObservation
+  const classBasedQuestions = allQuestions.filter((q) => {
+    if (q.questionType) {
+      return (
+        q.questionType === 2 ||
+        q.questionType === "2" ||
+        q.questionType === 3 ||
+        q.questionType === "3"
+      );
+    }
+    return q.isClassroomObservation === 1;
+  });
+  const generalQuestions = allQuestions.filter((q) => {
+    if (q.questionType) {
+      return q.questionType === 1 || q.questionType === "1";
+    }
+    return q.isClassroomObservation !== 1 || q.isClassroomObservation == null;
+  });
 
   const getSubdomainProgress = (subdomain) => {
     const subdomainId = subdomain.subDomainId || subdomain.id;
@@ -458,37 +520,96 @@ const SelfAssessment = () => {
     if (selectedSubdomain) {
       const currentSubdomainId =
         selectedSubdomain.subDomainId || selectedSubdomain.id;
+      
+      // Save current answers to subdomainAnswers
       setSubdomainAnswers((prev) => ({
         ...prev,
         [currentSubdomainId]: { ...answers },
       }));
+
+      // Save current answers to classWiseAnswers before switching
+      if (selectedClass) {
+        const classKey = String(selectedClass);
+        const storageKey = `${currentSubdomainId}_${classKey}`;
+        setClassWiseAnswers((prev) => ({
+          ...prev,
+          [storageKey]: { ...answers },
+        }));
+        setClassWiseTextAnswers((prev) => ({
+          ...prev,
+          [storageKey]: { ...textAnswers },
+        }));
+      }
     }
 
     const savedAnswers = subdomainAnswers[subdomainId] || {};
     setSelectedSubdomain(subdomain);
     setAnswers(savedAnswers);
-    // Reset class and section when switching subdomains
+    // Reset class, section, and subject when switching subdomains
     setSelectedClass(null);
     setSelectedSection(null);
+    setSelectedSubject(null);
+    setTextAnswers({});
   };
 
+  // Effect to handle class changes - reset section and subject
   useEffect(() => {
-    if (allQuestions && allQuestions.length > 0 && selectedSubdomain) {
+    if (!selectedSubdomain || !selectedClass) return;
+
+    // Reset subject when class changes (since it's class-specific)
+    setSelectedSubject(null);
+
+    // Reset answers - they will be loaded from API if they exist
+    setAnswers({});
+    setTextAnswers({});
+  }, [selectedClass, selectedSubdomain]);
+
+  // Effect to load API answers when questions are fetched (API answers take priority)
+  useEffect(() => {
+    if (allQuestions && allQuestions.length > 0 && selectedSubdomain && selectedClass) {
       const apiAnswers = {};
+      const apiTextAnswers = {};
+      
       allQuestions.forEach((question) => {
-        if (question.selectedOptionId) {
+        const questionType = question.questionType || (question.isClassroomObservation === 1 ? 2 : 1);
+        
+        // For FLN questions (type 4), load text answer from questionText field
+        if ((questionType === 4 || questionType === "4") && question.questionText) {
+          apiTextAnswers[question.questionId] = question.questionText;
+        } else if (question.selectedOptionId) {
+          // For other questions, load selected option
           apiAnswers[question.questionId] = String(question.selectedOptionId);
         }
       });
 
+      // API answers take priority - they override any locally saved answers
       if (Object.keys(apiAnswers).length > 0) {
-        setAnswers((prev) => ({
-          ...apiAnswers,
+        setAnswers(apiAnswers);
+        
+        // Also save to classWiseAnswers so it persists
+        const subdomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
+        const classKey = String(selectedClass);
+        const storageKey = `${subdomainId}_${classKey}`;
+        setClassWiseAnswers((prev) => ({
           ...prev,
+          [storageKey]: apiAnswers,
+        }));
+      }
+
+      if (Object.keys(apiTextAnswers).length > 0) {
+        setTextAnswers(apiTextAnswers);
+        
+        // Also save to classWiseTextAnswers
+        const subdomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
+        const classKey = String(selectedClass);
+        const storageKey = `${subdomainId}_${classKey}`;
+        setClassWiseTextAnswers((prev) => ({
+          ...prev,
+          [storageKey]: apiTextAnswers,
         }));
       }
     }
-  }, [allQuestions, selectedSubdomain]);
+  }, [allQuestions, selectedSubdomain, selectedClass]);
 
   // Handle answer selection
   const handleAnswerChange = (questionId, optionId) => {
@@ -505,6 +626,34 @@ const SelfAssessment = () => {
         ...prev,
         [subdomainId]: newAnswers,
       }));
+
+      // Save to classWiseAnswers
+      const classKey = selectedClass ? String(selectedClass) : 'general';
+      const storageKey = `${subdomainId}_${classKey}`;
+      setClassWiseAnswers((prev) => ({
+        ...prev,
+        [storageKey]: newAnswers,
+      }));
+    }
+  };
+
+  // Handle text answer change for FLN questions
+  const handleTextAnswerChange = (questionId, text) => {
+    const newTextAnswers = {
+      ...textAnswers,
+      [questionId]: text,
+    };
+    setTextAnswers(newTextAnswers);
+
+    // Save to classWiseTextAnswers
+    if (selectedSubdomain) {
+      const subdomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
+      const classKey = selectedClass ? String(selectedClass) : 'general';
+      const storageKey = `${subdomainId}_${classKey}`;
+      setClassWiseTextAnswers((prev) => ({
+        ...prev,
+        [storageKey]: newTextAnswers,
+      }));
     }
   };
 
@@ -512,6 +661,18 @@ const SelfAssessment = () => {
     onSuccess: (data) => {
       // Optionally update local state or refetch questions
       console.log("Answer submitted successfully:", data);
+      enqueueSnackbar("Answer submitted successfully!", {
+        variant: "success",
+      });
+    },
+    onError: (error) => {
+      console.error("Error submitting answer:", error);
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to submit answer. Please try again.",
+        {
+          variant: "error",
+        }
+      );
     },
   });
 
@@ -529,6 +690,18 @@ const SelfAssessment = () => {
         }
         // Optionally clear answers or navigate
         console.log("Subdomain answers submitted successfully:", data);
+        enqueueSnackbar("All answers submitted successfully!", {
+          variant: "success",
+        });
+      },
+      onError: (error) => {
+        console.error("Error submitting subdomain answers:", error);
+        enqueueSnackbar(
+          error?.response?.data?.message || "Failed to submit answers. Please try again.",
+          {
+            variant: "error",
+          }
+        );
       },
     });
 
@@ -536,6 +709,18 @@ const SelfAssessment = () => {
     onSuccess: (data) => {
       console.log("Assessment submitted successfully:", data);
       // Optionally refresh domains to show updated progress
+      enqueueSnackbar("Assessment submitted successfully!", {
+        variant: "success",
+      });
+    },
+    onError: (error) => {
+      console.error("Error submitting assessment:", error);
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to submit assessment. Please try again.",
+        {
+          variant: "error",
+        }
+      );
     },
   });
 
@@ -547,6 +732,27 @@ const SelfAssessment = () => {
     });
   }, [domains, getDomainProgress]);
 
+  // Get domain and subdomain indices for numbering
+  const { domainNumber, subdomainNumber } = useMemo(() => {
+    if (!selectedDomain || !selectedSubdomain) {
+      return { domainNumber: 0, subdomainNumber: 0 };
+    }
+
+    const domainIdx = domains.findIndex(
+      (d) => d.domainId === selectedDomain.domainId
+    );
+    const subdomainIdx = selectedDomain.subDomain?.findIndex(
+      (sd) =>
+        (sd.subDomainId || sd.id) ===
+        (selectedSubdomain.subDomainId || selectedSubdomain.id)
+    );
+
+    return {
+      domainNumber: domainIdx + 1,
+      subdomainNumber: subdomainIdx + 1,
+    };
+  }, [selectedDomain, selectedSubdomain, domains]);
+
   // Handle individual question submission
   const handleSubmitQuestion = (question) => {
     if (!userId) {
@@ -556,27 +762,45 @@ const SelfAssessment = () => {
       return;
     }
 
-    // Get selected option - prioritize user selection, fallback to API's selectedOptionId
-    const userSelectedOption = answers[question.questionId];
-    const apiSelectedOption = question.selectedOptionId
-      ? String(question.selectedOptionId)
-      : null;
-    const selectedOptionId = userSelectedOption || apiSelectedOption;
+    const questionType =
+      question.questionType || (question.isClassroomObservation === 1 ? 2 : 1);
 
-    if (!selectedOptionId) {
-      enqueueSnackbar("Please select an option before submitting.", {
-        variant: "warning",
-      });
-      return;
+    // For FLN questions (type 4), validate text answer
+    if (questionType === 4 || questionType === "4") {
+      const textAnswer = textAnswers[question.questionId];
+      if (!textAnswer || !textAnswer.trim()) {
+        enqueueSnackbar("Please enter an answer before submitting.", {
+          variant: "warning",
+        });
+        return;
+      }
+    } else {
+      // For other question types, validate option selection
+      const userSelectedOption = answers[question.questionId];
+      const apiSelectedOption = question.selectedOptionId
+        ? String(question.selectedOptionId)
+        : null;
+      const selectedOptionId = userSelectedOption || apiSelectedOption;
+
+      if (!selectedOptionId) {
+        enqueueSnackbar("Please select an option before submitting.", {
+          variant: "warning",
+        });
+        return;
+      }
     }
 
-    const section = question.isClassroomObservation === 1 ? "class" : "general";
+    let classValue = 2; // Default
+    let sectionValue = "general"; // Default
+    let subjectId = null;
 
-    let classValue = question.class || 2; // Default fallback
-    let sectionValue = question.section || section; // Default fallback
-
-    if (question.isClassroomObservation === 1) {
-      // Class-based question - use selected class and section
+    // For classroom observation (type 2) and subject observation (type 3)
+    if (
+      questionType === 2 ||
+      questionType === "2" ||
+      questionType === 3 ||
+      questionType === "3"
+    ) {
       if (!selectedClass) {
         enqueueSnackbar("Please select a class before submitting.", {
           variant: "warning",
@@ -591,14 +815,33 @@ const SelfAssessment = () => {
       }
       classValue = Number(selectedClass);
       sectionValue = selectedSection;
+
+      // For subject observation (type 3), subject is required
+      if (questionType === 3 || questionType === "3") {
+        if (!selectedSubject) {
+          enqueueSnackbar("Please select a subject before submitting.", {
+            variant: "warning",
+          });
+          return;
+        }
+        subjectId = Number(selectedSubject);
+      }
     }
 
     const payload = {
       isAns: 1,
-      answerId: question.answerId || null, // Use existing answerId if question was already answered
-      userId: Number(userId),
+      answerId: question.answerId || null,
       questionId: question.questionId,
-      optionId: Number(selectedOptionId), // Use the selected option (from user or API)
+      userId: Number(userId),
+      subjectId: subjectId,
+      optionId:
+        questionType === 4 || questionType === "4"
+          ? null
+          : Number(answers[question.questionId] || question.selectedOptionId),
+      answerText:
+        questionType === 4 || questionType === "4"
+          ? textAnswers[question.questionId]
+          : null,
       cls: classValue,
       section: sectionValue,
     };
@@ -627,6 +870,13 @@ const SelfAssessment = () => {
 
     // For class-based questions, validate class and section selection
     const hasClassBasedQuestions = classBasedQuestions.length > 0;
+    const hasSubjectQuestions = subjectObservationQuestions.length > 0;
+
+    // Check if user has answered any subject observation questions (type 3)
+    const hasAnsweredSubjectQuestions = subjectObservationQuestions.some(
+      (q) => answers[q.questionId] || textAnswers[q.questionId]
+    );
+
     if (hasClassBasedQuestions) {
       if (!selectedClass) {
         enqueueSnackbar("Please select a class before submitting.", {
@@ -642,10 +892,15 @@ const SelfAssessment = () => {
       }
     }
 
-    // Determine class and section values
-    // For class-based questions, use selected class and section
-    // For general questions, use empty string for section and default class
-    let clsValue = 2; // Default class value
+    // For subject observation questions, only validate subject if user has answered type 3 questions
+    if (hasAnsweredSubjectQuestions && !selectedSubject) {
+      enqueueSnackbar("Please select a subject before submitting.", {
+        variant: "warning",
+      });
+      return;
+    }
+
+    let clsValue = 2;
     let sectionValue = "";
     const isClassSelected = hasClassBasedQuestions && selectedClass;
 
@@ -664,7 +919,17 @@ const SelfAssessment = () => {
     // Format answers array from current answers state
     const answersArray = allQuestions
       .filter((question) => {
-        // Only include questions that have been answered
+        const questionType =
+          question.questionType ||
+          (question.isClassroomObservation === 1 ? 2 : 1);
+
+        // For FLN questions, check if text answer exists
+        if (questionType === 4 || questionType === "4") {
+          const textAnswer = textAnswers[question.questionId];
+          return textAnswer && textAnswer.trim();
+        }
+
+        // For other questions, check if option is selected
         const userSelectedAnswer = answers[question.questionId];
         const apiSelectedAnswer = question.selectedOptionId
           ? String(question.selectedOptionId)
@@ -672,6 +937,10 @@ const SelfAssessment = () => {
         return userSelectedAnswer || apiSelectedAnswer;
       })
       .map((question) => {
+        const questionType =
+          question.questionType ||
+          (question.isClassroomObservation === 1 ? 2 : 1);
+
         const userSelectedAnswer = answers[question.questionId];
         const apiSelectedAnswer = question.selectedOptionId
           ? String(question.selectedOptionId)
@@ -681,13 +950,37 @@ const SelfAssessment = () => {
         const answerObj = {
           answerId: question.answerId || null,
           questionId: question.questionId,
-          optionId: Number(selectedOptionId),
+          optionId:
+            questionType === 4 || questionType === "4"
+              ? null
+              : Number(selectedOptionId),
+          answerText:
+            questionType === 4 || questionType === "4"
+              ? textAnswers[question.questionId]
+              : null,
         };
 
-        // Add cls and section inside answer object if class is selected
-        if (isClassSelected) {
+        // Determine cls, section, and subjectId based on question type
+        if (questionType === 3 || questionType === "3") {
+          // Subject observation questions - require subject
           answerObj.cls = clsValue;
           answerObj.section = sectionValue;
+          answerObj.subjectId = selectedSubject ? Number(selectedSubject) : null;
+        } else if (questionType === 2 || questionType === "2") {
+          // Classroom observation questions - no subject
+          answerObj.cls = clsValue;
+          answerObj.section = sectionValue;
+          answerObj.subjectId = null;
+        } else if (questionType === 1 || questionType === "1") {
+          // Single choice questions
+          answerObj.cls = 2; // Default
+          answerObj.section = "";
+          answerObj.subjectId = null;
+        } else if (questionType === 4 || questionType === "4") {
+          // FLN questions
+          answerObj.cls = 2; // Default
+          answerObj.section = "";
+          answerObj.subjectId = null;
         }
 
         return answerObj;
@@ -712,8 +1005,8 @@ const SelfAssessment = () => {
 
     const payload = {
       isAns: 1,
-      // subDomainId: subDomainId,
       userId: Number(userId),
+      subjectId: selectedSubject ? Number(selectedSubject) : null,
       answers: answersArray,
     };
 
@@ -935,7 +1228,7 @@ const SelfAssessment = () => {
             >
               <Box>
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                  Self-Assessment
+                  {t("selfAssessment.title")}
                 </Typography>
                 {isErrorDomains && (
                   <Alert
@@ -987,9 +1280,9 @@ const SelfAssessment = () => {
                     },
                   }}
                 >
+                  <ToggleButton value="gu">ગુ</ToggleButton>
                   <ToggleButton value="en">EN</ToggleButton>
                   <ToggleButton value="hi">हिं</ToggleButton>
-                  <ToggleButton value="gu">ગુ</ToggleButton>
                 </ToggleButtonGroup>
               </Box>
             </Box>
@@ -1033,14 +1326,14 @@ const SelfAssessment = () => {
                       mb: 0.5,
                     }}
                   >
-                    Assessment Domains
+                    {t("selfAssessment.assessmentDomains")}
                   </Typography>
                   <Typography
                     variant="body2"
                     color="text.secondary"
                     sx={{ fontSize: "0.8125rem" }}
                   >
-                    Navigate through domains and sub-domains
+                    {t("selfAssessment.navigateSubtitle")}
                   </Typography>
                 </Box>
 
@@ -1060,11 +1353,12 @@ const SelfAssessment = () => {
                         gap: 1.5,
                       }}
                     >
-                      {domains.map((domain) => {
+                      {domains.map((domain, domainIndex) => {
                         const progress = getDomainProgress(domain);
                         const isDomainSelected =
                           selectedDomain?.domainId === domain.domainId;
                         const DomainIcon = getDomainIcon(domain);
+                        const domainNumber = domainIndex + 1;
 
                         return (
                           <Box key={domain.domainId}>
@@ -1132,7 +1426,7 @@ const SelfAssessment = () => {
                                         mb: 0.25,
                                       }}
                                     >
-                                      {getDomainName(domain)}
+                                      {domainNumber}. {getDomainName(domain)}
                                     </Typography>
                                   </Box>
                                   {progress === 100 && (
@@ -1204,7 +1498,7 @@ const SelfAssessment = () => {
                                     borderLeft: `2px solid ${colors.neutral.gray200}`,
                                   }}
                                 >
-                                  {domain.subDomain.map((subdomain, index) => {
+                                  {domain.subDomain.map((subdomain, subdomainIndex) => {
                                     const subdomainId =
                                       subdomain.subDomainId || subdomain.id;
                                     const subdomainProgress =
@@ -1212,6 +1506,7 @@ const SelfAssessment = () => {
                                     const isSubdomainSelected =
                                       selectedSubdomain?.subDomainId ===
                                       subdomainId;
+                                    const subdomainNumber = `${domainNumber}.${subdomainIndex + 1}`;
 
                                     return (
                                       <Card
@@ -1223,20 +1518,22 @@ const SelfAssessment = () => {
                                           cursor: "pointer",
                                           mb: 1.2,
                                           transition: "all 0.3s ease",
-                                          border: "1px solid",
+                                          border: isSubdomainSelected
+                                            ? "2px solid"
+                                            : "1px solid",
                                           borderColor: isSubdomainSelected
                                             ? colors.primary.blue
                                             : colors.neutral.gray200,
                                           borderRadius: 1.2,
                                           bgcolor: isSubdomainSelected
-                                            ? colors.primary.blue + "05"
+                                            ? colors.primary.blue + "15"
                                             : "white",
                                           boxShadow: isSubdomainSelected
-                                            ? `0 2px 6px ${colors.primary.blue}10`
+                                            ? `0 4px 12px ${colors.primary.blue}30`
                                             : "none",
                                           "&:hover": {
                                             borderColor: colors.primary.blue,
-                                            bgcolor: colors.primary.blue + "05",
+                                            bgcolor: colors.primary.blue + "08",
                                           },
                                         }}
                                       >
@@ -1276,7 +1573,7 @@ const SelfAssessment = () => {
                                                 }}
                                               >
                                                 {String.fromCharCode(
-                                                  65 + (index % 26)
+                                                  65 + (subdomainIndex % 26)
                                                 )}
                                               </Typography>
                                             </Box>
@@ -1292,7 +1589,7 @@ const SelfAssessment = () => {
                                                   lineHeight: 1.3,
                                                 }}
                                               >
-                                                {getSubdomainName(subdomain)}
+                                                {subdomainNumber}. {getSubdomainName(subdomain)}
                                               </Typography>
                                             </Box>
                                             {isSubdomainSelected &&
@@ -1410,9 +1707,9 @@ const SelfAssessment = () => {
                       }}
                     >
                       {selectedDomain && selectedSubdomain
-                        ? `${getDomainName(
+                        ? `${domainNumber}. ${getDomainName(
                             selectedDomain
-                          )} / ${getSubdomainName(selectedSubdomain)}`
+                          )} / ${domainNumber}.${subdomainNumber}. ${getSubdomainName(selectedSubdomain)}`
                         : ""}
                     </Typography>
 
@@ -1433,7 +1730,7 @@ const SelfAssessment = () => {
                             mb: 0.5,
                           }}
                         >
-                          {getSubdomainName(selectedSubdomain)}
+                          {domainNumber}.{subdomainNumber}. {getSubdomainName(selectedSubdomain)}
                         </Typography>
                         <Typography
                           variant="body2"
@@ -1494,8 +1791,8 @@ const SelfAssessment = () => {
                       p: { xs: 2.5, md: 3.5 },
                     }}
                   >
-                    {/* Class-based Questions Section */}
-                    {classBasedQuestions.length > 0 && (
+                    {/* Classroom Observation Questions Section (Type 2) */}
+                    {classroomObservationQuestions.length > 0 && (
                       <Box sx={{ mb: 4 }}>
                         {/* Section Header */}
                         <Box
@@ -1523,10 +1820,10 @@ const SelfAssessment = () => {
                                 color: colors.text.primary,
                               }}
                             >
-                              Class-based Questions
+                              Classroom Observation Questions
                             </Typography>
                             <Chip
-                              label={`${classBasedQuestions.length} Questions`}
+                              label={`${classroomObservationQuestions.length} Questions`}
                               size="small"
                               sx={{
                                 bgcolor: colors.primary.blue + "15",
@@ -1542,8 +1839,7 @@ const SelfAssessment = () => {
                               fontSize: "0.875rem",
                             }}
                           >
-                            These questions require classroom observation and
-                            class selection
+                            These questions require classroom observation and class selection
                           </Typography>
                         </Box>
 
@@ -1592,8 +1888,23 @@ const SelfAssessment = () => {
                               <Select
                                 value={selectedClass || ""}
                                 onChange={(e) => {
+                                  // Save current answers before changing class
+                                  if (selectedSubdomain && selectedClass) {
+                                    const subdomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
+                                    const classKey = String(selectedClass);
+                                    const storageKey = `${subdomainId}_${classKey}`;
+                                    setClassWiseAnswers((prev) => ({
+                                      ...prev,
+                                      [storageKey]: { ...answers },
+                                    }));
+                                    setClassWiseTextAnswers((prev) => ({
+                                      ...prev,
+                                      [storageKey]: { ...textAnswers },
+                                    }));
+                                  }
                                   setSelectedClass(e.target.value);
-                                  setSelectedSection(null); // Reset section when class changes
+                                  // Reset section so it can be auto-selected for the new class
+                                  setSelectedSection(null);
                                 }}
                                 label="Select Class"
                                 disabled={
@@ -1656,9 +1967,7 @@ const SelfAssessment = () => {
                                 }
                                 label="Select Section"
                                 disabled={
-                                  !selectedClass ||
-                                  isLoadingSections ||
-                                  sections.length === 0
+                                  !selectedClass || sections.length === 0
                                 }
                                 sx={{
                                   borderRadius: 2,
@@ -1680,29 +1989,25 @@ const SelfAssessment = () => {
                                   <MenuItem disabled>
                                     Please select a class first
                                   </MenuItem>
-                                ) : isLoadingSections ? (
-                                  <MenuItem disabled>
-                                    Loading sections...
-                                  </MenuItem>
                                 ) : sections.length === 0 ? (
                                   <MenuItem disabled>
-                                    No sections available
+                                    No sections available for this class
                                   </MenuItem>
                                 ) : (
                                   sections.map((section, index) => (
                                     <MenuItem
                                       key={
-                                        section.sectionId || section.id || index
+                                        section.id || index
                                       }
                                       value={
                                         section.sectionName ||
-                                        section.section ||
-                                        section
+                                        section.name ||
+                                        section.value
                                       }
                                     >
-                                      {section.sectionName ||
-                                        section.section ||
-                                        `Section ${index + 1}`}
+                                      Section {section.sectionName ||
+                                        section.name ||
+                                        section.value}
                                     </MenuItem>
                                   ))
                                 )}
@@ -1711,7 +2016,7 @@ const SelfAssessment = () => {
                           </Box>
                         </Box>
 
-                        {/* Class-based Questions List */}
+                        {/* Classroom Observation Questions List */}
                         {isLoadingQuestions ? (
                           <Box
                             sx={{
@@ -1736,7 +2041,7 @@ const SelfAssessment = () => {
                               gap: 2.5,
                             }}
                           >
-                            {classBasedQuestions.map((question, index) => {
+                            {classroomObservationQuestions.map((question, index) => {
                               const options = parseOptions(question.options);
                               const userSelectedAnswer =
                                 answers[question.questionId];
@@ -1749,6 +2054,7 @@ const SelfAssessment = () => {
                               const isExpanded =
                                 expandedQuestions[question.questionId] ?? true;
                               const questionProgress = selectedAnswer ? 100 : 0;
+                              const questionNumber = `${domainNumber}.${subdomainNumber}.${index + 1}`;
 
                               return (
                                 <Card
@@ -1788,9 +2094,7 @@ const SelfAssessment = () => {
                                     }}
                                   >
                                     <Chip
-                                      label={`S${index + 1} Standard ${
-                                        index + 1
-                                      }`}
+                                      label={`Q ${questionNumber}`}
                                       size="small"
                                       sx={{
                                         bgcolor: colors.primary.blue,
@@ -2040,6 +2344,903 @@ const SelfAssessment = () => {
                       </Box>
                     )}
 
+                    {/* Subject-Wise Observation Questions Section (Type 3) */}
+                    {subjectObservationQuestions.length > 0 && (
+                      <Box sx={{ mb: 4 }}>
+                        {/* Section Header */}
+                        <Box
+                          sx={{
+                            mb: 3,
+                            pb: 2,
+                            borderBottom: `2px solid ${colors.neutral.gray200}`,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1.5,
+                              mb: 1,
+                            }}
+                          >
+                            <MenuBook
+                              sx={{ fontSize: 24, color: colors.accent.purple }}
+                            />
+                            <Typography
+                              variant="h6"
+                              sx={{
+                                fontWeight: 700,
+                                color: colors.text.primary,
+                              }}
+                            >
+                              Subject-Wise Observation Questions
+                            </Typography>
+                            <Chip
+                              label={`${subjectObservationQuestions.length} Questions`}
+                              size="small"
+                              sx={{
+                                bgcolor: colors.accent.purple + "15",
+                                color: colors.accent.purple,
+                                fontWeight: 600,
+                              }}
+                            />
+                          </Box>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: colors.text.secondary,
+                              fontSize: "0.875rem",
+                            }}
+                          >
+                            These questions require subject-specific observation and class, section, and subject selection
+                          </Typography>
+                        </Box>
+
+                        {/* Class, Section, and Subject Dropdowns */}
+                        <Box
+                          sx={{
+                            mb: 3,
+                            p: 2.5,
+                            borderRadius: 2,
+                            bgcolor: colors.background.secondary,
+                            border: `1.5px solid ${colors.neutral.gray200}`,
+                          }}
+                        >
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              fontWeight: 600,
+                              color: colors.text.primary,
+                              mb: 2,
+                            }}
+                          >
+                            Select Class, Section, and Subject
+                          </Typography>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              gap: 2,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            {/* Class Dropdown */}
+                            <FormControl
+                              size="small"
+                              sx={{
+                                minWidth: { xs: "100%", sm: "180px" },
+                              }}
+                            >
+                              <InputLabel
+                                sx={{
+                                  fontWeight: 600,
+                                  color: colors.text.secondary,
+                                }}
+                              >
+                                Select Class
+                              </InputLabel>
+                              <Select
+                                value={selectedClass || ""}
+                                onChange={(e) => {
+                                  // Save current answers before changing class
+                                  if (selectedSubdomain && selectedClass) {
+                                    const subdomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
+                                    const classKey = String(selectedClass);
+                                    const storageKey = `${subdomainId}_${classKey}`;
+                                    setClassWiseAnswers((prev) => ({
+                                      ...prev,
+                                      [storageKey]: { ...answers },
+                                    }));
+                                    setClassWiseTextAnswers((prev) => ({
+                                      ...prev,
+                                      [storageKey]: { ...textAnswers },
+                                    }));
+                                  }
+                                  setSelectedClass(e.target.value);
+                                  // Reset section so it can be auto-selected for the new class
+                                  setSelectedSection(null);
+                                }}
+                                label="Select Class"
+                                disabled={
+                                  isLoadingSchoolData ||
+                                  classOptions.length === 0
+                                }
+                                sx={{
+                                  borderRadius: 2,
+                                  bgcolor: "white",
+                                  "& .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: colors.neutral.gray300,
+                                  },
+                                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: colors.accent.purple,
+                                  },
+                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                    {
+                                      borderColor: colors.accent.purple,
+                                      borderWidth: 2,
+                                    },
+                                }}
+                              >
+                                {isLoadingSchoolData ? (
+                                  <MenuItem disabled>
+                                    Loading classes...
+                                  </MenuItem>
+                                ) : classOptions.length === 0 ? (
+                                  <MenuItem disabled>
+                                    No classes available
+                                  </MenuItem>
+                                ) : (
+                                  classOptions.map((classNum) => (
+                                    <MenuItem key={classNum} value={classNum}>
+                                      Class {classNum}
+                                    </MenuItem>
+                                  ))
+                                )}
+                              </Select>
+                            </FormControl>
+
+                            {/* Section Dropdown */}
+                            <FormControl
+                              size="small"
+                              sx={{
+                                minWidth: { xs: "100%", sm: "180px" },
+                              }}
+                            >
+                              <InputLabel
+                                sx={{
+                                  fontWeight: 600,
+                                  color: colors.text.secondary,
+                                }}
+                              >
+                                Select Section
+                              </InputLabel>
+                              <Select
+                                value={selectedSection || ""}
+                                onChange={(e) =>
+                                  setSelectedSection(e.target.value)
+                                }
+                                label="Select Section"
+                                disabled={
+                                  !selectedClass || sections.length === 0
+                                }
+                                sx={{
+                                  borderRadius: 2,
+                                  bgcolor: "white",
+                                  "& .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: colors.neutral.gray300,
+                                  },
+                                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: colors.accent.purple,
+                                  },
+                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                    {
+                                      borderColor: colors.accent.purple,
+                                      borderWidth: 2,
+                                    },
+                                }}
+                              >
+                                {!selectedClass ? (
+                                  <MenuItem disabled>
+                                    Please select a class first
+                                  </MenuItem>
+                                ) : sections.length === 0 ? (
+                                  <MenuItem disabled>
+                                    No sections available for this class
+                                  </MenuItem>
+                                ) : (
+                                  sections.map((section, index) => (
+                                    <MenuItem
+                                      key={
+                                        section.id || index
+                                      }
+                                      value={
+                                        section.sectionName ||
+                                        section.name ||
+                                        section.value
+                                      }
+                                    >
+                                      Section {section.sectionName ||
+                                        section.name ||
+                                        section.value}
+                                    </MenuItem>
+                                  ))
+                                )}
+                              </Select>
+                            </FormControl>
+
+                            {/* Subject Dropdown */}
+                            <FormControl
+                              size="small"
+                              sx={{
+                                minWidth: { xs: "100%", sm: "180px" },
+                              }}
+                            >
+                              <InputLabel
+                                sx={{
+                                  fontWeight: 600,
+                                  color: colors.text.secondary,
+                                }}
+                              >
+                                Select Subject
+                              </InputLabel>
+                              <Select
+                                value={selectedSubject || ""}
+                                onChange={(e) =>
+                                  setSelectedSubject(e.target.value)
+                                }
+                                label="Select Subject"
+                                disabled={
+                                  !selectedClass || isLoadingSubjects || subjects.length === 0
+                                }
+                                sx={{
+                                  borderRadius: 2,
+                                  bgcolor: "white",
+                                  "& .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: colors.neutral.gray300,
+                                  },
+                                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: colors.accent.purple,
+                                  },
+                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                    {
+                                      borderColor: colors.accent.purple,
+                                      borderWidth: 2,
+                                    },
+                                }}
+                              >
+                                {!selectedClass ? (
+                                  <MenuItem disabled>
+                                    Please select a class first
+                                  </MenuItem>
+                                ) : isLoadingSubjects ? (
+                                  <MenuItem disabled>
+                                    Loading subjects...
+                                  </MenuItem>
+                                ) : subjects.length === 0 ? (
+                                  <MenuItem disabled>
+                                    No subjects available for this class
+                                  </MenuItem>
+                                ) : (
+                                  subjects.map((subject) => (
+                                    <MenuItem
+                                      key={subject.id}
+                                      value={subject.id}
+                                    >
+                                      {subject.subject}
+                                    </MenuItem>
+                                  ))
+                                )}
+                              </Select>
+                            </FormControl>
+                          </Box>
+                        </Box>
+
+                        {/* Subject-Wise Questions List */}
+                        {isLoadingQuestions ? (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              minHeight: "200px",
+                            }}
+                          >
+                            <CircularProgress />
+                          </Box>
+                        ) : isErrorQuestions ? (
+                          <Alert severity="error">
+                            {isErrorQuestions?.message ||
+                              "Failed to load questions"}
+                          </Alert>
+                        ) : (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 2.5,
+                            }}
+                          >
+                            {subjectObservationQuestions.map((question, index) => {
+                              const options = parseOptions(question.options);
+                              const userSelectedAnswer =
+                                answers[question.questionId];
+                              const apiSelectedAnswer =
+                                question.selectedOptionId
+                                  ? String(question.selectedOptionId)
+                                  : null;
+                              const selectedAnswer =
+                                userSelectedAnswer || apiSelectedAnswer;
+                              const isExpanded =
+                                expandedQuestions[question.questionId] ?? true;
+                              const questionProgress = selectedAnswer ? 100 : 0;
+                              const questionNumber = `${domainNumber}.${subdomainNumber}.${index + 1 + classroomObservationQuestions.length}`;
+
+                              return (
+                                <Card
+                                  key={question.questionId}
+                                  sx={{
+                                    borderRadius: 2,
+                                    border: "1px solid",
+                                    borderColor: colors.neutral.gray200,
+                                    transition: "all 0.2s ease",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                                    overflow: "hidden",
+                                    "&:hover": {
+                                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                    },
+                                  }}
+                                >
+                                  {/* Question Header - Always Visible */}
+                                  <Box
+                                    onClick={() =>
+                                      toggleQuestionExpansion(
+                                        question.questionId
+                                      )
+                                    }
+                                    sx={{
+                                      p: 2.5,
+                                      cursor: "pointer",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 2,
+                                      bgcolor: colors.background.primary,
+                                      borderBottom: isExpanded
+                                        ? `1px solid ${colors.neutral.gray200}`
+                                        : "none",
+                                      "&:hover": {
+                                        bgcolor: colors.background.secondary,
+                                      },
+                                    }}
+                                  >
+                                    <Chip
+                                      label={`Q ${questionNumber}`}
+                                      size="small"
+                                      sx={{
+                                        bgcolor: colors.accent.purple,
+                                        color: "white",
+                                        fontWeight: 700,
+                                        minWidth: "100px",
+                                        height: "28px",
+                                        fontSize: "0.75rem",
+                                      }}
+                                    />
+                                    <Box sx={{ flex: 1 }}>
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          fontWeight: 500,
+                                          fontSize: "0.875rem",
+                                          color: colors.text.primary,
+                                          lineHeight: 1.5,
+                                        }}
+                                      >
+                                        {getQuestionText(question)}
+                                      </Typography>
+                                    </Box>
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 2,
+                                      }}
+                                    >
+                                      {/* Circular Progress */}
+                                      <Box
+                                        sx={{
+                                          position: "relative",
+                                          display: "inline-flex",
+                                        }}
+                                      >
+                                        <CircularProgress
+                                          variant="determinate"
+                                          value={questionProgress}
+                                          size={40}
+                                          thickness={4}
+                                          sx={{
+                                            color:
+                                              getProgressColor(
+                                                questionProgress
+                                              ),
+                                          }}
+                                        />
+                                        <Box
+                                          sx={{
+                                            top: 0,
+                                            left: 0,
+                                            bottom: 0,
+                                            right: 0,
+                                            position: "absolute",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                          }}
+                                        >
+                                          <Typography
+                                            variant="caption"
+                                            component="div"
+                                            sx={{
+                                              fontSize: "0.65rem",
+                                              fontWeight: 600,
+                                              color: colors.text.secondary,
+                                            }}
+                                          >
+                                            {questionProgress}%
+                                          </Typography>
+                                        </Box>
+                                      </Box>
+                                      <IconButton
+                                        size="small"
+                                        sx={{
+                                          color: colors.text.secondary,
+                                        }}
+                                      >
+                                        {isExpanded ? (
+                                          <ExpandLess />
+                                        ) : (
+                                          <ExpandMore />
+                                        )}
+                                      </IconButton>
+                                    </Box>
+                                  </Box>
+
+                                  {/* Question Content - Expandable */}
+                                  {isExpanded && (
+                                    <CardContent sx={{ p: 3, pt: 2.5 }}>
+                                      {options && options.length > 0 && (
+                                        <FormControl
+                                          component="fieldset"
+                                          fullWidth
+                                          sx={{ mb: 3 }}
+                                        >
+                                          <RadioGroup
+                                            value={selectedAnswer || ""}
+                                            onChange={(e) =>
+                                              handleAnswerChange(
+                                                question.questionId,
+                                                e.target.value
+                                              )
+                                            }
+                                          >
+                                            {options.map((option, optIndex) => (
+                                              <FormControlLabel
+                                                key={
+                                                  option.optionId || optIndex
+                                                }
+                                                value={String(option.optionId)}
+                                                control={
+                                                  <Radio
+                                                    sx={{
+                                                      color:
+                                                        colors.accent.purple,
+                                                      "&.Mui-checked": {
+                                                        color:
+                                                          colors.accent.purple,
+                                                      },
+                                                    }}
+                                                  />
+                                                }
+                                                label={
+                                                  <Box
+                                                    sx={{
+                                                      display: "flex",
+                                                      alignItems: "center",
+                                                      gap: 1,
+                                                    }}
+                                                  >
+                                                    <Chip
+                                                      label={String.fromCharCode(
+                                                        65 + optIndex
+                                                      )}
+                                                      size="small"
+                                                      sx={{
+                                                        bgcolor:
+                                                          colors.accent.purple + "15",
+                                                        color:
+                                                          colors.accent.purple,
+                                                        fontWeight: 600,
+                                                        minWidth: "28px",
+                                                        height: "28px",
+                                                      }}
+                                                    />
+                                                    <Typography variant="body2">
+                                                      {getOptionText(option)}
+                                                    </Typography>
+                                                  </Box>
+                                                }
+                                                sx={{
+                                                  mb: 1.5,
+                                                  p: 2,
+                                                  borderRadius: 2,
+                                                  bgcolor:
+                                                    selectedAnswer ===
+                                                    String(option.optionId)
+                                                      ? colors.accent.purple + "15"
+                                                      : "transparent",
+                                                  border: "1.5px solid",
+                                                  borderColor:
+                                                    selectedAnswer ===
+                                                    String(option.optionId)
+                                                      ? colors.accent.purple
+                                                      : colors.neutral.gray200,
+                                                  transition: "all 0.2s ease",
+                                                  "&:hover": {
+                                                    bgcolor:
+                                                      colors.accent.purple +
+                                                      "15",
+                                                    borderColor:
+                                                      colors.accent.purple,
+                                                  },
+                                                }}
+                                              />
+                                            ))}
+                                          </RadioGroup>
+                                        </FormControl>
+                                      )}
+
+                                      {/* Submit Button for Individual Question */}
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          justifyContent: "flex-end",
+                                          pt: 2.5,
+                                          borderTop: `1px solid ${colors.neutral.gray200}`,
+                                        }}
+                                      >
+                                        <Button
+                                          variant="contained"
+                                          onClick={() =>
+                                            handleSubmitQuestion(question)
+                                          }
+                                          disabled={
+                                            !selectedAnswer ||
+                                            submitAnswerMutation.isPending
+                                          }
+                                          sx={{
+                                            bgcolor: colors.accent.green,
+                                            "&:hover": {
+                                              bgcolor: colors.accent.greenDark,
+                                            },
+                                            "&:disabled": {
+                                              bgcolor: colors.neutral.gray300,
+                                              color: colors.neutral.gray600,
+                                            },
+                                            textTransform: "none",
+                                            fontWeight: 600,
+                                            px: 3,
+                                            py: 1,
+                                            borderRadius: 2,
+                                          }}
+                                        >
+                                          {submitAnswerMutation.isPending
+                                            ? "Submitting..."
+                                            : "Save Answer"}
+                                        </Button>
+                                      </Box>
+                                    </CardContent>
+                                  )}
+                                </Card>
+                              );
+                            })}
+                          </Box>
+                        )}
+                      </Box>
+                    )}
+
+                    {/* FLN Questions Section (Type 4) */}
+                    {flnQuestions.length > 0 && (
+                      <Box sx={{ mb: 4 }}>
+                        {/* Section Header */}
+                        <Box
+                          sx={{
+                            mb: 3,
+                            pb: 2,
+                            borderBottom: `2px solid ${colors.neutral.gray200}`,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1.5,
+                              mb: 1,
+                            }}
+                          >
+                            <Create
+                              sx={{ fontSize: 24, color: colors.semantic.warning }}
+                            />
+                            <Typography
+                              variant="h6"
+                              sx={{
+                                fontWeight: 700,
+                                color: colors.text.primary,
+                              }}
+                            >
+                              FLN Questions
+                            </Typography>
+                            <Chip
+                              label={`${flnQuestions.length} Questions`}
+                              size="small"
+                              sx={{
+                                bgcolor: colors.semantic.warning + "15",
+                                color: colors.semantic.warning,
+                                fontWeight: 600,
+                              }}
+                            />
+                          </Box>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: colors.text.secondary,
+                              fontSize: "0.875rem",
+                            }}
+                          >
+                            Foundational Literacy and Numeracy questions that require text responses
+                          </Typography>
+                        </Box>
+
+                        {/* FLN Questions List */}
+                        {isLoadingQuestions ? (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              minHeight: "200px",
+                            }}
+                          >
+                            <CircularProgress />
+                          </Box>
+                        ) : isErrorQuestions ? (
+                          <Alert severity="error">
+                            {isErrorQuestions?.message ||
+                              "Failed to load questions"}
+                          </Alert>
+                        ) : (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 2.5,
+                            }}
+                          >
+                            {flnQuestions.map((question, index) => {
+                              const textAnswer = textAnswers[question.questionId] || "";
+                              const isExpanded =
+                                expandedQuestions[question.questionId] ?? true;
+                              const questionProgress = textAnswer.trim() ? 100 : 0;
+                              const questionNumber = `${domainNumber}.${subdomainNumber}.${index + 1 + classroomObservationQuestions.length + subjectObservationQuestions.length}`;
+
+                              return (
+                                <Card
+                                  key={question.questionId}
+                                  sx={{
+                                    borderRadius: 2,
+                                    border: "1px solid",
+                                    borderColor: colors.neutral.gray200,
+                                    transition: "all 0.2s ease",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                                    overflow: "hidden",
+                                    "&:hover": {
+                                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                    },
+                                  }}
+                                >
+                                  {/* Question Header - Always Visible */}
+                                  <Box
+                                    onClick={() =>
+                                      toggleQuestionExpansion(
+                                        question.questionId
+                                      )
+                                    }
+                                    sx={{
+                                      p: 2.5,
+                                      cursor: "pointer",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 2,
+                                      bgcolor: colors.background.primary,
+                                      borderBottom: isExpanded
+                                        ? `1px solid ${colors.neutral.gray200}`
+                                        : "none",
+                                      "&:hover": {
+                                        bgcolor: colors.background.secondary,
+                                      },
+                                    }}
+                                  >
+                                    <Chip
+                                      label={`Q ${questionNumber}`}
+                                      size="small"
+                                      sx={{
+                                        bgcolor: colors.semantic.warning,
+                                        color: "white",
+                                        fontWeight: 700,
+                                        minWidth: "100px",
+                                        height: "28px",
+                                        fontSize: "0.75rem",
+                                      }}
+                                    />
+                                    <Box sx={{ flex: 1 }}>
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          fontWeight: 500,
+                                          fontSize: "0.875rem",
+                                          color: colors.text.primary,
+                                          lineHeight: 1.5,
+                                        }}
+                                      >
+                                        {getQuestionText(question)}
+                                      </Typography>
+                                    </Box>
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 2,
+                                      }}
+                                    >
+                                      {/* Circular Progress */}
+                                      <Box
+                                        sx={{
+                                          position: "relative",
+                                          display: "inline-flex",
+                                        }}
+                                      >
+                                        <CircularProgress
+                                          variant="determinate"
+                                          value={questionProgress}
+                                          size={40}
+                                          thickness={4}
+                                          sx={{
+                                            color:
+                                              getProgressColor(
+                                                questionProgress
+                                              ),
+                                          }}
+                                        />
+                                        <Box
+                                          sx={{
+                                            top: 0,
+                                            left: 0,
+                                            bottom: 0,
+                                            right: 0,
+                                            position: "absolute",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                          }}
+                                        >
+                                          <Typography
+                                            variant="caption"
+                                            component="div"
+                                            sx={{
+                                              fontSize: "0.65rem",
+                                              fontWeight: 600,
+                                              color: colors.text.secondary,
+                                            }}
+                                          >
+                                            {questionProgress}%
+                                          </Typography>
+                                        </Box>
+                                      </Box>
+                                      <IconButton
+                                        size="small"
+                                        sx={{
+                                          color: colors.text.secondary,
+                                        }}
+                                      >
+                                        {isExpanded ? (
+                                          <ExpandLess />
+                                        ) : (
+                                          <ExpandMore />
+                                        )}
+                                      </IconButton>
+                                    </Box>
+                                  </Box>
+
+                                  {/* Question Content - Expandable */}
+                                  {isExpanded && (
+                                    <CardContent sx={{ p: 3, pt: 2.5 }}>
+                                      {/* Text Field for FLN answer */}
+                                      <TextField
+                                        fullWidth
+                                        multiline
+                                        rows={4}
+                                        value={textAnswer}
+                                        onChange={(e) =>
+                                          setTextAnswers((prev) => ({
+                                            ...prev,
+                                            [question.questionId]: e.target.value,
+                                          }))
+                                        }
+                                        placeholder="Enter your answer here..."
+                                        sx={{
+                                          mb: 3,
+                                          "& .MuiOutlinedInput-root": {
+                                            borderRadius: 2,
+                                            bgcolor: "white",
+                                            "& fieldset": {
+                                              borderColor: colors.neutral.gray300,
+                                            },
+                                            "&:hover fieldset": {
+                                              borderColor: colors.semantic.warning,
+                                            },
+                                            "&.Mui-focused fieldset": {
+                                              borderColor: colors.semantic.warning,
+                                              borderWidth: 2,
+                                            },
+                                          },
+                                        }}
+                                      />
+
+                                      {/* Submit Button for Individual Question */}
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          justifyContent: "flex-end",
+                                          pt: 2.5,
+                                          borderTop: `1px solid ${colors.neutral.gray200}`,
+                                        }}
+                                      >
+                                        <Button
+                                          variant="contained"
+                                          onClick={() =>
+                                            handleSubmitQuestion(question)
+                                          }
+                                          disabled={
+                                            !textAnswer.trim() ||
+                                            submitAnswerMutation.isPending
+                                          }
+                                          sx={{
+                                            bgcolor: colors.accent.green,
+                                            "&:hover": {
+                                              bgcolor: colors.accent.greenDark,
+                                            },
+                                            "&:disabled": {
+                                              bgcolor: colors.neutral.gray300,
+                                              color: colors.neutral.gray600,
+                                            },
+                                            textTransform: "none",
+                                            fontWeight: 600,
+                                            px: 3,
+                                            py: 1,
+                                            borderRadius: 2,
+                                          }}
+                                        >
+                                          {submitAnswerMutation.isPending
+                                            ? "Submitting..."
+                                            : "Save Answer"}
+                                        </Button>
+                                      </Box>
+                                    </CardContent>
+                                  )}
+                                </Card>
+                              );
+                            })}
+                          </Box>
+                        )}
+                      </Box>
+                    )}
+
                     {/* General Questions Section */}
                     {generalQuestions.length > 0 && (
                       <Box sx={{ mb: 4 }}>
@@ -2131,6 +3332,7 @@ const SelfAssessment = () => {
                               const isExpanded =
                                 expandedQuestions[question.questionId] ?? true;
                               const questionProgress = selectedAnswer ? 100 : 0;
+                              const questionNumber = `${domainNumber}.${subdomainNumber}.${classBasedQuestions.length + index + 1}`;
 
                               return (
                                 <Card
@@ -2170,13 +3372,13 @@ const SelfAssessment = () => {
                                     }}
                                   >
                                     <Chip
-                                      label={`Q${index + 1}`}
+                                      label={`Q ${questionNumber}`}
                                       size="small"
                                       sx={{
                                         bgcolor: colors.accent.green,
                                         color: "white",
                                         fontWeight: 700,
-                                        minWidth: "60px",
+                                        minWidth: "80px",
                                         height: "28px",
                                         fontSize: "0.75rem",
                                       }}
@@ -2458,7 +3660,13 @@ const SelfAssessment = () => {
               )}
 
               {/* Domain View - When Domain Selected but No Subdomain */}
-              {selectedDomain && !selectedSubdomain && (
+              {selectedDomain && !selectedSubdomain && (() => {
+                const domainIdx = domains.findIndex(
+                  (d) => d.domainId === selectedDomain.domainId
+                );
+                const currentDomainNumber = domainIdx + 1;
+                
+                return (
                 <Paper
                   sx={{
                     flex: 1,
@@ -2498,7 +3706,7 @@ const SelfAssessment = () => {
                             mb: 0.5,
                           }}
                         >
-                          {getDomainName(selectedDomain)}
+                          {currentDomainNumber}. {getDomainName(selectedDomain)}
                         </Typography>
                         <Typography
                           variant="body2"
@@ -2583,6 +3791,10 @@ const SelfAssessment = () => {
                             subdomain.subDomainId || subdomain.id;
                           const subdomainProgress =
                             getSubdomainProgress(subdomain);
+                          const domainIdx = domains.findIndex(
+                            (d) => d.domainId === selectedDomain.domainId
+                          );
+                          const subdomainNumber = `${domainIdx + 1}.${index + 1}`;
 
                           return (
                             <Card
@@ -2651,7 +3863,7 @@ const SelfAssessment = () => {
                                           fontSize: "0.9375rem",
                                         }}
                                       >
-                                        {getSubdomainName(subdomain)}
+                                        {subdomainNumber}. {getSubdomainName(subdomain)}
                                       </Typography>
                                     </Box>
                                   </Box>
@@ -2719,7 +3931,8 @@ const SelfAssessment = () => {
                     )}
                   </Box>
                 </Paper>
-              )}
+                );
+              })()}
 
               {/* Domains Overview - No Domain Selected */}
               {!selectedDomain && (
@@ -2754,14 +3967,14 @@ const SelfAssessment = () => {
                         mb: 0.5,
                       }}
                     >
-                      Assessment Overview
+                      {t("selfAssessment.assessmentOverview")}
                     </Typography>
                     <Typography
                       variant="body2"
                       color="text.secondary"
                       sx={{ fontSize: "0.875rem" }}
                     >
-                      Review all domains and submit your assessment
+                      {t("selfAssessment.reviewSubtitle")}
                     </Typography>
                   </Box>
 
@@ -2781,9 +3994,10 @@ const SelfAssessment = () => {
                           gap: 2,
                         }}
                       >
-                        {domains.map((domain) => {
+                        {domains.map((domain, domainIndex) => {
                           const progress = getDomainProgress(domain);
                           const DomainIcon = getDomainIcon(domain);
+                          const domainNumber = domainIndex + 1;
 
                           return (
                             <Card
@@ -2835,7 +4049,7 @@ const SelfAssessment = () => {
                                         mb: 0.5,
                                       }}
                                     >
-                                      {getDomainName(domain)}
+                                      {domainNumber}. {getDomainName(domain)}
                                     </Typography>
                                     {domain.subDomain &&
                                       domain.subDomain.length > 0 && (
