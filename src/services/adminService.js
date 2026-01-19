@@ -940,6 +940,16 @@ export const updateAssessment = async (payload) => {
 };
 
 /**
+ * Publish/Unpublish assessment
+ * @param {Object} payload - { roleId: number, isPublished: number }
+ * @returns {Promise} API response
+ */
+export const publishAssessment = async (payload) => {
+  const response = await axiosInstance.put("/admin/publish", payload);
+  return response.data;
+};
+
+/**
  * React Query hook to get assessments
  */
 export const useGetAssessmentsQuery = (academicYear, options = {}) => {
@@ -969,6 +979,36 @@ export const useUpdateAssessmentMutation = (options = {}) => {
     onError: (error) => {
       enqueueSnackbar(
         error?.response?.data?.message || "Failed to update assessment",
+        {
+          variant: "error",
+        }
+      );
+      if (options.onError) {
+        options.onError(error);
+      }
+    },
+    ...options,
+  });
+};
+
+/**
+ * React Query hook to publish/unpublish assessment
+ */
+export const usePublishAssessmentMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => publishAssessment(data),
+    mutationKey: ["admin", "publish-assessment"],
+    onSuccess: (data) => {
+      enqueueSnackbar(data?.message || "Assessment published successfully", {
+        variant: "success",
+      });
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to publish assessment",
         {
           variant: "error",
         }

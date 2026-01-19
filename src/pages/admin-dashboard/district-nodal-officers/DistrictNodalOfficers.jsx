@@ -660,6 +660,54 @@ const DistrictNodalOfficers = () => {
                       <div className="form-loading">Loading districts...</div>
                     ) : (
                       <div className="district-multiselect-container">
+                        {/* Selected Districts with Cross Icons */}
+                        {formik.values.districts?.length > 0 && (
+                          <div className="selected-districts-chips">
+                            {formik.values.districts.map((districtValue) => {
+                              const district = districts.find(
+                                (d) => d.value === districtValue
+                              );
+                              return district ? (
+                                <div key={districtValue} className="district-chip">
+                                  <span className="district-chip-text">
+                                    {district.name}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const currentDistricts =
+                                        formik.values.districts || [];
+                                      formik.setFieldValue(
+                                        "districts",
+                                        currentDistricts.filter(
+                                          (id) => id !== districtValue
+                                        )
+                                      );
+                                    }}
+                                    className="district-chip-remove"
+                                    title="Remove district"
+                                  >
+                                    <svg
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                      width="14"
+                                      height="14"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M6 18L18 6M6 6l12 12"
+                                      />
+                                    </svg>
+                                  </button>
+                                </div>
+                              ) : null;
+                            })}
+                          </div>
+                        )}
+
                         <div className="district-multiselect">
                           {districts.map((district) => {
                             const isSelected =

@@ -15,6 +15,7 @@
   },
   "assessment": {
     "title": "मूल्यांकन प्रबंधन",
+    "publishAssessment": "मूल्यांकन प्रकाशित करें",
     "domain": {
       "title": "डोमेन",
       "addDomain": "डोमेन जोड़ें",

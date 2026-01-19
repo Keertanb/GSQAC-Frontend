@@ -83,7 +83,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
     { id: 2, text: { en: "", hi: "", gu: "" } },
   ]);
   const [isClassroomObservation, setIsClassroomObservation] = useState(0);
-  const [observationCount, setObservationCount] = useState("");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState(null);
   const [translationId, setTranslationId] = useState(null); // Store translation ID for subsequent calls
@@ -281,6 +280,40 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
       // Store questionId first
       setCurrentQuestionId(questionId);
 
+      // For FLN questions, skip the options form
+      if (questionType === "fln") {
+        // Success - refresh and reset form
+        enqueueSnackbar(
+          editingQuestion
+            ? "Question updated successfully"
+            : "Question added successfully",
+          {
+            variant: "success",
+          }
+        );
+
+        // Invalidate and refetch questions query
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.admin.subdomainQuestions(
+            subDomainId,
+            roleId
+          ),
+        });
+
+        setNewQuestionText({ en: "", hi: "", gu: "" });
+        setNewOptions([
+          { id: 1, text: { en: "", hi: "", gu: "" } },
+          { id: 2, text: { en: "", hi: "", gu: "" } },
+        ]);
+        setIsClassroomObservation(0);
+        setQuestionType("single_choice");
+        setShowAddQuestion(false);
+        setShowOptionsForm(false);
+        setEditingQuestion(null);
+        setCurrentQuestionId(null);
+        return;
+      }
+
       // If editing, load existing options
       if (editingQuestion) {
         const parsedOptions = parseOptions(editingQuestion.options);
@@ -399,7 +432,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
         { id: 2, text: { en: "", hi: "", gu: "" } },
       ]);
       setIsClassroomObservation(0);
-      setObservationCount("");
       setQuestionType("single_choice");
       setShowAddQuestion(false);
       setShowOptionsForm(false);
@@ -438,11 +470,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
 
     // Set classroom observation fields
     setIsClassroomObservation(question.isClassroomObservation || 0);
-    setObservationCount(
-      question.observationCount
-        ? String(question.observationCount)
-        : ""
-    );
 
     // Parse and set options
     const parsedOptions = parseOptions(question.options);
@@ -604,6 +631,36 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
     }
   };
 
+  const getQuestionTypeLabel = (questionType) => {
+    switch (questionType) {
+      case 1:
+        return "Single Choice";
+      case 2:
+        return "Classroom Observation";
+      case 3:
+        return "Subject-Wise";
+      case 4:
+        return "FLN Question";
+      default:
+        return "Single Choice";
+    }
+  };
+
+  const getQuestionTypeColor = (questionType) => {
+    switch (questionType) {
+      case 1:
+        return colors.accent.green;
+      case 2:
+        return colors.primary.blue;
+      case 3:
+        return colors.accent.purple;
+      case 4:
+        return colors.semantic.warning;
+      default:
+        return colors.accent.green;
+    }
+  };
+
   if (isLoading) {
     return (
       <Box
@@ -741,7 +798,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                 { id: 2, text: { en: "", hi: "", gu: "" } },
               ]);
               setIsClassroomObservation(0);
-              setObservationCount("");
               setQuestionType("single_choice");
               setShowAddQuestion(!showAddQuestion);
 
@@ -838,6 +894,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                           }
                         }}
                         label="Question Type"
+                        disabled={!!editingQuestion}
                         sx={{
                           "& .MuiOutlinedInput-notchedOutline": {
                             borderColor: colors.neutral.gray300,
@@ -939,53 +996,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                               </Button>
                             </Box>
                           )}
-                          <FormControl component="fieldset">
-                            <FormLabel component="legend" sx={{ mb: 1 }}>
-                              Is Classroom Observation
-                            </FormLabel>
-                            <RadioGroup
-                              row
-                              value={isClassroomObservation}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value, 10);
-                                setIsClassroomObservation(value);
-                                // Reset observationCount when switching to No
-                                if (value === 0) {
-                                  setObservationCount("");
-                                }
-                              }}
-                            >
-                              <FormControlLabel
-                                value={1}
-                                control={<Radio />}
-                                label="Yes"
-                              />
-                              <FormControlLabel
-                                value={0}
-                                control={<Radio />}
-                                label="No"
-                              />
-                            </RadioGroup>
-                          </FormControl>
-                          {isClassroomObservation === 1 && (
-                            <TextField
-                              fullWidth
-                              label="Observation Count"
-                              type="number"
-                              value={observationCount}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                // Only allow positive integers
-                                if (value === "" || /^\d+$/.test(value)) {
-                                  setObservationCount(value);
-                                }
-                              }}
-                              variant="outlined"
-                              size="small"
-                              inputProps={{ min: 1 }}
-                              helperText="Enter the number of observations"
-                            />
-                          )}
                         </Box>
 
                         {/* Question Submit Button */}
@@ -1021,7 +1031,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                                 { id: 2, text: { en: "", hi: "", gu: "" } },
                               ]);
                               setIsClassroomObservation(0);
-                              setObservationCount("");
                               setQuestionType("single_choice");
                               setEditingQuestion(null);
                               setCurrentQuestionId(null);
@@ -1311,37 +1320,21 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                               fontWeight: 600,
                               fontSize: "1rem",
                               lineHeight: 1.6,
-                              mb:
-                                question.isClassroomObservation === 1 &&
-                                question.observationCount
-                                  ? 0.5
-                                  : 0,
+                              mb: 1,
                             }}
                           >
                             {getQuestionText(question)}
                           </Typography>
-                          {question.isClassroomObservation === 1 &&
-                            question.observationCount && (
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                  mt: 0.5,
-                                }}
-                              >
-                                <Chip
-                                  label={`Observation Count: ${question.observationCount}`}
-                                  size="small"
-                                  sx={{
-                                    bgcolor: colors.primary.blue + "20",
-                                    color: colors.primary.blue,
-                                    fontWeight: 600,
-                                    fontSize: "0.75rem",
-                                  }}
-                                />
-                              </Box>
-                            )}
+                          <Chip
+                            label={getQuestionTypeLabel(question.questionType)}
+                            size="small"
+                            sx={{
+                              bgcolor: getQuestionTypeColor(question.questionType) + "20",
+                              color: getQuestionTypeColor(question.questionType),
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                            }}
+                          />
                         </Box>
                         <IconButton
                           size="small"
@@ -1403,35 +1396,24 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                                   },
                                 }}
                               >
-                                <Box
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "flex-start",
+                                  gap: 1.5,
+                                }}
+                              >
+                                <Typography
+                                  variant="body2"
                                   sx={{
-                                    display: "flex",
-                                    alignItems: "flex-start",
-                                    gap: 1.5,
+                                    flex: 1,
+                                    lineHeight: 1.6,
+                                    color: "text.primary",
                                   }}
                                 >
-                                  <Chip
-                                    label={String.fromCharCode(65 + optIndex)}
-                                    size="small"
-                                    sx={{
-                                      bgcolor: colors.primary.lightest,
-                                      color: colors.primary.blue,
-                                      fontWeight: 600,
-                                      minWidth: "28px",
-                                      height: "28px",
-                                    }}
-                                  />
-                                  <Typography
-                                    variant="body2"
-                                    sx={{
-                                      flex: 1,
-                                      lineHeight: 1.6,
-                                      color: "text.primary",
-                                    }}
-                                  >
-                                    {getOptionText(option)}
-                                  </Typography>
-                                </Box>
+                                  {getOptionText(option)}
+                                </Typography>
+                              </Box>
                               </Box>
                             ))}
                           </Box>
@@ -1601,53 +1583,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                         </Button>
                       </Box>
                     )}
-                    <FormControl component="fieldset">
-                      <FormLabel component="legend" sx={{ mb: 1 }}>
-                        Is Classroom Observation
-                      </FormLabel>
-                      <RadioGroup
-                        row
-                        value={isClassroomObservation}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value, 10);
-                          setIsClassroomObservation(value);
-                          // Reset observationCount when switching to No
-                          if (value === 0) {
-                            setObservationCount("");
-                          }
-                        }}
-                      >
-                        <FormControlLabel
-                          value={1}
-                          control={<Radio />}
-                          label="Yes"
-                        />
-                        <FormControlLabel
-                          value={0}
-                          control={<Radio />}
-                          label="No"
-                        />
-                      </RadioGroup>
-                    </FormControl>
-                    {isClassroomObservation === 1 && (
-                      <TextField
-                        fullWidth
-                        label="Observation Count"
-                        type="number"
-                        value={observationCount}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          // Only allow positive integers
-                          if (value === "" || /^\d+$/.test(value)) {
-                            setObservationCount(value);
-                          }
-                        }}
-                        variant="outlined"
-                        size="small"
-                        inputProps={{ min: 1 }}
-                        helperText="Enter the number of observations"
-                      />
-                    )}
                   </Box>
 
                   {/* Question Submit Button */}
@@ -1683,7 +1618,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                           { id: 2, text: { en: "", hi: "", gu: "" } },
                         ]);
                         setIsClassroomObservation(0);
-                        setObservationCount("");
                         setQuestionType("single_choice");
                         setEditingQuestion(null);
                         setCurrentQuestionId(null);
@@ -2099,53 +2033,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                         </Button>
                       </Box>
                     )}
-                    <FormControl component="fieldset">
-                      <FormLabel component="legend" sx={{ mb: 1 }}>
-                        Is Classroom Observation
-                      </FormLabel>
-                      <RadioGroup
-                        row
-                        value={isClassroomObservation}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value, 10);
-                          setIsClassroomObservation(value);
-                          // Reset observationCount when switching to No
-                          if (value === 0) {
-                            setObservationCount("");
-                          }
-                        }}
-                      >
-                        <FormControlLabel
-                          value={1}
-                          control={<Radio />}
-                          label="Yes"
-                        />
-                        <FormControlLabel
-                          value={0}
-                          control={<Radio />}
-                          label="No"
-                        />
-                      </RadioGroup>
-                    </FormControl>
-                    {isClassroomObservation === 1 && (
-                      <TextField
-                        fullWidth
-                        label="Observation Count"
-                        type="number"
-                        value={observationCount}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          // Only allow positive integers
-                          if (value === "" || /^\d+$/.test(value)) {
-                            setObservationCount(value);
-                          }
-                        }}
-                        variant="outlined"
-                        size="small"
-                        inputProps={{ min: 1 }}
-                        helperText="Enter the number of observations"
-                      />
-                    )}
                   </Box>
 
                   {/* Question Submit Button */}
@@ -2181,7 +2068,6 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                           { id: 2, text: { en: "", hi: "", gu: "" } },
                         ]);
                         setIsClassroomObservation(0);
-                        setObservationCount("");
                         setQuestionType("single_choice");
                         setEditingQuestion(null);
                         setCurrentQuestionId(null);

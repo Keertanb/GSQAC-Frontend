@@ -16,6 +16,7 @@
   },
   "assessment": {
     "title": "Assessment Management",
+    "publishAssessment": "Publish Assessment",
     "domain": {
       "title": "Domain",
       "addDomain": "Add Domain",

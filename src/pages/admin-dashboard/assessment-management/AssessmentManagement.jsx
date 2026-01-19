@@ -33,6 +33,7 @@ import {
   Delete,
   Language,
   Translate,
+  Publish,
 } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import DomainSubdomainView from "./DomainSubdomainView";
@@ -42,6 +43,7 @@ import {
   useUpsertDomainMutation,
   useDeleteDomainMutation,
   useTranslateTextMutation,
+  usePublishAssessmentMutation,
 } from "../../../services/adminService";
 import { roleIdMap, getRoleId } from "../../../constants/roles";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
@@ -136,6 +138,20 @@ const AssessmentManagement = () => {
       }
     },
   });
+
+  const publishAssessmentMutation = usePublishAssessmentMutation({
+    onSuccess: () => {
+      refetch();
+    },
+  });
+
+  const handlePublishAssessment = (isPublished) => {
+    const payload = {
+      roleId: getRoleId(selectedRole),
+      isPublished: isPublished,
+    };
+    publishAssessmentMutation.mutate(payload);
+  };
 
   const handleToggleDomain = (domainId) => {
     setExpandedDomain(expandedDomain === domainId ? null : domainId);
@@ -356,6 +372,18 @@ const AssessmentManagement = () => {
             }}
           >
             {t("assessment.domain.addDomain")}
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<Publish />}
+            onClick={() => handlePublishAssessment(1)}
+            disabled={publishAssessmentMutation.isPending}
+            sx={{
+              bgcolor: colors.accent.green,
+              "&:hover": { bgcolor: colors.accent.greenDark },
+            }}
+          >
+            {t("assessment.publishAssessment")}
           </Button>
         </Box>
       </Box>

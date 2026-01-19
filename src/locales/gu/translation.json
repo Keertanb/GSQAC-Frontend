@@ -15,6 +15,7 @@
   },
   "assessment": {
     "title": "મૂલ્યાંકન વ્યવસ્થાપન",
+    "publishAssessment": "મૂલ્યાંકન પ્રકાશિત કરો",
     "domain": {
       "title": "ડોમેન",
       "addDomain": "ડોમેન ઉમેરો",
