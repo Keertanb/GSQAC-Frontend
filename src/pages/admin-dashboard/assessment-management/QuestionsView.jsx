@@ -25,7 +25,14 @@ import {
   ToggleButtonGroup,
   ToggleButton,
 } from "@mui/material";
-import { ArrowBack, Add, Edit, Delete, Language, Translate } from "@mui/icons-material";
+import {
+  ArrowBack,
+  Add,
+  Edit,
+  Delete,
+  Language,
+  Translate,
+} from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import {
   useGetSubdomainQuestionsQuery,
@@ -58,9 +65,11 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
     hi: "HI",
     gu: "GU",
   };
-  
+
   // Local language state for QuestionsView (independent of parent)
-  const [selectedLanguage, setSelectedLanguage] = useState(currentLanguage || "en");
+  const [selectedLanguage, setSelectedLanguage] = useState(
+    currentLanguage || "en"
+  );
   const languageCode = languageCodeMap[selectedLanguage] || "EN";
 
   const subDomainId = subdomainData?.subDomainId || subdomainData?.id;
@@ -130,10 +139,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
     onSuccess: () => {
       // Invalidate and refetch questions query after deletion
       queryClient.invalidateQueries({
-        queryKey: queryKeys.admin.subdomainQuestions(
-          subDomainId,
-          roleId
-        ),
+        queryKey: queryKeys.admin.subdomainQuestions(subDomainId, roleId),
       });
       // Close modal
       setDeleteModalOpen(false);
@@ -147,10 +153,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
     onSuccess: () => {
       // Invalidate and refetch questions query after deletion
       queryClient.invalidateQueries({
-        queryKey: queryKeys.admin.subdomainQuestions(
-          subDomainId,
-          roleId
-        ),
+        queryKey: queryKeys.admin.subdomainQuestions(subDomainId, roleId),
       });
     },
   });
@@ -159,24 +162,24 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
     onSuccess: (data) => {
       // Extract translation data from response
       const translatedData = data?.data || data;
-      
+
       // Store translation ID for future updates
       if (translatedData?.id) {
         setTranslationId(translatedData.id);
       }
-      
+
       // Populate English and Hindi fields with translated text
       if (translatedData?.transEn) {
-        setNewQuestionText(prev => ({
+        setNewQuestionText((prev) => ({
           ...prev,
-          en: translatedData.transEn
+          en: translatedData.transEn,
         }));
       }
       // API returns transHn for Hindi
       if (translatedData?.transHn || translatedData?.transHi) {
-        setNewQuestionText(prev => ({
+        setNewQuestionText((prev) => ({
           ...prev,
-          hi: translatedData.transHn || translatedData.transHi
+          hi: translatedData.transHn || translatedData.transHi,
         }));
       }
     },
@@ -294,10 +297,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
 
         // Invalidate and refetch questions query
         queryClient.invalidateQueries({
-          queryKey: queryKeys.admin.subdomainQuestions(
-            subDomainId,
-            roleId
-          ),
+          queryKey: queryKeys.admin.subdomainQuestions(subDomainId, roleId),
         });
 
         setNewQuestionText({ en: "", hi: "", gu: "" });
@@ -420,10 +420,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
 
       // Invalidate and refetch questions query
       queryClient.invalidateQueries({
-        queryKey: queryKeys.admin.subdomainQuestions(
-          subDomainId,
-          roleId
-        ),
+        queryKey: queryKeys.admin.subdomainQuestions(subDomainId, roleId),
       });
 
       setNewQuestionText({ en: "", hi: "", gu: "" });
@@ -536,7 +533,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
   };
 
   const handleTranslateOption = async (optionId) => {
-    const option = newOptions.find(opt => opt.id === optionId);
+    const option = newOptions.find((opt) => opt.id === optionId);
     if (!option || !option.text.gu.trim()) {
       enqueueSnackbar("Please enter Gujarati text for this option first", {
         variant: "warning",
@@ -555,24 +552,27 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
 
       // Store translation ID for this option
       if (translatedData?.id) {
-        setOptionTranslationIds(prev => ({
+        setOptionTranslationIds((prev) => ({
           ...prev,
-          [optionId]: translatedData.id
+          [optionId]: translatedData.id,
         }));
       }
 
       // Update the option with translated text
       // API returns transHn for Hindi
-      setNewOptions(prevOptions =>
-        prevOptions.map(opt => {
+      setNewOptions((prevOptions) =>
+        prevOptions.map((opt) => {
           if (opt.id === optionId) {
             return {
               ...opt,
               text: {
                 ...opt.text,
                 en: translatedData?.transEn || opt.text.en,
-                hi: translatedData?.transHn || translatedData?.transHi || opt.text.hi,
-              }
+                hi:
+                  translatedData?.transHn ||
+                  translatedData?.transHi ||
+                  opt.text.hi,
+              },
             };
           }
           return opt;
@@ -583,12 +583,9 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
         variant: "success",
       });
     } catch (error) {
-      enqueueSnackbar(
-        error?.response?.data?.message || "Translation failed",
-        {
-          variant: "error",
-        }
-      );
+      enqueueSnackbar(error?.response?.data?.message || "Translation failed", {
+        variant: "error",
+      });
     }
   };
 
@@ -711,7 +708,15 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
         >
           {t("common.back")}
         </Button>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            flex: 1,
+            justifyContent: "center",
+          }}
+        >
           <Typography variant="h5" sx={{ fontWeight: 700 }}>
             {subdomainData?.subDomainNameEn ||
               subdomainData?.subDomainName ||
@@ -857,65 +862,67 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                             mb: 2,
                           }}
                         >
-                    <FormControl fullWidth size="small">
-                      <InputLabel>
-                        {t("assessment.domain.selectRole")}
-                      </InputLabel>
-                      <Select
-                        value={selectedQuestionRole}
-                        onChange={(e) =>
-                          setSelectedQuestionRole(e.target.value)
-                        }
-                        label={t("assessment.domain.selectRole")}
-                        disabled
-                      >
-                        <MenuItem value="admin">Admin</MenuItem>
-                        <MenuItem value="school">School</MenuItem>
-                        <MenuItem value="inspector">
-                          School Verifier
-                        </MenuItem>
-                        <MenuItem value="parent">Parent</MenuItem>
-                      </Select>
-                    </FormControl>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Question Type</InputLabel>
-                      <Select
-                        value={questionType}
-                        onChange={(e) => {
-                          setQuestionType(e.target.value);
-                          // Reset related fields when question type changes
-                          if (e.target.value === "fln") {
-                            setFlnAnswer("");
-                          } else {
-                            setNewOptions([
-                              { id: 1, text: { en: "", hi: "", gu: "" } },
-                              { id: 2, text: { en: "", hi: "", gu: "" } },
-                            ]);
-                          }
-                        }}
-                        label="Question Type"
-                        disabled={!!editingQuestion}
-                        sx={{
-                          "& .MuiOutlinedInput-notchedOutline": {
-                            borderColor: colors.neutral.gray300,
-                          },
-                          "&:hover .MuiOutlinedInput-notchedOutline": {
-                            borderColor: colors.primary.blue,
-                          },
-                        }}
-                      >
-                        <MenuItem value="single_choice">
-                          Single Choice Question
-                        </MenuItem>
-                        <MenuItem value="classroom_observation">
-                          Classroom Observation
-                        </MenuItem>
-                        <MenuItem value="subject_observation">
-                          Subject Wise Observation
-                        </MenuItem>
-                        <MenuItem value="fln">FLN Question</MenuItem>
-                      </Select>
-                    </FormControl>
+                          <FormControl fullWidth size="small">
+                            <InputLabel>
+                              {t("assessment.domain.selectRole")}
+                            </InputLabel>
+                            <Select
+                              value={selectedQuestionRole}
+                              onChange={(e) =>
+                                setSelectedQuestionRole(e.target.value)
+                              }
+                              label={t("assessment.domain.selectRole")}
+                              disabled
+                            >
+                              <MenuItem value="admin">Admin</MenuItem>
+                              <MenuItem value="school">School</MenuItem>
+                              <MenuItem value="inspector">
+                                School Verifier
+                              </MenuItem>
+                              <MenuItem value="parent">Parent</MenuItem>
+                            </Select>
+                          </FormControl>
+                          <FormControl fullWidth size="small">
+                            <InputLabel>Question Type</InputLabel>
+                            <Select
+                              value={questionType}
+                              onChange={(e) => {
+                                setQuestionType(e.target.value);
+                                // Reset related fields when question type changes
+                                if (e.target.value === "fln") {
+                                  setFlnAnswer("");
+                                } else {
+                                  setNewOptions([
+                                    { id: 1, text: { en: "", hi: "", gu: "" } },
+                                    { id: 2, text: { en: "", hi: "", gu: "" } },
+                                  ]);
+                                }
+                              }}
+                              label="Question Type"
+                              disabled={!!editingQuestion}
+                              sx={{
+                                "& .MuiOutlinedInput-notchedOutline": {
+                                  borderColor: colors.neutral.gray300,
+                                },
+                                "&:hover .MuiOutlinedInput-notchedOutline": {
+                                  borderColor: colors.primary.blue,
+                                },
+                              }}
+                            >
+                              <MenuItem value="single_choice">
+                                Single Choice Question
+                              </MenuItem>
+                              <MenuItem value="classroom_observation">
+                                Classroom Observation
+                              </MenuItem>
+                              <MenuItem value="subject_observation">
+                                Subject Wise Observation
+                              </MenuItem>
+                              <MenuItem value="fln">
+                                Input Type Question
+                              </MenuItem>
+                            </Select>
+                          </FormControl>
                           <Box sx={{ display: "flex", gap: 2 }}>
                             <TextField
                               fullWidth
@@ -971,16 +978,24 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                             />
                           </Box>
                           {/* Translation Button */}
-                          {newQuestionText.gu.trim() && (
-                            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+                          {/* {newQuestionText.gu.trim() && (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                mt: 1,
+                              }}
+                            >
                               <Button
                                 size="small"
                                 variant="outlined"
-                                startIcon={translateTextMutation.isPending ? (
-                                  <CircularProgress size={16} />
-                                ) : (
-                                  <Translate />
-                                )}
+                                startIcon={
+                                  translateTextMutation.isPending ? (
+                                    <CircularProgress size={16} />
+                                  ) : (
+                                    <Translate />
+                                  )
+                                }
                                 onClick={handleTranslateQuestion}
                                 disabled={translateTextMutation.isPending}
                                 sx={{
@@ -992,10 +1007,12 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                                   },
                                 }}
                               >
-                                {translateTextMutation.isPending ? "Translating..." : "Translate to English & Hindi"}
+                                {translateTextMutation.isPending
+                                  ? "Translating..."
+                                  : "Translate to English & Hindi"}
                               </Button>
                             </Box>
-                          )}
+                          )} */}
                         </Box>
 
                         {/* Question Submit Button */}
@@ -1216,13 +1233,20 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                                 />
                               </Box>
                               {/* Translation Button for Option */}
-                              {option.text.gu.trim() && (
-                                <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                              {/* {option.text.gu.trim() && (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    justifyContent: "flex-end",
+                                  }}
+                                >
                                   <Button
                                     size="small"
                                     variant="text"
                                     startIcon={<Translate />}
-                                    onClick={() => handleTranslateOption(option.id)}
+                                    onClick={() =>
+                                      handleTranslateOption(option.id)
+                                    }
                                     sx={{
                                       color: colors.accent.green,
                                       "&:hover": {
@@ -1233,7 +1257,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                                     Translate
                                   </Button>
                                 </Box>
-                              )}
+                              )} */}
                             </Card>
                           ))}
                         </Box>
@@ -1329,8 +1353,12 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                             label={getQuestionTypeLabel(question.questionType)}
                             size="small"
                             sx={{
-                              bgcolor: getQuestionTypeColor(question.questionType) + "20",
-                              color: getQuestionTypeColor(question.questionType),
+                              bgcolor:
+                                getQuestionTypeColor(question.questionType) +
+                                "20",
+                              color: getQuestionTypeColor(
+                                question.questionType
+                              ),
                               fontWeight: 600,
                               fontSize: "0.75rem",
                             }}
@@ -1396,24 +1424,24 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                                   },
                                 }}
                               >
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "flex-start",
-                                  gap: 1.5,
-                                }}
-                              >
-                                <Typography
-                                  variant="body2"
+                                <Box
                                   sx={{
-                                    flex: 1,
-                                    lineHeight: 1.6,
-                                    color: "text.primary",
+                                    display: "flex",
+                                    alignItems: "flex-start",
+                                    gap: 1.5,
                                   }}
                                 >
-                                  {getOptionText(option)}
-                                </Typography>
-                              </Box>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      flex: 1,
+                                      lineHeight: 1.6,
+                                      color: "text.primary",
+                                    }}
+                                  >
+                                    {getOptionText(option)}
+                                  </Typography>
+                                </Box>
                               </Box>
                             ))}
                           </Box>
@@ -1497,10 +1525,16 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                           },
                         }}
                       >
-                        <MenuItem value="single_choice">Single Choice Question</MenuItem>
-                        <MenuItem value="classroom_observation">Classroom Observation</MenuItem>
-                        <MenuItem value="subject_observation">Subject Wise Observation</MenuItem>
-                        <MenuItem value="fln">FLN Question</MenuItem>
+                        <MenuItem value="single_choice">
+                          Single Choice Question
+                        </MenuItem>
+                        <MenuItem value="classroom_observation">
+                          Classroom Observation
+                        </MenuItem>
+                        <MenuItem value="subject_observation">
+                          Subject Wise Observation
+                        </MenuItem>
+                        <MenuItem value="fln">Input Type Question</MenuItem>
                       </Select>
                     </FormControl>
                     <Box sx={{ display: "flex", gap: 2 }}>
@@ -1557,17 +1591,24 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                         rows={3}
                       />
                     </Box>
-                    {/* Translation Button */}
-                    {newQuestionText.gu.trim() && (
-                      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+                    {/* {newQuestionText.gu.trim() && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          mt: 1,
+                        }}
+                      >
                         <Button
                           size="small"
                           variant="outlined"
-                          startIcon={translateTextMutation.isPending ? (
-                            <CircularProgress size={16} />
-                          ) : (
-                            <Translate />
-                          )}
+                          startIcon={
+                            translateTextMutation.isPending ? (
+                              <CircularProgress size={16} />
+                            ) : (
+                              <Translate />
+                            )
+                          }
                           onClick={handleTranslateQuestion}
                           disabled={translateTextMutation.isPending}
                           sx={{
@@ -1579,10 +1620,12 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                             },
                           }}
                         >
-                          {translateTextMutation.isPending ? "Translating..." : "Translate to English & Hindi"}
+                          {translateTextMutation.isPending
+                            ? "Translating..."
+                            : "Translate to English & Hindi"}
                         </Button>
                       </Box>
-                    )}
+                    )} */}
                   </Box>
 
                   {/* Question Submit Button */}
@@ -1721,7 +1764,11 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
 
                     {questionType !== "fln" && (
                       <Box
-                        sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2,
+                        }}
                       >
                         {newOptions.map((option, optIndex) => (
                           <Card
@@ -1734,119 +1781,126 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                               border: "1px solid rgba(0,0,0,0.08)",
                             }}
                           >
-                          <Box
-                            sx={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              mb: 1.5,
-                            }}
-                          >
-                            <Chip
-                              label={`${t("assessment.question.options")} ${
-                                optIndex + 1
-                              }`}
-                              size="small"
+                            <Box
                               sx={{
-                                bgcolor: colors.primary.lightest,
-                                color: colors.primary.blue,
-                                fontWeight: 600,
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                mb: 1.5,
                               }}
-                            />
-                            {newOptions.length > 2 && (
-                              <IconButton
+                            >
+                              <Chip
+                                label={`${t("assessment.question.options")} ${
+                                  optIndex + 1
+                                }`}
                                 size="small"
-                                color="error"
-                                onClick={() => handleDeleteOption(option.id)}
                                 sx={{
-                                  bgcolor: colors.semantic.error + "15",
-                                  "&:hover": {
-                                    bgcolor: colors.semantic.error + "25",
-                                  },
+                                  bgcolor: colors.primary.lightest,
+                                  color: colors.primary.blue,
+                                  fontWeight: 600,
                                 }}
-                              >
-                                <Delete fontSize="small" />
-                              </IconButton>
-                            )}
-                          </Box>
-                          <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
-                            <TextField
-                              fullWidth
-                              label={`${t(
-                                "assessment.question.options"
-                              )} (Gujarati)`}
-                              value={option.text.gu}
-                              onChange={(e) =>
-                                handleOptionChange(
-                                  option.id,
-                                  "gu",
-                                  e.target.value
-                                )
-                              }
-                              variant="outlined"
-                              size="small"
-                              required
-                              multiline
-                              rows={2}
-                            />
-                            <TextField
-                              fullWidth
-                              label={`${t(
-                                "assessment.question.options"
-                              )} (English)`}
-                              value={option.text.en}
-                              onChange={(e) =>
-                                handleOptionChange(
-                                  option.id,
-                                  "en",
-                                  e.target.value
-                                )
-                              }
-                              variant="outlined"
-                              size="small"
-                              multiline
-                              rows={2}
-                            />
-                            <TextField
-                              fullWidth
-                              label={`${t(
-                                "assessment.question.options"
-                              )} (Hindi)`}
-                              value={option.text.hi}
-                              onChange={(e) =>
-                                handleOptionChange(
-                                  option.id,
-                                  "hi",
-                                  e.target.value
-                                )
-                              }
-                              variant="outlined"
-                              size="small"
-                              multiline
-                              rows={2}
-                            />
-                          </Box>
-                          {/* Translation Button for Option */}
-                          {option.text.gu.trim() && (
-                            <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-                              <Button
-                                size="small"
-                                variant="text"
-                                startIcon={<Translate />}
-                                onClick={() => handleTranslateOption(option.id)}
-                                sx={{
-                                  color: colors.accent.green,
-                                  "&:hover": {
-                                    bgcolor: colors.accent.green + "10",
-                                  },
-                                }}
-                              >
-                                Translate
-                              </Button>
+                              />
+                              {newOptions.length > 2 && (
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleDeleteOption(option.id)}
+                                  sx={{
+                                    bgcolor: colors.semantic.error + "15",
+                                    "&:hover": {
+                                      bgcolor: colors.semantic.error + "25",
+                                    },
+                                  }}
+                                >
+                                  <Delete fontSize="small" />
+                                </IconButton>
+                              )}
                             </Box>
-                          )}
-                        </Card>
-                      ))}
+                            <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
+                              <TextField
+                                fullWidth
+                                label={`${t(
+                                  "assessment.question.options"
+                                )} (Gujarati)`}
+                                value={option.text.gu}
+                                onChange={(e) =>
+                                  handleOptionChange(
+                                    option.id,
+                                    "gu",
+                                    e.target.value
+                                  )
+                                }
+                                variant="outlined"
+                                size="small"
+                                required
+                                multiline
+                                rows={2}
+                              />
+                              <TextField
+                                fullWidth
+                                label={`${t(
+                                  "assessment.question.options"
+                                )} (English)`}
+                                value={option.text.en}
+                                onChange={(e) =>
+                                  handleOptionChange(
+                                    option.id,
+                                    "en",
+                                    e.target.value
+                                  )
+                                }
+                                variant="outlined"
+                                size="small"
+                                multiline
+                                rows={2}
+                              />
+                              <TextField
+                                fullWidth
+                                label={`${t(
+                                  "assessment.question.options"
+                                )} (Hindi)`}
+                                value={option.text.hi}
+                                onChange={(e) =>
+                                  handleOptionChange(
+                                    option.id,
+                                    "hi",
+                                    e.target.value
+                                  )
+                                }
+                                variant="outlined"
+                                size="small"
+                                multiline
+                                rows={2}
+                              />
+                            </Box>
+                            {/* Translation Button for Option */}
+                            {/* {option.text.gu.trim() && (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "flex-end",
+                                }}
+                              >
+                                <Button
+                                  size="small"
+                                  variant="text"
+                                  startIcon={<Translate />}
+                                  onClick={() =>
+                                    handleTranslateOption(option.id)
+                                  }
+                                  sx={{
+                                    color: colors.accent.green,
+                                    "&:hover": {
+                                      bgcolor: colors.accent.green + "10",
+                                    },
+                                  }}
+                                >
+                                  Translate
+                                </Button>
+                              </Box>
+                            )} */}
+                          </Card>
+                        ))}
                       </Box>
                     )}
 
@@ -2008,16 +2062,24 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                       />
                     </Box>
                     {/* Translation Button */}
-                    {newQuestionText.gu.trim() && (
-                      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+                    {/* {newQuestionText.gu.trim() && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          mt: 1,
+                        }}
+                      >
                         <Button
                           size="small"
                           variant="outlined"
-                          startIcon={translateTextMutation.isPending ? (
-                            <CircularProgress size={16} />
-                          ) : (
-                            <Translate />
-                          )}
+                          startIcon={
+                            translateTextMutation.isPending ? (
+                              <CircularProgress size={16} />
+                            ) : (
+                              <Translate />
+                            )
+                          }
                           onClick={handleTranslateQuestion}
                           disabled={translateTextMutation.isPending}
                           sx={{
@@ -2029,10 +2091,12 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                             },
                           }}
                         >
-                          {translateTextMutation.isPending ? "Translating..." : "Translate to English & Hindi"}
+                          {translateTextMutation.isPending
+                            ? "Translating..."
+                            : "Translate to English & Hindi"}
                         </Button>
                       </Box>
-                    )}
+                    )} */}
                   </Box>
 
                   {/* Question Submit Button */}
@@ -2243,7 +2307,12 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                           </Box>
                           {/* Translation Button for Option */}
                           {option.text.gu.trim() && (
-                            <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                              }}
+                            >
                               <Button
                                 size="small"
                                 variant="text"

@@ -41,15 +41,15 @@ const SchoolDashboard = () => {
   const theme = useTheme();
   const matchDownMD = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
-  const { logout, user } = useAuthStore();
+  const { logout, user, userName } = useAuthStore();
 
   // Fetch school data
   const {
     data: schoolDataResponse,
     isLoading: isLoadingSchoolData,
   } = useGetSchoolDataQuery({
-    schoolId: "24091502136",
-    enabled: true,
+    schoolId: userName || undefined,
+    enabled: !!userName,
   });
 
   const schoolData = schoolDataResponse?.data || {};
@@ -393,7 +393,7 @@ const SchoolDashboard = () => {
                           <TrendingUp sx={{ fontSize: 20, color: "#10b981" }} />
                         </Box>
                         <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 0.5 }}>
-                          Total Students
+                          Total sadsadd
                         </Typography>
                         <Typography variant="h3" sx={{ fontWeight: 700, color: "#0f172a", fontSize: "2.25rem", lineHeight: 1.2 }}>
                           {schoolData.studentCount || "-"}

@@ -4,6 +4,7 @@ import {
   useUpdateRoleStatusMutation,
 } from "../../../services/adminService";
 import { useQueryClient } from "@tanstack/react-query";
+import { enqueueSnackbar } from "notistack";
 import AppTable from "../../../components/AppTable/AppTable";
 import "./RoleManagement.css";
 
@@ -16,8 +17,18 @@ const RoleManagement = () => {
   const roles = rolesData?.data || [];
 
   const updateMutation = useUpdateRoleStatusMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "roles"] });
+      enqueueSnackbar(
+        data?.message || "Role status updated successfully",
+        { variant: "success" }
+      );
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to update role status",
+        { variant: "error" }
+      );
     },
   });
 
@@ -41,12 +52,7 @@ const RoleManagement = () => {
       id: "roleName",
       label: "Role Name",
       render: (role) => (
-        <div className="cell-name">
-          <div className="name-avatar">
-            {role.roleName?.charAt(0)?.toUpperCase() || "R"}
-          </div>
-          <span className="name-text">{role.roleName}</span>
-        </div>
+        <span className="name-text">{role.roleName}</span>
       ),
     },
     {

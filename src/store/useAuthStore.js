@@ -9,14 +9,16 @@ const useAuthStore = create(
       role: null,
       userId: null,
       userName: null,
+      districtId: null,
 
-      setUserData: (userData, token, role, userId, userName) => {
+      setUserData: (userData, token, role, userId, userName, districtId) => {
         set({
           user: userData,
           token,
           role,
           userId,
           userName,
+          districtId: districtId || userData?.districtId || null,
         });
       },
 
@@ -34,6 +36,7 @@ const useAuthStore = create(
           role: null,
           userId: null,
           userName: null,
+          districtId: null,
         });
       },
 

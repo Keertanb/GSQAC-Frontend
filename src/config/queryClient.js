@@ -42,4 +42,7 @@ export const queryKeys = {
     infrastructure: (schoolId) => ["school", "infrastructure", schoolId],
     updateInfrastructure: () => ["school", "update-infrastructure"],
   },
+  inspector: {
+    allocatedSchools: (districtId) => ["inspector", "allocated-schools", districtId],
+  },
 };

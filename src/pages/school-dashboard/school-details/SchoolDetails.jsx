@@ -422,6 +422,18 @@ const SchoolDetails = () => {
     return value;
   };
 
+  // Helper function to convert 0/1 to Yes/No or Available/Not Available
+  const convertInfrastructureValue = (value, fieldType = "yesno") => {
+    if (value === null || value === undefined) {
+      return fieldType === "available" ? "Available" : "Yes";
+    }
+    const numValue = Number(value);
+    if (fieldType === "available") {
+      return numValue === 1 ? "Available" : "Not Available";
+    }
+    return numValue === 1 ? "Yes" : "No";
+  };
+
   // Update school data when API response is received
   useEffect(() => {
     if (schoolDataResponse?.data) {
@@ -456,11 +468,24 @@ const SchoolDetails = () => {
         totalTeachers: String(apiData.teacherCount || prev.totalTeachers),
         totalStudents: String(apiData.studentCount || prev.totalStudents),
 
-        // Infrastructure & Facilities - Keep defaults if not in API
-        drinkingWater: prev.drinkingWater,
-        puccaBuilding: prev.puccaBuilding,
-        electricity: prev.electricity,
-        functionalToilets: prev.functionalToilets,
+        // Infrastructure & Facilities - Convert 0/1 to proper values
+        drinkingWater:
+          apiData.drinkingWater !== undefined && apiData.drinkingWater !== null
+            ? convertInfrastructureValue(apiData.drinkingWater, "available")
+            : prev.drinkingWater,
+        puccaBuilding:
+          apiData.puccaBuilding !== undefined && apiData.puccaBuilding !== null
+            ? convertInfrastructureValue(apiData.puccaBuilding, "yesno")
+            : prev.puccaBuilding,
+        electricity:
+          apiData.electricity !== undefined && apiData.electricity !== null
+            ? convertInfrastructureValue(apiData.electricity, "yesno")
+            : prev.electricity,
+        functionalToilets:
+          apiData.functionalToilets !== undefined &&
+          apiData.functionalToilets !== null
+            ? convertInfrastructureValue(apiData.functionalToilets, "yesno")
+            : prev.functionalToilets,
 
         // Contact Information
         principalName: apiData.principalName || prev.principalName,

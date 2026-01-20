@@ -65,6 +65,7 @@ import {
   useSubmitSubdomainWiseAnswersMutation,
   useSubmitAssessmentMutation,
 } from "../../../services/schoolService";
+import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
 
 const SelfAssessment = () => {
   const navigate = useNavigate();
@@ -80,11 +81,13 @@ const SelfAssessment = () => {
   const [subdomainAnswers, setSubdomainAnswers] = useState({});
   const [classWiseAnswers, setClassWiseAnswers] = useState({});
   const [classWiseTextAnswers, setClassWiseTextAnswers] = useState({}); // Store text answers per class
+  const [selectedClassGroup, setSelectedClassGroup] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [textAnswers, setTextAnswers] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
+  const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
 
   const logoutMutation = useLogoutMutation({
     onSuccess: () => {
@@ -119,22 +122,36 @@ const SelfAssessment = () => {
     data: domainsData,
     isLoading: isLoadingDomains,
     isError: isErrorDomains,
+    refetch: refetchDomains,
   } = useGetDomainsQuery({
     roleId,
     languageCode,
     enabled: true,
   });
 
+  // Fetch all questions (without class filter) for counting purposes
   const {
-    data: questionsData,
-    isLoading: isLoadingQuestions,
-    isError: isErrorQuestions,
+    data: allQuestionsData,
   } = useGetSubdomainQuestionsQuery({
     subDomainId: selectedSubdomain?.subDomainId || selectedSubdomain?.id,
     roleId,
     languageCode,
-    classNumber: selectedClass ? Number(selectedClass) : undefined,
-    section: selectedSection || undefined,
+    userId: userId ? Number(userId) : undefined,
+    enabled: !!selectedSubdomain,
+  });
+
+  const {
+    data: questionsData,
+    isLoading: isLoadingQuestions,
+    isError: isErrorQuestions,
+    refetch: refetchQuestions,
+  } = useGetSubdomainQuestionsQuery({
+    subDomainId: selectedSubdomain?.subDomainId || selectedSubdomain?.id,
+    roleId,
+    languageCode,
+    // Only send cls and section when they are explicitly selected
+    ...(selectedClass && { classNumber: Number(selectedClass) }),
+    ...(selectedSection && { section: selectedSection }),
     userId: userId ? Number(userId) : undefined,
     enabled: !!selectedSubdomain,
   });
@@ -166,17 +183,36 @@ const SelfAssessment = () => {
     return [];
   }, [lowerClass, upperClass]);
 
-  // Auto-select first class when classOptions are available and subdomain is selected
-  useEffect(() => {
-    if (
-      classOptions &&
-      classOptions.length > 0 &&
-      selectedSubdomain &&
-      !selectedClass
-    ) {
-      setSelectedClass(classOptions[0]);
+  // Filter class options based on selected class group
+  const filteredClassOptions = useMemo(() => {
+    if (!selectedClassGroup) {
+      return classOptions;
     }
-  }, [classOptions, selectedSubdomain, selectedClass]);
+    
+    let minClass, maxClass;
+    if (selectedClassGroup === "1-2") {
+      minClass = 1;
+      maxClass = 2;
+    } else if (selectedClassGroup === "3-5") {
+      minClass = 3;
+      maxClass = 5;
+    } else if (selectedClassGroup === "6-8") {
+      minClass = 6;
+      maxClass = 8;
+    }
+    
+    return classOptions.filter(cls => cls >= minClass && cls <= maxClass);
+  }, [classOptions, selectedClassGroup]);
+
+  // Reset class when class group changes
+  useEffect(() => {
+    if (selectedClassGroup) {
+      setSelectedClass(null);
+    }
+  }, [selectedClassGroup]);
+
+  // Note: Removed auto-selection of class group and class to prevent
+  // sending default cls/section parameters for General Questions
 
   // Fetch all school sections once
   const { data: sectionsData, isLoading: isLoadingSections } =
@@ -205,15 +241,8 @@ const SelfAssessment = () => {
     return [];
   }, [sectionsData, selectedClass]);
 
-  // Auto-select first section when sections are loaded for a class
-  useEffect(() => {
-    if (sections && sections.length > 0 && selectedClass && !selectedSection) {
-      const firstSection = sections[0];
-      const sectionValue =
-        firstSection.sectionName || firstSection.name || firstSection.value;
-      setSelectedSection(sectionValue);
-    }
-  }, [sections, selectedClass, selectedSection]);
+  // Note: Removed auto-selection of section to prevent
+  // sending default section parameter for General Questions
 
   // Extract subjects from API response - handle both array and object formats
   const subjects = useMemo(() => {
@@ -229,14 +258,20 @@ const SelfAssessment = () => {
     return [];
   }, [subjectsData]);
 
-  // Auto-select first subject when subjects are available for the selected class
-  useEffect(() => {
-    if (subjects && subjects.length > 0 && selectedClass && !selectedSubject) {
-      setSelectedSubject(subjects[0].id);
-    }
-  }, [subjects, selectedClass, selectedSubject]);
+  // Note: Removed auto-selection of subject to allow manual selection only
 
   const domains = domainsData?.data || [];
+
+  // All questions for counting (unfiltered by class)
+  const allQuestionsForCount = useMemo(() => {
+    if (allQuestionsData?.data?.data && Array.isArray(allQuestionsData.data.data)) {
+      return allQuestionsData.data.data;
+    }
+    if (allQuestionsData?.data && Array.isArray(allQuestionsData.data)) {
+      return allQuestionsData.data;
+    }
+    return [];
+  }, [allQuestionsData?.data]);
 
   const allQuestions = useMemo(() => {
     if (questionsData?.data?.data && Array.isArray(questionsData.data.data)) {
@@ -248,6 +283,27 @@ const SelfAssessment = () => {
     return [];
   }, [questionsData?.data]);
 
+  // Questions for counting (unfiltered)
+  const singleChoiceQuestionsForCount = allQuestionsForCount.filter(
+    (q) => q.questionType === 1 || q.questionType === "1"
+  );
+  const classroomObservationQuestionsForCount = allQuestionsForCount.filter(
+    (q) => q.questionType === 2 || q.questionType === "2"
+  );
+  const subjectObservationQuestionsForCount = allQuestionsForCount.filter(
+    (q) => q.questionType === 3 || q.questionType === "3"
+  );
+  const flnQuestionsForCount = allQuestionsForCount.filter(
+    (q) => q.questionType === 4 || q.questionType === "4"
+  );
+  const generalQuestionsForCount = allQuestionsForCount.filter((q) => {
+    if (q.questionType) {
+      return q.questionType === 1 || q.questionType === "1";
+    }
+    return q.isClassroomObservation !== 1 || q.isClassroomObservation == null;
+  });
+
+  // Questions for display (filtered by class/section)
   const singleChoiceQuestions = allQuestions.filter(
     (q) => q.questionType === 1 || q.questionType === "1"
   );
@@ -492,7 +548,8 @@ const SelfAssessment = () => {
     const savedAnswers = subdomainAnswers[subdomainId] || {};
     setSelectedSubdomain(subdomain);
     setAnswers(savedAnswers);
-    // Reset class, section, and subject when switching subdomains
+    // Reset class group, class, section, and subject when switching subdomains
+    setSelectedClassGroup(null);
     setSelectedClass(null);
     setSelectedSection(null);
     setSelectedSubject(null);
@@ -545,11 +602,11 @@ const SelfAssessment = () => {
           const classKey = String(selectedClass);
           const storageKey = `${subdomainId}_${classKey}`;
           setClassWiseAnswers((prev) => ({
-            ...prev,
+          ...prev,
             [storageKey]: apiAnswers,
-          }));
-        }
+        }));
       }
+    }
 
       if (Object.keys(apiTextAnswers).length > 0) {
         setTextAnswers(apiTextAnswers);
@@ -617,7 +674,9 @@ const SelfAssessment = () => {
 
   const submitAnswerMutation = useSubmitAnswerMutation({
     onSuccess: (data) => {
-      // Optionally update local state or refetch questions
+      // Refetch questions and domains to update progress bars
+      refetchQuestions();
+      refetchDomains();
       console.log("Answer submitted successfully:", data);
       enqueueSnackbar("Answer submitted successfully!", {
         variant: "success",
@@ -647,6 +706,9 @@ const SelfAssessment = () => {
             [subdomainId]: { ...answers },
           }));
         }
+        // Refetch questions and domains to update progress bars
+        refetchQuestions();
+        refetchDomains();
         // Optionally clear answers or navigate
         console.log("Subdomain answers submitted successfully:", data);
         enqueueSnackbar("All answers submitted successfully!", {
@@ -668,6 +730,8 @@ const SelfAssessment = () => {
   const submitAssessmentMutation = useSubmitAssessmentMutation({
     onSuccess: (data) => {
       console.log("Assessment submitted successfully:", data);
+      // Close the confirmation modal
+      setShowSubmitConfirmation(false);
       // Optionally refresh domains to show updated progress
       enqueueSnackbar("Assessment submitted successfully!", {
         variant: "success",
@@ -675,6 +739,8 @@ const SelfAssessment = () => {
     },
     onError: (error) => {
       console.error("Error submitting assessment:", error);
+      // Close the confirmation modal
+      setShowSubmitConfirmation(false);
       enqueueSnackbar(
         error?.response?.data?.message ||
           "Failed to submit assessment. Please try again.",
@@ -685,6 +751,26 @@ const SelfAssessment = () => {
     },
   });
 
+  // Handler to open confirmation modal for final submit
+  const handleOpenSubmitConfirmation = () => {
+    if (!userId) {
+      enqueueSnackbar("User ID is missing. Please login again.", {
+        variant: "error",
+      });
+      return;
+    }
+    setShowSubmitConfirmation(true);
+  };
+
+  // Handler to confirm final submit
+  const handleConfirmSubmit = () => {
+    const payload = {
+      userId: Number(userId),
+      isSubmitted: 1,
+    };
+    submitAssessmentMutation.mutate(payload);
+  };
+
   const allDomainsComplete = useMemo(() => {
     if (!domains || domains.length === 0) return false;
     return domains.every((domain) => {
@@ -692,6 +778,23 @@ const SelfAssessment = () => {
       return Math.round(progress) === 100;
     });
   }, [domains, getDomainProgress]);
+
+  // Calculate total answered and total questions
+  const { totalAnswered, totalQuestions } = useMemo(() => {
+    const total = allQuestionsForCount.length;
+    const answered = allQuestionsForCount.filter(
+      (q) => {
+        const questionType = q.questionType || (q.isClassroomObservation === 1 ? 2 : 1);
+        // For FLN questions (type 4), check text answer
+        if (questionType === 4 || questionType === "4") {
+          return textAnswers[q.questionId] && textAnswers[q.questionId].trim();
+        }
+        // For other questions, check if option is selected
+        return answers[q.questionId] || q.selectedOptionId;
+      }
+    ).length;
+    return { totalAnswered: answered, totalQuestions: total };
+  }, [allQuestionsForCount, answers, textAnswers]);
 
   // Get domain and subdomain indices for numbering
   const { domainNumber, subdomainNumber } = useMemo(() => {
@@ -737,17 +840,17 @@ const SelfAssessment = () => {
       }
     } else {
       // For other question types, validate option selection
-      const userSelectedOption = answers[question.questionId];
-      const apiSelectedOption = question.selectedOptionId
-        ? String(question.selectedOptionId)
-        : null;
-      const selectedOptionId = userSelectedOption || apiSelectedOption;
+    const userSelectedOption = answers[question.questionId];
+    const apiSelectedOption = question.selectedOptionId
+      ? String(question.selectedOptionId)
+      : null;
+    const selectedOptionId = userSelectedOption || apiSelectedOption;
 
-      if (!selectedOptionId) {
-        enqueueSnackbar("Please select an option before submitting.", {
-          variant: "warning",
-        });
-        return;
+    if (!selectedOptionId) {
+      enqueueSnackbar("Please select an option before submitting.", {
+        variant: "warning",
+      });
+      return;
       }
     }
 
@@ -861,21 +964,16 @@ const SelfAssessment = () => {
       return;
     }
 
-    let clsValue = 2;
-    let sectionValue = "";
+    let clsValue = null;
+    let sectionValue = null;
     const isClassSelected = hasClassBasedQuestions && selectedClass;
 
     if (isClassSelected) {
       // Class-based questions - use selected class and section
       clsValue = Number(selectedClass);
-      sectionValue = selectedSection || "";
-    } else {
-      // General questions - use empty section and default class
-      // Try to get class from first question if available, otherwise use default
-      const firstQuestion = allQuestions[0];
-      clsValue = firstQuestion?.class || 2;
-      sectionValue = "";
+      sectionValue = selectedSection || null;
     }
+    // For General questions or FLN questions, clsValue and sectionValue remain null
 
     // Format answers array from current answers state
     const answersArray = allQuestions
@@ -921,31 +1019,6 @@ const SelfAssessment = () => {
               : null,
         };
 
-        // Determine cls, section, and subjectId based on question type
-        if (questionType === 3 || questionType === "3") {
-          // Subject observation questions - require subject
-          answerObj.cls = clsValue;
-          answerObj.section = sectionValue;
-          answerObj.subjectId = selectedSubject
-            ? Number(selectedSubject)
-            : null;
-        } else if (questionType === 2 || questionType === "2") {
-          // Classroom observation questions - no subject
-          answerObj.cls = clsValue;
-          answerObj.section = sectionValue;
-          answerObj.subjectId = null;
-        } else if (questionType === 1 || questionType === "1") {
-          // Single choice questions
-          answerObj.cls = 2; // Default
-          answerObj.section = "";
-          answerObj.subjectId = null;
-        } else if (questionType === 4 || questionType === "4") {
-          // FLN questions
-          answerObj.cls = 2; // Default
-          answerObj.section = "";
-          answerObj.subjectId = null;
-        }
-
         return answerObj;
       });
 
@@ -969,6 +1042,8 @@ const SelfAssessment = () => {
     const payload = {
       isAns: 1,
       userId: Number(userId),
+      cls: clsValue,
+      section: sectionValue,
       subjectId: selectedSubject ? Number(selectedSubject) : null,
       answers: answersArray,
     };
@@ -1068,8 +1143,8 @@ const SelfAssessment = () => {
             >
               <Menu />
             </IconButton>
-            <Box
-              sx={{
+              <Box
+                sx={{
                 display: "flex",
                 alignItems: "center",
                 gap: 2.5,
@@ -1222,7 +1297,7 @@ const SelfAssessment = () => {
                     }
                   }}
                   size="small"
-                  sx={{
+                    sx={{
                     "& .MuiToggleButton-root": {
                       px: 2,
                       py: 0.5,
@@ -1464,63 +1539,63 @@ const SelfAssessment = () => {
                                 >
                                   {domain.subDomain.map(
                                     (subdomain, subdomainIndex) => {
-                                      const subdomainId =
-                                        subdomain.subDomainId || subdomain.id;
-                                      const subdomainProgress =
-                                        getSubdomainProgress(subdomain);
-                                      const isSubdomainSelected =
-                                        selectedSubdomain?.subDomainId ===
-                                        subdomainId;
+                                    const subdomainId =
+                                      subdomain.subDomainId || subdomain.id;
+                                    const subdomainProgress =
+                                      getSubdomainProgress(subdomain);
+                                    const isSubdomainSelected =
+                                      selectedSubdomain?.subDomainId ===
+                                      subdomainId;
                                       const subdomainNumber = `${domainNumber}.${
                                         subdomainIndex + 1
                                       }`;
 
-                                      return (
-                                        <Card
-                                          key={subdomainId}
-                                          onClick={() =>
-                                            handleSubdomainSelect(subdomain)
-                                          }
-                                          sx={{
-                                            cursor: "pointer",
+                                    return (
+                                      <Card
+                                        key={subdomainId}
+                                        onClick={() =>
+                                          handleSubdomainSelect(subdomain)
+                                        }
+                                        sx={{
+                                          cursor: "pointer",
                                             mb: 1.2,
-                                            transition: "all 0.3s ease",
+                                          transition: "all 0.3s ease",
                                             border: isSubdomainSelected
                                               ? "2px solid"
                                               : "1px solid",
-                                            borderColor: isSubdomainSelected
+                                          borderColor: isSubdomainSelected
                                               ? colors.primary.blue
                                               : colors.neutral.gray200,
                                             borderRadius: 1.2,
-                                            bgcolor: isSubdomainSelected
+                                          bgcolor: isSubdomainSelected
                                               ? colors.primary.blue + "15"
                                               : "white",
-                                            boxShadow: isSubdomainSelected
+                                          boxShadow: isSubdomainSelected
                                               ? `0 4px 12px ${colors.primary.blue}30`
                                               : "none",
-                                            "&:hover": {
+                                          "&:hover": {
                                               borderColor: colors.primary.blue,
                                               bgcolor:
                                                 colors.primary.blue + "08",
-                                            },
-                                          }}
-                                        >
-                                          <CardContent
-                                            sx={{
+                                          },
+                                        }}
+                                      >
+                                        <CardContent
+                                          sx={{
                                               p: 1.2,
                                               "&:last-child": { pb: 1.2 },
+                                          }}
+                                        >
+                                          <Box
+                                            sx={{
+                                              display: "flex",
+                                              alignItems: "center",
+                                                gap: 1,
+                                                mb: 0.8,
                                             }}
                                           >
                                             <Box
                                               sx={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: 1,
-                                                mb: 0.8,
-                                              }}
-                                            >
-                                              <Box
-                                                sx={{
                                                   width: 24,
                                                   height: 24,
                                                   borderRadius: 0.8,
@@ -1528,113 +1603,113 @@ const SelfAssessment = () => {
                                                     ? colors.accent.green
                                                     : colors.accent.green +
                                                       "80",
-                                                  display: "flex",
-                                                  alignItems: "center",
-                                                  justifyContent: "center",
-                                                  flexShrink: 0,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                flexShrink: 0,
+                                              }}
+                                            >
+                                              <Typography
+                                                sx={{
+                                                  color: "white",
+                                                  fontWeight: 700,
+                                                    fontSize: "0.6875rem",
                                                 }}
                                               >
-                                                <Typography
-                                                  sx={{
-                                                    color: "white",
-                                                    fontWeight: 700,
-                                                    fontSize: "0.6875rem",
-                                                  }}
-                                                >
-                                                  {String.fromCharCode(
+                                                {String.fromCharCode(
                                                     65 + (subdomainIndex % 26)
-                                                  )}
-                                                </Typography>
-                                              </Box>
+                                                )}
+                                              </Typography>
+                                            </Box>
                                               <Box
                                                 sx={{ flex: 1, minWidth: 0 }}
                                               >
-                                                <Typography
-                                                  variant="body2"
-                                                  sx={{
-                                                    fontWeight: 600,
-                                                    color: isSubdomainSelected
-                                                      ? colors.accent.green
-                                                      : colors.text.primary,
+                                              <Typography
+                                                variant="body2"
+                                                sx={{
+                                                  fontWeight: 600,
+                                                  color: isSubdomainSelected
+                                                    ? colors.accent.green
+                                                    : colors.text.primary,
                                                     fontSize: "0.75rem",
                                                     lineHeight: 1.3,
-                                                  }}
-                                                >
+                                                }}
+                                              >
                                                   {subdomainNumber}.{" "}
-                                                  {getSubdomainName(subdomain)}
-                                                </Typography>
-                                              </Box>
-                                              {isSubdomainSelected &&
-                                                subdomainProgress === 100 && (
-                                                  <CheckCircle
-                                                    sx={{
+                                                {getSubdomainName(subdomain)}
+                                              </Typography>
+                                            </Box>
+                                            {isSubdomainSelected &&
+                                              subdomainProgress === 100 && (
+                                                <CheckCircle
+                                                  sx={{
                                                       color:
                                                         colors.accent.green,
                                                       fontSize: 14,
-                                                    }}
-                                                  />
-                                                )}
-                                            </Box>
-                                            {/* Progress Bar */}
+                                                  }}
+                                                />
+                                              )}
+                                          </Box>
+                                          {/* Progress Bar */}
                                             <Box sx={{ mt: 0.6 }}>
-                                              <Box
-                                                sx={{
-                                                  display: "flex",
-                                                  alignItems: "center",
+                                            <Box
+                                              sx={{
+                                                display: "flex",
+                                                alignItems: "center",
                                                   justifyContent:
                                                     "space-between",
                                                   mb: 0.3,
-                                                }}
-                                              >
-                                                <Typography
-                                                  variant="caption"
-                                                  sx={{
+                                              }}
+                                            >
+                                              <Typography
+                                                variant="caption"
+                                                sx={{
                                                     fontSize: "0.625rem",
                                                     color:
                                                       colors.text.secondary,
-                                                    fontWeight: 500,
-                                                  }}
-                                                >
-                                                  Progress
-                                                </Typography>
-                                                <Typography
-                                                  variant="caption"
-                                                  sx={{
+                                                  fontWeight: 500,
+                                                }}
+                                              >
+                                                Progress
+                                              </Typography>
+                                              <Typography
+                                                variant="caption"
+                                                sx={{
                                                     fontSize: "0.625rem",
-                                                    color:
-                                                      getProgressColor(
-                                                        subdomainProgress
-                                                      ),
-                                                    fontWeight: 600,
-                                                  }}
-                                                >
+                                                  color:
+                                                    getProgressColor(
+                                                      subdomainProgress
+                                                    ),
+                                                  fontWeight: 600,
+                                                }}
+                                              >
                                                   {Math.round(
                                                     subdomainProgress
                                                   )}
                                                   %
-                                                </Typography>
-                                              </Box>
-                                              <LinearProgress
-                                                variant="determinate"
-                                                value={subdomainProgress}
-                                                sx={{
+                                              </Typography>
+                                            </Box>
+                                            <LinearProgress
+                                              variant="determinate"
+                                              value={subdomainProgress}
+                                              sx={{
                                                   height: 4,
                                                   borderRadius: 2,
                                                   bgcolor:
                                                     colors.neutral.gray200,
-                                                  "& .MuiLinearProgress-bar": {
+                                                "& .MuiLinearProgress-bar": {
                                                     borderRadius: 2,
-                                                    bgcolor:
-                                                      getProgressColor(
-                                                        subdomainProgress
-                                                      ),
-                                                  },
-                                                }}
-                                              />
-                                            </Box>
-                                          </CardContent>
-                                        </Card>
-                                      );
+                                                  bgcolor:
+                                                    getProgressColor(
+                                                      subdomainProgress
+                                                    ),
+                                                },
+                                              }}
+                                            />
+                                          </Box>
+                                        </CardContent>
+                                      </Card>
+                                    );
                                     }
                                   )}
                                 </Box>
@@ -1713,15 +1788,7 @@ const SelfAssessment = () => {
                         : ""}
                     </Typography>
 
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        justifyContent: "space-between",
-                        mb: 2,
-                      }}
-                    >
-                      <Box sx={{ flex: 1 }}>
+                    <Box sx={{ mb: 2 }}>
                         <Typography
                           variant="h5"
                           sx={{
@@ -1730,7 +1797,7 @@ const SelfAssessment = () => {
                             mb: 0.5,
                           }}
                         >
-                          {domainNumber}.{subdomainNumber}.{" "}
+                        {domainNumber}.{subdomainNumber}.{" "}
                           {getSubdomainName(selectedSubdomain)}
                         </Typography>
                         <Typography
@@ -1741,52 +1808,12 @@ const SelfAssessment = () => {
                           Assessment of{" "}
                           {getSubdomainName(selectedSubdomain).toLowerCase()}
                         </Typography>
-                      </Box>
-
-                      {/* Progress Card */}
-                      <Card
-                        sx={{
-                          minWidth: 140,
-                          p: 2,
-                          borderRadius: 2,
-                          bgcolor: colors.background.primary,
-                          border: `1px solid ${colors.neutral.gray200}`,
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                        }}
-                      >
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: colors.text.secondary,
-                            fontSize: "0.7rem",
-                            fontWeight: 600,
-                            mb: 1,
-                            display: "block",
-                          }}
-                        >
-                          Progress
-                        </Typography>
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            fontWeight: 700,
-                            color: colors.text.primary,
-                            fontSize: "1rem",
-                          }}
-                        >
-                          {
-                            allQuestions.filter((q) => answers[q.questionId])
-                              .length
-                          }
-                          /{allQuestions.length}
-                        </Typography>
-                      </Card>
                     </Box>
-                  </Box>
+                      </Box>
 
                   {/* Questions Content */}
                   <Box
-                    sx={{
+                        sx={{
                       flex: 1,
                       overflowY: "auto",
                       p: { xs: 2.5, md: 3.5 },
@@ -1846,17 +1873,21 @@ const SelfAssessment = () => {
                             <Class
                               sx={{ fontSize: 24, color: colors.primary.blue }}
                             />
-                            <Typography
-                              variant="h6"
-                              sx={{
-                                fontWeight: 700,
-                                color: colors.text.primary,
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 700,
+                            color: colors.text.primary,
                               }}
                             >
                               Classroom Observation Questions
-                            </Typography>
+                        </Typography>
                             <Chip
-                              label={`${classroomObservationQuestions.length} Questions`}
+                              label={`${
+                                classroomObservationQuestionsForCount.filter(
+                                  (q) => answers[q.questionId] || textAnswers[q.questionId]
+                                ).length
+                              }/${classroomObservationQuestionsForCount.length} answered`}
                               size="small"
                               sx={{
                                 bgcolor: colors.primary.blue + "15",
@@ -1875,7 +1906,7 @@ const SelfAssessment = () => {
                             These questions require classroom observation and
                             class selection
                           </Typography>
-                        </Box>
+                    </Box>
 
                         {/* Class and Section Dropdowns */}
                         <Box
@@ -1895,7 +1926,7 @@ const SelfAssessment = () => {
                               mb: 2,
                             }}
                           >
-                            Select Class and Section
+                            Select Class Group, Class and Section
                           </Typography>
                           <Box
                             sx={{
@@ -1904,6 +1935,47 @@ const SelfAssessment = () => {
                               flexWrap: "wrap",
                             }}
                           >
+                            {/* Class Group Dropdown */}
+                            <FormControl
+                              size="small"
+                              sx={{
+                                minWidth: { xs: "100%", sm: "150px" },
+                              }}
+                            >
+                              <InputLabel
+                                sx={{
+                                  fontWeight: 600,
+                                  color: colors.text.secondary,
+                                }}
+                              >
+                                Class Group
+                              </InputLabel>
+                              <Select
+                                value={selectedClassGroup || ""}
+                                onChange={(e) => setSelectedClassGroup(e.target.value)}
+                                label="Class Group"
+                                sx={{
+                                  borderRadius: 2,
+                                  bgcolor: "white",
+                                  "& .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: colors.neutral.gray300,
+                                  },
+                                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: colors.primary.blue,
+                                  },
+                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                    {
+                                      borderColor: colors.primary.blue,
+                                      borderWidth: 2,
+                                    },
+                                }}
+                              >
+                                <MenuItem value="1-2">Class 1-2</MenuItem>
+                                <MenuItem value="3-5">Class 3-5</MenuItem>
+                                <MenuItem value="6-8">Class 6-8</MenuItem>
+                              </Select>
+                            </FormControl>
+
                             {/* Class Dropdown */}
                             <FormControl
                               size="small"
@@ -1940,12 +2012,12 @@ const SelfAssessment = () => {
                                   }
                                   setSelectedClass(e.target.value);
                                   // Reset section so it can be auto-selected for the new class
-                                  setSelectedSection(null);
+                          setSelectedSection(null);
                                 }}
                                 label="Select Class"
                                 disabled={
                                   isLoadingSchoolData ||
-                                  classOptions.length === 0
+                                  filteredClassOptions.length === 0
                                 }
                                 sx={{
                                   borderRadius: 2,
@@ -1967,12 +2039,14 @@ const SelfAssessment = () => {
                                   <MenuItem disabled>
                                     Loading classes...
                                   </MenuItem>
-                                ) : classOptions.length === 0 ? (
+                                ) : filteredClassOptions.length === 0 ? (
                                   <MenuItem disabled>
-                                    No classes available
+                                    {selectedClassGroup 
+                                      ? `No classes available in ${selectedClassGroup} range`
+                                      : "Please select a class group first"}
                                   </MenuItem>
                                 ) : (
-                                  classOptions.map((classNum) => (
+                                  filteredClassOptions.map((classNum) => (
                                     <MenuItem key={classNum} value={classNum}>
                                       Class {classNum}
                                     </MenuItem>
@@ -1984,13 +2058,13 @@ const SelfAssessment = () => {
                             {/* Section Dropdown */}
                             <FormControl
                               size="small"
-                              sx={{
+                      sx={{
                                 minWidth: { xs: "100%", sm: "200px" },
                               }}
                             >
                               <InputLabel
                                 sx={{
-                                  fontWeight: 600,
+                          fontWeight: 600,
                                   color: colors.text.secondary,
                                 }}
                               >
@@ -2018,9 +2092,9 @@ const SelfAssessment = () => {
                                     {
                                       borderColor: colors.primary.blue,
                                       borderWidth: 2,
-                                    },
-                                }}
-                              >
+                        },
+                      }}
+                    >
                                 {!selectedClass ? (
                                   <MenuItem disabled>
                                     Please select a class first
@@ -2054,7 +2128,7 @@ const SelfAssessment = () => {
                         {/* Classroom Observation Questions List */}
                         {isLoadingQuestions ? (
                           <Box
-                            sx={{
+                        sx={{
                               display: "flex",
                               justifyContent: "center",
                               alignItems: "center",
@@ -2159,70 +2233,18 @@ const SelfAssessment = () => {
                                           {getQuestionText(question)}
                                         </Typography>
                                       </Box>
-                                      <Box
+                                      <IconButton
+                                        size="small"
                                         sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: 2,
+                                          color: colors.text.secondary,
                                         }}
                                       >
-                                        {/* Circular Progress */}
-                                        <Box
-                                          sx={{
-                                            position: "relative",
-                                            display: "inline-flex",
-                                          }}
-                                        >
-                                          <CircularProgress
-                                            variant="determinate"
-                                            value={questionProgress}
-                                            size={40}
-                                            thickness={4}
-                                            sx={{
-                                              color:
-                                                getProgressColor(
-                                                  questionProgress
-                                                ),
-                                            }}
-                                          />
-                                          <Box
-                                            sx={{
-                                              top: 0,
-                                              left: 0,
-                                              bottom: 0,
-                                              right: 0,
-                                              position: "absolute",
-                                              display: "flex",
-                                              alignItems: "center",
-                                              justifyContent: "center",
-                                            }}
-                                          >
-                                            <Typography
-                                              variant="caption"
-                                              component="div"
-                                              sx={{
-                                                fontSize: "0.65rem",
-                                                fontWeight: 600,
-                                                color: colors.text.secondary,
-                                              }}
-                                            >
-                                              {questionProgress}%
-                                            </Typography>
-                                          </Box>
-                                        </Box>
-                                        <IconButton
-                                          size="small"
-                                          sx={{
-                                            color: colors.text.secondary,
-                                          }}
-                                        >
-                                          {isExpanded ? (
-                                            <ExpandLess />
-                                          ) : (
-                                            <ExpandMore />
-                                          )}
-                                        </IconButton>
-                                      </Box>
+                                        {isExpanded ? (
+                                          <ExpandLess />
+                                        ) : (
+                                          <ExpandMore />
+                                        )}
+                                      </IconButton>
                                     </Box>
 
                                     {/* Question Content - Expandable */}
@@ -2273,8 +2295,8 @@ const SelfAssessment = () => {
                                                     )}
                                                     control={
                                                       <Radio
-                                                        sx={{
-                                                          color:
+                        sx={{
+                          color:
                                                             colors.primary.blue,
                                                           "&.Mui-checked": {
                                                             color:
@@ -2303,7 +2325,7 @@ const SelfAssessment = () => {
                                                       borderColor:
                                                         selectedAnswer ===
                                                         String(option.optionId)
-                                                          ? colors.primary.blue
+                              ? colors.primary.blue
                                                           : colors.neutral
                                                               .gray200,
                                                       transition:
@@ -2322,54 +2344,13 @@ const SelfAssessment = () => {
                                             </RadioGroup>
                                           </FormControl>
                                         )}
-
-                                        {/* Submit Button for Individual Question */}
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            justifyContent: "flex-end",
-                                            pt: 2.5,
-                                            borderTop: `1px solid ${colors.neutral.gray200}`,
-                                          }}
-                                        >
-                                          <Button
-                                            variant="contained"
-                                            onClick={() =>
-                                              handleSubmitQuestion(question)
-                                            }
-                                            disabled={
-                                              !selectedAnswer ||
-                                              submitAnswerMutation.isPending
-                                            }
-                                            sx={{
-                                              bgcolor: colors.accent.green,
-                                              "&:hover": {
-                                                bgcolor:
-                                                  colors.accent.greenDark,
-                                              },
-                                              "&:disabled": {
-                                                bgcolor: colors.neutral.gray300,
-                                                color: colors.neutral.gray600,
-                                              },
-                                              textTransform: "none",
-                                              fontWeight: 600,
-                                              px: 3,
-                                              py: 1,
-                                              borderRadius: 2,
-                                            }}
-                                          >
-                                            {submitAnswerMutation.isPending
-                                              ? "Submitting..."
-                                              : "Save Answer"}
-                                          </Button>
-                                        </Box>
                                       </CardContent>
                                     )}
                                   </Card>
                                 );
                               }
                             )}
-                          </Box>
+                  </Box>
                         )}
                       </Box>
                     )}
@@ -2378,8 +2359,8 @@ const SelfAssessment = () => {
                     {subjectObservationQuestions.length > 0 && (
                       <Box sx={{ mb: 4 }}>
                         {/* Section Header */}
-                        <Box
-                          sx={{
+                  <Box
+                    sx={{
                             mb: 3,
                             pb: 2,
                             borderBottom: `2px solid ${colors.neutral.gray200}`,
@@ -2406,7 +2387,11 @@ const SelfAssessment = () => {
                               Subject-Wise Observation Questions
                             </Typography>
                             <Chip
-                              label={`${subjectObservationQuestions.length} Questions`}
+                              label={`${
+                                subjectObservationQuestionsForCount.filter(
+                                  (q) => answers[q.questionId] || textAnswers[q.questionId]
+                                ).length
+                              }/${subjectObservationQuestionsForCount.length} answered`}
                               size="small"
                               sx={{
                                 bgcolor: colors.accent.purple + "15",
@@ -2428,37 +2413,37 @@ const SelfAssessment = () => {
                         </Box>
 
                         {/* Class, Section, and Subject Dropdowns */}
-                        <Box
+                      <Box
+                        sx={{
+                          mb: 3,
+                          p: 2.5,
+                          borderRadius: 2,
+                          bgcolor: colors.background.secondary,
+                          border: `1.5px solid ${colors.neutral.gray200}`,
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
                           sx={{
-                            mb: 3,
-                            p: 2.5,
-                            borderRadius: 2,
-                            bgcolor: colors.background.secondary,
-                            border: `1.5px solid ${colors.neutral.gray200}`,
+                            fontWeight: 600,
+                            color: colors.text.primary,
+                            mb: 2,
                           }}
                         >
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              fontWeight: 600,
-                              color: colors.text.primary,
-                              mb: 2,
-                            }}
-                          >
-                            Select Class, Section, and Subject
-                          </Typography>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              gap: 2,
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            {/* Class Dropdown */}
+                            Select Class Group, Class, Section, and Subject
+                        </Typography>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 2,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                            {/* Class Group Dropdown */}
                             <FormControl
                               size="small"
                               sx={{
-                                minWidth: { xs: "100%", sm: "180px" },
+                                minWidth: { xs: "100%", sm: "150px" },
                               }}
                             >
                               <InputLabel
@@ -2467,11 +2452,52 @@ const SelfAssessment = () => {
                                   color: colors.text.secondary,
                                 }}
                               >
-                                Select Class
+                                Class Group
                               </InputLabel>
                               <Select
-                                value={selectedClass || ""}
-                                onChange={(e) => {
+                                value={selectedClassGroup || ""}
+                                onChange={(e) => setSelectedClassGroup(e.target.value)}
+                                label="Class Group"
+                                sx={{
+                                  borderRadius: 2,
+                                  bgcolor: "white",
+                                  "& .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: colors.neutral.gray300,
+                                  },
+                                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: colors.accent.purple,
+                                  },
+                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                    {
+                                      borderColor: colors.accent.purple,
+                                      borderWidth: 2,
+                                    },
+                                }}
+                              >
+                                <MenuItem value="1-2">Class 1-2</MenuItem>
+                                <MenuItem value="3-5">Class 3-5</MenuItem>
+                                <MenuItem value="6-8">Class 6-8</MenuItem>
+                              </Select>
+                            </FormControl>
+
+                          {/* Class Dropdown */}
+                          <FormControl
+                            size="small"
+                            sx={{
+                                minWidth: { xs: "100%", sm: "180px" },
+                            }}
+                          >
+                            <InputLabel
+                              sx={{
+                                fontWeight: 600,
+                                color: colors.text.secondary,
+                              }}
+                            >
+                              Select Class
+                            </InputLabel>
+                            <Select
+                              value={selectedClass || ""}
+                              onChange={(e) => {
                                   // Save current answers before changing class
                                   if (selectedSubdomain && selectedClass) {
                                     const subdomainId =
@@ -2488,109 +2514,111 @@ const SelfAssessment = () => {
                                       [storageKey]: { ...textAnswers },
                                     }));
                                   }
-                                  setSelectedClass(e.target.value);
+                                setSelectedClass(e.target.value);
                                   // Reset section so it can be auto-selected for the new class
                                   setSelectedSection(null);
-                                }}
-                                label="Select Class"
-                                disabled={
+                              }}
+                              label="Select Class"
+                              disabled={
                                   isLoadingSchoolData ||
-                                  classOptions.length === 0
-                                }
-                                sx={{
-                                  borderRadius: 2,
-                                  bgcolor: "white",
-                                  "& .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.neutral.gray300,
-                                  },
-                                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.accent.purple,
-                                  },
-                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                    {
-                                      borderColor: colors.accent.purple,
-                                      borderWidth: 2,
-                                    },
-                                }}
-                              >
-                                {isLoadingSchoolData ? (
-                                  <MenuItem disabled>
-                                    Loading classes...
-                                  </MenuItem>
-                                ) : classOptions.length === 0 ? (
-                                  <MenuItem disabled>
-                                    No classes available
-                                  </MenuItem>
-                                ) : (
-                                  classOptions.map((classNum) => (
-                                    <MenuItem key={classNum} value={classNum}>
-                                      Class {classNum}
-                                    </MenuItem>
-                                  ))
-                                )}
-                              </Select>
-                            </FormControl>
-
-                            {/* Section Dropdown */}
-                            <FormControl
-                              size="small"
+                                  filteredClassOptions.length === 0
+                              }
                               sx={{
-                                minWidth: { xs: "100%", sm: "180px" },
+                                borderRadius: 2,
+                                bgcolor: "white",
+                                "& .MuiOutlinedInput-notchedOutline": {
+                                  borderColor: colors.neutral.gray300,
+                                },
+                                "&:hover .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: colors.accent.purple,
+                                },
+                                "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                  {
+                                      borderColor: colors.accent.purple,
+                                    borderWidth: 2,
+                                  },
                               }}
                             >
-                              <InputLabel
-                                sx={{
-                                  fontWeight: 600,
-                                  color: colors.text.secondary,
-                                }}
-                              >
-                                Select Section
-                              </InputLabel>
-                              <Select
-                                value={selectedSection || ""}
-                                onChange={(e) =>
-                                  setSelectedSection(e.target.value)
-                                }
-                                label="Select Section"
-                                disabled={
+                              {isLoadingSchoolData ? (
+                                <MenuItem disabled>
+                                    Loading classes...
+                                  </MenuItem>
+                                ) : filteredClassOptions.length === 0 ? (
+                                  <MenuItem disabled>
+                                    {selectedClassGroup 
+                                      ? `No classes available in ${selectedClassGroup} range`
+                                      : "Please select a class group first"}
+                                </MenuItem>
+                              ) : (
+                                  filteredClassOptions.map((classNum) => (
+                                  <MenuItem key={classNum} value={classNum}>
+                                    Class {classNum}
+                                  </MenuItem>
+                                ))
+                              )}
+                            </Select>
+                          </FormControl>
+
+                          {/* Section Dropdown */}
+                          <FormControl
+                            size="small"
+                            sx={{
+                                minWidth: { xs: "100%", sm: "180px" },
+                            }}
+                          >
+                            <InputLabel
+                              sx={{
+                                fontWeight: 600,
+                                color: colors.text.secondary,
+                              }}
+                            >
+                              Select Section
+                            </InputLabel>
+                            <Select
+                              value={selectedSection || ""}
+                              onChange={(e) =>
+                                setSelectedSection(e.target.value)
+                              }
+                              label="Select Section"
+                              disabled={
                                   !selectedClass || sections.length === 0
-                                }
-                                sx={{
-                                  borderRadius: 2,
-                                  bgcolor: "white",
-                                  "& .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.neutral.gray300,
-                                  },
-                                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                              }
+                              sx={{
+                                borderRadius: 2,
+                                bgcolor: "white",
+                                "& .MuiOutlinedInput-notchedOutline": {
+                                  borderColor: colors.neutral.gray300,
+                                },
+                                "&:hover .MuiOutlinedInput-notchedOutline": {
                                     borderColor: colors.accent.purple,
-                                  },
-                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                    {
+                                },
+                                "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                  {
                                       borderColor: colors.accent.purple,
-                                      borderWidth: 2,
-                                    },
-                                }}
-                              >
-                                {!selectedClass ? (
-                                  <MenuItem disabled>
-                                    Please select a class first
-                                  </MenuItem>
-                                ) : sections.length === 0 ? (
-                                  <MenuItem disabled>
+                                    borderWidth: 2,
+                                  },
+                              }}
+                            >
+                              {!selectedClass ? (
+                                <MenuItem disabled>
+                                  Please select a class first
+                                </MenuItem>
+                              ) : sections.length === 0 ? (
+                                <MenuItem disabled>
                                     No sections available for this class
-                                  </MenuItem>
-                                ) : (
-                                  sections.map((section, index) => (
-                                    <MenuItem
+                                </MenuItem>
+                              ) : (
+                                sections.map((section, index) => (
+                                  <MenuItem
                                       key={section.id || index}
-                                      value={
-                                        section.sectionName ||
+                                    value={
+                                      section.sectionName ||
                                         section.name ||
                                         section.value
-                                      }
-                                    >
+                                    }
+                                  >
                                       Section{" "}
-                                      {section.sectionName ||
+                                    {section.sectionName ||
                                         section.name ||
                                         section.value}
                                     </MenuItem>
@@ -2616,9 +2644,13 @@ const SelfAssessment = () => {
                               </InputLabel>
                               <Select
                                 value={selectedSubject || ""}
-                                onChange={(e) =>
-                                  setSelectedSubject(e.target.value)
-                                }
+                                onChange={(e) => {
+                                  setSelectedSubject(e.target.value);
+                                  // Refetch questions when subject changes
+                                  if (refetchQuestions) {
+                                    refetchQuestions();
+                                  }
+                                }}
                                 label="Select Subject"
                                 disabled={
                                   !selectedClass ||
@@ -2660,13 +2692,13 @@ const SelfAssessment = () => {
                                       value={subject.id}
                                     >
                                       {subject.subject}
-                                    </MenuItem>
-                                  ))
-                                )}
-                              </Select>
-                            </FormControl>
-                          </Box>
+                                  </MenuItem>
+                                ))
+                              )}
+                            </Select>
+                          </FormControl>
                         </Box>
+                      </Box>
 
                         {/* Subject-Wise Questions List */}
                         {isLoadingQuestions ? (
@@ -2778,70 +2810,18 @@ const SelfAssessment = () => {
                                           {getQuestionText(question)}
                                         </Typography>
                                       </Box>
-                                      <Box
+                                      <IconButton
+                                        size="small"
                                         sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: 2,
+                                          color: colors.text.secondary,
                                         }}
                                       >
-                                        {/* Circular Progress */}
-                                        <Box
-                                          sx={{
-                                            position: "relative",
-                                            display: "inline-flex",
-                                          }}
-                                        >
-                                          <CircularProgress
-                                            variant="determinate"
-                                            value={questionProgress}
-                                            size={40}
-                                            thickness={4}
-                                            sx={{
-                                              color:
-                                                getProgressColor(
-                                                  questionProgress
-                                                ),
-                                            }}
-                                          />
-                                          <Box
-                                            sx={{
-                                              top: 0,
-                                              left: 0,
-                                              bottom: 0,
-                                              right: 0,
-                                              position: "absolute",
-                                              display: "flex",
-                                              alignItems: "center",
-                                              justifyContent: "center",
-                                            }}
-                                          >
-                                            <Typography
-                                              variant="caption"
-                                              component="div"
-                                              sx={{
-                                                fontSize: "0.65rem",
-                                                fontWeight: 600,
-                                                color: colors.text.secondary,
-                                              }}
-                                            >
-                                              {questionProgress}%
-                                            </Typography>
-                                          </Box>
-                                        </Box>
-                                        <IconButton
-                                          size="small"
-                                          sx={{
-                                            color: colors.text.secondary,
-                                          }}
-                                        >
-                                          {isExpanded ? (
-                                            <ExpandLess />
-                                          ) : (
-                                            <ExpandMore />
-                                          )}
-                                        </IconButton>
-                                      </Box>
+                                        {isExpanded ? (
+                                          <ExpandLess />
+                                        ) : (
+                                          <ExpandMore />
+                                        )}
+                                      </IconButton>
                                     </Box>
 
                                     {/* Question Content - Expandable */}
@@ -2924,47 +2904,6 @@ const SelfAssessment = () => {
                                             </RadioGroup>
                                           </FormControl>
                                         )}
-
-                                        {/* Submit Button for Individual Question */}
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            justifyContent: "flex-end",
-                                            pt: 2.5,
-                                            borderTop: `1px solid ${colors.neutral.gray200}`,
-                                          }}
-                                        >
-                                          <Button
-                                            variant="contained"
-                                            onClick={() =>
-                                              handleSubmitQuestion(question)
-                                            }
-                                            disabled={
-                                              !selectedAnswer ||
-                                              submitAnswerMutation.isPending
-                                            }
-                                            sx={{
-                                              bgcolor: colors.accent.green,
-                                              "&:hover": {
-                                                bgcolor:
-                                                  colors.accent.greenDark,
-                                              },
-                                              "&:disabled": {
-                                                bgcolor: colors.neutral.gray300,
-                                                color: colors.neutral.gray600,
-                                              },
-                                              textTransform: "none",
-                                              fontWeight: 600,
-                                              px: 3,
-                                              py: 1,
-                                              borderRadius: 2,
-                                            }}
-                                          >
-                                            {submitAnswerMutation.isPending
-                                              ? "Submitting..."
-                                              : "Save Answer"}
-                                          </Button>
-                                        </Box>
                                       </CardContent>
                                     )}
                                   </Card>
@@ -3008,10 +2947,14 @@ const SelfAssessment = () => {
                                 color: colors.text.primary,
                               }}
                             >
-                              FLN Questions
+                              Input Type Questions
                             </Typography>
                             <Chip
-                              label={`${flnQuestions.length} Questions`}
+                              label={`${
+                                flnQuestionsForCount.filter(
+                                  (q) => textAnswers[q.questionId] && textAnswers[q.questionId].trim()
+                                ).length
+                              }/${flnQuestionsForCount.length} answered`}
                               size="small"
                               sx={{
                                 bgcolor: colors.semantic.warning + "15",
@@ -3033,27 +2976,27 @@ const SelfAssessment = () => {
                         </Box>
 
                         {/* FLN Questions List */}
-                        {isLoadingQuestions ? (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                              minHeight: "200px",
-                            }}
-                          >
-                            <CircularProgress />
-                          </Box>
-                        ) : isErrorQuestions ? (
-                          <Alert severity="error">
-                            {isErrorQuestions?.message ||
-                              "Failed to load questions"}
-                          </Alert>
+                    {isLoadingQuestions ? (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          minHeight: "200px",
+                        }}
+                      >
+                        <CircularProgress />
+                      </Box>
+                    ) : isErrorQuestions ? (
+                      <Alert severity="error">
+                        {isErrorQuestions?.message ||
+                          "Failed to load questions"}
+                      </Alert>
                         ) : (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              flexDirection: "column",
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
                               gap: 2.5,
                             }}
                           >
@@ -3134,148 +3077,194 @@ const SelfAssessment = () => {
                                         {getQuestionText(question)}
                                       </Typography>
                                     </Box>
-                                    <Box
+                                    <IconButton
+                                      size="small"
                                       sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 2,
+                                        color: colors.text.secondary,
                                       }}
                                     >
-                                      {/* Circular Progress */}
-                                      <Box
-                                        sx={{
-                                          position: "relative",
-                                          display: "inline-flex",
-                                        }}
-                                      >
-                                        <CircularProgress
-                                          variant="determinate"
-                                          value={questionProgress}
-                                          size={40}
-                                          thickness={4}
-                                          sx={{
-                                            color:
-                                              getProgressColor(
-                                                questionProgress
-                                              ),
-                                          }}
-                                        />
-                                        <Box
-                                          sx={{
-                                            top: 0,
-                                            left: 0,
-                                            bottom: 0,
-                                            right: 0,
-                                            position: "absolute",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                          }}
-                                        >
-                                          <Typography
-                                            variant="caption"
-                                            component="div"
-                                            sx={{
-                                              fontSize: "0.65rem",
-                                              fontWeight: 600,
-                                              color: colors.text.secondary,
-                                            }}
-                                          >
-                                            {questionProgress}%
-                                          </Typography>
-                                        </Box>
-                                      </Box>
-                                      <IconButton
-                                        size="small"
-                                        sx={{
-                                          color: colors.text.secondary,
-                                        }}
-                                      >
-                                        {isExpanded ? (
-                                          <ExpandLess />
-                                        ) : (
-                                          <ExpandMore />
-                                        )}
-                                      </IconButton>
-                                    </Box>
+                                      {isExpanded ? (
+                                        <ExpandLess />
+                                      ) : (
+                                        <ExpandMore />
+                                      )}
+                                    </IconButton>
                                   </Box>
 
                                   {/* Question Content - Expandable */}
                                   {isExpanded && (
                                     <CardContent sx={{ p: 3, pt: 2.5 }}>
-                                      {/* Text Field for FLN answer */}
-                                      <TextField
-                                        fullWidth
-                                        multiline
-                                        rows={4}
-                                        value={textAnswer}
-                                        onChange={(e) =>
-                                          handleTextAnswerChange(
-                                            question.questionId,
-                                            e.target.value
-                                          )
-                                        }
-                                        placeholder="Enter your answer here..."
-                                        sx={{
-                                          mb: 3,
-                                          "& .MuiOutlinedInput-root": {
-                                            borderRadius: 2,
-                                            bgcolor: "white",
-                                            "& fieldset": {
-                                              borderColor:
-                                                colors.neutral.gray300,
-                                            },
-                                            "&:hover fieldset": {
-                                              borderColor:
-                                                colors.semantic.warning,
-                                            },
-                                            "&.Mui-focused fieldset": {
-                                              borderColor:
-                                                colors.semantic.warning,
-                                              borderWidth: 2,
-                                            },
-                                          },
-                                        }}
-                                      />
-
-                                      {/* Submit Button for Individual Question */}
+                                      {/* FLN Input Fields for classes 2 and 3 */}
                                       <Box
                                         sx={{
                                           display: "flex",
-                                          justifyContent: "flex-end",
-                                          pt: 2.5,
-                                          borderTop: `1px solid ${colors.neutral.gray200}`,
+                                          flexDirection: "column",
+                                          gap: 2.5,
                                         }}
                                       >
-                                        <Button
-                                          variant="contained"
-                                          onClick={() =>
-                                            handleSubmitQuestion(question)
+                                        {[2, 3].map((classNum) => {
+                                          // Parse existing answer if it exists
+                                          let flnData = {};
+                                          try {
+                                            flnData = textAnswer
+                                              ? JSON.parse(textAnswer)
+                                              : {};
+                                          } catch (e) {
+                                            flnData = {};
                                           }
-                                          disabled={
-                                            !textAnswer.trim() ||
-                                            submitAnswerMutation.isPending
-                                          }
-                                          sx={{
-                                            bgcolor: colors.accent.green,
-                                            "&:hover": {
-                                              bgcolor: colors.accent.greenDark,
-                                            },
-                                            "&:disabled": {
-                                              bgcolor: colors.neutral.gray300,
-                                              color: colors.neutral.gray600,
-                                            },
-                                            textTransform: "none",
-                                            fontWeight: 600,
-                                            px: 3,
-                                            py: 1,
-                                            borderRadius: 2,
-                                          }}
-                                        >
-                                          {submitAnswerMutation.isPending
-                                            ? "Submitting..."
-                                            : "Save Answer"}
-                                        </Button>
+
+                                          const classData = flnData[classNum] || {
+                                            obtainedMarks: "",
+                                          };
+                                          
+                                          // Static total students count (will be from API later)
+                                          const totalStudents = 30;
+                                          const maxMarks = totalStudents * 10;
+
+                                          return (
+                                            <Box
+                                              key={classNum}
+                                              sx={{
+                                                p: 2.5,
+                                                borderRadius: 2,
+                                                bgcolor:
+                                                  colors.background.secondary,
+                                                border: `1px solid ${colors.neutral.gray200}`,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 3,
+                                                flexWrap: "wrap",
+                                              }}
+                                            >
+                                              {/* Total Students - Static Display */}
+                                              <Box
+                                                sx={{
+                                                  display: "flex",
+                                                  alignItems: "center",
+                                                  gap: 1.5,
+                                                  flex: "1 1 300px",
+                                                }}
+                                              >
+                                                <Typography
+                                                  variant="body2"
+                                                  sx={{
+                                                    fontWeight: 600,
+                                                    color: colors.text.primary,
+                                                    whiteSpace: "nowrap",
+                                                  }}
+                                                >
+                                                  Total number of students for Class {classNum}:
+                                                </Typography>
+                                                <Box
+                                                  sx={{
+                                                    px: 2,
+                                                    py: 1,
+                                                    borderRadius: 1.5,
+                                                    bgcolor: colors.primary.lightest,
+                                                    border: `1px solid ${colors.primary.blue}`,
+                                                  }}
+                                                >
+                                                  <Typography
+                                                    variant="body2"
+                                                    sx={{
+                                                      fontWeight: 700,
+                                                      color: colors.primary.blue,
+                                                    }}
+                                                  >
+                                                    {totalStudents}
+                                                  </Typography>
+                                                </Box>
+                                              </Box>
+
+                                              {/* Obtained Marks Field */}
+                                              <Box
+                                                sx={{
+                                                  display: "flex",
+                                                  alignItems: "center",
+                                                  gap: 1.5,
+                                                  flex: "1 1 250px",
+                                                }}
+                                              >
+                                                <Typography
+                                                  variant="body2"
+                                                  sx={{
+                                                    fontWeight: 600,
+                                                    color: colors.text.primary,
+                                                    whiteSpace: "nowrap",
+                                                  }}
+                                                >
+                                                  Obtained marks:
+                                                </Typography>
+                                                <TextField
+                                                  size="small"
+                                                  type="number"
+                                                  value={
+                                                    classData.obtainedMarks || ""
+                                                  }
+                                                  onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    // Validate: only positive numbers and <= max marks
+                                                    if (
+                                                      value === "" ||
+                                                      (Number(value) >= 0 &&
+                                                        Number(value) <= maxMarks)
+                                                    ) {
+                                                      const newData = {
+                                                        ...flnData,
+                                                        [classNum]: {
+                                                          obtainedMarks: value,
+                                                        },
+                                                      };
+                                                      handleTextAnswerChange(
+                                                        question.questionId,
+                                                        JSON.stringify(newData)
+                                                      );
+                                                    }
+                                                  }}
+                                                  onKeyDown={(e) => {
+                                                    // Prevent minus sign, plus sign, and 'e'
+                                                    if (
+                                                      e.key === "-" ||
+                                                      e.key === "+" ||
+                                                      e.key === "e" ||
+                                                      e.key === "E"
+                                                    ) {
+                                                      e.preventDefault();
+                                                    }
+                                                  }}
+                                                  placeholder="Enter marks"
+                                                  inputProps={{
+                                                    min: 0,
+                                                    max: maxMarks,
+                                                  }}
+                                                  error={
+                                                    classData.obtainedMarks &&
+                                                    Number(
+                                                      classData.obtainedMarks
+                                                    ) > maxMarks
+                                                  }
+                                                  sx={{
+                                                    width: "150px",
+                                                    "& .MuiOutlinedInput-root": {
+                                                      borderRadius: 1.5,
+                                                      bgcolor: "white",
+                                                    },
+                                                  }}
+                                                />
+                                                <Typography
+                                                  variant="body2"
+                                                  sx={{
+                                                    fontWeight: 600,
+                                                    color: colors.semantic.warning,
+                                                    whiteSpace: "nowrap",
+                                                  }}
+                                                >
+                                                  Max: {maxMarks}
+                                                </Typography>
+                                              </Box>
+                                            </Box>
+                                          );
+                                        })}
                                       </Box>
                                     </CardContent>
                                   )}
@@ -3319,7 +3308,11 @@ const SelfAssessment = () => {
                               General Questions
                             </Typography>
                             <Chip
-                              label={`${generalQuestions.length} Questions`}
+                              label={`${
+                                generalQuestionsForCount.filter(
+                                  (q) => answers[q.questionId] || textAnswers[q.questionId]
+                                ).length
+                              }/${generalQuestionsForCount.length} answered`}
                               size="small"
                               sx={{
                                 bgcolor: colors.accent.green + "15",
@@ -3366,319 +3359,234 @@ const SelfAssessment = () => {
                             }}
                           >
                             {generalQuestions.map((question, index) => {
-                              const options = parseOptions(question.options);
-                              const userSelectedAnswer =
-                                answers[question.questionId];
+                          const options = parseOptions(question.options);
+                          const userSelectedAnswer =
+                            answers[question.questionId];
                               const apiSelectedAnswer =
                                 question.selectedOptionId
-                                  ? String(question.selectedOptionId)
-                                  : null;
-                              const selectedAnswer =
-                                userSelectedAnswer || apiSelectedAnswer;
-                              const isExpanded =
-                                expandedQuestions[question.questionId] ?? true;
-                              const questionProgress = selectedAnswer ? 100 : 0;
+                            ? String(question.selectedOptionId)
+                            : null;
+                          const selectedAnswer =
+                            userSelectedAnswer || apiSelectedAnswer;
+                          const isExpanded =
+                            expandedQuestions[question.questionId] ?? true;
+                          const questionProgress = selectedAnswer ? 100 : 0;
                               const questionNumber = `${domainNumber}.${subdomainNumber}.${
                                 classBasedQuestions.length + index + 1
                               }`;
 
-                              return (
-                                <Card
-                                  key={question.questionId}
-                                  sx={{
-                                    borderRadius: 2,
+                          return (
+                            <Card
+                              key={question.questionId}
+                              sx={{
+                                borderRadius: 2,
                                     border: "1px solid",
                                     borderColor: colors.neutral.gray200,
-                                    transition: "all 0.2s ease",
+                                transition: "all 0.2s ease",
                                     boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                                    overflow: "hidden",
-                                    "&:hover": {
-                                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                                    },
-                                  }}
-                                >
-                                  {/* Question Header - Always Visible */}
-                                  <Box
-                                    onClick={() =>
+                                overflow: "hidden",
+                                "&:hover": {
+                                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                },
+                              }}
+                            >
+                              {/* Question Header - Always Visible */}
+                              <Box
+                                onClick={() =>
                                       toggleQuestionExpansion(
                                         question.questionId
                                       )
-                                    }
+                                }
+                                sx={{
+                                  p: 2.5,
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 2,
+                                  bgcolor: colors.background.primary,
+                                  borderBottom: isExpanded
+                                    ? `1px solid ${colors.neutral.gray200}`
+                                    : "none",
+                                  "&:hover": {
+                                    bgcolor: colors.background.secondary,
+                                  },
+                                }}
+                              >
+                                <Chip
+                                      label={`Q ${questionNumber}`}
+                                  size="small"
+                                  sx={{
+                                        bgcolor: colors.accent.green,
+                                    color: "white",
+                                    fontWeight: 700,
+                                        minWidth: "80px",
+                                    height: "28px",
+                                    fontSize: "0.75rem",
+                                  }}
+                                />
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography
+                                    variant="body2"
                                     sx={{
-                                      p: 2.5,
-                                      cursor: "pointer",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 2,
-                                      bgcolor: colors.background.primary,
-                                      borderBottom: isExpanded
-                                        ? `1px solid ${colors.neutral.gray200}`
-                                        : "none",
-                                      "&:hover": {
-                                        bgcolor: colors.background.secondary,
-                                      },
+                                      fontWeight: 500,
+                                      fontSize: "0.875rem",
+                                      color: colors.text.primary,
+                                      lineHeight: 1.5,
                                     }}
                                   >
-                                    <Chip
-                                      label={`Q ${questionNumber}`}
-                                      size="small"
-                                      sx={{
-                                        bgcolor: colors.accent.green,
-                                        color: "white",
-                                        fontWeight: 700,
-                                        minWidth: "80px",
-                                        height: "28px",
-                                        fontSize: "0.75rem",
-                                      }}
-                                    />
-                                    <Box sx={{ flex: 1 }}>
-                                      <Typography
-                                        variant="body2"
-                                        sx={{
-                                          fontWeight: 500,
-                                          fontSize: "0.875rem",
-                                          color: colors.text.primary,
-                                          lineHeight: 1.5,
-                                        }}
-                                      >
-                                        {getQuestionText(question)}
-                                      </Typography>
-                                    </Box>
-                                    <Box
-                                      sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 2,
-                                      }}
-                                    >
-                                      {/* Circular Progress */}
-                                      <Box
-                                        sx={{
-                                          position: "relative",
-                                          display: "inline-flex",
-                                        }}
-                                      >
-                                        <CircularProgress
-                                          variant="determinate"
-                                          value={questionProgress}
-                                          size={40}
-                                          thickness={4}
-                                          sx={{
-                                            color:
-                                              getProgressColor(
-                                                questionProgress
-                                              ),
-                                          }}
-                                        />
-                                        <Box
-                                          sx={{
-                                            top: 0,
-                                            left: 0,
-                                            bottom: 0,
-                                            right: 0,
-                                            position: "absolute",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                          }}
-                                        >
-                                          <Typography
-                                            variant="caption"
-                                            component="div"
-                                            sx={{
-                                              fontSize: "0.65rem",
-                                              fontWeight: 600,
-                                              color: colors.text.secondary,
-                                            }}
-                                          >
-                                            {questionProgress}%
-                                          </Typography>
-                                        </Box>
-                                      </Box>
-                                      <IconButton
-                                        size="small"
-                                        sx={{
-                                          color: colors.text.secondary,
-                                        }}
-                                      >
-                                        {isExpanded ? (
-                                          <ExpandLess />
-                                        ) : (
-                                          <ExpandMore />
-                                        )}
-                                      </IconButton>
-                                    </Box>
-                                  </Box>
+                                    {getQuestionText(question)}
+                                  </Typography>
+                                </Box>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 2,
+                                  }}
+                                >
+                                  <IconButton
+                                    size="small"
+                                    sx={{
+                                      color: colors.text.secondary,
+                                    }}
+                                  >
+                                    {isExpanded ? (
+                                      <ExpandLess />
+                                    ) : (
+                                      <ExpandMore />
+                                    )}
+                                  </IconButton>
+                                </Box>
+                              </Box>
 
-                                  {/* Question Content - Expandable */}
-                                  {isExpanded && (
-                                    <CardContent sx={{ p: 3, pt: 2.5 }}>
-                                      {options && options.length > 0 && (
-                                        <FormControl
-                                          component="fieldset"
-                                          fullWidth
-                                          sx={{ mb: 3 }}
-                                        >
-                                          <RadioGroup
-                                            value={selectedAnswer || ""}
-                                            onChange={(e) =>
-                                              handleAnswerChange(
-                                                question.questionId,
-                                                e.target.value
-                                              )
-                                            }
-                                          >
-                                            {options.map((option, optIndex) => (
-                                              <FormControlLabel
+                              {/* Question Content - Expandable */}
+                              {isExpanded && (
+                                <CardContent sx={{ p: 3, pt: 2.5 }}>
+                                  {options && options.length > 0 && (
+                                    <FormControl
+                                      component="fieldset"
+                                      fullWidth
+                                      sx={{ mb: 3 }}
+                                    >
+                                      <RadioGroup
+                                        value={selectedAnswer || ""}
+                                        onChange={(e) =>
+                                          handleAnswerChange(
+                                            question.questionId,
+                                            e.target.value
+                                          )
+                                        }
+                                      >
+                                        {options.map((option, optIndex) => (
+                                          <FormControlLabel
                                                 key={
                                                   option.optionId || optIndex
                                                 }
-                                                value={String(option.optionId)}
-                                                control={
-                                                  <Radio
-                                                    sx={{
+                                            value={String(option.optionId)}
+                                            control={
+                                              <Radio
+                                                sx={{
                                                       color:
                                                         colors.primary.blue,
-                                                      "&.Mui-checked": {
+                                                  "&.Mui-checked": {
                                                         color:
                                                           colors.primary.blue,
-                                                      },
-                                                    }}
-                                                  />
-                                                }
-                                                label={
-                                                  <Typography variant="body2">
-                                                    {getOptionText(option)}
-                                                  </Typography>
-                                                }
-                                                sx={{
-                                                  mb: 1.5,
-                                                  p: 2,
-                                                  borderRadius: 2,
-                                                  bgcolor:
-                                                    selectedAnswer ===
-                                                    String(option.optionId)
-                                                      ? colors.primary.lightest
-                                                      : "transparent",
-                                                  border: "1.5px solid",
-                                                  borderColor:
-                                                    selectedAnswer ===
-                                                    String(option.optionId)
-                                                      ? colors.primary.blue
-                                                      : colors.neutral.gray200,
-                                                  transition: "all 0.2s ease",
-                                                  "&:hover": {
-                                                    bgcolor:
-                                                      colors.primary.lightest +
-                                                      "80",
-                                                    borderColor:
-                                                      colors.primary.blue,
                                                   },
                                                 }}
                                               />
-                                            ))}
-                                          </RadioGroup>
-                                        </FormControl>
-                                      )}
-
-                                      {/* Submit Button for Individual Question */}
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          justifyContent: "flex-end",
-                                          pt: 2.5,
-                                          borderTop: `1px solid ${colors.neutral.gray200}`,
-                                        }}
-                                      >
-                                        <Button
-                                          variant="contained"
-                                          onClick={() =>
-                                            handleSubmitQuestion(question)
-                                          }
-                                          disabled={
-                                            !selectedAnswer ||
-                                            submitAnswerMutation.isPending
-                                          }
-                                          sx={{
-                                            bgcolor: colors.accent.green,
-                                            "&:hover": {
-                                              bgcolor: colors.accent.greenDark,
-                                            },
-                                            "&:disabled": {
-                                              bgcolor: colors.neutral.gray300,
-                                              color: colors.neutral.gray600,
-                                            },
-                                            textTransform: "none",
-                                            fontWeight: 600,
-                                            px: 3,
-                                            py: 1,
-                                            borderRadius: 2,
-                                          }}
-                                        >
-                                          {submitAnswerMutation.isPending
-                                            ? "Submitting..."
-                                            : "Save Answer"}
-                                        </Button>
-                                      </Box>
-                                    </CardContent>
+                                            }
+                                            label={
+                                                <Typography variant="body2">
+                                                  {getOptionText(option)}
+                                                </Typography>
+                                            }
+                                            sx={{
+                                              mb: 1.5,
+                                              p: 2,
+                                              borderRadius: 2,
+                                              bgcolor:
+                                                selectedAnswer ===
+                                                String(option.optionId)
+                                                  ? colors.primary.lightest
+                                                  : "transparent",
+                                              border: "1.5px solid",
+                                              borderColor:
+                                                selectedAnswer ===
+                                                String(option.optionId)
+                                                  ? colors.primary.blue
+                                                  : colors.neutral.gray200,
+                                              transition: "all 0.2s ease",
+                                              "&:hover": {
+                                                bgcolor:
+                                                  colors.primary.lightest +
+                                                  "80",
+                                                borderColor:
+                                                  colors.primary.blue,
+                                              },
+                                            }}
+                                          />
+                                        ))}
+                                      </RadioGroup>
+                                    </FormControl>
                                   )}
-                                </Card>
-                              );
-                            })}
+                                </CardContent>
+                              )}
+                            </Card>
+                          );
+                        })}
                           </Box>
                         )}
                       </Box>
                     )}
 
-                    {/* Submit Button */}
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        gap: 2,
-                        mt: 4,
-                        pt: 3.5,
-                        borderTop: `1.5px solid ${colors.neutral.gray200}`,
-                      }}
-                    >
-                      <Button
-                        variant="outlined"
-                        onClick={() => {
-                          setSelectedDomain(null);
-                          setSelectedSubdomain(null);
-                          setAnswers({});
-                        }}
-                        sx={{
-                          borderColor: colors.primary.blue,
-                          color: colors.primary.blue,
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="contained"
-                        endIcon={<ArrowForward />}
-                        onClick={handleSubmit}
-                        disabled={
-                          submitSubdomainWiseAnswersMutation.isPending ||
-                          Object.keys(answers).length === 0 ||
-                          (classBasedQuestions.length > 0 &&
-                            (!selectedClass || !selectedSection))
-                        }
-                        sx={{
-                          bgcolor: colors.accent.green,
-                          "&:hover": { bgcolor: colors.accent.greenDark },
-                          "&:disabled": {
-                            bgcolor: colors.neutral.gray300,
-                            color: colors.neutral.gray600,
-                          },
-                        }}
-                      >
-                        {submitSubdomainWiseAnswersMutation.isPending
-                          ? "Saving..."
-                          : "Save Assessment"}
-                      </Button>
-                    </Box>
+                        {/* Submit Button */}
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            gap: 2,
+                            mt: 4,
+                            pt: 3.5,
+                            borderTop: `1.5px solid ${colors.neutral.gray200}`,
+                          }}
+                        >
+                          <Button
+                            variant="outlined"
+                            onClick={() => {
+                              setSelectedDomain(null);
+                              setSelectedSubdomain(null);
+                              setAnswers({});
+                            }}
+                            sx={{
+                              borderColor: colors.primary.blue,
+                              color: colors.primary.blue,
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="contained"
+                            onClick={handleSubmit}
+                            disabled={
+                              submitSubdomainWiseAnswersMutation.isPending ||
+                              Object.keys(answers).length === 0 ||
+                              (classBasedQuestions.length > 0 &&
+                                (!selectedClass || !selectedSection))
+                            }
+                            sx={{
+                              bgcolor: colors.accent.green,
+                              "&:hover": { bgcolor: colors.accent.greenDark },
+                              "&:disabled": {
+                                bgcolor: colors.neutral.gray300,
+                                color: colors.neutral.gray600,
+                              },
+                            }}
+                          >
+                            {submitSubdomainWiseAnswersMutation.isPending
+                              ? "Saving..."
+                              : "Save Assessment"}
+                          </Button>
+                        </Box>
                   </Box>
                 </Paper>
               )}
@@ -3693,136 +3601,136 @@ const SelfAssessment = () => {
                   const currentDomainNumber = domainIdx + 1;
 
                   return (
-                    <Paper
-                      sx={{
-                        flex: 1,
-                        borderRadius: 3,
-                        bgcolor: "white",
-                        display: "flex",
-                        flexDirection: "column",
-                        overflow: "hidden",
+                <Paper
+                  sx={{
+                    flex: 1,
+                    borderRadius: 3,
+                    bgcolor: "white",
+                    display: "flex",
+                    flexDirection: "column",
+                    overflow: "hidden",
                         maxHeight: "calc(100vh - 200px)",
-                        minWidth: 0,
-                        boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                    minWidth: 0,
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                  }}
+                >
+                  {/* Domain Header */}
+                  <Box
+                    sx={{
+                      p: 3,
+                      borderBottom: `2px solid ${colors.neutral.gray200}`,
+                      bgcolor: colors.background.secondary,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        mb: 2,
+                            pt: 3,
                       }}
                     >
-                      {/* Domain Header */}
-                      <Box
-                        sx={{
-                          p: 3,
-                          borderBottom: `2px solid ${colors.neutral.gray200}`,
-                          bgcolor: colors.background.secondary,
-                        }}
-                      >
-                        <Box
+                      <Box sx={{ flex: 1 }}>
+                        <Typography
+                          variant="h5"
                           sx={{
-                            display: "flex",
-                            alignItems: "flex-start",
-                            justifyContent: "space-between",
-                            mb: 2,
-                            pt: 3,
+                            fontWeight: 700,
+                            color: colors.text.primary,
+                            mb: 0.5,
                           }}
                         >
-                          <Box sx={{ flex: 1 }}>
-                            <Typography
-                              variant="h5"
-                              sx={{
-                                fontWeight: 700,
-                                color: colors.text.primary,
-                                mb: 0.5,
-                              }}
-                            >
                               {currentDomainNumber}.{" "}
-                              {getDomainName(selectedDomain)}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                              sx={{ fontSize: "0.875rem" }}
-                            >
-                              Assessment of{" "}
-                              {getDomainName(selectedDomain).toLowerCase()}
-                            </Typography>
-                          </Box>
+                          {getDomainName(selectedDomain)}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ fontSize: "0.875rem" }}
+                        >
+                          Assessment of{" "}
+                          {getDomainName(selectedDomain).toLowerCase()}
+                        </Typography>
+                      </Box>
 
-                          {/* Domain Progress Card */}
-                          <Card
-                            sx={{
-                              minWidth: 140,
-                              p: 1.5,
-                              borderRadius: 2,
-                              bgcolor: colors.background.primary,
-                              border: `1px solid ${colors.neutral.gray200}`,
-                            }}
-                          >
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: colors.text.secondary,
-                                fontSize: "0.7rem",
-                                fontWeight: 600,
-                                mb: 1,
-                                display: "block",
-                              }}
-                            >
-                              Progress
-                            </Typography>
-                            <Box
+                      {/* Domain Progress Card */}
+                      <Card
+                        sx={{
+                          minWidth: 140,
+                          p: 1.5,
+                          borderRadius: 2,
+                          bgcolor: colors.background.primary,
+                          border: `1px solid ${colors.neutral.gray200}`,
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: colors.text.secondary,
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            mb: 1,
+                            display: "block",
+                          }}
+                        >
+                          Progress
+                        </Typography>
+                        <Box
                               sx={{
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 1,
                               }}
-                            >
-                              <CircularProgress
-                                variant="determinate"
-                                value={getDomainProgress(selectedDomain)}
-                                size={40}
-                                thickness={4}
-                                sx={{
-                                  color: getProgressColor(
-                                    getDomainProgress(selectedDomain)
-                                  ),
-                                }}
-                              />
-                              <Typography
-                                variant="h6"
-                                sx={{
-                                  fontWeight: 700,
-                                  color: colors.text.primary,
-                                  fontSize: "1rem",
-                                }}
-                              >
-                                {Math.round(getDomainProgress(selectedDomain))}%
-                              </Typography>
-                            </Box>
-                          </Card>
-                        </Box>
-                      </Box>
-
-                      {/* Subdomains List */}
-                      <Box
-                        sx={{
-                          flex: 1,
-                          overflowY: "auto",
-                          p: { xs: 2.5, md: 3.5 },
-                        }}
-                      >
-                        {selectedDomain.subDomain &&
-                        selectedDomain.subDomain.length > 0 ? (
-                          <Box
+                        >
+                          <CircularProgress
+                            variant="determinate"
+                            value={getDomainProgress(selectedDomain)}
+                            size={40}
+                            thickness={4}
                             sx={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 2.5,
+                              color: getProgressColor(
+                                getDomainProgress(selectedDomain)
+                              ),
+                            }}
+                          />
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontWeight: 700,
+                              color: colors.text.primary,
+                              fontSize: "1rem",
                             }}
                           >
+                            {Math.round(getDomainProgress(selectedDomain))}%
+                          </Typography>
+                        </Box>
+                      </Card>
+                    </Box>
+                  </Box>
+
+                  {/* Subdomains List */}
+                  <Box
+                    sx={{
+                      flex: 1,
+                      overflowY: "auto",
+                      p: { xs: 2.5, md: 3.5 },
+                    }}
+                  >
+                    {selectedDomain.subDomain &&
+                    selectedDomain.subDomain.length > 0 ? (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2.5,
+                        }}
+                      >
                             {selectedDomain.subDomain.map(
                               (subdomain, index) => {
-                                const subdomainId =
-                                  subdomain.subDomainId || subdomain.id;
-                                const subdomainProgress =
-                                  getSubdomainProgress(subdomain);
+                          const subdomainId =
+                            subdomain.subDomainId || subdomain.id;
+                          const subdomainProgress =
+                            getSubdomainProgress(subdomain);
                                 const domainIdx = domains.findIndex(
                                   (d) => d.domainId === selectedDomain.domainId
                                 );
@@ -3830,50 +3738,50 @@ const SelfAssessment = () => {
                                   index + 1
                                 }`;
 
-                                return (
-                                  <Card
-                                    key={subdomainId}
+                          return (
+                            <Card
+                              key={subdomainId}
                                     onClick={() =>
                                       handleSubdomainSelect(subdomain)
                                     }
-                                    sx={{
-                                      cursor: "pointer",
-                                      transition: "all 0.3s ease",
+                              sx={{
+                                cursor: "pointer",
+                                transition: "all 0.3s ease",
                                       border: "1px solid",
-                                      borderColor: colors.neutral.gray200,
-                                      borderRadius: 2,
-                                      bgcolor: colors.background.primary,
+                                borderColor: colors.neutral.gray200,
+                                borderRadius: 2,
+                                bgcolor: colors.background.primary,
                                       boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                                      "&:hover": {
-                                        transform: "translateY(-2px)",
-                                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                                        borderColor: colors.primary.blue,
-                                      },
+                                "&:hover": {
+                                  transform: "translateY(-2px)",
+                                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                  borderColor: colors.primary.blue,
+                                },
+                              }}
+                            >
+                              <CardContent sx={{ p: 2.5 }}>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    mb: 2,
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 2,
+                                      flex: 1,
                                     }}
                                   >
-                                    <CardContent sx={{ p: 2.5 }}>
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          justifyContent: "space-between",
-                                          mb: 2,
-                                        }}
-                                      >
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 2,
-                                            flex: 1,
-                                          }}
-                                        >
                                           <Box
-                                            sx={{
+                                      sx={{
                                               width: 36,
                                               height: 36,
                                               borderRadius: 1.5,
-                                              bgcolor: colors.accent.green,
+                                        bgcolor: colors.accent.green,
                                               display: "flex",
                                               alignItems: "center",
                                               justifyContent: "center",
@@ -3882,8 +3790,8 @@ const SelfAssessment = () => {
                                           >
                                             <Typography
                                               sx={{
-                                                color: "white",
-                                                fontWeight: 700,
+                                        color: "white",
+                                        fontWeight: 700,
                                                 fontSize: "0.875rem",
                                               }}
                                             >
@@ -3892,87 +3800,87 @@ const SelfAssessment = () => {
                                               )}
                                             </Typography>
                                           </Box>
-                                          <Box sx={{ flex: 1 }}>
-                                            <Typography
-                                              variant="body1"
-                                              sx={{
-                                                fontWeight: 600,
-                                                color: colors.text.primary,
-                                                fontSize: "0.9375rem",
-                                              }}
-                                            >
+                                    <Box sx={{ flex: 1 }}>
+                                      <Typography
+                                        variant="body1"
+                                        sx={{
+                                          fontWeight: 600,
+                                          color: colors.text.primary,
+                                          fontSize: "0.9375rem",
+                                        }}
+                                      >
                                               {subdomainNumber}.{" "}
-                                              {getSubdomainName(subdomain)}
-                                            </Typography>
-                                          </Box>
-                                        </Box>
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 2,
-                                          }}
-                                        >
-                                          <Box
-                                            sx={{
-                                              position: "relative",
-                                              display: "inline-flex",
-                                            }}
-                                          >
-                                            <CircularProgress
-                                              variant="determinate"
-                                              value={subdomainProgress}
-                                              size={50}
-                                              thickness={4}
-                                              sx={{
-                                                color:
+                                        {getSubdomainName(subdomain)}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 2,
+                                    }}
+                                  >
+                                    <Box
+                                      sx={{
+                                        position: "relative",
+                                        display: "inline-flex",
+                                      }}
+                                    >
+                                      <CircularProgress
+                                        variant="determinate"
+                                        value={subdomainProgress}
+                                        size={50}
+                                        thickness={4}
+                                        sx={{
+                                          color:
                                                   getProgressColor(
                                                     subdomainProgress
                                                   ),
-                                              }}
-                                            />
-                                            <Box
-                                              sx={{
-                                                top: 0,
-                                                left: 0,
-                                                bottom: 0,
-                                                right: 0,
-                                                position: "absolute",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                              }}
-                                            >
-                                              <Typography
-                                                variant="caption"
-                                                component="div"
-                                                sx={{
-                                                  fontSize: "0.7rem",
-                                                  fontWeight: 600,
-                                                  color: colors.text.primary,
-                                                }}
-                                              >
-                                                {Math.round(subdomainProgress)}%
-                                              </Typography>
-                                            </Box>
-                                          </Box>
-                                        </Box>
+                                        }}
+                                      />
+                                      <Box
+                                        sx={{
+                                          top: 0,
+                                          left: 0,
+                                          bottom: 0,
+                                          right: 0,
+                                          position: "absolute",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                        }}
+                                      >
+                                        <Typography
+                                          variant="caption"
+                                          component="div"
+                                          sx={{
+                                            fontSize: "0.7rem",
+                                            fontWeight: 600,
+                                            color: colors.text.primary,
+                                          }}
+                                        >
+                                          {Math.round(subdomainProgress)}%
+                                        </Typography>
                                       </Box>
-                                    </CardContent>
-                                  </Card>
-                                );
+                                    </Box>
+                                  </Box>
+                                </Box>
+                              </CardContent>
+                            </Card>
+                          );
                               }
                             )}
-                          </Box>
-                        ) : (
-                          <Box sx={{ textAlign: "center", py: 8 }}>
-                            <Typography variant="body1" color="text.secondary">
-                              No subdomains available for this domain
-                            </Typography>
-                          </Box>
-                        )}
                       </Box>
-                    </Paper>
+                    ) : (
+                      <Box sx={{ textAlign: "center", py: 8 }}>
+                        <Typography variant="body1" color="text.secondary">
+                          No subdomains available for this domain
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Paper>
                   );
                 })()}
 
@@ -4029,165 +3937,52 @@ const SelfAssessment = () => {
                     }}
                   >
                     {domains.length > 0 ? (
-                      <Box
+                      <Box sx={{ textAlign: "center", py: 8, px: 3 }}>
+                        <Assessment
                         sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 2,
-                        }}
-                      >
-                        {domains.map((domain, domainIndex) => {
-                          const progress = getDomainProgress(domain);
-                          const DomainIcon = getDomainIcon(domain);
-                          const domainNumber = domainIndex + 1;
-
-                          return (
-                            <Card
-                              key={domain.domainId}
-                              sx={{
-                                borderRadius: 2,
-                                border: "1px solid",
-                                borderColor: colors.neutral.gray200,
-                                bgcolor: colors.background.primary,
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                                transition: "all 0.3s ease",
-                                "&:hover": {
-                                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                                  borderColor: colors.primary.blue,
-                                },
-                              }}
-                            >
-                              <CardContent sx={{ p: 2.5 }}>
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 2,
-                                    mb: 2,
-                                  }}
-                                >
-                                  <Box
-                                    sx={{
-                                      width: 48,
-                                      height: 48,
-                                      borderRadius: 2,
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      flexShrink: 0,
-                                      bgcolor: colors.primary.lightest,
+                            fontSize: 80,
                                       color: colors.primary.blue,
+                            mb: 3,
                                     }}
-                                  >
-                                    {DomainIcon}
-                                  </Box>
-                                  <Box sx={{ flex: 1 }}>
+                        />
                                     <Typography
-                                      variant="body1"
+                          variant="h5"
                                       sx={{
-                                        fontWeight: 600,
+                            fontWeight: 700,
                                         color: colors.text.primary,
-                                        fontSize: "0.9375rem",
-                                        mb: 0.5,
+                            mb: 1.5,
                                       }}
                                     >
-                                      {domainNumber}. {getDomainName(domain)}
+                          Select a Domain
                                     </Typography>
-                                    {domain.subDomain &&
-                                      domain.subDomain.length > 0 && (
                                         <Typography
-                                          variant="caption"
-                                          sx={{
-                                            color: colors.text.secondary,
-                                            fontSize: "0.75rem",
-                                          }}
-                                        >
-                                          {domain.subDomain.length} Subdomain
-                                          {domain.subDomain.length !== 1
-                                            ? "s"
-                                            : ""}
+                          variant="body1"
+                          color="text.secondary"
+                          sx={{ maxWidth: 500, mx: "auto" }}
+                        >
+                          Please select a domain from the left panel to view and answer the questions.
                                         </Typography>
-                                      )}
                                   </Box>
-                                  {progress === 100 && (
-                                    <CheckCircle
-                                      sx={{
-                                        color: colors.accent.green,
-                                        fontSize: 24,
-                                      }}
-                                    />
-                                  )}
-                                </Box>
-                                {/* Progress Bar */}
-                                <Box sx={{ mt: 1.5 }}>
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "space-between",
-                                      mb: 0.75,
-                                    }}
-                                  >
-                                    <Typography
-                                      variant="caption"
-                                      sx={{
-                                        fontSize: "0.75rem",
-                                        color: colors.text.secondary,
-                                        fontWeight: 500,
-                                      }}
-                                    >
-                                      Progress
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      sx={{
-                                        fontSize: "0.75rem",
-                                        color: getProgressColor(progress),
-                                        fontWeight: 600,
-                                      }}
-                                    >
-                                      {Math.round(progress)}%
-                                    </Typography>
-                                  </Box>
-                                  <LinearProgress
-                                    variant="determinate"
-                                    value={progress}
-                                    sx={{
-                                      height: 8,
-                                      borderRadius: 4,
-                                      bgcolor: colors.neutral.gray200,
-                                      "& .MuiLinearProgress-bar": {
-                                        borderRadius: 4,
-                                        bgcolor: getProgressColor(progress),
-                                      },
-                                    }}
-                                  />
-                                </Box>
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                      </Box>
                     ) : (
                       <Box sx={{ textAlign: "center", py: 8, px: 3 }}>
                         <Assessment
-                          sx={{
+                                      sx={{
                             fontSize: 80,
                             color: colors.neutral.gray400,
                             mb: 3,
                           }}
                         />
-                        <Typography
+                                    <Typography
                           variant="h5"
-                          sx={{
+                                      sx={{
                             fontWeight: 700,
                             color: colors.text.primary,
                             mb: 1.5,
                           }}
                         >
                           No Assessment Available
-                        </Typography>
-                        <Typography
+                                    </Typography>
+                                    <Typography
                           variant="body1"
                           color="text.secondary"
                           sx={{ maxWidth: 400, mx: "auto" }}
@@ -4212,25 +4007,7 @@ const SelfAssessment = () => {
                     >
                       <Button
                         variant="contained"
-                        endIcon={<ArrowForward />}
-                        onClick={() => {
-                          if (!userId) {
-                            enqueueSnackbar(
-                              "User ID is missing. Please login again.",
-                              {
-                                variant: "error",
-                              }
-                            );
-                            return;
-                          }
-
-                          const payload = {
-                            userId: Number(userId),
-                            isSubmitted: 1,
-                          };
-
-                          submitAssessmentMutation.mutate(payload);
-                        }}
+                        onClick={handleOpenSubmitConfirmation}
                         disabled={
                           submitAssessmentMutation.isPending ||
                           !allDomainsComplete
@@ -4263,7 +4040,7 @@ const SelfAssessment = () => {
                         {submitAssessmentMutation.isPending
                           ? "Submitting..."
                           : !allDomainsComplete
-                          ? "Complete All Domains to Submit"
+                          ? "Final Submit"
                           : "Submit Assessment"}
                       </Button>
                     </Box>
@@ -4274,6 +4051,19 @@ const SelfAssessment = () => {
           </Box>
         </Box>
       </Box>
+
+      {/* Confirmation Modal for Final Submit */}
+      <ConfirmationModal
+        open={showSubmitConfirmation}
+        onClose={() => setShowSubmitConfirmation(false)}
+        onConfirm={handleConfirmSubmit}
+        title="Submit Assessment"
+        message="Are you sure you want to submit your assessment? You will not be able to edit your responses after submission."
+        confirmText="Yes, Submit"
+        cancelText="Cancel"
+        variant="warning"
+        isLoading={submitAssessmentMutation.isPending}
+      />
     </Box>
   );
 };

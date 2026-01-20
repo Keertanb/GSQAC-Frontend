@@ -412,7 +412,7 @@ const AssessmentManagement = () => {
                   ? t("assessment.domain.editDomain")
                   : t("assessment.domain.addDomain")}
               </Typography>
-              <Button
+              {/* <Button
                 variant="outlined"
                 onClick={handleTranslateDomain}
                 disabled={
@@ -430,7 +430,7 @@ const AssessmentManagement = () => {
                 }}
               >
                 Translate to EN & HI
-              </Button>
+              </Button> */}
             </Box>
             <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
               <TextField

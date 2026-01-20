@@ -1,99 +1,32 @@
 import React, { useState } from "react";
 import AppTable from "../../../components/AppTable/AppTable";
+import { useGetAllocatedSchoolsQuery } from "../../../services/inspectorService";
+import useAuthStore from "../../../store/useAuthStore";
 import "./SchoolAllocated.css";
-
-// Static data for allocated schools
-const staticSchoolsData = [
-  {
-    id: 1,
-    schoolName: "Government Primary School, Sector 15",
-    schoolCode: "GPS001",
-    district: "Ahmedabad",
-    address: "Sector 15, Gandhinagar, Gujarat",
-    phone: "+91 79 2325 1234",
-    email: "gps015@education.gov.in",
-    principal: "Dr. Rajesh Kumar",
-    status: "pending",
-    allocatedDate: "2024-01-15",
-    students: 450,
-    teachers: 25,
-  },
-  {
-    id: 2,
-    schoolName: "Model Secondary School, Maninagar",
-    schoolCode: "MSS002",
-    district: "Ahmedabad",
-    address: "Maninagar, Ahmedabad, Gujarat",
-    phone: "+91 79 2546 7890",
-    email: "mss002@education.gov.in",
-    principal: "Mrs. Priya Sharma",
-    status: "completed",
-    allocatedDate: "2024-01-10",
-    students: 680,
-    teachers: 42,
-  },
-  {
-    id: 3,
-    schoolName: "Higher Secondary School, Vastrapur",
-    schoolCode: "HSS003",
-    district: "Ahmedabad",
-    address: "Vastrapur, Ahmedabad, Gujarat",
-    phone: "+91 79 2630 1234",
-    email: "hss003@education.gov.in",
-    principal: "Mr. Ashok Patel",
-    status: "pending",
-    allocatedDate: "2024-01-18",
-    students: 920,
-    teachers: 58,
-  },
-  {
-    id: 4,
-    schoolName: "Government Girls School, Naranpura",
-    schoolCode: "GGS004",
-    district: "Ahmedabad",
-    address: "Naranpura, Ahmedabad, Gujarat",
-    phone: "+91 79 2744 5678",
-    email: "ggs004@education.gov.in",
-    principal: "Dr. Meena Desai",
-    status: "in_progress",
-    allocatedDate: "2024-01-12",
-    students: 520,
-    teachers: 32,
-  },
-  {
-    id: 5,
-    schoolName: "Central High School, Paldi",
-    schoolCode: "CHS005",
-    district: "Ahmedabad",
-    address: "Paldi, Ahmedabad, Gujarat",
-    phone: "+91 79 2658 9012",
-    email: "chs005@education.gov.in",
-    principal: "Mr. Vikram Singh",
-    status: "pending",
-    allocatedDate: "2024-01-20",
-    students: 780,
-    teachers: 48,
-  },
-  {
-    id: 6,
-    schoolName: "Kendriya Vidyalaya, Sabarmati",
-    schoolCode: "KVS006",
-    district: "Ahmedabad",
-    address: "Sabarmati, Ahmedabad, Gujarat",
-    phone: "+91 79 2755 3456",
-    email: "kvs006@education.gov.in",
-    principal: "Mrs. Kavita Joshi",
-    status: "completed",
-    allocatedDate: "2024-01-08",
-    students: 1050,
-    teachers: 65,
-  },
-];
 
 const SchoolAllocated = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage] = useState(10);
+
+  // Get districtId from auth store
+  const { districtId, user } = useAuthStore();
+  
+  // Use districtId from store or from user object
+  const userDistrictId = districtId || user?.districtId;
+
+  // Fetch allocated schools
+  const {
+    data: schoolsData,
+    isLoading,
+    isError,
+  } = useGetAllocatedSchoolsQuery({
+    districtId: userDistrictId,
+    enabled: !!userDistrictId,
+  });
+
+  // Get schools from API response or use empty array
+  const staticSchoolsData = schoolsData?.data || [];
 
   // Filter schools based on search query
   const filteredSchools = staticSchoolsData.filter((school) => {
@@ -412,7 +345,17 @@ const SchoolAllocated = () => {
       </div>
 
       {/* Schools Table */}
-      {filteredSchools.length === 0 ? (
+      {isLoading ? (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+        </div>
+      ) : isError ? (
+        <div className="error-container">
+          <p className="error-message">
+            Failed to load schools. Please try again.
+          </p>
+        </div>
+      ) : filteredSchools.length === 0 ? (
         <div className="empty-container">
           <div className="empty-icon-container">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -436,8 +379,8 @@ const SchoolAllocated = () => {
           columns={columns}
           data={filteredSchools}
           rowKey="id"
-          loading={false}
-          isError={false}
+          loading={isLoading}
+          isError={isError}
           renderActions={renderActions}
           itemsPerPage={itemsPerPage}
           currentPage={currentPage + 1}

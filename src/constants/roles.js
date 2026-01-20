@@ -7,14 +7,14 @@ export const roles = [
     color: "#1e3a8a",
     dashboardRoute: "/school-dashboard",
   },
-  {
-    value: "parent",
-    label: "Parent/Guardian",
-    description: "Feedback & grievance portal",
-    authMethod: "Mobile Number",
-    color: "#f97316",
-    dashboardRoute: "/parent-dashboard",
-  },
+  // {
+  //   value: "parent",
+  //   label: "Parent/Guardian",
+  //   description: "Feedback & grievance portal",
+  //   authMethod: "Mobile Number",
+  //   color: "#f97316",
+  //   dashboardRoute: "/parent-dashboard",
+  // },
   {
     value: "inspector",
     label: "School Inspector",
