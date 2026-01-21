@@ -55,6 +55,16 @@ export const getSchoolData = async (params) => {
 };
 
 /**
+ * Get school grades with student counts
+ * @param {Object} params - { schoolId: string }
+ * @returns {Promise} API response
+ */
+export const getSchoolGrades = async (params) => {
+  const response = await axiosInstance.get("/school/grades", { params });
+  return response.data;
+};
+
+/**
  * Get class-wise sections
  * @param {Object} params - { userId: number, class: number }
  * @returns {Promise} API response
@@ -122,6 +132,22 @@ export const useGetSchoolDataQuery = ({
     },
     enabled: enabled && (!!userName || !!schoolId),
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * React Query hook for getting school grades with student counts
+ * @param {Object} options - Query options
+ * @param {string} options.schoolId - School ID
+ * @param {boolean} options.enabled - Whether to enable the query
+ * @returns {Object} Query result
+ */
+export const useGetSchoolGradesQuery = ({ schoolId, enabled = true }) => {
+  return useQuery({
+    queryKey: ["school", "grades", schoolId],
+    queryFn: () => getSchoolGrades({ schoolId }),
+    enabled: enabled && !!schoolId,
+    staleTime: 10 * 60 * 1000, // 10 minutes (grades don't change often)
   });
 };
 

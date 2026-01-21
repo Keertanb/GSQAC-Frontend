@@ -24,6 +24,10 @@ import {
   InputLabel,
   ToggleButtonGroup,
   ToggleButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import {
   ExpandMore,
@@ -34,6 +38,8 @@ import {
   Language,
   Translate,
   Publish,
+  Settings,
+  Edit,
 } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import DomainSubdomainView from "./DomainSubdomainView";
@@ -44,6 +50,8 @@ import {
   useDeleteDomainMutation,
   useTranslateTextMutation,
   usePublishAssessmentMutation,
+  useGetAssessmentsQuery,
+  useUpdateAssessmentMutation,
 } from "../../../services/adminService";
 import { roleIdMap, getRoleId } from "../../../constants/roles";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
@@ -67,6 +75,19 @@ const AssessmentManagement = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [domainToDelete, setDomainToDelete] = useState(null);
   const [translationId, setTranslationId] = useState(null);
+  
+  // Publish Assessment Modal
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [publishData, setPublishData] = useState({
+    assessmentId: "",
+    startDate: "",
+    endDate: "",
+    roleId: "",
+  });
+  
+  // Settings Modal
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [editedEndDates, setEditedEndDates] = useState({});
 
   const languageCodeMap = {
     en: "EN",
@@ -90,6 +111,13 @@ const AssessmentManagement = () => {
   });
 
   const domains = domainsData?.data || [];
+
+  // Fetch assessments (no academic year filter)
+  const {
+    data: assessmentsData,
+    isLoading: isLoadingAssessments,
+    refetch: refetchAssessments,
+  } = useGetAssessmentsQuery(null);
 
   const upsertDomainMutation = useUpsertDomainMutation({
     onSuccess: () => {
@@ -142,15 +170,73 @@ const AssessmentManagement = () => {
   const publishAssessmentMutation = usePublishAssessmentMutation({
     onSuccess: () => {
       refetch();
+      refetchAssessments();
     },
   });
 
-  const handlePublishAssessment = (isPublished) => {
+  const updateAssessmentMutation = useUpdateAssessmentMutation({
+    onSuccess: () => {
+      refetchAssessments();
+      setEditedEndDates({});
+    },
+  });
+
+  const handleOpenPublishModal = () => {
+    setPublishModalOpen(true);
+  };
+
+  const handleClosePublishModal = () => {
+    setPublishModalOpen(false);
+    setPublishData({
+      assessmentId: "",
+      startDate: "",
+      endDate: "",
+      roleId: "",
+    });
+  };
+
+  const handlePublishAssessment = () => {
+    if (!publishData.assessmentId || !publishData.startDate || !publishData.endDate || !publishData.roleId) {
+      alert("Please fill all required fields");
+      return;
+    }
+
     const payload = {
-      roleId: getRoleId(selectedRole),
-      isPublished: isPublished,
+      assessmentId: Number(publishData.assessmentId),
+      roleId: getRoleId(publishData.roleId),
+      isPublished: 0,
+      startDate: publishData.startDate,
+      endDate: publishData.endDate,
     };
-    publishAssessmentMutation.mutate(payload);
+    
+    publishAssessmentMutation.mutate(payload, {
+      onSuccess: () => {
+        handleClosePublishModal();
+      }
+    });
+  };
+
+  const handleOpenSettingsModal = () => {
+    setSettingsModalOpen(true);
+  };
+
+  const handleCloseSettingsModal = () => {
+    setSettingsModalOpen(false);
+    setEditedEndDates({});
+  };
+
+  const handleUpdateAssessment = (assessment) => {
+    const endDate = editedEndDates[assessment.assessmentId] || assessment.endDate;
+    
+    const payload = {
+      assessmentId: assessment.assessmentId,
+      roleId: assessment.roleId,
+      isPublished: assessment.isPublished ? 1 : 0,
+      startDate: assessment.startDate,
+      endDate: endDate,
+    };
+
+    updateAssessmentMutation.mutate(payload);
   };
 
   const handleToggleDomain = (domainId) => {
@@ -373,10 +459,19 @@ const AssessmentManagement = () => {
           >
             {t("assessment.domain.addDomain")}
           </Button>
+          <IconButton
+            onClick={handleOpenSettingsModal}
+            sx={{
+              bgcolor: colors.neutral.gray200,
+              "&:hover": { bgcolor: colors.neutral.gray300 },
+            }}
+          >
+            <Settings />
+          </IconButton>
           <Button
             variant="contained"
             startIcon={<Publish />}
-            onClick={() => handlePublishAssessment(1)}
+            onClick={handleOpenPublishModal}
             disabled={publishAssessmentMutation.isPending}
             sx={{
               bgcolor: colors.accent.green,
@@ -661,6 +756,246 @@ const AssessmentManagement = () => {
         variant="danger"
         isLoading={deleteDomainMutation.isPending}
       />
+
+      {/* Publish Assessment Modal */}
+      <Dialog
+        open={publishModalOpen}
+        onClose={handleClosePublishModal}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            fontWeight: 700,
+            bgcolor: colors.primary.blue + "10",
+            color: colors.primary.blue,
+          }}
+        >
+          Publish Assessment
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, mt: 1 }}>
+            <FormControl fullWidth required>
+              <InputLabel>Assessment</InputLabel>
+              <Select
+                value={publishData.assessmentId}
+                onChange={(e) =>
+                  setPublishData({ ...publishData, assessmentId: e.target.value })
+                }
+                label="Assessment"
+                disabled={isLoadingAssessments}
+              >
+                {isLoadingAssessments ? (
+                  <MenuItem disabled>Loading assessments...</MenuItem>
+                ) : assessmentsData?.data && assessmentsData.data.length > 0 ? (
+                  assessmentsData.data.map((assessment) => (
+                    <MenuItem 
+                      key={assessment.assessmentId} 
+                      value={assessment.assessmentId}
+                    >
+                      Assessment {assessment.assessmentId} - {assessment.academicYear} (Round {assessment.round})
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>No assessments available</MenuItem>
+                )}
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Start Date"
+              type="date"
+              value={publishData.startDate}
+              onChange={(e) =>
+                setPublishData({ ...publishData, startDate: e.target.value })
+              }
+              InputLabelProps={{ shrink: true }}
+              required
+            />
+            <TextField
+              fullWidth
+              label="End Date"
+              type="date"
+              value={publishData.endDate}
+              onChange={(e) =>
+                setPublishData({ ...publishData, endDate: e.target.value })
+              }
+              InputLabelProps={{ shrink: true }}
+              required
+            />
+            <FormControl fullWidth required>
+              <InputLabel>Role</InputLabel>
+              <Select
+                value={publishData.roleId}
+                onChange={(e) =>
+                  setPublishData({ ...publishData, roleId: e.target.value })
+                }
+                label="Role"
+              >
+                <MenuItem value="school">School</MenuItem>
+                <MenuItem value="inspector">School Verifier</MenuItem>
+                <MenuItem value="parent">CRC</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={handleClosePublishModal}
+            disabled={publishAssessmentMutation.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handlePublishAssessment}
+            disabled={publishAssessmentMutation.isPending}
+            sx={{
+              bgcolor: colors.accent.green,
+              "&:hover": { bgcolor: colors.accent.greenDark },
+            }}
+          >
+            {publishAssessmentMutation.isPending ? "Publishing..." : "Publish"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Settings Modal */}
+      <Dialog
+        open={settingsModalOpen}
+        onClose={handleCloseSettingsModal}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            fontWeight: 700,
+            bgcolor: colors.primary.blue + "10",
+            color: colors.primary.blue,
+          }}
+        >
+          Assessment Settings
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <TableContainer component={Paper} elevation={0} sx={{ mt: 2 }}>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: colors.neutral.gray100 }}>
+                  <TableCell sx={{ fontWeight: 700 }}>Assessment</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Start Date</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>End Date</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Role</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>
+                    Status
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>
+                    Action
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {isLoadingAssessments ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      <CircularProgress size={30} />
+                    </TableCell>
+                  </TableRow>
+                ) : assessmentsData?.data && assessmentsData.data.length > 0 ? (
+                  assessmentsData.data.map((assessment) => (
+                    <TableRow key={assessment.assessmentId}>
+                      <TableCell>
+                        {assessment.assessmentId && assessment.academicYear && assessment.round
+                          ? `Assessment ${assessment.assessmentId} - ${assessment.academicYear} (Round ${assessment.round})`
+                          : "-"}
+                      </TableCell>
+                      <TableCell>{assessment.startDate || "-"}</TableCell>
+                      <TableCell>
+                        <TextField
+                          size="small"
+                          type="date"
+                          value={
+                            editedEndDates[assessment.assessmentId] !== undefined
+                              ? editedEndDates[assessment.assessmentId]
+                              : assessment.endDate || ""
+                          }
+                          onChange={(e) =>
+                            setEditedEndDates({
+                              ...editedEndDates,
+                              [assessment.assessmentId]: e.target.value,
+                            })
+                          }
+                          InputLabelProps={{ shrink: true }}
+                          sx={{ minWidth: 150 }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {assessment.roleId ? (
+                          <Chip
+                            label={`Role ${assessment.roleId}`}
+                            size="small"
+                            sx={{
+                              bgcolor: colors.primary.blue + "15",
+                              color: colors.primary.blue,
+                              fontWeight: 600,
+                            }}
+                          />
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell align="center">
+                        {assessment.isPublished !== undefined && assessment.isPublished !== null ? (
+                          <Chip
+                            label={assessment.isPublished ? "Published" : "Unpublished"}
+                            size="small"
+                            sx={{
+                              bgcolor: assessment.isPublished
+                                ? colors.accent.green + "15"
+                                : colors.semantic.warning + "15",
+                              color: assessment.isPublished
+                                ? colors.accent.green
+                                : colors.semantic.warning,
+                              fontWeight: 600,
+                            }}
+                          />
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={() => handleUpdateAssessment(assessment)}
+                          disabled={
+                            updateAssessmentMutation.isPending ||
+                            !editedEndDates[assessment.assessmentId]
+                          }
+                          sx={{
+                            bgcolor: colors.primary.blue,
+                            "&:hover": { bgcolor: colors.primary.dark },
+                          }}
+                        >
+                          Update
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      No assessments available
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleCloseSettingsModal}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

@@ -919,19 +919,18 @@ export const useTranslateTextMutation = (options = {}) => {
 
 /**
  * Get assessments by academic year
- * @param {string} academicYear - Academic year (e.g., "2024-25")
+ * @param {string} academicYear - Academic year (optional, e.g., "2024-25")
  * @returns {Promise} API response
  */
 export const getAssessments = async (academicYear) => {
-  const response = await axiosInstance.get("/admin/assessment", {
-    params: { academicYear },
-  });
+  const config = academicYear ? { params: { academicYear } } : {};
+  const response = await axiosInstance.get("/admin/assessment", config);
   return response.data;
 };
 
 /**
  * Update assessment details
- * @param {Object} payload - { assessmentId: number, round: number, roleId: number, isPublished: number, startDate: string, endDate: string }
+ * @param {Object} payload - { assessmentId, roleId, isPublished, startDate, endDate }
  * @returns {Promise} API response
  */
 export const updateAssessment = async (payload) => {
@@ -951,12 +950,16 @@ export const publishAssessment = async (payload) => {
 
 /**
  * React Query hook to get assessments
+ * @param {string} academicYear - Optional academic year filter
+ * @param {object} options - React Query options
  */
 export const useGetAssessmentsQuery = (academicYear, options = {}) => {
   return useQuery({
-    queryKey: queryKeys.admin.assessments(academicYear),
+    queryKey: academicYear 
+      ? queryKeys.admin.assessments(academicYear)
+      : ["admin", "assessments"],
     queryFn: () => getAssessments(academicYear),
-    enabled: !!academicYear,
+    staleTime: 5 * 60 * 1000, // 5 minutes
     ...options,
   });
 };
