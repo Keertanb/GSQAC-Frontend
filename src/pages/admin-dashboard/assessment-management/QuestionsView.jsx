@@ -49,7 +49,7 @@ import { getRoleId, roleIdMap } from "../../../constants/roles";
 import { enqueueSnackbar } from "notistack";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
 
-const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
+const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = false }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   // eslint-disable-next-line no-unused-vars
@@ -691,6 +691,27 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
 
   return (
     <Box>
+      {/* View-Only Mode Banner */}
+      {isViewOnly && (
+        <Alert 
+          severity="info" 
+          sx={{ 
+            mb: 3,
+            borderRadius: 2,
+            "& .MuiAlert-icon": {
+              color: colors.primary.blue,
+            },
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            View-Only Mode
+          </Typography>
+          <Typography variant="caption">
+            You are viewing this subdomain in read-only mode. To add or edit questions, use the "Manage Questions" button.
+          </Typography>
+        </Alert>
+      )}
+      
       <Box
         sx={{
           display: "flex",
@@ -790,37 +811,39 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
               {questions.length} {t("assessment.question.title")}
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => {
-              setEditingQuestion(null);
-              setCurrentQuestionId(null);
-              setShowOptionsForm(false);
-              setNewQuestionText({ en: "", hi: "", gu: "" });
-              setNewOptions([
-                { id: 1, text: { en: "", hi: "", gu: "" } },
-                { id: 2, text: { en: "", hi: "", gu: "" } },
-              ]);
-              setIsClassroomObservation(0);
-              setQuestionType("single_choice");
-              setShowAddQuestion(!showAddQuestion);
+          {!isViewOnly && (
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => {
+                setEditingQuestion(null);
+                setCurrentQuestionId(null);
+                setShowOptionsForm(false);
+                setNewQuestionText({ en: "", hi: "", gu: "" });
+                setNewOptions([
+                  { id: 1, text: { en: "", hi: "", gu: "" } },
+                  { id: 2, text: { en: "", hi: "", gu: "" } },
+                ]);
+                setIsClassroomObservation(0);
+                setQuestionType("single_choice");
+                setShowAddQuestion(!showAddQuestion);
 
-              // Scroll to add question section after state update
-              setTimeout(() => {
-                addQuestionRef.current?.scrollIntoView({
-                  behavior: "smooth",
-                  block: "start",
-                });
-              }, 100);
-            }}
-            sx={{
-              bgcolor: colors.primary.blue,
-              "&:hover": { bgcolor: colors.primary.dark },
-            }}
-          >
-            {t("assessment.question.addQuestion")}
-          </Button>
+                // Scroll to add question section after state update
+                setTimeout(() => {
+                  addQuestionRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }, 100);
+              }}
+              sx={{
+                bgcolor: colors.primary.blue,
+                "&:hover": { bgcolor: colors.primary.dark },
+              }}
+            >
+              {t("assessment.question.addQuestion")}
+            </Button>
+          )}
         </Box>
 
         {questions && questions.length > 0 ? (
@@ -1364,30 +1387,34 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                             }}
                           />
                         </Box>
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleEditQuestion(question)}
-                          sx={{
-                            bgcolor: colors.accent.green + "15",
-                            "&:hover": { bgcolor: colors.accent.green + "25" },
-                          }}
-                        >
-                          <Edit fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteQuestion(question)}
-                          sx={{
-                            bgcolor: colors.semantic.error + "15",
-                            "&:hover": {
-                              bgcolor: colors.semantic.error + "25",
-                            },
-                          }}
-                        >
-                          <Delete fontSize="small" />
-                        </IconButton>
+                        {!isViewOnly && (
+                          <>
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleEditQuestion(question)}
+                              sx={{
+                                bgcolor: colors.accent.green + "15",
+                                "&:hover": { bgcolor: colors.accent.green + "25" },
+                              }}
+                            >
+                              <Edit fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDeleteQuestion(question)}
+                              sx={{
+                                bgcolor: colors.semantic.error + "15",
+                                "&:hover": {
+                                  bgcolor: colors.semantic.error + "25",
+                                },
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </>
+                        )}
                       </Box>
 
                       {options && options.length > 0 && (
@@ -1931,6 +1958,13 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                       <Button
                         variant="outlined"
                         onClick={() => {
+                          // Show warning toaster when user cancels adding options after adding a question
+                          if (currentQuestionId && !editingQuestion) {
+                            enqueueSnackbar(
+                              "You discarded the options. The question was saved but has no options. Please edit the question to add options.",
+                              { variant: "warning" }
+                            );
+                          }
                           setShowOptionsForm(false);
                           setNewOptions([
                             { id: 1, text: { en: "", hi: "", gu: "" } },
@@ -2360,6 +2394,13 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                       <Button
                         variant="outlined"
                         onClick={() => {
+                          // Show warning toaster when user cancels adding options after adding a question
+                          if (currentQuestionId && !editingQuestion) {
+                            enqueueSnackbar(
+                              "You discarded the options. The question was saved but has no options. Please edit the question to add options.",
+                              { variant: "warning" }
+                            );
+                          }
                           setShowOptionsForm(false);
                           setNewOptions([
                             { id: 1, text: { en: "", hi: "", gu: "" } },

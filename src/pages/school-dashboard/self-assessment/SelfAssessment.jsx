@@ -278,6 +278,8 @@ const SelfAssessment = () => {
   // Note: Removed auto-selection of subject to allow manual selection only
 
   const domains = domainsData?.data || [];
+  const isPublished = domainsData?.isPublished || false;
+  const endDate = domainsData?.endDate || null;
 
   // All questions for counting (unfiltered by class)
   const allQuestionsForCount = useMemo(() => {
@@ -615,18 +617,20 @@ const SelfAssessment = () => {
         // For FLN questions (type 4), group by questionId and std
         if (questionType === 4 || questionType === "4") {
           const qId = question.questionId;
-          
+
           // Initialize map for this question if not exists
           if (!flnAnswersMap[qId]) {
             flnAnswersMap[qId] = {};
           }
-          
+
           // Check if we have std (API format)
           if (question.std) {
             flnAnswersMap[qId][question.std] = {
-              obtainedMarks: question.answerText !== null && question.answerText !== undefined 
-                ? String(question.answerText) 
-                : "",
+              obtainedMarks:
+                question.answerText !== null &&
+                question.answerText !== undefined
+                  ? String(question.answerText)
+                  : "",
               answerId: question.answerId || null,
             };
           }
@@ -640,7 +644,9 @@ const SelfAssessment = () => {
       Object.keys(flnAnswersMap).forEach((questionId) => {
         // Only add if there's actual data
         if (Object.keys(flnAnswersMap[questionId]).length > 0) {
-          apiTextAnswers[questionId] = JSON.stringify(flnAnswersMap[questionId]);
+          apiTextAnswers[questionId] = JSON.stringify(
+            flnAnswersMap[questionId]
+          );
         }
       });
 
@@ -1003,9 +1009,10 @@ const SelfAssessment = () => {
     }
 
     // Check if there are any answers (either option-based or text-based)
-    const hasAnswers = (answers && Object.keys(answers).length > 0) || 
-                       (textAnswers && Object.keys(textAnswers).length > 0);
-    
+    const hasAnswers =
+      (answers && Object.keys(answers).length > 0) ||
+      (textAnswers && Object.keys(textAnswers).length > 0);
+
     if (!hasAnswers) {
       enqueueSnackbar(
         "Please answer at least one question before submitting.",
@@ -1061,7 +1068,7 @@ const SelfAssessment = () => {
 
     // Format answers array from current answers state
     const answersArray = [];
-    
+
     allQuestions.forEach((question) => {
       const questionType =
         question.questionType ||
@@ -1154,7 +1161,7 @@ const SelfAssessment = () => {
       </Box>
     );
   }
-  console.log(answers, "answersanswersanswers");
+  console.log(isPublished, endDate, "answersanswersanswers");
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
       <AppDrawer open={drawerOpen} handleDrawerToggle={handleDrawerToggle} />
@@ -1352,7 +1359,7 @@ const SelfAssessment = () => {
                 mb: 3,
               }}
             >
-              <Box>
+              <Box sx={{ flex: 1 }}>
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>
                   {t("selfAssessment.title")}
                 </Typography>
@@ -1413,6 +1420,45 @@ const SelfAssessment = () => {
                 </ToggleButtonGroup>
               </Box>
             </Box>
+
+            {/* End Date Warning Banner */}
+            {isPublished && endDate && (
+              <Alert
+                severity="warning"
+                sx={{
+                  mb: 3,
+                  borderRadius: 2,
+                  bgcolor: colors.semantic.warning + "15",
+                  border: `1.5px solid ${colors.semantic.warning}`,
+                  "& .MuiAlert-icon": {
+                    color: colors.semantic.warning,
+                  },
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                    color: colors.text.primary,
+                  }}
+                >
+                  {t("selfAssessment.endDateWarning", {
+                    date: new Date(endDate).toLocaleDateString(
+                      currentLanguage === "gu"
+                        ? "gu-IN"
+                        : currentLanguage === "hi"
+                        ? "hi-IN"
+                        : "en-IN",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    ),
+                  })}
+                </Typography>
+              </Alert>
+            )}
 
             {/* Main Content - Split Layout */}
             <Box
@@ -2389,6 +2435,7 @@ const SelfAssessment = () => {
                                                     )}
                                                     control={
                                                       <Radio
+                                                        disabled={!isPublished}
                                                         sx={{
                                                           color:
                                                             colors.primary.blue,
@@ -2954,6 +3001,7 @@ const SelfAssessment = () => {
                                                     )}
                                                     control={
                                                       <Radio
+                                                        disabled={!isPublished}
                                                         sx={{
                                                           color:
                                                             colors.accent
@@ -3057,7 +3105,9 @@ const SelfAssessment = () => {
                                   try {
                                     const flnData = JSON.parse(textAnswer);
                                     return Object.keys(flnData).some(
-                                      (key) => flnData[key] && flnData[key].obtainedMarks
+                                      (key) =>
+                                        flnData[key] &&
+                                        flnData[key].obtainedMarks
                                     );
                                   } catch (e) {
                                     return false;
@@ -3114,14 +3164,15 @@ const SelfAssessment = () => {
                                 textAnswers[question.questionId] || "";
                               const isExpanded =
                                 expandedQuestions[question.questionId] ?? true;
-                              
+
                               // Check if FLN question has any answers
                               let questionProgress = 0;
                               if (textAnswer) {
                                 try {
                                   const flnData = JSON.parse(textAnswer);
                                   const hasAnswer = Object.keys(flnData).some(
-                                    (key) => flnData[key] && flnData[key].obtainedMarks
+                                    (key) =>
+                                      flnData[key] && flnData[key].obtainedMarks
                                   );
                                   questionProgress = hasAnswer ? 100 : 0;
                                 } catch (e) {
@@ -3323,6 +3374,7 @@ const SelfAssessment = () => {
                                                 <TextField
                                                   size="small"
                                                   type="number"
+                                                  disabled={!isPublished}
                                                   value={
                                                     classData.obtainedMarks ||
                                                     ""
@@ -3341,7 +3393,9 @@ const SelfAssessment = () => {
                                                         ...flnData,
                                                         [classNum]: {
                                                           obtainedMarks: value,
-                                                          answerId: classData.answerId || null, // Preserve answerId
+                                                          answerId:
+                                                            classData.answerId ||
+                                                            null, // Preserve answerId
                                                         },
                                                       };
                                                       handleTextAnswerChange(
@@ -3618,6 +3672,7 @@ const SelfAssessment = () => {
                                                 value={String(option.optionId)}
                                                 control={
                                                   <Radio
+                                                    disabled={!isPublished}
                                                     sx={{
                                                       color:
                                                         colors.primary.blue,
@@ -3673,54 +3728,56 @@ const SelfAssessment = () => {
                     )}
 
                     {/* Submit Button */}
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        gap: 2,
-                        mt: 4,
-                        pt: 3.5,
-                        borderTop: `1.5px solid ${colors.neutral.gray200}`,
-                      }}
-                    >
-                      <Button
-                        variant="outlined"
-                        onClick={() => {
-                          setSelectedDomain(null);
-                          setSelectedSubdomain(null);
-                          setAnswers({});
-                        }}
+                    {isPublished && (
+                      <Box
                         sx={{
-                          borderColor: colors.primary.blue,
-                          color: colors.primary.blue,
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          gap: 2,
+                          mt: 4,
+                          pt: 3.5,
+                          borderTop: `1.5px solid ${colors.neutral.gray200}`,
                         }}
                       >
-                        Cancel
-                      </Button>
-                       <Button
-                         variant="contained"
-                         onClick={handleSubmit}
-                         disabled={
-                           submitSubdomainWiseAnswersMutation.isPending ||
-                           (Object.keys(answers).length === 0 && 
-                            Object.keys(textAnswers).length === 0) ||
-                           (classBasedQuestions.length > 0 &&
-                             (!selectedClass || !selectedSection))
-                         }
-                        sx={{
-                          bgcolor: colors.accent.green,
-                          "&:hover": { bgcolor: colors.accent.greenDark },
-                          "&:disabled": {
-                            bgcolor: colors.neutral.gray300,
-                            color: colors.neutral.gray600,
-                          },
-                        }}
-                      >
-                        {submitSubdomainWiseAnswersMutation.isPending
-                          ? "Saving..."
-                          : "Save Assessment"}
-                      </Button>
-                    </Box>
+                        <Button
+                          variant="outlined"
+                          onClick={() => {
+                            setSelectedDomain(null);
+                            setSelectedSubdomain(null);
+                            setAnswers({});
+                          }}
+                          sx={{
+                            borderColor: colors.primary.blue,
+                            color: colors.primary.blue,
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="contained"
+                          onClick={handleSubmit}
+                          disabled={
+                            submitSubdomainWiseAnswersMutation.isPending ||
+                            (Object.keys(answers).length === 0 &&
+                              Object.keys(textAnswers).length === 0) ||
+                            (classBasedQuestions.length > 0 &&
+                              (!selectedClass || !selectedSection))
+                          }
+                          sx={{
+                            bgcolor: colors.accent.green,
+                            "&:hover": { bgcolor: colors.accent.greenDark },
+                            "&:disabled": {
+                              bgcolor: colors.neutral.gray300,
+                              color: colors.neutral.gray600,
+                            },
+                          }}
+                        >
+                          {submitSubdomainWiseAnswersMutation.isPending
+                            ? "Saving..."
+                            : "Save Assessment"}
+                        </Button>
+                      </Box>
+                    )}
                   </Box>
                 </Paper>
               )}
@@ -4130,55 +4187,57 @@ const SelfAssessment = () => {
                     )}
 
                     {/* Submit Assessment Button */}
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        gap: 2,
-                        mt: 4,
-                        pt: 3.5,
-                        borderTop: `1.5px solid ${colors.neutral.gray200}`,
-                      }}
-                    >
-                      <Button
-                        variant="contained"
-                        onClick={handleOpenSubmitConfirmation}
-                        disabled={
-                          submitAssessmentMutation.isPending ||
-                          !allDomainsComplete
-                        }
-                        title={
-                          !allDomainsComplete
-                            ? "Please complete all domains (100%) before submitting"
-                            : "Submit your assessment"
-                        }
+                    {isPublished && (
+                      <Box
                         sx={{
-                          bgcolor: colors.accent.green,
-                          "&:hover": {
-                            bgcolor: colors.accent.greenDark,
-                            "&:disabled": {
-                              bgcolor: colors.neutral.gray300,
-                            },
-                          },
-                          "&:disabled": {
-                            bgcolor: colors.neutral.gray300,
-                            color: colors.neutral.gray600,
-                            cursor: "not-allowed",
-                          },
-                          textTransform: "none",
-                          fontWeight: 600,
-                          px: 4,
-                          py: 1.5,
-                          borderRadius: 2,
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          gap: 2,
+                          mt: 4,
+                          pt: 3.5,
+                          borderTop: `1.5px solid ${colors.neutral.gray200}`,
                         }}
                       >
-                        {submitAssessmentMutation.isPending
-                          ? "Submitting..."
-                          : !allDomainsComplete
-                          ? "Final Submit"
-                          : "Submit Assessment"}
-                      </Button>
-                    </Box>
+                        <Button
+                          variant="contained"
+                          onClick={handleOpenSubmitConfirmation}
+                          disabled={
+                            submitAssessmentMutation.isPending ||
+                            !allDomainsComplete
+                          }
+                          title={
+                            !allDomainsComplete
+                              ? "Please complete all domains (100%) before submitting"
+                              : "Submit your assessment"
+                          }
+                          sx={{
+                            bgcolor: colors.accent.green,
+                            "&:hover": {
+                              bgcolor: colors.accent.greenDark,
+                              "&:disabled": {
+                                bgcolor: colors.neutral.gray300,
+                              },
+                            },
+                            "&:disabled": {
+                              bgcolor: colors.neutral.gray300,
+                              color: colors.neutral.gray600,
+                              cursor: "not-allowed",
+                            },
+                            textTransform: "none",
+                            fontWeight: 600,
+                            px: 4,
+                            py: 1.5,
+                            borderRadius: 2,
+                          }}
+                        >
+                          {submitAssessmentMutation.isPending
+                            ? "Submitting..."
+                            : !allDomainsComplete
+                            ? "Final Submit"
+                            : "Submit Assessment"}
+                        </Button>
+                      </Box>
+                    )}
                   </Box>
                 </Paper>
               )}

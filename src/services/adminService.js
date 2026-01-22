@@ -70,7 +70,7 @@ export const getSubdomainQuestions = async (params) => {
     config.headers.userId = userIdToSend;
   }
 
-  const response = await axiosInstance.get("/questionnaire/question", config);
+  const response = await axiosInstance.get("/admin/question", config);
   return response.data;
 };
 
@@ -103,7 +103,7 @@ export const upsertSubdomain = async (payload) => {
  * @returns {Promise} API response
  */
 export const upsertQuestion = async (payload) => {
-  const response = await axiosInstance.post("/questionnaire/question", payload);
+  const response = await axiosInstance.post("/admin/question", payload);
   return response.data;
 };
 
@@ -114,7 +114,7 @@ export const upsertQuestion = async (payload) => {
  */
 export const upsertQuestionOption = async (payload) => {
   const response = await axiosInstance.post(
-    "/questionnaire/question-option",
+    "/admin/question-option",
     payload
   );
   return response.data;
@@ -138,7 +138,7 @@ export const deleteDomain = async (domainId) => {
  * @returns {Promise} API response
  */
 export const deleteQuestion = async (questionId) => {
-  const response = await axiosInstance.delete("/questionnaire/question", {
+  const response = await axiosInstance.delete("/admin/question", {
     params: { questionId },
   });
   return response.data;
@@ -151,7 +151,7 @@ export const deleteQuestion = async (questionId) => {
  */
 export const deleteQuestionOption = async (questionId) => {
   const response = await axiosInstance.delete(
-    "/questionnaire/question-option",
+    "/admin/question-option",
     {
       params: { questionId },
     }

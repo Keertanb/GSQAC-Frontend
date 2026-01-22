@@ -22,10 +22,20 @@ import {
   ToggleButtonGroup,
   ToggleButton,
 } from "@mui/material";
-import { Visibility, Add, Delete, Language, Translate } from "@mui/icons-material";
+import {
+  Visibility,
+  Add,
+  Delete,
+  Language,
+  Translate,
+  Edit,
+} from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
-import { useUpsertSubdomainMutation, useTranslateTextMutation } from "../../../services/adminService";
-import { roleIdMap, getRoleId } from "../../../constants/roles";
+import {
+  useUpsertSubdomainMutation,
+  useTranslateTextMutation,
+} from "../../../services/adminService";
+import { roleIdMap } from "../../../constants/roles";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
 
 const DomainSubdomainView = ({
@@ -36,7 +46,7 @@ const DomainSubdomainView = ({
   onSubdomainAdded,
 }) => {
   const { t } = useTranslation();
-  
+
   // Map language code: EN -> en, HI -> hi, GU -> gu
   const languageCodeToLower = {
     EN: "en",
@@ -44,10 +54,10 @@ const DomainSubdomainView = ({
     GU: "gu",
   };
   const initialLanguage = languageCodeToLower[languageCode] || "en";
-  
+
   // Local language state for DomainSubdomainView
   const [selectedLanguage, setSelectedLanguage] = useState(initialLanguage);
-  
+
   const [showAddSubdomain, setShowAddSubdomain] = useState(false);
   const [newSubdomainName, setNewSubdomainName] = useState({
     en: "",
@@ -81,24 +91,24 @@ const DomainSubdomainView = ({
     onSuccess: (data) => {
       // Extract translation data from response
       const translatedData = data?.data || data;
-      
+
       // Store translation ID for future updates
       if (translatedData?.id) {
         setTranslationId(translatedData.id);
       }
-      
+
       // Populate English and Hindi fields with translated text
       if (translatedData?.transEn) {
-        setNewSubdomainName(prev => ({
+        setNewSubdomainName((prev) => ({
           ...prev,
-          en: translatedData.transEn
+          en: translatedData.transEn,
         }));
       }
       // API returns transHn for Hindi
       if (translatedData?.transHn || translatedData?.transHi) {
-        setNewSubdomainName(prev => ({
+        setNewSubdomainName((prev) => ({
           ...prev,
-          hi: translatedData.transHn || translatedData.transHi
+          hi: translatedData.transHn || translatedData.transHi,
         }));
       }
     },
@@ -115,7 +125,7 @@ const DomainSubdomainView = ({
         id: translationId || null,
         transGu: newSubdomainName.gu.trim(),
       };
-      
+
       await translateTextMutation.mutateAsync(payload);
     } catch (error) {
       console.error("Error translating subdomain:", error);
@@ -158,12 +168,16 @@ const DomainSubdomainView = ({
   };
 
   const handleEditSubdomain = (subdomain) => {
+    console.log("Editing subdomain:", subdomain); // Debug log
     setEditingSubdomain(subdomain);
+
+    // Prefill subdomain names with fallback to subDomainName if specific language fields are missing
     setNewSubdomainName({
-      en: subdomain.subDomainNameEn || "",
-      hi: subdomain.subDomainNameHi || "",
-      gu: subdomain.subDomainNameGu || "",
+      en: subdomain.subDomainNameEn || subdomain.subDomainName || "",
+      hi: subdomain.subDomainNameHi || subdomain.subDomainName || "",
+      gu: subdomain.subDomainNameGu || subdomain.subDomainName || "",
     });
+
     // Set selected role based on domain's roleId
     const subdomainRole = Object.keys(roleIdMap).find(
       (key) => roleIdMap[key] === domain.roleId
@@ -172,6 +186,14 @@ const DomainSubdomainView = ({
       setSelectedSubdomainRole(subdomainRole);
     }
     setShowAddSubdomain(true);
+
+    // Scroll to the form after a brief delay to ensure it's rendered
+    setTimeout(() => {
+      document.querySelector(".MuiCard-root")?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }, 100);
   };
 
   const handleDeleteSubdomain = (subdomain, event) => {
@@ -206,7 +228,14 @@ const DomainSubdomainView = ({
   return (
     <Box>
       {/* Language Selector and Add Subdomain Button */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
         <Button
           variant="outlined"
           size="small"
@@ -223,8 +252,6 @@ const DomainSubdomainView = ({
         >
           {t("assessment.subdomain.addSubdomain")}
         </Button>
-        
-   
       </Box>
 
       {/* Add/Edit Subdomain Form */}
@@ -239,7 +266,14 @@ const DomainSubdomainView = ({
               bgcolor: "#f9fafb",
             }}
           >
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+              }}
+            >
               <Typography variant="subtitle2" fontWeight={600}>
                 {editingSubdomain
                   ? t("assessment.subdomain.editSubdomain")
@@ -248,7 +282,9 @@ const DomainSubdomainView = ({
               <Button
                 variant="outlined"
                 onClick={handleTranslateSubdomain}
-                disabled={!newSubdomainName.gu.trim() || translateTextMutation.isPending}
+                disabled={
+                  !newSubdomainName.gu.trim() || translateTextMutation.isPending
+                }
                 startIcon={<Translate />}
                 size="small"
                 sx={{
@@ -392,11 +428,12 @@ const DomainSubdomainView = ({
                       <IconButton
                         size="small"
                         color="primary"
-                        onClick={() => onNavigateToCriteria(subdomain)}
+                        onClick={() => onNavigateToCriteria(subdomain, true)}
                         sx={{
                           bgcolor: colors.primary.blue + "15",
                           "&:hover": { bgcolor: colors.primary.blue + "25" },
                         }}
+                        title="View Questions (Read-only)"
                       >
                         <Visibility />
                       </IconButton>
@@ -405,9 +442,22 @@ const DomainSubdomainView = ({
                         color="primary"
                         onClick={() => handleEditSubdomain(subdomain)}
                         sx={{
+                          bgcolor: colors.accent.purple + "15",
+                          "&:hover": { bgcolor: colors.accent.purple + "25" },
+                        }}
+                        title="Edit Subdomain"
+                      >
+                        <Edit />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => onNavigateToCriteria(subdomain, false)}
+                        sx={{
                           bgcolor: colors.accent.green + "15",
                           "&:hover": { bgcolor: colors.accent.green + "25" },
                         }}
+                        title="Manage Questions"
                       >
                         <Add />
                       </IconButton>

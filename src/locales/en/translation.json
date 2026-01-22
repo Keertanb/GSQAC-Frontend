@@ -74,7 +74,8 @@
     "assessmentDomains": "Assessment Domains",
     "navigateSubtitle": "Navigate through domains and sub-domains",
     "assessmentOverview": "Assessment Overview",
-    "reviewSubtitle": "Review all domains and submit your assessment"
+    "reviewSubtitle": "Review all domains and submit your assessment",
+    "endDateWarning": "Complete your assessment before {{date}}. After that, submissions will not be accepted."
   }
 }
 
