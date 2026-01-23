@@ -47,9 +47,11 @@ import {
   Create,
 } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
-import { useGetDomainsQuery } from "../../../services/schoolService";
 import {
+  useGetDomainsQuery,
   useGetSubdomainQuestionsQuery,
+} from "../../../services/schoolService";
+import {
   useSubmitAnswerMutation,
   useGetClassWiseSubjectsQuery,
 } from "../../../services/adminService";
@@ -67,6 +69,15 @@ import {
   useGetSchoolGradesQuery,
 } from "../../../services/schoolService";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 
 const SelfAssessment = () => {
   const navigate = useNavigate();
@@ -838,6 +849,21 @@ const SelfAssessment = () => {
     });
   }, [domains, getDomainProgress]);
 
+  // Prepare chart data for bar graph
+  const chartData = useMemo(() => {
+    if (!domains || domains.length === 0) return [];
+    return domains.map((domain, index) => {
+      const progress = getDomainProgress(domain);
+      const roundedProgress = Math.round(progress);
+      return {
+        name: `${index + 1}. ${getDomainName(domain)}`,
+        progress: roundedProgress,
+        domainId: domain.domainId,
+        color: getProgressColor(progress),
+      };
+    });
+  }, [domains]);
+
   // Calculate total answered and total questions
   const { totalAnswered, totalQuestions } = useMemo(() => {
     const total = allQuestionsForCount.length;
@@ -1421,45 +1447,6 @@ const SelfAssessment = () => {
               </Box>
             </Box>
 
-            {/* End Date Warning Banner */}
-            {isPublished && endDate && (
-              <Alert
-                severity="warning"
-                sx={{
-                  mb: 3,
-                  borderRadius: 2,
-                  bgcolor: colors.semantic.warning + "15",
-                  border: `1.5px solid ${colors.semantic.warning}`,
-                  "& .MuiAlert-icon": {
-                    color: colors.semantic.warning,
-                  },
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 600,
-                    color: colors.text.primary,
-                  }}
-                >
-                  {t("selfAssessment.endDateWarning", {
-                    date: new Date(endDate).toLocaleDateString(
-                      currentLanguage === "gu"
-                        ? "gu-IN"
-                        : currentLanguage === "hi"
-                        ? "hi-IN"
-                        : "en-IN",
-                      {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      }
-                    ),
-                  })}
-                </Typography>
-              </Alert>
-            )}
-
             {/* Main Content - Split Layout */}
             <Box
               sx={{
@@ -1878,6 +1865,56 @@ const SelfAssessment = () => {
                     </Box>
                   )}
                 </Box>
+
+                {/* Final Submit Button */}
+                {isPublished && (
+                  <Box
+                    sx={{
+                      p: 2.5,
+                      borderTop: `2px solid ${colors.neutral.gray200}`,
+                      bgcolor: colors.background.secondary,
+                    }}
+                  >
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      onClick={handleOpenSubmitConfirmation}
+                      disabled={
+                        submitAssessmentMutation.isPending ||
+                        !allDomainsComplete
+                      }
+                      title={
+                        !allDomainsComplete
+                          ? "Please complete all domains (100%) before submitting"
+                          : "Submit your assessment"
+                      }
+                      sx={{
+                        bgcolor: colors.accent.green,
+                        "&:hover": {
+                          bgcolor: colors.accent.greenDark,
+                          "&:disabled": {
+                            bgcolor: colors.neutral.gray300,
+                          },
+                        },
+                        "&:disabled": {
+                          bgcolor: colors.neutral.gray300,
+                          color: colors.neutral.gray600,
+                          cursor: "not-allowed",
+                        },
+                        textTransform: "none",
+                        fontWeight: 600,
+                        py: 1.5,
+                        borderRadius: 2,
+                      }}
+                    >
+                      {submitAssessmentMutation.isPending
+                        ? "Submitting..."
+                        : !allDomainsComplete
+                        ? "Final Submit"
+                        : "Submit Assessment"}
+                    </Button>
+                  </Box>
+                )}
               </Paper>
 
               {/* Right Panel - Questions */}
@@ -4119,41 +4156,95 @@ const SelfAssessment = () => {
                     </Typography>
                   </Box>
 
-                  {/* Domains List */}
+                  {/* Bar Graph - Domains Progress */}
                   <Box
                     sx={{
                       flex: 1,
                       overflowY: "auto",
                       p: { xs: 2.5, md: 3.5 },
+                      display: "flex",
+                      flexDirection: "column",
                     }}
                   >
                     {domains.length > 0 ? (
-                      <Box sx={{ textAlign: "center", py: 8, px: 3 }}>
-                        <Assessment
-                          sx={{
-                            fontSize: 80,
-                            color: colors.primary.blue,
-                            mb: 3,
-                          }}
-                        />
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2,
+                          height: "100%",
+                        }}
+                      >
                         <Typography
-                          variant="h5"
+                          variant="h6"
                           sx={{
-                            fontWeight: 700,
+                            fontWeight: 600,
                             color: colors.text.primary,
-                            mb: 1.5,
+                            mb: 1,
                           }}
                         >
-                          Select a Domain
+                          Domain Progress Overview
                         </Typography>
-                        <Typography
-                          variant="body1"
-                          color="text.secondary"
-                          sx={{ maxWidth: 500, mx: "auto" }}
+                        <Box
+                          sx={{
+                            flex: 1,
+                            minHeight: "400px",
+                            width: "100%",
+                          }}
                         >
-                          Please select a domain from the left panel to view and
-                          answer the questions.
-                        </Typography>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                              data={chartData}
+                              layout="vertical"
+                              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                            >
+                              <XAxis
+                                type="number"
+                                domain={[0, 100]}
+                                tick={{ fill: colors.text.secondary, fontSize: 12 }}
+                                stroke={colors.neutral.gray400}
+                              />
+                              <YAxis
+                                type="category"
+                                dataKey="name"
+                                width={200}
+                                tick={{ fill: colors.text.primary, fontSize: 12 }}
+                                stroke={colors.neutral.gray400}
+                              />
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: colors.background.primary,
+                                  border: `1px solid ${colors.neutral.gray300}`,
+                                  borderRadius: "8px",
+                                  padding: "8px 12px",
+                                }}
+                                formatter={(value) => [`${value}%`, "Progress"]}
+                                labelStyle={{
+                                  color: colors.text.primary,
+                                  fontWeight: 600,
+                                  marginBottom: "4px",
+                                }}
+                              />
+                              <Bar
+                                dataKey="progress"
+                                radius={[0, 8, 8, 0]}
+                                onClick={(data) => {
+                                  const domain = domains.find(
+                                    (d) => d.domainId === data.domainId
+                                  );
+                                  if (domain) {
+                                    handleDomainSelect(domain);
+                                  }
+                                }}
+                                cursor="pointer"
+                              >
+                                {chartData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </Box>
                       </Box>
                     ) : (
                       <Box sx={{ textAlign: "center", py: 8, px: 3 }}>
@@ -4185,59 +4276,6 @@ const SelfAssessment = () => {
                         </Typography>
                       </Box>
                     )}
-
-                    {/* Submit Assessment Button */}
-                    {isPublished && (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "flex-end",
-                          gap: 2,
-                          mt: 4,
-                          pt: 3.5,
-                          borderTop: `1.5px solid ${colors.neutral.gray200}`,
-                        }}
-                      >
-                        <Button
-                          variant="contained"
-                          onClick={handleOpenSubmitConfirmation}
-                          disabled={
-                            submitAssessmentMutation.isPending ||
-                            !allDomainsComplete
-                          }
-                          title={
-                            !allDomainsComplete
-                              ? "Please complete all domains (100%) before submitting"
-                              : "Submit your assessment"
-                          }
-                          sx={{
-                            bgcolor: colors.accent.green,
-                            "&:hover": {
-                              bgcolor: colors.accent.greenDark,
-                              "&:disabled": {
-                                bgcolor: colors.neutral.gray300,
-                              },
-                            },
-                            "&:disabled": {
-                              bgcolor: colors.neutral.gray300,
-                              color: colors.neutral.gray600,
-                              cursor: "not-allowed",
-                            },
-                            textTransform: "none",
-                            fontWeight: 600,
-                            px: 4,
-                            py: 1.5,
-                            borderRadius: 2,
-                          }}
-                        >
-                          {submitAssessmentMutation.isPending
-                            ? "Submitting..."
-                            : !allDomainsComplete
-                            ? "Final Submit"
-                            : "Submit Assessment"}
-                        </Button>
-                      </Box>
-                    )}
                   </Box>
                 </Paper>
               )}
@@ -4263,3 +4301,4 @@ const SelfAssessment = () => {
 };
 
 export default SelfAssessment;
+

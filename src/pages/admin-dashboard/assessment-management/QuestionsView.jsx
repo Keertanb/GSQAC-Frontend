@@ -49,7 +49,12 @@ import { getRoleId, roleIdMap } from "../../../constants/roles";
 import { enqueueSnackbar } from "notistack";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
 
-const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = false }) => {
+const QuestionsView = ({
+  subdomainData,
+  onBack,
+  currentLanguage,
+  isViewOnly = false,
+}) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   // eslint-disable-next-line no-unused-vars
@@ -70,6 +75,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
   const [selectedLanguage, setSelectedLanguage] = useState(
     currentLanguage || "en"
   );
+  const [hasLanguageChanged, setHasLanguageChanged] = useState(false); // Track if language has been changed by user
   const languageCode = languageCodeMap[selectedLanguage] || "EN";
 
   const subDomainId = subdomainData?.subDomainId || subdomainData?.id;
@@ -118,7 +124,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
     getRoleByRoleId(roleId)
   );
 
-  // Fetch questions without languageCode to get all language fields (en, hi, gu)
+  // Fetch questions - only send languageCode when user has changed the language
   const {
     data: questionsData,
     isLoading,
@@ -127,7 +133,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
   } = useGetSubdomainQuestionsQuery({
     subDomainId,
     roleId,
-    // Don't pass languageCode to get all language fields
+    ...(hasLanguageChanged && { languageCode }), // Only include languageCode if language has been changed
     enabled: !!subdomainData && !!subDomainId,
   });
 
@@ -693,9 +699,9 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
     <Box>
       {/* View-Only Mode Banner */}
       {isViewOnly && (
-        <Alert 
-          severity="info" 
-          sx={{ 
+        <Alert
+          severity="info"
+          sx={{
             mb: 3,
             borderRadius: 2,
             "& .MuiAlert-icon": {
@@ -707,11 +713,12 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
             View-Only Mode
           </Typography>
           <Typography variant="caption">
-            You are viewing this subdomain in read-only mode. To add or edit questions, use the "Manage Questions" button.
+            You are viewing this subdomain in read-only mode. To add or edit
+            questions, use the "Manage Questions" button.
           </Typography>
         </Alert>
       )}
-      
+
       <Box
         sx={{
           display: "flex",
@@ -754,6 +761,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
             onChange={(e, newLanguage) => {
               if (newLanguage !== null) {
                 setSelectedLanguage(newLanguage);
+                setHasLanguageChanged(true); // Mark that language has been changed by user
               }
             }}
             size="small"
@@ -883,9 +891,14 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                             flexDirection: "column",
                             gap: 2,
                             mb: 2,
+                            alignItems: "flex-start",
                           }}
                         >
-                          <FormControl fullWidth size="small">
+                          {/* <FormControl
+                            fullWidth
+                            size="small"
+                            sx={{ textAlign: "left" }}
+                          >
                             <InputLabel>
                               {t("assessment.domain.selectRole")}
                             </InputLabel>
@@ -896,6 +909,12 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                               }
                               label={t("assessment.domain.selectRole")}
                               disabled
+                              sx={{
+                                textAlign: "left",
+                                "& .MuiSelect-select": {
+                                  textAlign: "left",
+                                },
+                              }}
                             >
                               <MenuItem value="admin">Admin</MenuItem>
                               <MenuItem value="school">School</MenuItem>
@@ -904,8 +923,12 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                               </MenuItem>
                               <MenuItem value="parent">Parent</MenuItem>
                             </Select>
-                          </FormControl>
-                          <FormControl fullWidth size="small">
+                          </FormControl> */}
+                          <FormControl
+                            fullWidth
+                            size="small"
+                            sx={{ textAlign: "left" }}
+                          >
                             <InputLabel>Question Type</InputLabel>
                             <Select
                               value={questionType}
@@ -924,6 +947,10 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                               label="Question Type"
                               disabled={!!editingQuestion}
                               sx={{
+                                textAlign: "left",
+                                "& .MuiSelect-select": {
+                                  textAlign: "left",
+                                },
                                 "& .MuiOutlinedInput-notchedOutline": {
                                   borderColor: colors.neutral.gray300,
                                 },
@@ -946,7 +973,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                               </MenuItem>
                             </Select>
                           </FormControl>
-                          <Box sx={{ display: "flex", gap: 2 }}>
+                          <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                             <TextField
                               fullWidth
                               label={`${t(
@@ -979,6 +1006,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                               }
                               variant="outlined"
                               size="small"
+                              required
                               multiline
                               rows={3}
                             />
@@ -1108,7 +1136,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                         gutterBottom
                         sx={{ fontWeight: 700, mb: 3 }}
                       >
-                        {t("assessment.question.editOptions")}
+                        {t("Edit Option")}
                       </Typography>
                       <Box sx={{ mb: 2 }}>
                         <Box
@@ -1233,6 +1261,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                                   }
                                   variant="outlined"
                                   size="small"
+                                  required
                                   multiline
                                   rows={2}
                                 />
@@ -1372,7 +1401,8 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                           >
                             {getQuestionText(question)}
                           </Typography>
-                          <Chip
+                          {/* For question type chip in question. */}
+                          {/* <Chip
                             label={getQuestionTypeLabel(question.questionType)}
                             size="small"
                             sx={{
@@ -1385,7 +1415,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                               fontWeight: 600,
                               fontSize: "0.75rem",
                             }}
-                          />
+                          /> */}
                         </Box>
                         {!isViewOnly && (
                           <>
@@ -1395,7 +1425,9 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                               onClick={() => handleEditQuestion(question)}
                               sx={{
                                 bgcolor: colors.accent.green + "15",
-                                "&:hover": { bgcolor: colors.accent.green + "25" },
+                                "&:hover": {
+                                  bgcolor: colors.accent.green + "25",
+                                },
                               }}
                             >
                               <Edit fontSize="small" />
@@ -1507,9 +1539,14 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                       flexDirection: "column",
                       gap: 2,
                       mb: 2,
+                      alignItems: "flex-start",
                     }}
                   >
-                    <FormControl fullWidth size="small">
+                    {/* <FormControl
+                      fullWidth
+                      size="small"
+                      sx={{ textAlign: "left" }}
+                    >
                       <InputLabel>
                         {t("assessment.domain.selectRole")}
                       </InputLabel>
@@ -1520,14 +1557,24 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                         }
                         label={t("assessment.domain.selectRole")}
                         disabled
+                        sx={{
+                          textAlign: "left",
+                          "& .MuiSelect-select": {
+                            textAlign: "left",
+                          },
+                        }}
                       >
                         <MenuItem value="admin">Admin</MenuItem>
                         <MenuItem value="school">School</MenuItem>
                         <MenuItem value="inspector">School Verifier</MenuItem>
                         <MenuItem value="parent">Parent</MenuItem>
                       </Select>
-                    </FormControl>
-                    <FormControl fullWidth size="small">
+                    </FormControl> */}
+                    <FormControl
+                      fullWidth
+                      size="small"
+                      sx={{ textAlign: "left" }}
+                    >
                       <InputLabel>Question Type</InputLabel>
                       <Select
                         value={questionType}
@@ -1544,6 +1591,10 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                         }}
                         label="Question Type"
                         sx={{
+                          textAlign: "left",
+                          "& .MuiSelect-select": {
+                            textAlign: "left",
+                          },
                           "& .MuiOutlinedInput-notchedOutline": {
                             borderColor: colors.neutral.gray300,
                           },
@@ -1564,7 +1615,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                         <MenuItem value="fln">Input Type Question</MenuItem>
                       </Select>
                     </FormControl>
-                    <Box sx={{ display: "flex", gap: 2 }}>
+                    <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                       <TextField
                         fullWidth
                         label={`${t(
@@ -1597,6 +1648,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                         }
                         variant="outlined"
                         size="small"
+                        required
                         multiline
                         rows={3}
                       />
@@ -1843,7 +1895,14 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                                 </IconButton>
                               )}
                             </Box>
-                            <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                gap: 2,
+                                mb: 1,
+                                width: "100%",
+                              }}
+                            >
                               <TextField
                                 fullWidth
                                 label={`${t(
@@ -1878,6 +1937,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                                 }
                                 variant="outlined"
                                 size="small"
+                                required
                                 multiline
                                 rows={2}
                               />
@@ -2021,9 +2081,14 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                       flexDirection: "column",
                       gap: 2,
                       mb: 2,
+                      alignItems: "flex-start",
                     }}
                   >
-                    <FormControl fullWidth size="small">
+                    {/* <FormControl
+                      fullWidth
+                      size="small"
+                      sx={{ textAlign: "left" }}
+                    >
                       <InputLabel>
                         {t("assessment.domain.selectRole")}
                       </InputLabel>
@@ -2034,14 +2099,65 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                         }
                         label={t("assessment.domain.selectRole")}
                         disabled
+                        sx={{
+                          textAlign: "left",
+                          "& .MuiSelect-select": {
+                            textAlign: "left",
+                          },
+                        }}
                       >
                         <MenuItem value="admin">Admin</MenuItem>
                         <MenuItem value="school">School</MenuItem>
                         <MenuItem value="inspector">School Verifier</MenuItem>
                         <MenuItem value="parent">Parent</MenuItem>
                       </Select>
+                    </FormControl> */}
+                    <FormControl
+                      fullWidth
+                      size="small"
+                      sx={{ textAlign: "left" }}
+                    >
+                      <InputLabel>Question Type</InputLabel>
+                      <Select
+                        value={questionType}
+                        onChange={(e) => {
+                          setQuestionType(e.target.value);
+                          if (e.target.value === "fln") {
+                            setFlnAnswer("");
+                          } else {
+                            setNewOptions([
+                              { id: 1, text: { en: "", hi: "", gu: "" } },
+                              { id: 2, text: { en: "", hi: "", gu: "" } },
+                            ]);
+                          }
+                        }}
+                        label="Question Type"
+                        sx={{
+                          textAlign: "left",
+                          "& .MuiSelect-select": {
+                            textAlign: "left",
+                          },
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: colors.neutral.gray300,
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: colors.primary.blue,
+                          },
+                        }}
+                      >
+                        <MenuItem value="single_choice">
+                          Single Choice Question
+                        </MenuItem>
+                        <MenuItem value="classroom_observation">
+                          Classroom Observation
+                        </MenuItem>
+                        <MenuItem value="subject_observation">
+                          Subject Wise Observation
+                        </MenuItem>
+                        <MenuItem value="fln">Input Type Question</MenuItem>
+                      </Select>
                     </FormControl>
-                    <Box sx={{ display: "flex", gap: 2 }}>
+                    <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                       <TextField
                         fullWidth
                         label={`${t(
@@ -2074,6 +2190,7 @@ const QuestionsView = ({ subdomainData, onBack, currentLanguage, isViewOnly = fa
                         }
                         variant="outlined"
                         size="small"
+                        required
                         multiline
                         rows={3}
                       />

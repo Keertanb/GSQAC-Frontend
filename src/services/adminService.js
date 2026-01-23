@@ -42,7 +42,15 @@ export const getClassWiseSubjects = async (params) => {
  * @returns {Promise} API response
  */
 export const getSubdomainQuestions = async (params) => {
-  const { roleId, subDomainId, languageCode, userId, cls, section, ...otherParams } = params;
+  const {
+    roleId,
+    subDomainId,
+    languageCode,
+    userId,
+    cls,
+    section,
+    ...otherParams
+  } = params;
   const config = {
     params: { subDomainId, languageCode, ...otherParams },
     headers: {},
@@ -103,7 +111,7 @@ export const upsertSubdomain = async (payload) => {
  * @returns {Promise} API response
  */
 export const upsertQuestion = async (payload) => {
-  const response = await axiosInstance.post("/admin/question", payload);
+  const response = await axiosInstance.post("/questionnaire/question", payload);
   return response.data;
 };
 
@@ -114,7 +122,7 @@ export const upsertQuestion = async (payload) => {
  */
 export const upsertQuestionOption = async (payload) => {
   const response = await axiosInstance.post(
-    "/admin/question-option",
+    "/questionnaire/question-option",
     payload
   );
   return response.data;
@@ -138,7 +146,7 @@ export const deleteDomain = async (domainId) => {
  * @returns {Promise} API response
  */
 export const deleteQuestion = async (questionId) => {
-  const response = await axiosInstance.delete("/admin/question", {
+  const response = await axiosInstance.delete("/questionnaire/question", {
     params: { questionId },
   });
   return response.data;
@@ -151,7 +159,7 @@ export const deleteQuestion = async (questionId) => {
  */
 export const deleteQuestionOption = async (questionId) => {
   const response = await axiosInstance.delete(
-    "/admin/question-option",
+    "/questionnaire/question-option",
     {
       params: { questionId },
     }
@@ -217,7 +225,14 @@ export const useGetSubdomainQuestionsQuery = ({
       classNumber,
       section
     ),
-    queryFn: () => getSubdomainQuestions({ subDomainId, roleId, languageCode, cls: classNumber, section }),
+    queryFn: () =>
+      getSubdomainQuestions({
+        subDomainId,
+        roleId,
+        languageCode,
+        cls: classNumber,
+        section,
+      }),
     enabled: enabled && !!subDomainId && !!roleId,
     staleTime: 5 * 60 * 1000,
   });
@@ -230,10 +245,7 @@ export const useGetSubdomainQuestionsQuery = ({
  * @param {boolean} options.enabled - Whether the query should run
  * @returns {Object} Query object from React Query
  */
-export const useGetClassWiseSubjectsQuery = ({
-  classId,
-  enabled = true,
-}) => {
+export const useGetClassWiseSubjectsQuery = ({ classId, enabled = true }) => {
   return useQuery({
     queryKey: ["admin", "class-wise-subjects", classId],
     queryFn: () => getClassWiseSubjects({ classId }),
@@ -881,7 +893,10 @@ export const useUpdateRoleStatusMutation = (options = {}) => {
  * @returns {Promise} API response
  */
 export const translateText = async (payload) => {
-  const response = await axiosInstance.post("/translation/upsert-translation", payload);
+  const response = await axiosInstance.post(
+    "/translation/upsert-translation",
+    payload
+  );
   return response.data;
 };
 
@@ -903,12 +918,9 @@ export const useTranslateTextMutation = (options = {}) => {
       }
     },
     onError: (error) => {
-      enqueueSnackbar(
-        error?.response?.data?.message || "Translation failed",
-        {
-          variant: "error",
-        }
-      );
+      enqueueSnackbar(error?.response?.data?.message || "Translation failed", {
+        variant: "error",
+      });
       if (options.onError) {
         options.onError(error);
       }
@@ -955,7 +967,7 @@ export const publishAssessment = async (payload) => {
  */
 export const useGetAssessmentsQuery = (academicYear, options = {}) => {
   return useQuery({
-    queryKey: academicYear 
+    queryKey: academicYear
       ? queryKeys.admin.assessments(academicYear)
       : ["admin", "assessments"],
     queryFn: () => getAssessments(academicYear),

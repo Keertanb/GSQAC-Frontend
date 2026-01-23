@@ -254,7 +254,6 @@ const DomainSubdomainView = ({
         </Button>
       </Box>
 
-      {/* Add/Edit Subdomain Form */}
       {showAddSubdomain && (
         <Fade in={showAddSubdomain}>
           <Card
@@ -279,7 +278,7 @@ const DomainSubdomainView = ({
                   ? t("assessment.subdomain.editSubdomain")
                   : t("assessment.subdomain.addSubdomain")}
               </Typography>
-              <Button
+              {/* <Button
                 variant="outlined"
                 onClick={handleTranslateSubdomain}
                 disabled={
@@ -297,12 +296,12 @@ const DomainSubdomainView = ({
                 }}
               >
                 Translate to EN & HI
-              </Button>
+              </Button> */}
             </Box>
             <Box
               sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}
             >
-              <FormControl fullWidth size="small">
+              {/* <FormControl fullWidth size="small">
                 <InputLabel>{t("assessment.domain.selectRole")}</InputLabel>
                 <Select
                   value={selectedSubdomainRole}
@@ -315,7 +314,7 @@ const DomainSubdomainView = ({
                   <MenuItem value="inspector">School Verifier</MenuItem>
                   <MenuItem value="parent">Parent</MenuItem>
                 </Select>
-              </FormControl>
+              </FormControl> */}
               <Box sx={{ display: "flex", gap: 2 }}>
                 <TextField
                   fullWidth
@@ -345,6 +344,7 @@ const DomainSubdomainView = ({
                   }
                   variant="outlined"
                   size="small"
+                  required
                 />
                 <TextField
                   fullWidth

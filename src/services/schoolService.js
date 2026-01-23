@@ -2,6 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import axiosInstance from "../config/axios";
 import { queryKeys } from "../config/queryClient";
 import { enqueueSnackbar } from "notistack";
+import useAuthStore from "../store/useAuthStore";
 
 /**
  * Get domains and subdomains for school
@@ -21,6 +22,35 @@ export const getDomains = async (params = {}) => {
 
   const response = await axiosInstance.get("/questionnaire/domain", config);
   return response.data;
+};
+
+export const useGetSubdomainQuestionsQuery = ({
+  subDomainId,
+  roleId,
+  languageCode,
+  classNumber,
+  section,
+  enabled = true,
+}) => {
+  return useQuery({
+    queryKey: queryKeys.admin.subdomainQuestions(
+      subDomainId,
+      roleId,
+      languageCode,
+      classNumber,
+      section
+    ),
+    queryFn: () =>
+      getSubdomainQuestions({
+        subDomainId,
+        roleId,
+        languageCode,
+        cls: classNumber,
+        section,
+      }),
+    enabled: enabled && !!subDomainId && !!roleId,
+    staleTime: 5 * 60 * 1000,
+  });
 };
 
 /**
@@ -179,10 +209,7 @@ export const useGetClassWiseSectionsQuery = ({
  * @param {boolean} options.enabled - Whether the query should run
  * @returns {Object} Query object from React Query
  */
-export const useGetSchoolSectionsQuery = ({
-  schoolId,
-  enabled = true,
-}) => {
+export const useGetSchoolSectionsQuery = ({ schoolId, enabled = true }) => {
   return useQuery({
     queryKey: queryKeys.school.schoolSections(schoolId),
     queryFn: () => getSchoolSections({ schoolId }),
@@ -229,7 +256,10 @@ export const useSubmitSubdomainWiseAnswersMutation = (options = {}) => {
  * @returns {Promise} API response
  */
 export const submitAssessment = async (payload) => {
-  const response = await axiosInstance.post("/school/submit-assessment", payload);
+  const response = await axiosInstance.post(
+    "/school/submit-assessment",
+    payload
+  );
   return response.data;
 };
 
@@ -243,12 +273,9 @@ export const useSubmitAssessmentMutation = (options = {}) => {
     mutationFn: (data) => submitAssessment(data),
     mutationKey: ["school", "submit-assessment"],
     onSuccess: (data) => {
-      enqueueSnackbar(
-        data?.message || "Assessment submitted successfully",
-        {
-          variant: "success",
-        }
-      );
+      enqueueSnackbar(data?.message || "Assessment submitted successfully", {
+        variant: "success",
+      });
       if (options.onSuccess) {
         options.onSuccess(data);
       }
@@ -274,7 +301,9 @@ export const useSubmitAssessmentMutation = (options = {}) => {
  * @returns {Promise} API response
  */
 export const getSchoolInfrastructure = async (params) => {
-  const response = await axiosInstance.get("/school/school-details", { params });
+  const response = await axiosInstance.get("/school/school-details", {
+    params,
+  });
   return response.data;
 };
 
@@ -307,6 +336,49 @@ export const useGetSchoolInfrastructureQuery = ({
   });
 };
 
+const authState = useAuthStore.getState();
+
+export const getSubdomainQuestions = async (params) => {
+  const {
+    roleId,
+    subDomainId,
+    languageCode,
+    userId,
+    cls,
+    section,
+    ...otherParams
+  } = params;
+  const config = {
+    params: { subDomainId, languageCode, ...otherParams },
+    headers: {},
+  };
+
+  // Add cls to params if provided
+  if (cls) {
+    config.params.cls = cls;
+  }
+
+  // Add section to params if provided
+  if (section) {
+    config.params.section = section;
+  }
+
+  // Set roleId in header if provided
+  if (roleId) {
+    config.headers.roleId = roleId;
+  }
+
+  // Get userId from auth store if not provided in params, and set in header if present
+  const authState = useAuthStore.getState();
+  const userIdToSend = userId || authState.userId;
+  if (userIdToSend) {
+    config.headers.userId = userIdToSend;
+  }
+
+  const response = await axiosInstance.get("/questionnaire/question", config);
+  return response.data;
+};
+
 /**
  * React Query hook for updating school infrastructure details
  * @param {Object} options - Mutation options
@@ -329,7 +401,8 @@ export const useUpdateSchoolInfrastructureMutation = (options = {}) => {
     },
     onError: (error) => {
       enqueueSnackbar(
-        error?.response?.data?.message || "Failed to update infrastructure details",
+        error?.response?.data?.message ||
+          "Failed to update infrastructure details",
         {
           variant: "error",
         }

@@ -304,28 +304,6 @@ const SchoolAllocation = () => {
       <div className="filters-section">
         <div className="filters-grid">
           <div className="filter-group">
-            <label className="filter-label">School ID / UDISE Code</label>
-            <input
-              type="text"
-              value={filters.schoolId}
-              onChange={(e) => handleFilterChange("schoolId", e.target.value)}
-              className="filter-input"
-              placeholder="Enter school ID or UDISE code"
-            />
-          </div>
-
-          <div className="filter-group">
-            <label className="filter-label">School Name</label>
-            <input
-              type="text"
-              value={filters.schoolName}
-              onChange={(e) => handleFilterChange("schoolName", e.target.value)}
-              className="filter-input"
-              placeholder="Enter school name"
-            />
-          </div>
-
-          <div className="filter-group">
             <AppDropdown
               label="District"
               options={[
@@ -375,6 +353,27 @@ const SchoolAllocation = () => {
               placeholder="All Status"
               valueKey="value"
               labelKey="label"
+            />
+          </div>
+          <div className="filter-group">
+            <label className="filter-label">School ID / UDISE Code</label>
+            <input
+              type="text"
+              value={filters.schoolId}
+              onChange={(e) => handleFilterChange("schoolId", e.target.value)}
+              className="filter-input"
+              placeholder="Enter school ID or UDISE code"
+            />
+          </div>
+
+          <div className="filter-group">
+            <label className="filter-label">School Name</label>
+            <input
+              type="text"
+              value={filters.schoolName}
+              onChange={(e) => handleFilterChange("schoolName", e.target.value)}
+              className="filter-input"
+              placeholder="Enter school name"
             />
           </div>
         </div>

@@ -65,6 +65,7 @@ const AssessmentManagement = () => {
   const [currentView, setCurrentView] = useState("domains"); // domains, questions
   const [selectedSubdomain, setSelectedSubdomain] = useState(null);
   const [currentLanguage, setCurrentLanguage] = useState("gu");
+  const [hasLanguageChanged, setHasLanguageChanged] = useState(false); // Track if language has been changed by user
   const [showAddDomain, setShowAddDomain] = useState(false);
   const [newDomainName, setNewDomainName] = useState({
     en: "",
@@ -76,21 +77,21 @@ const AssessmentManagement = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [domainToDelete, setDomainToDelete] = useState(null);
   const [translationId, setTranslationId] = useState(null);
-  
+
   // Publish Assessment Modal
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [publishData, setPublishData] = useState({
     roleId: "",
   });
-  
+
   // Settings Modal
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [editedStartDates, setEditedStartDates] = useState({});
   const [editedEndDates, setEditedEndDates] = useState({});
-  
+
   // Unpublish Confirmation Modal
   const [unpublishModalOpen, setUnpublishModalOpen] = useState(false);
-  
+
   // View Only Mode
   const [isViewOnlyMode, setIsViewOnlyMode] = useState(false);
 
@@ -111,7 +112,7 @@ const AssessmentManagement = () => {
     refetch,
   } = useGetDomainsQuery({
     roleId,
-    languageCode,
+    ...(hasLanguageChanged && { languageCode }), // Only include languageCode if language has been changed
     enabled: !!roleId,
   });
 
@@ -123,7 +124,7 @@ const AssessmentManagement = () => {
     isLoading: isLoadingAssessments,
     refetch: refetchAssessments,
   } = useGetAssessmentsQuery(null);
-  
+
   // Check if there's a published assessment for the current role
   const hasPublishedAssessment = assessmentsData?.data?.some(
     (assessment) => assessment.roleId === roleId && assessment.isPublished
@@ -213,11 +214,11 @@ const AssessmentManagement = () => {
       roleId: getRoleId(publishData.roleId),
       isPublished: 1,
     };
-    
+
     publishAssessmentMutation.mutate(payload, {
       onSuccess: () => {
         handleClosePublishModal();
-      }
+      },
     });
   };
 
@@ -234,11 +235,11 @@ const AssessmentManagement = () => {
       roleId: roleId,
       isPublished: 0,
     };
-    
+
     publishAssessmentMutation.mutate(payload, {
       onSuccess: () => {
         handleCloseUnpublishModal();
-      }
+      },
     });
   };
 
@@ -253,9 +254,11 @@ const AssessmentManagement = () => {
   };
 
   const handleUpdateAssessment = (assessment) => {
-    const startDate = editedStartDates[assessment.assessmentId] || assessment.startDate;
-    const endDate = editedEndDates[assessment.assessmentId] || assessment.endDate;
-    
+    const startDate =
+      editedStartDates[assessment.assessmentId] || assessment.startDate;
+    const endDate =
+      editedEndDates[assessment.assessmentId] || assessment.endDate;
+
     const payload = {
       assessmentId: assessment.assessmentId,
       roleId: assessment.roleId,
@@ -294,14 +297,14 @@ const AssessmentManagement = () => {
   const handleEditDomain = (domain) => {
     console.log("Editing domain:", domain); // Debug log
     setEditingDomain(domain);
-    
+
     // Prefill domain names with fallback to domainName if specific language fields are missing
     setNewDomainName({
       en: domain.domainNameEn || domain.domainName || "",
       hi: domain.domainNameHi || domain.domainName || "",
       gu: domain.domainNameGu || domain.domainName || "",
     });
-    
+
     // Set selected role based on domain's roleId
     const domainRole = Object.keys(roleIdMap).find(
       (key) => roleIdMap[key] === domain.roleId
@@ -310,10 +313,10 @@ const AssessmentManagement = () => {
       setSelectedRole(domainRole);
     }
     setShowAddDomain(true);
-    
+
     // Scroll to the form after a brief delay to ensure it's rendered
     setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }, 100);
   };
 
@@ -330,6 +333,7 @@ const AssessmentManagement = () => {
 
   const handleLanguageChange = (lang) => {
     setCurrentLanguage(lang);
+    setHasLanguageChanged(true); // Mark that language has been changed by user
     i18n.changeLanguage(lang);
     // Refetch data when language changes
     refetch();
@@ -519,16 +523,26 @@ const AssessmentManagement = () => {
           <Button
             variant="contained"
             startIcon={hasPublishedAssessment ? <Unpublished /> : <Publish />}
-            onClick={hasPublishedAssessment ? handleOpenUnpublishModal : handleOpenPublishModal}
+            onClick={
+              hasPublishedAssessment
+                ? handleOpenUnpublishModal
+                : handleOpenPublishModal
+            }
             disabled={publishAssessmentMutation.isPending}
             sx={{
-              bgcolor: hasPublishedAssessment ? colors.semantic.error : colors.accent.green,
-              "&:hover": { 
-                bgcolor: hasPublishedAssessment ? colors.semantic.error + "DD" : colors.accent.greenDark 
+              bgcolor: hasPublishedAssessment
+                ? colors.semantic.error
+                : colors.accent.green,
+              "&:hover": {
+                bgcolor: hasPublishedAssessment
+                  ? colors.semantic.error + "DD"
+                  : colors.accent.greenDark,
               },
             }}
           >
-            {hasPublishedAssessment ? "Unpublish Assessment" : t("assessment.publishAssessment")}
+            {hasPublishedAssessment
+              ? "Unpublish Assessment"
+              : t("assessment.publishAssessment")}
           </Button>
         </Box>
       </Box>
@@ -598,6 +612,7 @@ const AssessmentManagement = () => {
                 }
                 variant="outlined"
                 size="small"
+                required
               />
               <TextField
                 fullWidth
@@ -630,8 +645,8 @@ const AssessmentManagement = () => {
                 onClick={() => {
                   setShowAddDomain(false);
                   setNewDomainName({ en: "", hi: "", gu: "" });
-                  setEditingDomain(null);
-                  setSelectedRole("school");
+                  // setEditingDomain(null);
+                  // setSelectedRole("school");
                   setTranslationId(null);
                 }}
                 disabled={upsertDomainMutation.isPending}
@@ -758,7 +773,10 @@ const AssessmentManagement = () => {
                           domain={domain}
                           languageCode={languageCode}
                           roleId={domain.roleId}
-                          onNavigateToCriteria={(subdomain, viewOnly = false) => {
+                          onNavigateToCriteria={(
+                            subdomain,
+                            viewOnly = false
+                          ) => {
                             setSelectedSubdomain({
                               ...subdomain,
                               subDomainId:
@@ -827,7 +845,9 @@ const AssessmentManagement = () => {
           Publish Assessment
         </DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, mt: 1 }}>
+          <Box
+            sx={{ display: "flex", flexDirection: "column", gap: 2.5, mt: 1 }}
+          >
             <FormControl fullWidth required>
               <InputLabel>Role</InputLabel>
               <Select
@@ -909,7 +929,9 @@ const AssessmentManagement = () => {
                   assessmentsData.data.map((assessment) => (
                     <TableRow key={assessment.assessmentId}>
                       <TableCell>
-                        {assessment.assessmentId && assessment.academicYear && assessment.round
+                        {assessment.assessmentId &&
+                        assessment.academicYear &&
+                        assessment.round
                           ? `Assessment ${assessment.assessmentId} - ${assessment.academicYear} (Round ${assessment.round})`
                           : "-"}
                       </TableCell>
@@ -918,7 +940,8 @@ const AssessmentManagement = () => {
                           size="small"
                           type="date"
                           value={
-                            editedStartDates[assessment.assessmentId] !== undefined
+                            editedStartDates[assessment.assessmentId] !==
+                            undefined
                               ? editedStartDates[assessment.assessmentId]
                               : assessment.startDate || ""
                           }
@@ -937,7 +960,8 @@ const AssessmentManagement = () => {
                           size="small"
                           type="date"
                           value={
-                            editedEndDates[assessment.assessmentId] !== undefined
+                            editedEndDates[assessment.assessmentId] !==
+                            undefined
                               ? editedEndDates[assessment.assessmentId]
                               : assessment.endDate || ""
                           }
@@ -967,9 +991,14 @@ const AssessmentManagement = () => {
                         )}
                       </TableCell>
                       <TableCell align="center">
-                        {assessment.isPublished !== undefined && assessment.isPublished !== null ? (
+                        {assessment.isPublished !== undefined &&
+                        assessment.isPublished !== null ? (
                           <Chip
-                            label={assessment.isPublished ? "Published" : "Unpublished"}
+                            label={
+                              assessment.isPublished
+                                ? "Published"
+                                : "Unpublished"
+                            }
                             size="small"
                             sx={{
                               bgcolor: assessment.isPublished
@@ -992,7 +1021,8 @@ const AssessmentManagement = () => {
                           onClick={() => handleUpdateAssessment(assessment)}
                           disabled={
                             updateAssessmentMutation.isPending ||
-                            (!editedStartDates[assessment.assessmentId] && !editedEndDates[assessment.assessmentId])
+                            (!editedStartDates[assessment.assessmentId] &&
+                              !editedEndDates[assessment.assessmentId])
                           }
                           sx={{
                             bgcolor: colors.primary.blue,
