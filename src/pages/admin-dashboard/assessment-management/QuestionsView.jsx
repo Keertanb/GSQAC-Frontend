@@ -104,6 +104,11 @@ const QuestionsView = ({
   const [optionTranslationIds, setOptionTranslationIds] = useState({}); // Store translation IDs for each option
   const [questionType, setQuestionType] = useState("single_choice"); // New state for question type
   const [flnAnswer, setFlnAnswer] = useState(""); // State for FLN text field answer
+  const [optionErrors, setOptionErrors] = useState({
+    en: "",
+    hi: "",
+    gu: "",
+  }); // State for option validation errors
 
   // Map question type strings to numbers
   const questionTypeMap = {
@@ -218,10 +223,14 @@ const QuestionsView = ({
 
   const handleAddOption = () => {
     const newOptionId = Math.max(...newOptions.map((opt) => opt.id), 0) + 1;
-    setNewOptions([
+    const updatedOptions = [
       ...newOptions,
       { id: newOptionId, text: { en: "", hi: "", gu: "" } },
-    ]);
+    ];
+    setNewOptions(updatedOptions);
+    // Validate after adding new option
+    const errors = validateOptions(updatedOptions);
+    setOptionErrors(errors);
   };
 
   const handleDeleteOption = (optionId) => {
@@ -230,14 +239,42 @@ const QuestionsView = ({
     }
   };
 
+  // Validation function to check for duplicate options
+  const validateOptions = (options) => {
+    const errors = { en: "", hi: "", gu: "" };
+    
+    // Check for duplicates in each language
+    ["en", "hi", "gu"].forEach((lang) => {
+      const values = options
+        .map((opt) => opt.text[lang]?.trim())
+        .filter((val) => val !== "");
+      
+      // Check for duplicates
+      const duplicates = values.filter(
+        (val, index) => values.indexOf(val) !== index
+      );
+      
+      if (duplicates.length > 0) {
+        const langName = lang === "en" ? "English" : lang === "hi" ? "Hindi" : "Gujarati";
+        errors[lang] = `Duplicate ${langName} options are not allowed`;
+      }
+    });
+    
+    return errors;
+  };
+
   const handleOptionChange = (optionId, field, value) => {
-    setNewOptions(
-      newOptions.map((opt) =>
-        opt.id === optionId
-          ? { ...opt, text: { ...opt.text, [field]: value } }
-          : opt
-      )
+    const updatedOptions = newOptions.map((opt) =>
+      opt.id === optionId
+        ? { ...opt, text: { ...opt.text, [field]: value } }
+        : opt
     );
+    
+    setNewOptions(updatedOptions);
+    
+    // Validate options after change
+    const errors = validateOptions(updatedOptions);
+    setOptionErrors(errors);
   };
 
   // Step 1: Add/Update the question first
@@ -317,6 +354,7 @@ const QuestionsView = ({
         setShowOptionsForm(false);
         setEditingQuestion(null);
         setCurrentQuestionId(null);
+        setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
         return;
       }
 
@@ -384,6 +422,18 @@ const QuestionsView = ({
       return;
     }
 
+    // Validate for duplicate options
+    const errors = validateOptions(newOptions);
+    setOptionErrors(errors);
+    
+    // Check if there are any validation errors
+    if (errors.en || errors.hi || errors.gu) {
+      enqueueSnackbar("Please fix duplicate options before saving", {
+        variant: "error",
+      });
+      return;
+    }
+
     // Validate that at least 2 options have English text
     const validOptions = newOptions.filter((opt) => opt.text.en.trim());
     if (validOptions.length < 2) {
@@ -440,6 +490,7 @@ const QuestionsView = ({
       setShowOptionsForm(false);
       setEditingQuestion(null);
       setCurrentQuestionId(null);
+      setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
     } catch (error) {
       console.error("Error adding options:", error);
       enqueueSnackbar(
@@ -1102,6 +1153,7 @@ const QuestionsView = ({
                               setQuestionType("single_choice");
                               setEditingQuestion(null);
                               setCurrentQuestionId(null);
+                              setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
                             }}
                             disabled={upsertQuestionMutation.isPending}
                           >
@@ -1136,7 +1188,7 @@ const QuestionsView = ({
                         gutterBottom
                         sx={{ fontWeight: 700, mb: 3 }}
                       >
-                        {t("Edit Option")}
+                        {t("assessment.question.editOptions")}
                       </Typography>
                       <Box sx={{ mb: 2 }}>
                         <Box
@@ -1170,6 +1222,35 @@ const QuestionsView = ({
                             {t("assessment.question.addOption")}
                           </Button>
                         </Box>
+                        {/* Validation Errors Display */}
+                        {(optionErrors.en || optionErrors.hi || optionErrors.gu) && (
+                          <Alert
+                            severity="error"
+                            sx={{
+                              mb: 2,
+                              borderRadius: 1,
+                            }}
+                          >
+                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                              Validation Errors:
+                            </Typography>
+                            {optionErrors.en && (
+                              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                • {optionErrors.en}
+                              </Typography>
+                            )}
+                            {optionErrors.hi && (
+                              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                • {optionErrors.hi}
+                              </Typography>
+                            )}
+                            {optionErrors.gu && (
+                              <Typography variant="body2">
+                                • {optionErrors.gu}
+                              </Typography>
+                            )}
+                          </Alert>
+                        )}
 
                         <Box
                           sx={{
@@ -1245,6 +1326,8 @@ const QuestionsView = ({
                                   required
                                   multiline
                                   rows={2}
+                                  error={!!optionErrors.gu}
+                                  helperText={optionErrors.gu || ""}
                                 />
                                 <TextField
                                   fullWidth
@@ -1264,6 +1347,8 @@ const QuestionsView = ({
                                   required
                                   multiline
                                   rows={2}
+                                  error={!!optionErrors.en}
+                                  helperText={optionErrors.en || ""}
                                 />
                                 <TextField
                                   fullWidth
@@ -1282,6 +1367,8 @@ const QuestionsView = ({
                                   size="small"
                                   multiline
                                   rows={2}
+                                  error={!!optionErrors.hi}
+                                  helperText={optionErrors.hi || ""}
                                 />
                               </Box>
                               {/* Translation Button for Option */}
@@ -1326,7 +1413,12 @@ const QuestionsView = ({
                               )
                             }
                             onClick={handleAddOptions}
-                            disabled={upsertQuestionOptionMutation.isPending}
+                            disabled={
+                              upsertQuestionOptionMutation.isPending ||
+                              !!optionErrors.en ||
+                              !!optionErrors.hi ||
+                              !!optionErrors.gu
+                            }
                             sx={{
                               bgcolor: colors.accent.green,
                               "&:hover": { bgcolor: colors.accent.greenDark },
@@ -1334,7 +1426,7 @@ const QuestionsView = ({
                           >
                             {upsertQuestionOptionMutation.isPending
                               ? "Saving Options..."
-                              : "Update Options"}
+                              : t("assessment.question.updateOptions")}
                           </Button>
                           <Button
                             variant="outlined"
@@ -1743,6 +1835,7 @@ const QuestionsView = ({
                         setQuestionType("single_choice");
                         setEditingQuestion(null);
                         setCurrentQuestionId(null);
+                        setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
                       }}
                       disabled={upsertQuestionMutation.isPending}
                     >
@@ -1838,6 +1931,35 @@ const QuestionsView = ({
                             {t("assessment.question.addOption")}
                           </Button>
                         </Box>
+                        {/* Validation Errors Display */}
+                        {(optionErrors.en || optionErrors.hi || optionErrors.gu) && (
+                          <Alert
+                            severity="error"
+                            sx={{
+                              mb: 2,
+                              borderRadius: 1,
+                            }}
+                          >
+                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                              Validation Errors:
+                            </Typography>
+                            {optionErrors.en && (
+                              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                • {optionErrors.en}
+                              </Typography>
+                            )}
+                            {optionErrors.hi && (
+                              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                • {optionErrors.hi}
+                              </Typography>
+                            )}
+                            {optionErrors.gu && (
+                              <Typography variant="body2">
+                                • {optionErrors.gu}
+                              </Typography>
+                            )}
+                          </Alert>
+                        )}
                       </>
                     )}
 
@@ -1921,6 +2043,8 @@ const QuestionsView = ({
                                 required
                                 multiline
                                 rows={2}
+                                error={!!optionErrors.gu}
+                                helperText={optionErrors.gu || ""}
                               />
                               <TextField
                                 fullWidth
@@ -1940,6 +2064,8 @@ const QuestionsView = ({
                                 required
                                 multiline
                                 rows={2}
+                                error={!!optionErrors.en}
+                                helperText={optionErrors.en || ""}
                               />
                               <TextField
                                 fullWidth
@@ -1958,6 +2084,8 @@ const QuestionsView = ({
                                 size="small"
                                 multiline
                                 rows={2}
+                                error={!!optionErrors.hi}
+                                helperText={optionErrors.hi || ""}
                               />
                             </Box>
                             {/* Translation Button for Option */}
@@ -2003,7 +2131,12 @@ const QuestionsView = ({
                           )
                         }
                         onClick={handleAddOptions}
-                        disabled={upsertQuestionOptionMutation.isPending}
+                        disabled={
+                          upsertQuestionOptionMutation.isPending ||
+                          !!optionErrors.en ||
+                          !!optionErrors.hi ||
+                          !!optionErrors.gu
+                        }
                         sx={{
                           bgcolor: colors.accent.green,
                           "&:hover": { bgcolor: colors.accent.greenDark },
@@ -2012,8 +2145,8 @@ const QuestionsView = ({
                         {upsertQuestionOptionMutation.isPending
                           ? "Saving Options..."
                           : editingQuestion
-                          ? "Update Options"
-                          : "Add Options"}
+                          ? t("assessment.question.updateOptions")
+                          : t("assessment.question.addOptions")}
                       </Button>
                       <Button
                         variant="outlined"
@@ -2031,6 +2164,7 @@ const QuestionsView = ({
                             { id: 2, text: { en: "", hi: "", gu: "" } },
                           ]);
                           setCurrentQuestionId(null);
+                          setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
                         }}
                         disabled={upsertQuestionOptionMutation.isPending}
                       >
@@ -2286,6 +2420,7 @@ const QuestionsView = ({
                         setQuestionType("single_choice");
                         setEditingQuestion(null);
                         setCurrentQuestionId(null);
+                        setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
                       }}
                       disabled={upsertQuestionMutation.isPending}
                     >
@@ -2349,6 +2484,35 @@ const QuestionsView = ({
                         {t("assessment.question.addOption")}
                       </Button>
                     </Box>
+                    {/* Validation Errors Display */}
+                    {(optionErrors.en || optionErrors.hi || optionErrors.gu) && (
+                      <Alert
+                        severity="error"
+                        sx={{
+                          mb: 2,
+                          borderRadius: 1,
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                          Validation Errors:
+                        </Typography>
+                        {optionErrors.en && (
+                          <Typography variant="body2" sx={{ mb: 0.5 }}>
+                            • {optionErrors.en}
+                          </Typography>
+                        )}
+                        {optionErrors.hi && (
+                          <Typography variant="body2" sx={{ mb: 0.5 }}>
+                            • {optionErrors.hi}
+                          </Typography>
+                        )}
+                        {optionErrors.gu && (
+                          <Typography variant="body2">
+                            • {optionErrors.gu}
+                          </Typography>
+                        )}
+                      </Alert>
+                    )}
 
                     <Box
                       sx={{ display: "flex", flexDirection: "column", gap: 2 }}
@@ -2418,6 +2582,8 @@ const QuestionsView = ({
                               required
                               multiline
                               rows={2}
+                              error={!!optionErrors.gu}
+                              helperText={optionErrors.gu || ""}
                             />
                             <TextField
                               fullWidth
@@ -2436,6 +2602,8 @@ const QuestionsView = ({
                               size="small"
                               multiline
                               rows={2}
+                              error={!!optionErrors.en}
+                              helperText={optionErrors.en || ""}
                             />
                             <TextField
                               fullWidth
@@ -2454,6 +2622,8 @@ const QuestionsView = ({
                               size="small"
                               multiline
                               rows={2}
+                              error={!!optionErrors.hi}
+                              helperText={optionErrors.hi || ""}
                             />
                           </Box>
                           {/* Translation Button for Option */}
@@ -2496,7 +2666,12 @@ const QuestionsView = ({
                           )
                         }
                         onClick={handleAddOptions}
-                        disabled={upsertQuestionOptionMutation.isPending}
+                        disabled={
+                          upsertQuestionOptionMutation.isPending ||
+                          !!optionErrors.en ||
+                          !!optionErrors.hi ||
+                          !!optionErrors.gu
+                        }
                         sx={{
                           bgcolor: colors.accent.green,
                           "&:hover": { bgcolor: colors.accent.greenDark },
@@ -2505,8 +2680,8 @@ const QuestionsView = ({
                         {upsertQuestionOptionMutation.isPending
                           ? "Saving Options..."
                           : editingQuestion
-                          ? "Update Options"
-                          : "Add Options"}
+                          ? t("assessment.question.updateOptions")
+                          : t("assessment.question.addOptions")}
                       </Button>
                       <Button
                         variant="outlined"
@@ -2524,6 +2699,7 @@ const QuestionsView = ({
                             { id: 2, text: { en: "", hi: "", gu: "" } },
                           ]);
                           setCurrentQuestionId(null);
+                          setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
                         }}
                         disabled={upsertQuestionOptionMutation.isPending}
                       >

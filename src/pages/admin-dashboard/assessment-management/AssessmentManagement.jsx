@@ -194,6 +194,9 @@ const AssessmentManagement = () => {
   });
 
   const handleOpenPublishModal = () => {
+    setPublishData({
+      roleId: selectedRole, // Pre-select the current role
+    });
     setPublishModalOpen(true);
   };
 
@@ -856,6 +859,7 @@ const AssessmentManagement = () => {
                   setPublishData({ ...publishData, roleId: e.target.value })
                 }
                 label="Role"
+                disabled
               >
                 <MenuItem value="school">School</MenuItem>
                 <MenuItem value="inspector">School Verifier</MenuItem>

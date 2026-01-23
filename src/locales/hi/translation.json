@@ -56,6 +56,9 @@
       "questionText": "प्रश्न पाठ",
       "options": "विकल्प",
       "addOption": "विकल्प जोड़ें",
+      "addOptions": "विकल्प जोड़ें",
+      "updateOptions": "विकल्प अपडेट करें",
+      "editOptions": "विकल्प संपादित करें",
       "correctAnswer": "सही उत्तर",
       "noQuestions": "अभी तक कोई प्रश्न नहीं जोड़ा गया"
     }

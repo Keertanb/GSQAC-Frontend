@@ -56,6 +56,9 @@
       "questionText": "પ્રશ્ન ટેક્સ્ટ",
       "options": "વિકલ્પો",
       "addOption": "વિકલ્પ ઉમેરો",
+      "addOptions": "વિકલ્પો ઉમેરો",
+      "updateOptions": "વિકલ્પો અપડેટ કરો",
+      "editOptions": "વિકલ્પો સંપાદિત કરો",
       "correctAnswer": "સાચો જવાબ",
       "noQuestions": "હજુ સુધી કોઈ પ્રશ્નો ઉમેરાયા નથી"
     }

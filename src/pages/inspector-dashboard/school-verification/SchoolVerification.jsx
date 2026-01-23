@@ -114,23 +114,26 @@ const SchoolVerification = () => {
 
   // Get domain name based on language
   const getDomainName = (domain) => {
-    if (currentLanguage === "hi") return domain.domainNameHi;
-    if (currentLanguage === "gu") return domain.domainNameGu;
-    return domain.domainNameEn;
+    if (!domain) return "";
+    if (currentLanguage === "hi") return domain.domainNameHi || domain.domainName || "";
+    if (currentLanguage === "gu") return domain.domainNameGu || domain.domainName || "";
+    return domain.domainNameEn || domain.domainName || "";
   };
 
   // Get subdomain name based on language
   const getSubdomainName = (subdomain) => {
-    if (currentLanguage === "hi") return subdomain.subDomainNameHi;
-    if (currentLanguage === "gu") return subdomain.subDomainNameGu;
-    return subdomain.subDomainNameEn;
+    if (!subdomain) return "";
+    if (currentLanguage === "hi") return subdomain.subDomainNameHi || subdomain.subDomainName || "";
+    if (currentLanguage === "gu") return subdomain.subDomainNameGu || subdomain.subDomainName || "";
+    return subdomain.subDomainNameEn || subdomain.subDomainName || "";
   };
 
   // Get question text based on language
   const getQuestionText = (question) => {
-    if (currentLanguage === "hi") return question.questionHi;
-    if (currentLanguage === "gu") return question.questionGu;
-    return question.questionEn;
+    if (!question) return "";
+    if (currentLanguage === "hi") return question.questionHi || question.questionText || "";
+    if (currentLanguage === "gu") return question.questionGu || question.questionText || "";
+    return question.questionEn || question.questionText || "";
   };
 
   // Get option text based on language
@@ -161,14 +164,17 @@ const SchoolVerification = () => {
 
   // Get domain icon
   const getDomainIcon = (domain) => {
-    const domainName = getDomainName(domain).toLowerCase();
-    if (domainName.includes("teaching") || domainName.includes("learning")) {
+    if (!domain) return <Assessment sx={{ fontSize: 24 }} />;
+    const domainName = getDomainName(domain);
+    if (!domainName) return <Assessment sx={{ fontSize: 24 }} />;
+    const domainNameLower = domainName.toLowerCase();
+    if (domainNameLower.includes("teaching") || domainNameLower.includes("learning")) {
       return <MenuBook sx={{ fontSize: 24 }} />;
-    } else if (domainName.includes("infrastructure")) {
+    } else if (domainNameLower.includes("infrastructure")) {
       return <Business sx={{ fontSize: 24 }} />;
-    } else if (domainName.includes("staff") || domainName.includes("teacher")) {
+    } else if (domainNameLower.includes("staff") || domainNameLower.includes("teacher")) {
       return <Groups sx={{ fontSize: 24 }} />;
-    } else if (domainName.includes("student")) {
+    } else if (domainNameLower.includes("student")) {
       return <Class sx={{ fontSize: 24 }} />;
     }
     return <Assessment sx={{ fontSize: 24 }} />;

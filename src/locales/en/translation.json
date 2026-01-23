@@ -58,6 +58,9 @@
       "questionText": "Question Text",
       "options": "Options",
       "addOption": "Add Option",
+      "addOptions": "Add Options",
+      "updateOptions": "Update Options",
+      "editOptions": "Edit Options",
       "correctAnswer": "Correct Answer",
       "noQuestions": "No questions added yet"
     }

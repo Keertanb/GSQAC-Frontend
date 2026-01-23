@@ -150,6 +150,17 @@ const SelfAssessment = () => {
     enabled: !!selectedSubdomain,
   });
 
+  // Check if there are subject-wise questions (type 3) in the current subdomain
+  const hasSubjectWiseQuestions = useMemo(() => {
+    if (!allQuestionsData) return false;
+    const questions =
+      allQuestionsData?.data?.data ||
+      (Array.isArray(allQuestionsData?.data) ? allQuestionsData.data : []);
+    return questions.some(
+      (q) => q.questionType === 3 || q.questionType === "3"
+    );
+  }, [allQuestionsData]);
+
   const {
     data: questionsData,
     isLoading: isLoadingQuestions,
@@ -162,6 +173,9 @@ const SelfAssessment = () => {
     // Only send cls and section when they are explicitly selected
     ...(selectedClass && { classNumber: Number(selectedClass) }),
     ...(selectedSection && { section: selectedSection }),
+    // Only send subjectId for subject-wise questions when subject is selected
+    ...(hasSubjectWiseQuestions &&
+      selectedSubject && { subjectId: Number(selectedSubject) }),
     userId: userId ? Number(userId) : undefined,
     enabled: !!selectedSubdomain,
   });
@@ -291,6 +305,7 @@ const SelfAssessment = () => {
   const domains = domainsData?.data || [];
   const isPublished = domainsData?.isPublished || false;
   const endDate = domainsData?.endDate || null;
+  const isSubmitted = domainsData?.isSubmitted || false;
 
   // All questions for counting (unfiltered by class)
   const allQuestionsForCount = useMemo(() => {
@@ -476,6 +491,28 @@ const SelfAssessment = () => {
     return option.optionText || "";
   };
 
+  // Helper function to check if API answer should be shown based on question type and selected dropdowns
+  const shouldShowApiAnswer = (question) => {
+    const questionType =
+      question.questionType ||
+      (question.isClassroomObservation === 1 ? 2 : 1);
+
+    if (questionType === 1 || questionType === "1") {
+      // General questions - no dropdowns needed
+      return true;
+    } else if (questionType === 2 || questionType === "2") {
+      // Classroom observation - needs class and section
+      return !!selectedClass && !!selectedSection;
+    } else if (questionType === 3 || questionType === "3") {
+      // Subject observation - needs class, section, and subject
+      return !!selectedClass && !!selectedSection && !!selectedSubject;
+    } else if (questionType === 4 || questionType === "4") {
+      // FLN questions - no dropdowns needed
+      return true;
+    }
+    return false;
+  };
+
   // Get domain icon based on domain ID or name
   const getDomainIcon = (domain) => {
     const domainId = domain.domainId;
@@ -625,6 +662,29 @@ const SelfAssessment = () => {
           question.questionType ||
           (question.isClassroomObservation === 1 ? 2 : 1);
 
+        // Check if required dropdowns are selected based on question type
+        let shouldLoadAnswer = false;
+
+        if (questionType === 1 || questionType === "1") {
+          // General questions - no dropdowns needed
+          shouldLoadAnswer = true;
+        } else if (questionType === 2 || questionType === "2") {
+          // Classroom observation - needs class and section
+          shouldLoadAnswer = !!selectedClass && !!selectedSection;
+        } else if (questionType === 3 || questionType === "3") {
+          // Subject observation - needs class, section, and subject
+          shouldLoadAnswer =
+            !!selectedClass && !!selectedSection && !!selectedSubject;
+        } else if (questionType === 4 || questionType === "4") {
+          // FLN questions - no dropdowns needed
+          shouldLoadAnswer = true;
+        }
+
+        // Only load answers if required dropdowns are selected
+        if (!shouldLoadAnswer) {
+          return;
+        }
+
         // For FLN questions (type 4), group by questionId and std
         if (questionType === 4 || questionType === "4") {
           const qId = question.questionId;
@@ -694,7 +754,7 @@ const SelfAssessment = () => {
         }
       }
     }
-  }, [allQuestions, selectedSubdomain, selectedClass]);
+  }, [allQuestions, selectedSubdomain, selectedClass, selectedSection, selectedSubject]);
 
   // Handle answer selection
   const handleAnswerChange = (questionId, optionId) => {
@@ -885,7 +945,11 @@ const SelfAssessment = () => {
         }
       }
       // For other questions, check if option is selected
-      return answers[q.questionId] || q.selectedOptionId;
+      // Only count API answer if required dropdowns are selected
+      const apiAnswer = shouldShowApiAnswer(q) && q.selectedOptionId
+        ? q.selectedOptionId
+        : null;
+      return answers[q.questionId] || apiAnswer;
     }).length;
     return { totalAnswered: answered, totalQuestions: total };
   }, [allQuestionsForCount, answers, textAnswers]);
@@ -953,9 +1017,10 @@ const SelfAssessment = () => {
     } else {
       // For other question types, validate option selection
       const userSelectedOption = answers[question.questionId];
-      const apiSelectedOption = question.selectedOptionId
-        ? String(question.selectedOptionId)
-        : null;
+      const apiSelectedOption =
+        shouldShowApiAnswer(question) && question.selectedOptionId
+          ? String(question.selectedOptionId)
+          : null;
       const selectedOptionId = userSelectedOption || apiSelectedOption;
 
       if (!selectedOptionId) {
@@ -1013,7 +1078,12 @@ const SelfAssessment = () => {
       optionId:
         questionType === 4 || questionType === "4"
           ? null
-          : Number(answers[question.questionId] || question.selectedOptionId),
+          : Number(
+              answers[question.questionId] ||
+                (shouldShowApiAnswer(question) && question.selectedOptionId
+                  ? question.selectedOptionId
+                  : null)
+            ),
       obtainedMarks:
         questionType === 4 || questionType === "4"
           ? textAnswers[question.questionId]
@@ -1127,9 +1197,10 @@ const SelfAssessment = () => {
       } else {
         // For other question types, check if option is selected
         const userSelectedAnswer = answers[question.questionId];
-        const apiSelectedAnswer = question.selectedOptionId
-          ? String(question.selectedOptionId)
-          : null;
+        const apiSelectedAnswer =
+          shouldShowApiAnswer(question) && question.selectedOptionId
+            ? String(question.selectedOptionId)
+            : null;
         const selectedOptionId = userSelectedAnswer || apiSelectedAnswer;
 
         if (selectedOptionId) {
@@ -1867,7 +1938,7 @@ const SelfAssessment = () => {
                 </Box>
 
                 {/* Final Submit Button */}
-                {isPublished && (
+                {isPublished && !isSubmitted && (
                   <Box
                     sx={{
                       p: 2.5,
@@ -1990,8 +2061,22 @@ const SelfAssessment = () => {
                       p: { xs: 2.5, md: 3.5 },
                     }}
                   >
+                    {/* Loading State */}
+                    {isLoadingQuestions && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          minHeight: "400px",
+                        }}
+                      >
+                        <CircularProgress />
+                      </Box>
+                    )}
+
                     {/* No Questions Message */}
-                    {allQuestions.length === 0 && (
+                    {!isLoadingQuestions && allQuestions.length === 0 && (
                       <Box sx={{ textAlign: "center", py: 8, px: 3 }}>
                         <Assignment
                           sx={{
@@ -2333,6 +2418,7 @@ const SelfAssessment = () => {
                                 const userSelectedAnswer =
                                   answers[question.questionId];
                                 const apiSelectedAnswer =
+                                  shouldShowApiAnswer(question) &&
                                   question.selectedOptionId
                                     ? String(question.selectedOptionId)
                                     : null;
@@ -2401,8 +2487,8 @@ const SelfAssessment = () => {
                                         <Typography
                                           variant="body2"
                                           sx={{
-                                            fontWeight: 500,
-                                            fontSize: "0.875rem",
+                                            fontWeight: 700,
+                                            fontSize: "1rem",
                                             color: colors.text.primary,
                                             lineHeight: 1.5,
                                           }}
@@ -2472,7 +2558,7 @@ const SelfAssessment = () => {
                                                     )}
                                                     control={
                                                       <Radio
-                                                        disabled={!isPublished}
+                                                        disabled={!isPublished || isSubmitted}
                                                         sx={{
                                                           color:
                                                             colors.primary.blue,
@@ -2915,6 +3001,7 @@ const SelfAssessment = () => {
                                 const userSelectedAnswer =
                                   answers[question.questionId];
                                 const apiSelectedAnswer =
+                                  shouldShowApiAnswer(question) &&
                                   question.selectedOptionId
                                     ? String(question.selectedOptionId)
                                     : null;
@@ -2985,8 +3072,8 @@ const SelfAssessment = () => {
                                         <Typography
                                           variant="body2"
                                           sx={{
-                                            fontWeight: 500,
-                                            fontSize: "0.875rem",
+                                            fontWeight: 700,
+                                            fontSize: "1rem",
                                             color: colors.text.primary,
                                             lineHeight: 1.5,
                                           }}
@@ -3038,7 +3125,7 @@ const SelfAssessment = () => {
                                                     )}
                                                     control={
                                                       <Radio
-                                                        disabled={!isPublished}
+                                                        disabled={!isPublished || isSubmitted}
                                                         sx={{
                                                           color:
                                                             colors.accent
@@ -3411,7 +3498,7 @@ const SelfAssessment = () => {
                                                 <TextField
                                                   size="small"
                                                   type="number"
-                                                  disabled={!isPublished}
+                                                  disabled={!isPublished || isSubmitted}
                                                   value={
                                                     classData.obtainedMarks ||
                                                     ""
@@ -3709,7 +3796,7 @@ const SelfAssessment = () => {
                                                 value={String(option.optionId)}
                                                 control={
                                                   <Radio
-                                                    disabled={!isPublished}
+                                                    disabled={!isPublished || isSubmitted}
                                                     sx={{
                                                       color:
                                                         colors.primary.blue,
@@ -3765,7 +3852,7 @@ const SelfAssessment = () => {
                     )}
 
                     {/* Submit Button */}
-                    {isPublished && (
+                    {isPublished && !isSubmitted && (
                       <Box
                         sx={{
                           display: "flex",

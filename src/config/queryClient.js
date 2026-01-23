@@ -15,7 +15,7 @@ export const queryKeys = {
       roleId,
       languageCode,
     ],
-    subdomainQuestions: (subDomainId, roleId, languageCode = null, classNumber = null, section = null) => [
+    subdomainQuestions: (subDomainId, roleId, languageCode = null, classNumber = null, section = null, subjectId = null) => [
       "admin",
       "subdomain-questions",
       subDomainId,
@@ -23,6 +23,7 @@ export const queryKeys = {
       languageCode,
       classNumber,
       section,
+      subjectId,
     ],
     upsertDomain: () => ["admin", "upsert-domain"],
     upsertSubdomain: () => ["admin", "upsert-subdomain"],
