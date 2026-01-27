@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -46,12 +46,14 @@ import {
   School as SchoolIcon,
   Language,
   Create,
+  LocationOn,
+  AccountTree,
 } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import {
   useGetDomainsQuery,
   useGetSubdomainQuestionsQuery,
-} from "../../../services/schoolService";
+} from "../../../services/crcService";
 import {
   useSubmitAnswerMutation,
   useGetClassWiseSubjectsQuery,
@@ -69,7 +71,7 @@ import {
   useSubmitSubdomainWiseAnswersMutation,
   useSubmitAssessmentMutation,
   useGetSchoolGradesQuery,
-} from "../../../services/schoolService";
+} from "../../../services/crcService";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
 import {
   BarChart,
@@ -81,12 +83,14 @@ import {
   Cell,
 } from "recharts";
 
-const SelfAssessment = () => {
+const CRCAssessment = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { schoolId: paramSchoolId } = useParams();
   const theme = useTheme();
   const matchDownMD = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
-  const { logout, user, userId, userName } = useAuthStore();
+  const { logout, user, userId } = useAuthStore();
   const { t, i18n } = useTranslation();
   const [currentLanguage, setCurrentLanguage] = useState("gu");
   const [selectedDomain, setSelectedDomain] = useState(null);
@@ -102,6 +106,10 @@ const SelfAssessment = () => {
   const [textAnswers, setTextAnswers] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
+
+  // Get school info from location state or use paramSchoolId
+  const schoolFromState = location.state?.school;
+  const schoolCode = schoolFromState?.schoolCode || paramSchoolId;
 
   const logoutMutation = useLogoutMutation({
     onSuccess: () => {
@@ -130,9 +138,12 @@ const SelfAssessment = () => {
   };
   const languageCode = languageCodeMap[currentLanguage] || "EN";
 
-  const roleId = getRoleId("school");
+  const roleId = getRoleId("crc");
 
   const queryClient = useQueryClient();
+
+  // Get schoolId from URL params
+  const schoolId = paramSchoolId;
 
   const {
     data: domainsData,
@@ -141,7 +152,9 @@ const SelfAssessment = () => {
     refetch: refetchDomains,
   } = useGetDomainsQuery({
     roleId,
+    userId: userId ? Number(userId) : undefined,
     languageCode,
+    schoolId,
     enabled: true,
   });
 
@@ -186,7 +199,8 @@ const SelfAssessment = () => {
 
   const { data: schoolDataResponse, isLoading: isLoadingSchoolData } =
     useGetSchoolDataQuery({
-      schoolId: userName || undefined,
+      userName: schoolCode || undefined,
+      enabled: !!schoolCode,
     });
 
   const schoolData = schoolDataResponse?.data || {};
@@ -194,8 +208,8 @@ const SelfAssessment = () => {
   // Fetch school grades for FLN questions
   const { data: gradesData, isLoading: isLoadingGrades } =
     useGetSchoolGradesQuery({
-      schoolId: userName || undefined,
-      enabled: !!userName,
+      schoolId: schoolCode || undefined,
+      enabled: !!schoolCode,
     });
 
   // Parse grades data to get student counts by class
@@ -263,8 +277,8 @@ const SelfAssessment = () => {
   // Fetch all school sections once
   const { data: sectionsData, isLoading: isLoadingSections } =
     useGetSchoolSectionsQuery({
-      schoolId: userName || undefined,
-      enabled: !!userName,
+      schoolId: schoolCode || undefined,
+      enabled: !!schoolCode,
     });
 
   // Fetch class-wise subjects when class is selected
@@ -830,6 +844,7 @@ const SelfAssessment = () => {
 
   const submitSubdomainWiseAnswersMutation =
     useSubmitSubdomainWiseAnswersMutation({
+      schoolId: schoolId,
       onSuccess: (data) => {
         // Save current answers to subdomainAnswers before clearing
         if (selectedSubdomain) {
@@ -875,22 +890,22 @@ const SelfAssessment = () => {
         refetchQuestions();
       }
       
-      // Invalidate all school-related queries to refresh dashboard data
+      // Invalidate all CRC-related queries to refresh dashboard data
       queryClient.invalidateQueries({
-        queryKey: ["school"],
+        queryKey: ["crc"],
       });
       
       // Invalidate specific queries
       queryClient.invalidateQueries({
-        queryKey: queryKeys.school.domains(roleId, languageCode),
+        queryKey: queryKeys.crc.domains(roleId, languageCode),
       });
       
       queryClient.invalidateQueries({
-        queryKey: queryKeys.school.schoolData(userName),
+        queryKey: queryKeys.crc.schoolData(schoolCode),
       });
       
       queryClient.invalidateQueries({
-        queryKey: queryKeys.school.schoolSections(userName),
+        queryKey: queryKeys.crc.schoolSections(schoolCode),
       });
       
       enqueueSnackbar("Assessment submitted successfully!", {
@@ -1291,193 +1306,164 @@ const SelfAssessment = () => {
   }
   console.log(isPublished, endDate, "answersanswersanswers");
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
-      <AppDrawer open={drawerOpen} handleDrawerToggle={handleDrawerToggle} />
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          width: "100%",
-          marginLeft: drawerOpen && !matchDownMD ? 0 : 0,
-          [`@media (min-width:${theme.breakpoints.values.xl}px)`]: {
-            marginLeft: drawerOpen && !matchDownMD ? `${30}px` : 0,
-          },
-          transition: theme.transitions.create(["margin-left"], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-          }),
-        }}
-      >
-        <AppBar
-          position="fixed"
-          sx={{
-            background: "rgba(255, 255, 255, 0.85)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            zIndex: theme.zIndex.drawer + 1,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-            borderBottom: "1px solid rgba(0,0,0,0.06)",
-            width:
-              drawerOpen && !matchDownMD
-                ? `calc(100% - ${DRAWER_WIDTH.xs}px)`
-                : "100%",
-            [`@media (min-width:${theme.breakpoints.values.xl}px)`]: {
-              width:
-                drawerOpen && !matchDownMD
-                  ? `calc(100% - ${DRAWER_WIDTH.xl}px)`
-                  : "100%",
-            },
-            transition: theme.transitions.create(["width", "margin"], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
-          }}
-        >
-          <Toolbar
-            sx={{
-              height: "72px",
-              minHeight: "72px !important",
-              px: { xs: 2, sm: 3, md: 4 },
-              display: "flex",
-              alignItems: "center",
-              gap: 2,
-            }}
-          >
-            <IconButton
-              onClick={handleDrawerToggle}
-              edge="start"
-              sx={{
-                color: "#64748b",
-                borderRadius: "12px",
-                width: "44px",
-                height: "44px",
-                backgroundColor: "rgba(255,255,255,0.9)",
-                border: "1px solid rgba(0,0,0,0.05)",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
-                "&:hover": {
-                  backgroundColor: "#ffffff",
-                  color: "#2563eb",
-                  transform: "scale(1.08)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                  borderColor: "rgba(59, 130, 246, 0.2)",
-                },
-                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-              }}
-            >
-              <Menu />
-            </IconButton>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2.5,
-                mr: 2,
-              }}
-            >
+    <Box sx={{ width: "100%", display: "flex", flexDirection: "column", mt: 0, ml: 0 }}>
+            {/* School Details Card */}
+            {schoolFromState && (
               <Box
                 sx={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "14px",
-                  background:
-                    "linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #4f46e5 100%)",
+                  mb: 1.5,
+                  p: 1.5,
+                  borderRadius: 1.5,
+                  bgcolor: colors.background.secondary,
+                  border: `1px solid ${colors.neutral.gray200}`,
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 4px 16px rgba(59, 130, 246, 0.35)",
-                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  gap: 1.5,
+                  flexWrap: "wrap",
                 }}
               >
-                <Assessment
+                <Box
                   sx={{
-                    color: "white",
-                    fontSize: "1.625rem",
-                  }}
-                />
-              </Box>
-              <Box>
-                <Typography
-                  variant="h6"
-                  component="div"
-                  sx={{
-                    fontSize: "1.125rem",
-                    fontWeight: 700,
-                    color: "#0f172a",
-                    letterSpacing: "-0.02em",
-                    lineHeight: 1.2,
-                    fontFamily:
-                      "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
-                    background:
-                      "linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    flex: 1,
+                    minWidth: 180,
                   }}
                 >
-                  Self-Assessment
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    fontSize: "0.6875rem",
-                    color: "#64748b",
-                    fontWeight: 600,
-                    letterSpacing: "0.05em",
-                    textTransform: "uppercase",
-                    fontFamily:
-                      "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
-                    lineHeight: 1.4,
-                    mt: 0.25,
-                    display: "block",
-                  }}
-                >
-                  School Assessment
-                </Typography>
+                  <SchoolIcon
+                    sx={{
+                      fontSize: 18,
+                      color: colors.primary.blue,
+                    }}
+                  />
+                  <Box>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 600,
+                        color: colors.text.primary,
+                        fontSize: "0.875rem",
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {schoolFromState.schoolName || "N/A"}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: colors.text.secondary,
+                        fontSize: "0.6875rem",
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {schoolFromState.schoolId || "N/A"}
+                    </Typography>
+                  </Box>
+                </Box>
+                {schoolFromState.districtName && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                    }}
+                  >
+                    <LocationOn
+                      sx={{
+                        fontSize: 14,
+                        color: colors.text.secondary,
+                      }}
+                    />
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: colors.text.secondary,
+                        fontSize: "0.75rem",
+                      }}
+                    >
+                      {schoolFromState.districtName}
+                    </Typography>
+                  </Box>
+                )}
+                {schoolFromState.blockName && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                    }}
+                  >
+                    <LocationOn
+                      sx={{
+                        fontSize: 14,
+                        color: colors.text.secondary,
+                      }}
+                    />
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: colors.text.secondary,
+                        fontSize: "0.75rem",
+                      }}
+                    >
+                      {schoolFromState.blockName}
+                    </Typography>
+                  </Box>
+                )}
+                {schoolFromState.clusterName && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                    }}
+                  >
+                    <AccountTree
+                      sx={{
+                        fontSize: 14,
+                        color: colors.text.secondary,
+                      }}
+                    />
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: colors.text.secondary,
+                        fontSize: "0.75rem",
+                      }}
+                    >
+                      {schoolFromState.clusterName}
+                    </Typography>
+                  </Box>
+                )}
+                {schoolFromState.villageName && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                    }}
+                  >
+                    <LocationOn
+                      sx={{
+                        fontSize: 14,
+                        color: colors.text.secondary,
+                      }}
+                    />
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: colors.text.secondary,
+                        fontSize: "0.75rem",
+                      }}
+                    >
+                      {schoolFromState.villageName}
+                    </Typography>
+                  </Box>
+                )}
               </Box>
-            </Box>
-            <Box sx={{ flexGrow: 1 }} />
-            <Button
-              onClick={handleLogout}
-              sx={{
-                color: "#475569",
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                borderRadius: "12px",
-                px: 3,
-                py: 1.25,
-                backgroundColor: "rgba(255,255,255,0.9)",
-                border: "1px solid rgba(0,0,0,0.06)",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
-                fontFamily:
-                  "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
-                letterSpacing: "-0.01em",
-                "&:hover": {
-                  backgroundColor: "#fef2f2",
-                  color: "#dc2626",
-                  borderColor: "#fecaca",
-                  boxShadow: "0 4px 8px rgba(220, 38, 38, 0.15)",
-                  transform: "translateY(-1px)",
-                },
-                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-              }}
-            >
-              Logout
-            </Button>
-          </Toolbar>
-        </AppBar>
+            )}
 
-        <Box sx={{ mt: 8 }}>
-          <Box
-            sx={{
-              pl: drawerOpen && !matchDownMD ? 0 : { xs: 2, sm: 2, md: 3 },
-              pr: { xs: 2, sm: 2, md: 3 },
-              py: 3,
-              height: "calc(100vh - 64px)",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
             {/* Header */}
             <Box
               sx={{
@@ -4425,9 +4411,6 @@ const SelfAssessment = () => {
                 </Paper>
               )}
             </Box>
-          </Box>
-        </Box>
-      </Box>
 
       {/* Confirmation Modal for Final Submit */}
       <ConfirmationModal
@@ -4445,5 +4428,5 @@ const SelfAssessment = () => {
   );
 };
 
-export default SelfAssessment;
+export default CRCAssessment;
 

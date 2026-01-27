@@ -26,6 +26,7 @@ import {
   parentMenuItems,
   inspectorMenuItems,
   adminMenuItems,
+  crcMenuItems,
   DRAWER_WIDTH,
 } from "../../constants/menuItems";
 import { roles } from "../../constants/roles";
@@ -104,6 +105,8 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
         return inspectorMenuItems;
       case "admin":
         return adminMenuItems;
+      case "crc":
+        return crcMenuItems;
       default:
         return [];
     }

@@ -171,4 +171,15 @@ export const adminMenuItems = [
   },
 ];
 
+// CRC Menu Items
+export const crcMenuItems = [
+  {
+    id: "school-assessment",
+    label: "School Assessment",
+    icon: Assessment,
+    url: "/crc-dashboard/school-assessment",
+    activeFinder: ["/crc-dashboard/school-assessment"],
+  },
+];
+
 export { DRAWER_WIDTH };

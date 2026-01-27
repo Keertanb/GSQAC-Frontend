@@ -23,6 +23,7 @@ import {
   AdminPanelSettingsOutlined,
   LockOutlined,
   EmailOutlined,
+  AccountTreeOutlined,
 } from "@mui/icons-material";
 import { colors } from "../../constants/colors";
 import { roles, getRoleId } from "../../constants/roles";
@@ -114,6 +115,7 @@ const Login = () => {
       parent: <PeopleOutline />,
       inspector: <VerifiedUserOutlined />,
       admin: <AdminPanelSettingsOutlined />,
+      crc: <AccountTreeOutlined />,
     };
     return iconMap[roleValue] || <PersonOutline />;
   };

@@ -851,7 +851,7 @@ const AssessmentManagement = () => {
           <Box
             sx={{ display: "flex", flexDirection: "column", gap: 2.5, mt: 1 }}
           >
-            <FormControl fullWidth required>
+            {/* <FormControl fullWidth required>
               <InputLabel>Role</InputLabel>
               <Select
                 value={publishData.roleId}
@@ -865,7 +865,7 @@ const AssessmentManagement = () => {
                 <MenuItem value="inspector">School Verifier</MenuItem>
                 <MenuItem value="parent">CRC</MenuItem>
               </Select>
-            </FormControl>
+            </FormControl> */}
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>

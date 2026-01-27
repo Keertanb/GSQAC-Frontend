@@ -27,6 +27,12 @@ const InspectorDashboard = lazy(() =>
 const AdminDashboard = lazy(() =>
   import("../pages/admin-dashboard/admin-dashboard")
 );
+const CRCDashboard = lazy(() =>
+  import("../pages/crc-dashboard/crc-dashboard")
+);
+const CRCAssessment = lazy(() =>
+  import("../pages/crc-dashboard/school-assessment/CRCAssessment")
+);
 
 export const publicRoutes = [
   {
@@ -257,5 +263,48 @@ export const adminRoutes = [
   {
     path: ROUTE_URLS.WILDCARD_URL,
     element: <Navigate to={ROUTE_URLS.ADMIN_DASHBOARD_URL} replace />,
+  },
+];
+
+// CRC ROUTES
+export const crcRoutes = [
+  {
+    path: ROUTE_URLS.ROOT_URL,
+    children: [
+      {
+        path: ROUTE_URLS.CRC_DASHBOARD_URL,
+        element: (
+          <ProtectedRoute requiredRole="crc">
+            <Suspense fallback={<LazyLoad />}>
+              <CRCDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTE_URLS.CRC_SCHOOL_ASSESSMENT_URL,
+        element: (
+          <ProtectedRoute requiredRole="crc">
+            <Suspense fallback={<LazyLoad />}>
+              <CRCDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTE_URLS.CRC_SCHOOL_ASSESSMENT_DETAIL_URL,
+        element: (
+          <ProtectedRoute requiredRole="crc">
+            <Suspense fallback={<LazyLoad />}>
+              <CRCDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+    ],
+  },
+  {
+    path: ROUTE_URLS.WILDCARD_URL,
+    element: <Navigate to={ROUTE_URLS.CRC_DASHBOARD_URL} replace />,
   },
 ];

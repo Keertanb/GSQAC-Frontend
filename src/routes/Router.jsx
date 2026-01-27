@@ -7,6 +7,7 @@ import {
   parentRoutes,
   inspectorRoutes,
   adminRoutes,
+  crcRoutes,
 } from "./Routes";
 
 const Router = () => {
@@ -23,6 +24,7 @@ const Router = () => {
       parent: parentRoutes,
       inspector: inspectorRoutes,
       admin: adminRoutes,
+      crc: crcRoutes,
     };
 
     const selectedRoleRoutes = roleBasedRoutes[role] || [];

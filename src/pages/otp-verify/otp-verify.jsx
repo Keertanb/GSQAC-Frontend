@@ -67,6 +67,7 @@ const OtpVerify = () => {
       parent: "Parent/Guardian",
       inspector: "School Inspector",
       admin: "GSQAC Admin",
+      crc: "CRC",
     };
     return roleLabels[currentRole] || "User";
   };
@@ -217,6 +218,7 @@ const OtpVerify = () => {
             parent: "/parent-dashboard",
             inspector: "/inspector-dashboard",
             admin: "/admin-dashboard",
+            crc: "/crc-dashboard",
           };
 
           navigate(dashboardRoutes[currentRole] || "/");

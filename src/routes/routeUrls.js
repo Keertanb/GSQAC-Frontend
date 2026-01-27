@@ -23,4 +23,9 @@ export const ADMIN_SCHOOL_ALLOCATION_URL = "/admin-dashboard/school-allocation";
 export const ADMIN_DISTRICT_NODAL_OFFICERS_URL = "/admin-dashboard/district-nodal-officers";
 export const ADMIN_ROLE_MANAGEMENT_URL = "/admin-dashboard/role-management";
 
+// CRC Dashboard Routes
+export const CRC_DASHBOARD_URL = "/crc-dashboard";
+export const CRC_SCHOOL_ASSESSMENT_URL = "/crc-dashboard/school-assessment";
+export const CRC_SCHOOL_ASSESSMENT_DETAIL_URL = "/crc-dashboard/school-assessment/:schoolId";
+
 export const WILDCARD_URL = "*";

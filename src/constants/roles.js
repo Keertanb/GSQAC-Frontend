@@ -31,6 +31,14 @@ export const roles = [
     color: "#1e3a8a",
     dashboardRoute: "/admin-dashboard",
   },
+  {
+    value: "crc",
+    label: "CRC",
+    description: "Cluster Resource Centre",
+    authMethod: "Employee ID",
+    color: "#8b5cf6",
+    dashboardRoute: "/crc-dashboard",
+  },
 ];
 
 export const getRoleByValue = (value) => {
@@ -41,7 +49,7 @@ export const roleIdMap = {
   admin: 1,
   school: 2,
   inspector: 3,
-  parent: 4,
+  crc: 4,
 };
 
 export const getRoleId = (roleValue) => {
