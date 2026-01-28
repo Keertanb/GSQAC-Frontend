@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../../config/queryClient";
 import {
@@ -23,6 +23,8 @@ import {
   Divider,
   TextField,
   IconButton,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   CheckCircle,
@@ -69,6 +71,8 @@ import {
 } from "recharts";
 
 const SchoolVerification = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { userId, userName } = useAuthStore();
   const queryClient = useQueryClient();
   const [currentLanguage, setCurrentLanguage] = useState("gu");
@@ -85,6 +89,11 @@ const SchoolVerification = () => {
   const [textAnswers, setTextAnswers] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
+  const [selectedQuestionTab, setSelectedQuestionTab] = useState(0);
+
+  // Get school info from location state
+  const schoolFromState = location.state?.school;
+  const schoolId = schoolFromState?.schoolId || schoolFromState?.schoolCode || userName;
 
   const languageCodeMap = {
     en: "EN",
@@ -93,8 +102,20 @@ const SchoolVerification = () => {
   };
   const languageCode = languageCodeMap[currentLanguage] || "EN";
 
-  // Use inspector role ID
+  // Use inspector role ID (roleId: 3)
   const roleId = getRoleId("inspector");
+
+  // Debug: Log API call parameters
+  useEffect(() => {
+    console.log("SchoolVerification API Debug:", {
+      roleId,
+      languageCode,
+      schoolId,
+      schoolFromState,
+      userName,
+      willCallAPI: !!roleId,
+    });
+  }, [roleId, languageCode, schoolId, schoolFromState, userName]);
 
   const {
     data: domainsData,
@@ -104,7 +125,8 @@ const SchoolVerification = () => {
   } = useGetDomainsQuery({
     roleId,
     languageCode,
-    enabled: true,
+    schoolId: schoolId || undefined,
+    enabled: !!roleId,
   });
 
   // Fetch all questions (without class filter) for counting purposes
@@ -148,7 +170,7 @@ const SchoolVerification = () => {
 
   const { data: schoolDataResponse, isLoading: isLoadingSchoolData } =
     useGetSchoolDataQuery({
-      schoolId: userName || undefined,
+      schoolId: schoolId || undefined,
     });
 
   const schoolData = schoolDataResponse?.data || {};
@@ -156,8 +178,8 @@ const SchoolVerification = () => {
   // Fetch school grades for FLN questions
   const { data: gradesData, isLoading: isLoadingGrades } =
     useGetSchoolGradesQuery({
-      schoolId: userName || undefined,
-      enabled: !!userName,
+      schoolId: schoolId || undefined,
+      enabled: !!schoolId,
     });
 
   // Parse grades data to get student counts by class
@@ -222,8 +244,8 @@ const SchoolVerification = () => {
   // Fetch all school sections once
   const { data: sectionsData, isLoading: isLoadingSections } =
     useGetSchoolSectionsQuery({
-      schoolId: userName || undefined,
-      enabled: !!userName,
+      schoolId: schoolId || undefined,
+      enabled: !!schoolId,
     });
 
   // Fetch class-wise subjects when class is selected
@@ -264,6 +286,7 @@ const SchoolVerification = () => {
   const isPublished = domainsData?.isPublished || false;
   const endDate = domainsData?.endDate || null;
   const isSubmitted = domainsData?.isSubmitted || false;
+  const sessionId = domainsData?.sessionId || null;
 
   // All questions for counting (unfiltered by class)
   const allQuestionsForCount = useMemo(() => {
@@ -829,7 +852,7 @@ const SchoolVerification = () => {
             [subdomainId]: { ...answers },
           }));
         }
-        // Refetch questions and domains to update progress bars
+        // Refetch questions and domains to update progress bars and get sessionId
         refetchQuestions();
         refetchDomains();
         // Optionally clear answers or navigate
@@ -871,15 +894,15 @@ const SchoolVerification = () => {
       
       // Invalidate specific queries
       queryClient.invalidateQueries({
-        queryKey: queryKeys.verifier.domains(roleId, languageCode),
+        queryKey: queryKeys.verifier.domains(roleId, languageCode, schoolId),
       });
       
       queryClient.invalidateQueries({
-        queryKey: queryKeys.verifier.schoolData(userName),
+        queryKey: queryKeys.verifier.schoolData(schoolId || userName),
       });
       
       queryClient.invalidateQueries({
-        queryKey: queryKeys.verifier.schoolSections(userName),
+        queryKey: queryKeys.verifier.schoolSections(schoolId || userName),
       });
       
       enqueueSnackbar("Assessment submitted successfully!", {
@@ -913,10 +936,23 @@ const SchoolVerification = () => {
 
   // Handler to confirm final submit
   const handleConfirmSubmit = () => {
+    if (!userId) {
+      enqueueSnackbar("User ID is missing. Please login again.", {
+        variant: "error",
+      });
+      return;
+    }
+    
+    // If sessionId is null, this is the first submit (isSubmitted: 0)
+    // If sessionId is present, this is the final submit (isSubmitted: 1)
+    const isFirstSubmit = sessionId === null || sessionId === undefined;
+    
     const payload = {
+      sessionId: sessionId || null,
       userId: Number(userId),
       roleId: Number(roleId),
-      isSubmitted: 1,
+      schoolId: schoolId || undefined,
+      isSubmitted: isFirstSubmit ? 0 : 1,
     };
     submitAssessmentMutation.mutate(payload);
   };
@@ -954,16 +990,9 @@ const SchoolVerification = () => {
       return;
     }
 
-    // For class-based questions, validate class and section selection
-    const hasClassBasedQuestions = classBasedQuestions.length > 0;
-    const hasSubjectQuestions = subjectObservationQuestions.length > 0;
-
-    // Check if user has answered any subject observation questions (type 3)
-    const hasAnsweredSubjectQuestions = subjectObservationQuestions.some(
-      (q) => answers[q.questionId] || textAnswers[q.questionId]
-    );
-
-    if (hasClassBasedQuestions) {
+    // Validate class/section/subject based on CURRENT TAB TYPE only
+    // For classroom observation questions, validate class and section
+    if (currentTab?.id === "classroom") {
       if (!selectedClass) {
         enqueueSnackbar("Please select a class before submitting.", {
           variant: "warning",
@@ -978,17 +1007,34 @@ const SchoolVerification = () => {
       }
     }
 
-    // For subject observation questions, only validate subject if user has answered type 3 questions
-    if (hasAnsweredSubjectQuestions && !selectedSubject) {
-      enqueueSnackbar("Please select a subject before submitting.", {
-        variant: "warning",
-      });
-      return;
+    // For subject observation questions, validate class, section, and subject
+    if (currentTab?.id === "subject") {
+      if (!selectedClass) {
+        enqueueSnackbar("Please select a class before submitting.", {
+          variant: "warning",
+        });
+        return;
+      }
+      if (!selectedSection) {
+        enqueueSnackbar("Please select a section before submitting.", {
+          variant: "warning",
+        });
+        return;
+      }
+      if (!selectedSubject) {
+        enqueueSnackbar("Please select a subject before submitting.", {
+          variant: "warning",
+        });
+        return;
+      }
     }
 
+    // Determine class and section values based on current tab type
     let clsValue = null;
     let sectionValue = null;
-    const isClassSelected = hasClassBasedQuestions && selectedClass;
+    const isClassSelected = 
+      (currentTab?.id === "classroom" || currentTab?.id === "subject") && 
+      selectedClass;
 
     if (isClassSelected) {
       // Class-based questions - use selected class and section
@@ -1071,6 +1117,7 @@ const SchoolVerification = () => {
     const payload = {
       isAns: 1,
       userId: Number(userId),
+      schoolId: schoolId || undefined,
       cls: clsValue,
       section: sectionValue,
       subjectId: selectedSubject ? Number(selectedSubject) : null,
@@ -1078,6 +1125,18 @@ const SchoolVerification = () => {
     };
 
     submitSubdomainWiseAnswersMutation.mutate(payload);
+    
+    // If sessionId is null, call submit-assessment API for first submit
+    if (sessionId === null || sessionId === undefined) {
+      const firstSubmitPayload = {
+        sessionId: null,
+        userId: Number(userId),
+        roleId: Number(roleId),
+        schoolId: schoolId || undefined,
+        isSubmitted: 0,
+      };
+      submitAssessmentMutation.mutate(firstSubmitPayload);
+    }
   };
 
   // Prepare chart data for bar graph
@@ -1116,6 +1175,121 @@ const SchoolVerification = () => {
     };
   }, [selectedDomain, selectedSubdomain, domains]);
 
+  // Define question type tabs
+  const questionTabs = useMemo(() => {
+    const tabs = [];
+    
+    if (generalQuestions.length > 0) {
+      tabs.push({
+        id: "general",
+        label: "General Questions",
+        icon: <Assignment sx={{ fontSize: 20 }} />,
+        color: colors.accent.green,
+        questions: generalQuestions,
+        questionsForCount: generalQuestionsForCount,
+      });
+    }
+    
+    if (classroomObservationQuestions.length > 0) {
+      tabs.push({
+        id: "classroom",
+        label: "Classroom Observation",
+        icon: <Class sx={{ fontSize: 20 }} />,
+        color: colors.primary.blue,
+        questions: classroomObservationQuestions,
+        questionsForCount: classroomObservationQuestionsForCount,
+      });
+    }
+    
+    if (subjectObservationQuestions.length > 0) {
+      tabs.push({
+        id: "subject",
+        label: "Subject-Wise Observation",
+        icon: <MenuBook sx={{ fontSize: 20 }} />,
+        color: colors.accent.purple,
+        questions: subjectObservationQuestions,
+        questionsForCount: subjectObservationQuestionsForCount,
+      });
+    }
+    
+    if (flnQuestions.length > 0) {
+      tabs.push({
+        id: "fln",
+        label: "Input Type Questions",
+        icon: <Create sx={{ fontSize: 20 }} />,
+        color: colors.semantic.warning,
+        questions: flnQuestions,
+        questionsForCount: flnQuestionsForCount,
+      });
+    }
+    
+    return tabs;
+  }, [
+    generalQuestions,
+    classroomObservationQuestions,
+    subjectObservationQuestions,
+    flnQuestions,
+    generalQuestionsForCount,
+    classroomObservationQuestionsForCount,
+    subjectObservationQuestionsForCount,
+    flnQuestionsForCount,
+  ]);
+
+  // Reset tab to first when questions change
+  useEffect(() => {
+    if (questionTabs.length > 0 && selectedQuestionTab >= questionTabs.length) {
+      setSelectedQuestionTab(0);
+    }
+  }, [questionTabs.length, selectedQuestionTab]);
+
+  // Get current tab
+  const currentTab = questionTabs[selectedQuestionTab] || null;
+
+  // Check if all questions of the current tab type are answered
+  const areAllQuestionsAnsweredForCurrentTab = useMemo(() => {
+    if (!currentTab || !currentTab.questionsForCount || currentTab.questionsForCount.length === 0) {
+      return false;
+    }
+
+    const questionsForCount = currentTab.questionsForCount;
+
+    // For FLN questions (type 4), check if all have valid JSON answers
+    if (currentTab.id === "fln") {
+      return questionsForCount.every((q) => {
+        const textAnswer = textAnswers[q.questionId];
+        if (!textAnswer) return false;
+        try {
+          const flnData = JSON.parse(textAnswer);
+          // Check if at least one class (2 or 3) has an answer
+          return Object.keys(flnData).some(
+            (key) => flnData[key] && flnData[key].obtainedMarks
+          );
+        } catch (e) {
+          return false;
+        }
+      });
+    }
+
+    // For other question types, check if all questions have answers
+    return questionsForCount.every((q) => {
+      // Check if question has an answer (either from user or API)
+      const userAnswer = answers[q.questionId];
+      const userTextAnswer = textAnswers[q.questionId];
+      
+      // Find the question in allQuestions to check API answer
+      const questionInAll = allQuestions.find(
+        (aq) => aq.questionId === q.questionId
+      );
+      
+      // For questions that need class/section/subject, check if API answer should be shown
+      const apiAnswer = questionInAll && shouldShowApiAnswer(questionInAll) && questionInAll.selectedOptionId
+        ? String(questionInAll.selectedOptionId)
+        : null;
+      
+      return userAnswer || userTextAnswer || apiAnswer;
+    });
+  }, [currentTab, answers, textAnswers, allQuestions, selectedClass, selectedSection, selectedSubject]);
+
   if (isLoadingDomains && !isErrorDomains && !domainsData?.data) {
     return (
       <Box
@@ -1143,17 +1317,39 @@ const SchoolVerification = () => {
         }}
       >
         <Box>
-          <Typography
-            variant="h4"
+          <Box
             sx={{
-              fontWeight: 700,
-              color: "#0f172a",
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              flexWrap: "wrap",
               mb: 0.5,
-              fontSize: { xs: "1.75rem", md: "2.125rem" },
             }}
           >
-            School Verification
-          </Typography>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 700,
+                color: "#0f172a",
+                fontSize: { xs: "1.75rem", md: "2.125rem" },
+              }}
+            >
+              School Verification
+            </Typography>
+            {isPublished && endDate && (
+              <Typography
+                variant="body2"
+                sx={{
+                  color: colors.semantic.warning,
+                  fontWeight: 600,
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                }}
+              >
+                Complete your assessment before {endDate}. After that date,
+                submissions will not be accepted.
+              </Typography>
+            )}
+          </Box>
           <Typography variant="body1" color="text.secondary">
             Verify and assess school quality standards
           </Typography>
@@ -1202,32 +1398,110 @@ const SchoolVerification = () => {
         </Box>
       </Box>
 
-      {/* End Date Warning Banner */}
-      {isPublished && endDate && (
-        <Alert
-          severity="warning"
+      {/* School Details Card */}
+      {(schoolFromState || schoolData) && (
+        <Paper
+          elevation={1}
           sx={{
+            p: 2.5,
             mb: 3,
             borderRadius: 2,
-            bgcolor: colors.semantic.warning + "15",
-            border: `1px solid ${colors.semantic.warning}40`,
-            "& .MuiAlert-icon": {
-              color: colors.semantic.warning,
-            },
+            bgcolor: colors.background.secondary,
+            border: `1px solid ${colors.neutral.gray200}`,
           }}
         >
-          <Typography
-            variant="body2"
+          <Box
             sx={{
-              fontWeight: 600,
-              color: colors.text.primary,
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              flexWrap: "wrap",
             }}
           >
-            Complete your assessment before {endDate}. After that date,
-            submissions will not be accepted.
-          </Typography>
-        </Alert>
+            <SchoolIcon
+              sx={{
+                fontSize: 32,
+                color: colors.primary.blue,
+              }}
+            />
+            <Box sx={{ flex: 1, minWidth: 200 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  color: colors.text.primary,
+                  mb: 0.5,
+                }}
+              >
+                {schoolFromState?.schoolName ||
+                  schoolData?.schoolName ||
+                  "School Name"}
+              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  flexWrap: "wrap",
+                  mt: 1,
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: colors.text.secondary,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                  }}
+                >
+                  <strong>School ID:</strong>{" "}
+                  {schoolId || schoolFromState?.schoolId || "N/A"}
+                </Typography>
+                {schoolFromState?.schoolCode && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: colors.text.secondary,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                    }}
+                  >
+                    <strong>School Code:</strong> {schoolFromState.schoolCode}
+                  </Typography>
+                )}
+                {schoolData?.districtName && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: colors.text.secondary,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                    }}
+                  >
+                    <strong>District:</strong> {schoolData.districtName}
+                  </Typography>
+                )}
+                {schoolData?.blockName && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: colors.text.secondary,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                    }}
+                  >
+                    <strong>Block:</strong> {schoolData.blockName}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          </Box>
+        </Paper>
       )}
+
 
       {/* Main Content - Split Layout */}
       <Box
@@ -1778,8 +2052,109 @@ const SchoolVerification = () => {
                   </Box>
                 )}
 
-                {/* Classroom Observation Questions Section (Type 2) */}
-                {classroomObservationQuestions.length > 0 && (
+                {/* Question Type Tabs */}
+                {!isLoadingQuestions && 
+                 allQuestions.length > 0 && 
+                 questionTabs.length > 0 && (
+                  <Box sx={{ mb: 3 }}>
+                    <Tabs
+                      value={selectedQuestionTab}
+                      onChange={(e, newValue) => setSelectedQuestionTab(newValue)}
+                      variant="scrollable"
+                      scrollButtons="auto"
+                      sx={{
+                        borderBottom: 2,
+                        borderColor: colors.neutral.gray200,
+                        "& .MuiTabs-indicator": {
+                          height: 3,
+                          borderRadius: "3px 3px 0 0",
+                        },
+                        "& .MuiTab-root": {
+                          textTransform: "none",
+                          fontWeight: 600,
+                          fontSize: "0.875rem",
+                          minHeight: 48,
+                          px: 2,
+                          "&.Mui-selected": {
+                            color: currentTab?.color || colors.primary.blue,
+                          },
+                        },
+                      }}
+                    >
+                      {questionTabs.map((tab, index) => {
+                        const answeredCount = tab.questionsForCount.filter(
+                          (q) => {
+                            if (tab.id === "fln") {
+                              const textAnswer = textAnswers[q.questionId];
+                              if (!textAnswer) return false;
+                              try {
+                                const flnData = JSON.parse(textAnswer);
+                                return Object.keys(flnData).some(
+                                  (key) =>
+                                    flnData[key] &&
+                                    flnData[key].obtainedMarks
+                                );
+                              } catch (e) {
+                                return false;
+                              }
+                            }
+                            return answers[q.questionId] || textAnswers[q.questionId];
+                          }
+                        ).length;
+                        
+                        return (
+                          <Tab
+                            key={tab.id}
+                            label={
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                }}
+                              >
+                                {tab.icon}
+                                <Typography
+                                  sx={{
+                                    fontWeight: 600,
+                                    fontSize: "0.875rem",
+                                  }}
+                                >
+                                  {tab.label}
+                                </Typography>
+                                <Chip
+                                  label={`${answeredCount}/${tab.questionsForCount.length}`}
+                                  size="small"
+                                  sx={{
+                                    height: 20,
+                                    fontSize: "0.7rem",
+                                    bgcolor: tab.color + "15",
+                                    color: tab.color,
+                                    fontWeight: 600,
+                                  }}
+                                />
+                              </Box>
+                            }
+                            sx={{
+                              color: colors.text.secondary,
+                              "&.Mui-selected": {
+                                color: tab.color,
+                              },
+                            }}
+                          />
+                        );
+                      })}
+                    </Tabs>
+                  </Box>
+                )}
+
+                {/* Questions Content Based on Selected Tab */}
+                {!isLoadingQuestions && 
+                 allQuestions.length > 0 && 
+                 currentTab && (
+                  <Box>
+                    {/* Classroom Observation Questions Section (Type 2) */}
+                    {currentTab.id === "classroom" && (
                   <Box sx={{ mb: 4 }}>
                     {/* Section Header */}
                     <Box
@@ -2096,9 +2471,7 @@ const SchoolVerification = () => {
                               userSelectedAnswer || apiSelectedAnswer;
                             const isExpanded =
                               expandedQuestions[question.questionId] ?? true;
-                            const questionNumber = `${domainNumber}.${subdomainNumber}.${
-                              index + 1
-                            }`;
+                            const questionNumber = `${domainNumber}.${subdomainNumber}.${index + 1}`;
 
                             return (
                               <Card
@@ -2284,9 +2657,9 @@ const SchoolVerification = () => {
                   </Box>
                 )}
 
-                {/* Subject-Wise Observation Questions Section (Type 3) */}
-                {subjectObservationQuestions.length > 0 && (
-                  <Box sx={{ mb: 4 }}>
+                    {/* Subject-Wise Observation Questions Section (Type 3) */}
+                    {currentTab.id === "subject" && (
+                      <Box sx={{ mb: 4 }}>
                     {/* Section Header */}
                     <Box
                       sx={{
@@ -2676,11 +3049,7 @@ const SchoolVerification = () => {
                               userSelectedAnswer || apiSelectedAnswer;
                             const isExpanded =
                               expandedQuestions[question.questionId] ?? true;
-                            const questionNumber = `${domainNumber}.${subdomainNumber}.${
-                              index +
-                              1 +
-                              classroomObservationQuestions.length
-                            }`;
+                            const questionNumber = `${domainNumber}.${subdomainNumber}.${index + 1}`;
 
                             return (
                               <Card
@@ -2848,12 +3217,12 @@ const SchoolVerification = () => {
                       </Box>
                     )}
                   </Box>
-                )}
+                    )}
 
-                {/* FLN Questions Section (Type 4) */}
-                {flnQuestions.length > 0 && (
-                  <Box sx={{ mb: 4 }}>
-                    {/* Section Header */}
+                    {/* FLN Questions Section (Type 4) */}
+                    {currentTab.id === "fln" && (
+                      <Box sx={{ mb: 4 }}>
+                        {/* Section Header */}
                     <Box
                       sx={{
                         mb: 3,
@@ -2952,12 +3321,7 @@ const SchoolVerification = () => {
                           const isExpanded =
                             expandedQuestions[question.questionId] ?? true;
 
-                          const questionNumber = `${domainNumber}.${subdomainNumber}.${
-                            index +
-                            1 +
-                            classroomObservationQuestions.length +
-                            subjectObservationQuestions.length
-                          }`;
+                          const questionNumber = `${domainNumber}.${subdomainNumber}.${index + 1}`;
 
                           return (
                             <Card
@@ -3224,12 +3588,12 @@ const SchoolVerification = () => {
                       </Box>
                     )}
                   </Box>
-                )}
+                    )}
 
-                {/* General Questions Section */}
-                {generalQuestions.length > 0 && (
-                  <Box sx={{ mb: 4 }}>
-                    {/* Section Header */}
+                    {/* General Questions Section */}
+                    {currentTab.id === "general" && (
+                      <Box sx={{ mb: 4 }}>
+                        {/* Section Header */}
                     <Box
                       sx={{
                         mb: 3,
@@ -3326,9 +3690,7 @@ const SchoolVerification = () => {
                             userSelectedAnswer || apiSelectedAnswer;
                           const isExpanded =
                             expandedQuestions[question.questionId] ?? true;
-                          const questionNumber = `${domainNumber}.${subdomainNumber}.${
-                            classBasedQuestions.length + index + 1
-                          }`;
+                          const questionNumber = `${domainNumber}.${subdomainNumber}.${index + 1}`;
 
                           return (
                             <Card
@@ -3493,6 +3855,8 @@ const SchoolVerification = () => {
                       </Box>
                     )}
                   </Box>
+                    )}
+                  </Box>
                 )}
 
                 {/* Submit Button */}
@@ -3526,10 +3890,22 @@ const SchoolVerification = () => {
                       onClick={handleSubmit}
                       disabled={
                         submitSubdomainWiseAnswersMutation.isPending ||
-                        (Object.keys(answers).length === 0 &&
-                          Object.keys(textAnswers).length === 0) ||
-                        (classBasedQuestions.length > 0 &&
-                          (!selectedClass || !selectedSection))
+                        !areAllQuestionsAnsweredForCurrentTab ||
+                        // For class-based questions (classroom and subject), validate class and section
+                        ((currentTab?.id === "classroom" || currentTab?.id === "subject") &&
+                          (!selectedClass || !selectedSection)) ||
+                        // For subject questions, also validate subject selection
+                        (currentTab?.id === "subject" && !selectedSubject)
+                      }
+                      title={
+                        !areAllQuestionsAnsweredForCurrentTab
+                          ? `Please answer all ${currentTab?.label || "questions"} before saving`
+                          : (currentTab?.id === "classroom" || currentTab?.id === "subject") &&
+                            (!selectedClass || !selectedSection)
+                          ? "Please select class and section before saving"
+                          : currentTab?.id === "subject" && !selectedSubject
+                          ? "Please select subject before saving"
+                          : "Save assessment for this question type"
                       }
                       sx={{
                         bgcolor: colors.accent.green,

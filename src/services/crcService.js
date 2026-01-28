@@ -50,6 +50,7 @@ export const getSubdomainQuestions = async (params) => {
     cls,
     section,
     subjectId,
+    schoolId,
     ...otherParams
   } = params;
   const config = {
@@ -70,6 +71,11 @@ export const getSubdomainQuestions = async (params) => {
   // Add subjectId to params if provided
   if (subjectId) {
     config.params.subjectId = subjectId;
+  }
+
+  // Add schoolId to params if provided
+  if (schoolId) {
+    config.params.schoolId = schoolId;
   }
 
   // Set roleId in header if provided
@@ -175,10 +181,11 @@ export const useGetSubdomainQuestionsQuery = ({
   section,
   subjectId,
   userId,
+  schoolId,
   enabled = true,
 }) => {
   return useQuery({
-    queryKey: queryKeys.crc.subdomainQuestions(subDomainId, roleId, languageCode, classNumber, section, subjectId),
+    queryKey: queryKeys.crc.subdomainQuestions(subDomainId, roleId, languageCode, classNumber, section, subjectId, schoolId),
     queryFn: () =>
       getSubdomainQuestions({
         subDomainId,
@@ -188,8 +195,9 @@ export const useGetSubdomainQuestionsQuery = ({
         section,
         subjectId,
         userId,
+        schoolId,
       }),
-    enabled: enabled && !!subDomainId && !!roleId,
+    enabled: enabled && !!subDomainId && !!roleId && !!schoolId,
     staleTime: 5 * 60 * 1000,
   });
 };

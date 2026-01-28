@@ -106,6 +106,8 @@ const CRCAssessment = () => {
   const [textAnswers, setTextAnswers] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [pendingFinalSubmit, setPendingFinalSubmit] = useState(false);
 
   // Get school info from location state or use paramSchoolId
   const schoolFromState = location.state?.school;
@@ -164,6 +166,7 @@ const CRCAssessment = () => {
     roleId,
     languageCode,
     userId: userId ? Number(userId) : undefined,
+    schoolId: schoolId,
     enabled: !!selectedSubdomain,
   });
 
@@ -194,6 +197,7 @@ const CRCAssessment = () => {
     ...(hasSubjectWiseQuestions &&
       selectedSubject && { subjectId: Number(selectedSubject) }),
     userId: userId ? Number(userId) : undefined,
+    schoolId: schoolId,
     enabled: !!selectedSubdomain,
   });
 
@@ -322,6 +326,27 @@ const CRCAssessment = () => {
 
   const domains = domainsData?.data || [];
   const isPublished = domainsData?.isPublished || false;
+
+  // Extract and store sessionId from domains API response
+  useEffect(() => {
+    if (domainsData?.sessionId !== undefined) {
+      const newSessionId = domainsData.sessionId;
+      setSessionId(newSessionId);
+      // If we have a pending final submit and now have sessionId, submit final
+      if (pendingFinalSubmit && newSessionId) {
+        const finalPayload = {
+          sessionId: newSessionId,
+          userId: Number(userId),
+          roleId: Number(roleId),
+          schoolId: schoolId,
+          isSubmitted: 1,
+        };
+        submitAssessmentMutation.mutate(finalPayload);
+        setPendingFinalSubmit(false);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [domainsData?.sessionId, pendingFinalSubmit]);
   const endDate = domainsData?.endDate || null;
   const isSubmitted = domainsData?.isSubmitted || false;
 
@@ -855,9 +880,21 @@ const CRCAssessment = () => {
             [subdomainId]: { ...answers },
           }));
         }
-        // Refetch questions and domains to update progress bars
-        refetchQuestions();
-        refetchDomains();
+        // If sessionId is null, create session by calling submit-assessment API
+        if (sessionId === null) {
+          const sessionPayload = {
+            sessionId: null,
+            userId: Number(userId),
+            roleId: Number(roleId),
+            schoolId: schoolId,
+            isSubmitted: 0,
+          };
+          submitAssessmentMutation.mutate(sessionPayload);
+        } else {
+          // Refetch questions and domains to update progress bars
+          refetchQuestions();
+          refetchDomains();
+        }
         // Optionally clear answers or navigate
         console.log("Subdomain answers submitted successfully:", data);
         enqueueSnackbar("All answers submitted successfully!", {
@@ -877,40 +914,50 @@ const CRCAssessment = () => {
     });
 
   const submitAssessmentMutation = useSubmitAssessmentMutation({
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       console.log("Assessment submitted successfully:", data);
-      // Close the confirmation modal
-      setShowSubmitConfirmation(false);
       
-      // Refetch domains to update progress and isSubmitted status
-      refetchDomains();
-      
-      // Refetch questions if subdomain is selected
-      if (selectedSubdomain) {
-        refetchQuestions();
+      // Check if this was a session creation (isSubmitted: 0)
+      if (variables.isSubmitted === 0) {
+        // Session creation - refetch domains to get the sessionId
+        refetchDomains();
+        enqueueSnackbar("Session created successfully!", {
+          variant: "success",
+        });
+      } else {
+        // Final submit (isSubmitted: 1) - close modal and invalidate queries
+        setShowSubmitConfirmation(false);
+        
+        // Refetch domains to update progress and isSubmitted status
+        refetchDomains();
+        
+        // Refetch questions if subdomain is selected
+        if (selectedSubdomain) {
+          refetchQuestions();
+        }
+        
+        // Invalidate all CRC-related queries to refresh dashboard data
+        queryClient.invalidateQueries({
+          queryKey: ["crc"],
+        });
+        
+        // Invalidate specific queries
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.crc.domains(roleId, languageCode, schoolId),
+        });
+        
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.crc.schoolData(schoolCode),
+        });
+        
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.crc.schoolSections(schoolCode),
+        });
+        
+        enqueueSnackbar("Assessment submitted successfully!", {
+          variant: "success",
+        });
       }
-      
-      // Invalidate all CRC-related queries to refresh dashboard data
-      queryClient.invalidateQueries({
-        queryKey: ["crc"],
-      });
-      
-      // Invalidate specific queries
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.crc.domains(roleId, languageCode),
-      });
-      
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.crc.schoolData(schoolCode),
-      });
-      
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.crc.schoolSections(schoolCode),
-      });
-      
-      enqueueSnackbar("Assessment submitted successfully!", {
-        variant: "success",
-      });
     },
     onError: (error) => {
       console.error("Error submitting assessment:", error);
@@ -939,12 +986,33 @@ const CRCAssessment = () => {
 
   // Handler to confirm final submit
   const handleConfirmSubmit = () => {
-    const payload = {
-      userId: Number(userId),
-      roleId: Number(roleId),
-      isSubmitted: 1,
-    };
-    submitAssessmentMutation.mutate(payload);
+    // If sessionId is null, create session first
+    if (sessionId === null) {
+      // Set flag to submit final after session is created
+      setPendingFinalSubmit(true);
+      
+      // First create session with isSubmitted: 0
+      const sessionPayload = {
+        sessionId: null,
+        userId: Number(userId),
+        roleId: Number(roleId),
+        schoolId: schoolId,
+        isSubmitted: 0,
+      };
+      
+      // Submit session creation
+      submitAssessmentMutation.mutate(sessionPayload);
+    } else {
+      // Session already exists, submit final
+      const payload = {
+        sessionId: sessionId,
+        userId: Number(userId),
+        roleId: Number(roleId),
+        schoolId: schoolId,
+        isSubmitted: 1,
+      };
+      submitAssessmentMutation.mutate(payload);
+    }
   };
 
   const allDomainsComplete = useMemo(() => {

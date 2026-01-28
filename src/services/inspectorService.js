@@ -17,7 +17,10 @@ export const getAllocatedSchools = async (params = {}) => {
     config.params.districtId = districtId;
   }
 
-  const response = await axiosInstance.get("/inspector/allocated-schools", config);
+  const response = await axiosInstance.get(
+    "/inspector/allocated-schools",
+    config
+  );
   return response.data;
 };
 
@@ -26,15 +29,13 @@ export const getAllocatedSchools = async (params = {}) => {
  * @param {Object} options - Query options including districtId
  * @returns {Object} Query object from React Query
  */
-export const useGetAllocatedSchoolsQuery = ({
-  districtId,
-  enabled = true,
-}) => {
+export const useGetAllocatedSchoolsQuery = ({ districtId, enabled = true }) => {
   return useQuery({
     queryKey: queryKeys.inspector.allocatedSchools(districtId),
     queryFn: () => getAllocatedSchools({ districtId }),
-    enabled: enabled && !!districtId,
+    // enabled: enabled && !!districtId && districtId !== undefined && districtId !== null,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 };
-

@@ -10,11 +10,16 @@ import useAuthStore from "../store/useAuthStore";
  * @returns {Promise} API response
  */
 export const getDomains = async (params = {}) => {
-  const { roleId, languageCode, ...otherParams } = params;
+  const { roleId, languageCode, schoolId, ...otherParams } = params;
   const config = {
     params: { languageCode, ...otherParams },
     headers: {},
   };
+
+  // Add schoolId to params if provided
+  if (schoolId) {
+    config.params.schoolId = schoolId;
+  }
 
   if (roleId) {
     config.headers.roleId = roleId;
@@ -88,12 +93,12 @@ export const submitAnswer = async (payload) => {
 
 /**
  * Submit all answers for a subdomain
- * @param {Object} payload - Answers payload
+ * @param {Object} payload - Answers payload (should include schoolId)
  * @returns {Promise} API response
  */
 export const submitSubdomainWiseAnswers = async (payload) => {
   const response = await axiosInstance.post(
-    "/questionnaire/subdomain-wise-answers",
+    "school/sub-domain-wise-submit-answers",
     payload
   );
   return response.data;
@@ -104,17 +109,19 @@ export const submitSubdomainWiseAnswers = async (payload) => {
  * @param {Object} options - Query options
  * @param {number} options.roleId - Role ID (will be sent in header)
  * @param {string} options.languageCode - Language code (EN, HI, GU)
+ * @param {string} options.schoolId - School ID (optional)
  * @param {boolean} options.enabled - Whether the query should run
  * @returns {Object} Query object from React Query
  */
 export const useGetDomainsQuery = ({
   roleId,
   languageCode,
+  schoolId,
   enabled = true,
 }) => {
   return useQuery({
-    queryKey: queryKeys.verifier.domains(roleId, languageCode),
-    queryFn: () => getDomains({ roleId, languageCode }),
+    queryKey: queryKeys.verifier.domains(roleId, languageCode, schoolId),
+    queryFn: () => getDomains({ roleId, languageCode, schoolId }),
     enabled: enabled && !!roleId,
     staleTime: 5 * 60 * 1000,
   });
@@ -201,12 +208,9 @@ export const useSubmitSubdomainWiseAnswersMutation = (options = {}) => {
     mutationFn: (data) => submitSubdomainWiseAnswers(data),
     mutationKey: queryKeys.verifier.submitSubdomainWiseAnswers(),
     onSuccess: (data) => {
-      enqueueSnackbar(
-        data?.message || "Answers submitted successfully",
-        {
-          variant: "success",
-        }
-      );
+      enqueueSnackbar(data?.message || "Answers submitted successfully", {
+        variant: "success",
+      });
       if (options.onSuccess) {
         options.onSuccess(data);
       }
@@ -347,12 +351,9 @@ export const useSubmitAssessmentMutation = (options = {}) => {
     mutationFn: (data) => submitAssessment(data),
     mutationKey: ["verifier", "submit-assessment"],
     onSuccess: (data) => {
-      enqueueSnackbar(
-        data?.message || "Assessment submitted successfully",
-        {
-          variant: "success",
-        }
-      );
+      enqueueSnackbar(data?.message || "Assessment submitted successfully", {
+        variant: "success",
+      });
       if (options.onSuccess) {
         options.onSuccess(data);
       }
@@ -372,3 +373,77 @@ export const useSubmitAssessmentMutation = (options = {}) => {
   });
 };
 
+/**
+ * Get verifier allocated schools list
+ * @param {Object} params - { districtId: number, userId?: number }
+ * @returns {Promise} API response
+ */
+export const getVerifierAllocatedSchools = async (params) => {
+  const { districtId, userId, ...otherParams } = params;
+  const config = {
+    params: { districtId, ...otherParams },
+    headers: {},
+  };
+
+  // Get userId from auth store if not provided in params, and set in header if present
+  const authState = useAuthStore.getState();
+  const userIdToSend = userId || authState.userId;
+  if (userIdToSend) {
+    config.headers.userId = userIdToSend;
+  }
+
+  const response = await axiosInstance.get(
+    "/verifier/get-school-allocated-verifier",
+    config
+  );
+  return response.data;
+};
+
+/**
+ * React Query hook for getting verifier allocated schools
+ * @param {Object} options - Query options
+ * @param {number} options.districtId - District ID
+ * @param {number} options.userId - User ID (optional, will be fetched from auth store if not provided)
+ * @param {boolean} options.enabled - Whether the query should run
+ * @returns {Object} Query object from React Query
+ */
+export const useGetVerifierAllocatedSchoolsQuery = ({
+  districtId,
+  userId,
+  enabled = true,
+}) => {
+  return useQuery({
+    queryKey: queryKeys.verifier.allocatedSchools(districtId),
+    queryFn: () => getVerifierAllocatedSchools({ districtId, userId }),
+    // enabled: enabled && !!districtId && districtId !== undefined && districtId !== null,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+  });
+};
+
+/**
+ * Get districts by verifier
+ * @returns {Promise} API response
+ */
+export const getDistrictsByVerifier = async () => {
+  const response = await axiosInstance.get(
+    "/verifier/get-districtId-by-verifier"
+  );
+  return response.data;
+};
+
+/**
+ * React Query hook for getting districts by verifier
+ * @param {Object} options - Query options
+ * @param {boolean} options.enabled - Whether the query should run
+ * @returns {Object} Query object from React Query
+ */
+export const useGetDistrictsByVerifierQuery = ({ enabled = true } = {}) => {
+  return useQuery({
+    queryKey: queryKeys.verifier.districts(),
+    queryFn: () => getDistrictsByVerifier(),
+    enabled: enabled,
+    staleTime: 10 * 60 * 1000, // 10 minutes (districts don't change often)
+  });
+};

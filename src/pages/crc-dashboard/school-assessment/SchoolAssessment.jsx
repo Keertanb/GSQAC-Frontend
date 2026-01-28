@@ -15,6 +15,7 @@ import { useGetSchoolListQuery } from "../../../services/adminService";
 import useAuthStore from "../../../store/useAuthStore";
 import { colors } from "../../../constants/colors";
 import AppTable from "../../../components/AppTable/AppTable";
+import "./SchoolAssessment.css";
 
 const SchoolAssessment = () => {
   const navigate = useNavigate();
@@ -57,6 +58,11 @@ const SchoolAssessment = () => {
       );
     });
   }, [schools, searchQuery]);
+
+  // Calculate statistics
+  const totalSchools = totalCount;
+  const schoolsInView = searchQuery ? filteredSchools.length : schools.length;
+  const pendingSchools = totalSchools; // All schools are pending assessment initially
 
   // Reset to first page when search query changes
   useEffect(() => {
@@ -131,6 +137,74 @@ const SchoolAssessment = () => {
         <Typography variant="body1" color="text.secondary">
           Select a school to start or continue assessment
         </Typography>
+      </Box>
+
+      {/* Statistics Cards */}
+      <Box sx={{ mb: 4 }}>
+        <div className="school-assessment-stats-grid">
+          <div className="school-assessment-stat-card school-assessment-stat-card-blue">
+            <div>
+              <p className="school-assessment-stat-label school-assessment-stat-label-blue">
+                Total Schools
+              </p>
+              <p className="school-assessment-stat-value school-assessment-stat-value-blue">
+                {totalSchools}
+              </p>
+            </div>
+            <div className="school-assessment-stat-icon school-assessment-stat-icon-blue">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <div className="school-assessment-stat-card school-assessment-stat-card-green">
+            <div>
+              <p className="school-assessment-stat-label school-assessment-stat-label-green">
+                Schools in View
+              </p>
+              <p className="school-assessment-stat-value school-assessment-stat-value-green">
+                {schoolsInView}
+              </p>
+            </div>
+            <div className="school-assessment-stat-icon school-assessment-stat-icon-green">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <div className="school-assessment-stat-card school-assessment-stat-card-orange">
+            <div>
+              <p className="school-assessment-stat-label school-assessment-stat-label-orange">
+                Pending Assessment
+              </p>
+              <p className="school-assessment-stat-value school-assessment-stat-value-orange">
+                {pendingSchools}
+              </p>
+            </div>
+            <div className="school-assessment-stat-icon school-assessment-stat-icon-orange">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
       </Box>
 
       {/* Search Bar */}

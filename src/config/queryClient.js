@@ -62,7 +62,7 @@ export const queryKeys = {
     schoolSections: (schoolId) => ["verifier", "school-sections", schoolId],
   },
   verifier: {
-    domains: (roleId, languageCode) => ["verifier", "domains", roleId, languageCode],
+    domains: (roleId, languageCode, schoolId) => ["verifier", "domains", roleId, languageCode, schoolId],
     subdomainQuestions: (subDomainId, roleId, languageCode = null, classNumber = null, section = null, subjectId = null) => [
       "verifier",
       "subdomain-questions",
@@ -77,10 +77,12 @@ export const queryKeys = {
     submitSubdomainWiseAnswers: () => ["verifier", "submit-subdomain-wise-answers"],
     schoolData: (schoolId, academicYear) => ["verifier", "school-data", schoolId, academicYear],
     schoolSections: (schoolId) => ["verifier", "school-sections", schoolId],
+    allocatedSchools: (districtId) => ["verifier", "allocated-schools", districtId],
+    districts: () => ["verifier", "districts"],
   },
   crc: {
     domains: (roleId, languageCode, schoolId) => ["crc", "domains", roleId, languageCode, schoolId],
-    subdomainQuestions: (subDomainId, roleId, languageCode = null, classNumber = null, section = null, subjectId = null) => [
+    subdomainQuestions: (subDomainId, roleId, languageCode = null, classNumber = null, section = null, subjectId = null, schoolId = null) => [
       "crc",
       "subdomain-questions",
       subDomainId,
@@ -89,6 +91,7 @@ export const queryKeys = {
       classNumber,
       section,
       subjectId,
+      schoolId,
     ],
     submitAnswer: () => ["crc", "submit-answer"],
     submitSubdomainWiseAnswers: () => ["crc", "submit-subdomain-wise-answers"],

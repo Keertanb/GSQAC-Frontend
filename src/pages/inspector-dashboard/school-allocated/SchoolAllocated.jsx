@@ -1,28 +1,141 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import AppTable from "../../../components/AppTable/AppTable";
-import { useGetAllocatedSchoolsQuery } from "../../../services/inspectorService";
+import AppDropdown from "../../../components/AppDropdown/AppDropdown";
+import {
+  useGetVerifierAllocatedSchoolsQuery,
+  useGetDistrictsByVerifierQuery,
+} from "../../../services/verifierService";
 import useAuthStore from "../../../store/useAuthStore";
+import { INSPECTOR_SCHOOL_VERIFICATION_URL } from "../../../routes/routeUrls";
 import "./SchoolAllocated.css";
 
 const SchoolAllocated = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage] = useState(10);
+  const [selectedDistrictId, setSelectedDistrictId] = useState("");
 
-  // Get districtId from auth store
-  const { districtId, user } = useAuthStore();
-  
+  // Get districtId, userId, and role from auth store
+  const { districtId, user, role, roleId, userId } = useAuthStore();
+
   // Use districtId from store or from user object
   const userDistrictId = districtId || user?.districtId;
 
-  // Fetch allocated schools
+  // Check if user is a verifier (by role value or roleId - verifiers typically have roleId 5)
+  // Note: Adjust roleId check if verifiers use a different roleId
+  const isVerifier = role === "verifier" || roleId === 5;
+
+  // Fetch districts for verifier
+  // Temporarily enabled for all to test - change back to isVerifier when working
+  const {
+    data: districtsData,
+    isLoading: isLoadingDistricts,
+    isError: isErrorDistricts,
+  } = useGetDistrictsByVerifierQuery({
+    enabled: true, // Temporarily enabled for all users to test
+  });
+
+  // Handle API response - check if data is directly an array or wrapped in data property
+  // API returns: { message: "Success", data: [...] } or directly [...]
+  let districts = [];
+  if (districtsData) {
+    if (Array.isArray(districtsData?.data)) {
+      districts = districtsData.data;
+    } else if (Array.isArray(districtsData)) {
+      districts = districtsData;
+    }
+  }
+
+  // Debug log to see what we're getting
+  useEffect(() => {
+    console.log("Districts Debug:", {
+      districtsData,
+      districts,
+      districtsLength: districts.length,
+      isLoadingDistricts,
+      isErrorDistricts,
+      isVerifier,
+      rawDistrictsData: districtsData,
+    });
+  }, [
+    districtsData,
+    districts,
+    isLoadingDistricts,
+    isErrorDistricts,
+    isVerifier,
+  ]);
+
+  // Auto-select first district when districts load (for verifiers)
+  useEffect(() => {
+    if (isVerifier && districts.length > 0 && !selectedDistrictId) {
+      setSelectedDistrictId(String(districts[0].districtId));
+    }
+  }, [isVerifier, districts, selectedDistrictId]);
+
+  // Use selected district for verifiers (from dropdown), userDistrictId for inspectors (from auth store)
+  // Since we're using verifier API for all, we need districtId for both cases
+  const districtIdForAPI = isVerifier
+    ? selectedDistrictId
+      ? Number(selectedDistrictId)
+      : undefined
+    : userDistrictId; // For inspectors, use districtId from auth store
+
+  // Debug: Log API call parameters
+  useEffect(() => {
+    if (isVerifier) {
+      console.log("Verifier API Call Debug:", {
+        selectedDistrictId,
+        districtIdForAPI,
+        userId,
+        willCallAPI: !!districtIdForAPI && isVerifier,
+        apiUrl: districtIdForAPI 
+          ? `/verifier/get-school-allocated-verifier?districtId=${districtIdForAPI}`
+          : "Not called - no districtId",
+      });
+    }
+  }, [selectedDistrictId, districtIdForAPI, userId, isVerifier]);
+
+  // useEffect(() => {
+  //   console.log("SchoolAllocated - API Call Debug:", {
+  //     userDistrictId,
+  //     selectedDistrictId,
+  //     districtIdForAPI,
+  //     userId,
+  //     role,
+  //     roleId,
+  //     isVerifier,
+  //     districtId,
+  //     userDistrictIdFromUser: user?.districtId,
+  //     districtsCount: districts.length,
+  //     willCallVerifierAPI: !!districtIdForAPI && isVerifier,
+  //     willCallInspectorAPI: !!districtIdForAPI && !isVerifier,
+  //   });
+  // }, [
+  //   userDistrictId,
+  //   selectedDistrictId,
+  //   districtIdForAPI,
+  //   userId,
+  //   role,
+  //   roleId,
+  //   isVerifier,
+  //   districtId,
+  //   user,
+  //   districts,
+  // ]);
+
+  // Fetch allocated schools using verifier API
+  // For verifiers: use selectedDistrictId from dropdown
+  // For inspectors: use userDistrictId from auth store
   const {
     data: schoolsData,
     isLoading,
     isError,
-  } = useGetAllocatedSchoolsQuery({
-    districtId: userDistrictId,
-    enabled: !!userDistrictId,
+  } = useGetVerifierAllocatedSchoolsQuery({
+    districtId: districtIdForAPI,
+    userId: userId ? Number(userId) : undefined,
+    enabled: !!districtIdForAPI,
   });
 
   // Get schools from API response or use empty array
@@ -30,23 +143,33 @@ const SchoolAllocated = () => {
 
   // Filter schools based on search query
   const filteredSchools = staticSchoolsData.filter((school) => {
+    if (!searchQuery) return true;
+    
+    const query = searchQuery.toLowerCase();
     const matchesSearch =
-      school.schoolName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.schoolCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.district.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.principal.toLowerCase().includes(searchQuery.toLowerCase());
+      (school.schoolId?.toLowerCase() || "").includes(query) ||
+      (school.schoolName?.toLowerCase() || "").includes(query) ||
+      (school.schoolCode?.toLowerCase() || "").includes(query) ||
+      (school.district?.toLowerCase() || "").includes(query) ||
+      (school.principal?.toLowerCase() || "").includes(query) ||
+      (String(school.districtId) || "").includes(query);
 
     return matchesSearch;
   });
 
   const getStatusLabel = (status) => {
-    switch (status) {
+    if (!status) return "Pending";
+    const statusLower = status.toLowerCase();
+    switch (statusLower) {
+      case "completed":
       case "completed":
         return "Completed";
       case "in_progress":
+      case "in progress":
         return "In Progress";
       case "pending":
-        return "Pending";
+      case "allocated":
+        return "Allocated";
       default:
         return status;
     }
@@ -55,63 +178,69 @@ const SchoolAllocated = () => {
   // Count statistics
   const stats = {
     total: staticSchoolsData.length,
-    pending: staticSchoolsData.filter((s) => s.status === "pending").length,
-    inProgress: staticSchoolsData.filter((s) => s.status === "in_progress")
-      .length,
-    completed: staticSchoolsData.filter((s) => s.status === "completed").length,
+    pending: staticSchoolsData.filter((s) => s.status === "pending" || s.status === "Allocated").length,
+    inProgress: staticSchoolsData.filter((s) => s.status === "in_progress" || s.status === "In Progress").length,
+    completed: staticSchoolsData.filter((s) => s.status === "completed" || s.status === "Completed" || s.isSubmitted === 1).length,
   };
 
   // Table columns definition
   const columns = [
     {
-      id: "schoolName",
-      label: "School Name",
+      id: "schoolId",
+      label: "School ID",
       render: (school) => (
         <div className="cell-name">
           <div className="name-avatar">
-            {school.schoolName?.charAt(0)?.toUpperCase() || "S"}
+            {school.schoolId?.charAt(0)?.toUpperCase() || school.schoolName?.charAt(0)?.toUpperCase() || "S"}
           </div>
           <div>
-            <span className="name-text">{school.schoolName}</span>
-            <span className="school-code-badge">{school.schoolCode}</span>
+            <span className="name-text">{school.schoolId || school.schoolName || "N/A"}</span>
+            {school.schoolCode && (
+              <span className="school-code-badge">{school.schoolCode}</span>
+            )}
           </div>
         </div>
       ),
     },
     {
-      id: "principal",
-      label: "Principal",
-      render: (school) => school.principal,
-    },
-    {
-      id: "district",
+      id: "districtId",
       label: "District",
-      render: (school) => (
-        <span className="district-badge">{school.district}</span>
-      ),
+      render: (school) => {
+        // Try to find district name from districts array
+        const district = districts.find(d => d.districtId === school.districtId);
+        return (
+          <span className="district-badge">
+            {district?.districtName || `District ${school.districtId || "N/A"}`}
+          </span>
+        );
+      },
     },
     {
-      id: "students",
-      label: "Students",
-      render: (school) => <span className="stat-badge">{school.students}</span>,
-    },
-    {
-      id: "teachers",
-      label: "Teachers",
-      render: (school) => <span className="stat-badge">{school.teachers}</span>,
+      id: "allocatedDate",
+      label: "Allocated Date",
+      render: (school) => {
+        if (!school.allocatedDate) return "-";
+        const date = new Date(school.allocatedDate);
+        return date.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+      },
     },
     {
       id: "status",
       label: "Status",
       render: (school) => {
-        const isCompleted = school.status === "completed";
-        const isInProgress = school.status === "in_progress";
+        const isCompleted = school.status === "completed" || school.status === "Completed" || school.isSubmitted === 1;
+        const isInProgress = school.status === "in_progress" || school.status === "In Progress";
+        const statusLower = school.status?.toLowerCase() || "";
         return (
           <span
             className={`status-badge ${
               isCompleted
                 ? "status-badge-active"
-                : isInProgress
+                : isInProgress || statusLower === "allocated"
                 ? "status-badge-warning"
                 : "status-badge-inactive"
             }`}
@@ -130,7 +259,7 @@ const SchoolAllocated = () => {
                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-            ) : isInProgress ? (
+            ) : isInProgress || statusLower === "allocated" ? (
               <svg
                 className="status-icon"
                 fill="none"
@@ -168,7 +297,13 @@ const SchoolAllocated = () => {
 
   // Render actions
   const renderActions = (school) => {
-    const isCompleted = school.status === "completed";
+    if (!school) return null;
+    
+    const isCompleted = 
+      school.status === "completed" || 
+      school.status === "Completed" || 
+      school.isSubmitted === 1;
+    
     return (
       <>
         <button
@@ -192,11 +327,11 @@ const SchoolAllocated = () => {
           </svg>
         </button>
         <button
-          onClick={() => handleStartVerification(school)}
+          onClick={() => handleStartAssessment(school)}
           className={`table-action-button ${
             isCompleted ? "table-action-edit" : "table-action-activate"
           }`}
-          title={isCompleted ? "View Report" : "Start Verification"}
+          title={isCompleted ? "View Assessment" : "Start Assessment"}
         >
           {isCompleted ? (
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,9 +362,18 @@ const SchoolAllocated = () => {
     // Navigate to school details page
   };
 
-  const handleStartVerification = (school) => {
-    console.log("Start verification:", school);
-    // Navigate to verification page
+  const handleStartAssessment = (school) => {
+    console.log("Start assessment:", school);
+    // Navigate to SchoolVerification page with schoolId
+    navigate(INSPECTOR_SCHOOL_VERIFICATION_URL, {
+      state: {
+        school: {
+          schoolId: school.schoolId,
+          schoolName: school.schoolName,
+          schoolCode: school.schoolCode,
+        },
+      },
+    });
   };
 
   return (
@@ -244,6 +388,58 @@ const SchoolAllocated = () => {
             </p>
           </div>
         </div>
+
+        {/* District Dropdown for Verifiers */}
+        {/* Temporarily showing for all users to test - change back to isVerifier when working */}
+        {true && (
+          <div style={{ marginBottom: "1.5rem", maxWidth: "400px" }}>
+            {isLoadingDistricts ? (
+              <div style={{ padding: "0.75rem", color: "#6b7280" }}>
+                Loading districts...
+              </div>
+            ) : isErrorDistricts ? (
+              <div
+                style={{
+                  padding: "0.75rem",
+                  color: "#ef4444",
+                  fontSize: "0.875rem",
+                }}
+              >
+                Error loading districts. Please try again.
+              </div>
+            ) : districts.length > 0 ? (
+              <AppDropdown
+                label="Select District"
+                options={[
+                  { value: "", label: "Select District" },
+                  ...districts.map((district) => ({
+                    value: String(district.districtId),
+                    label:
+                      district.districtName ||
+                      `District ${district.districtId}`,
+                  })),
+                ]}
+                value={selectedDistrictId}
+                onChange={(value) => {
+                  setSelectedDistrictId(value);
+                  setCurrentPage(0); // Reset to first page when district changes
+                }}
+                placeholder="Select District"
+                className="district-dropdown"
+              />
+            ) : (
+              <div
+                style={{
+                  padding: "0.75rem",
+                  color: "#ef4444",
+                  fontSize: "0.875rem",
+                }}
+              >
+                No districts available
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Statistics Cards */}
         <div className="stats-grid">
@@ -378,7 +574,7 @@ const SchoolAllocated = () => {
         <AppTable
           columns={columns}
           data={filteredSchools}
-          rowKey="id"
+          rowKey={(row) => row.schoolId || row.id || Math.random()}
           loading={isLoading}
           isError={isError}
           renderActions={renderActions}

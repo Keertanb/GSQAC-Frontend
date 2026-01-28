@@ -3,7 +3,7 @@ export const roles = [
     value: "school",
     label: "School",
     description: "School administration login",
-    authMethod: "UDISE Code",
+    authMethod: "UDISE Code", 
     color: "#1e3a8a",
     dashboardRoute: "/school-dashboard",
   },
@@ -50,6 +50,7 @@ export const roleIdMap = {
   school: 2,
   inspector: 3,
   crc: 4,
+  verifier: 5,
 };
 
 export const getRoleId = (roleValue) => {
