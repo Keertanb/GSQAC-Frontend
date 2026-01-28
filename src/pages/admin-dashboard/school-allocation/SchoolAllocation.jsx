@@ -28,6 +28,10 @@ const SchoolAllocation = () => {
 
   // Store assignments for each school: { schoolId: { id, verifierId, verifierCode, date, status } }
   const [schoolAssignments, setSchoolAssignments] = useState({});
+  
+  // Store original assignment values to detect changes
+  // { schoolId: { verifierId, date } }
+  const [originalAssignments, setOriginalAssignments] = useState({});
 
   // Mutation for saving school allocation
   const saveAllocationMutation = useSaveSchoolAllocationMutation({
@@ -41,6 +45,15 @@ const SchoolAllocation = () => {
             ...prev[payload.schoolId],
             id: returnedId || prev[payload.schoolId]?.id,
             status: payload.status || "Allocated",
+          },
+        }));
+        
+        // Update original assignment after successful save
+        setOriginalAssignments((prev) => ({
+          ...prev,
+          [payload.schoolId]: {
+            verifierId: String(payload.userId),
+            date: payload.allocatedDate,
           },
         }));
       }
@@ -79,6 +92,8 @@ const SchoolAllocation = () => {
     if (schools.length > 0) {
       setSchoolAssignments((prev) => {
         const updated = { ...prev };
+        const originalUpdated = { ...originalAssignments };
+        
         schools.forEach((school) => {
           // If school has allocation data (status is "Allocated"), pre-fill the assignment
           if (
@@ -105,12 +120,26 @@ const SchoolAllocation = () => {
                   existingAssignment?.id ||
                   null,
               };
+              
+              // Store original values for change detection
+              originalUpdated[school.schoolId] = {
+                verifierId: String(school.userId),
+                date: school.allocatedDate,
+              };
             } else {
               // Preserve existing assignment but ensure status is set
               updated[school.schoolId] = {
                 ...existingAssignment,
                 status: school.status,
               };
+              
+              // Store original values if not already stored
+              if (!originalUpdated[school.schoolId] && existingAssignment) {
+                originalUpdated[school.schoolId] = {
+                  verifierId: existingAssignment.verifierId || "",
+                  date: existingAssignment.date || "",
+                };
+              }
             }
           } else if (school.status === "Pending" || !school.status) {
             // Set status to Pending if not allocated
@@ -125,8 +154,16 @@ const SchoolAllocation = () => {
                 status: "Pending",
               };
             }
+            
+            // Clear original assignment for pending schools
+            originalUpdated[school.schoolId] = {
+              verifierId: "",
+              date: "",
+            };
           }
         });
+        
+        setOriginalAssignments((prev) => ({ ...prev, ...originalUpdated }));
         return updated;
       });
     }
@@ -206,6 +243,19 @@ const SchoolAllocation = () => {
         [field]: value,
       },
     }));
+    
+    // Clear original assignment when user makes changes (enables save button)
+    setOriginalAssignments((prev) => {
+      const updated = { ...prev };
+      if (updated[schoolId]) {
+        // Mark as changed by clearing original values
+        updated[schoolId] = {
+          verifierId: "",
+          date: "",
+        };
+      }
+      return updated;
+    });
   };
 
   const handleSaveAssignment = (schoolId) => {
@@ -215,6 +265,10 @@ const SchoolAllocation = () => {
       return;
     }
 
+    // Find the school to get districtId
+    const school = filteredSchools.find((s) => s.schoolId === schoolId);
+    const districtId = school?.districtId || null;
+
     // Prepare payload according to API specification
     const payload = {
       id: assignment.id || null,
@@ -222,6 +276,7 @@ const SchoolAllocation = () => {
       userId: Number(assignment.verifierId),
       status: "Allocated",
       allocatedDate: assignment.date,
+      districtId: districtId ? Number(districtId) : null,
     };
 
     // Call the API
@@ -518,9 +573,26 @@ const SchoolAllocation = () => {
               label: "Actions",
               render: (school) => {
                 const assignment = schoolAssignments[school.schoolId] || {};
+                const originalAssignment = originalAssignments[school.schoolId] || {};
                 const isSaving = saveAllocationMutation.isPending;
-                const isDisabled =
-                  !assignment.verifierId || !assignment.date || isSaving;
+                
+                // Check if assignment has required fields
+                const hasRequiredFields = assignment.verifierId && assignment.date;
+                
+                // Check if values have changed from original
+                const hasChanged = 
+                  assignment.verifierId !== originalAssignment.verifierId ||
+                  assignment.date !== originalAssignment.date;
+                
+                // Disable if:
+                // 1. Missing required fields
+                // 2. Currently saving
+                // 3. Status is "Allocated" AND no changes were made
+                const isDisabled = 
+                  !hasRequiredFields || 
+                  isSaving || 
+                  (assignment.status === "Allocated" && !hasChanged);
+                
                 return (
                   <button
                     onClick={() => handleSaveAssignment(school.schoolId)}
@@ -529,6 +601,8 @@ const SchoolAllocation = () => {
                     title={
                       !assignment.verifierId || !assignment.date
                         ? "Please select verifier and date"
+                        : assignment.status === "Allocated" && !hasChanged
+                        ? "No changes to save"
                         : assignment.id
                         ? "Update assignment"
                         : "Save assignment"

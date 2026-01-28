@@ -381,7 +381,7 @@ export const useSubmitAssessmentMutation = (options = {}) => {
 export const getVerifierAllocatedSchools = async (params) => {
   const { districtId, userId, ...otherParams } = params;
   const config = {
-    params: { districtId, ...otherParams },
+    params: { districtId: districtId ?? null, ...otherParams },
     headers: {},
   };
 
@@ -415,8 +415,9 @@ export const useGetVerifierAllocatedSchoolsQuery = ({
   return useQuery({
     queryKey: queryKeys.verifier.allocatedSchools(districtId),
     queryFn: () => getVerifierAllocatedSchools({ districtId, userId }),
-    // enabled: enabled && !!districtId && districtId !== undefined && districtId !== null,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: enabled,
+    staleTime: 0, // Always consider data stale to allow refetching on district change
+    cacheTime: 0, // Don't cache to ensure fresh data on every change
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
@@ -445,5 +446,45 @@ export const useGetDistrictsByVerifierQuery = ({ enabled = true } = {}) => {
     queryFn: () => getDistrictsByVerifier(),
     enabled: enabled,
     staleTime: 10 * 60 * 1000, // 10 minutes (districts don't change often)
+  });
+};
+
+/**
+ * Get verifier dashboard counts
+ * @param {Object} params - { districtId: number }
+ * @returns {Promise} API response
+ */
+export const getVerifierDashboard = async (params) => {
+  const { districtId, ...otherParams } = params;
+  const config = {
+    params: { districtId, ...otherParams },
+    headers: {},
+  };
+
+  const response = await axiosInstance.get(
+    "/verifier/get-verifier-dashboard",
+    config
+  );
+  return response.data;
+};
+
+/**
+ * React Query hook for getting verifier dashboard counts
+ * @param {Object} options - Query options
+ * @param {number} options.districtId - District ID
+ * @param {boolean} options.enabled - Whether the query should run
+ * @returns {Object} Query object from React Query
+ */
+export const useGetVerifierDashboardQuery = ({
+  districtId,
+  enabled = true,
+}) => {
+  return useQuery({
+    queryKey: queryKeys.verifier.dashboard(districtId),
+    queryFn: () => getVerifierDashboard({ districtId }),
+    enabled: enabled && !!districtId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 };

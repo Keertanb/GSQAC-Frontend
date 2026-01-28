@@ -2587,7 +2587,7 @@ const CRCAssessment = () => {
                                         label={`Q ${questionNumber}`}
                                         size="small"
                                         sx={{
-                                          bgcolor: colors.primary.dark,
+                                          bgcolor: "#1e40af",
                                           color: "white",
                                           fontWeight: 700,
                                           minWidth: "100px",
@@ -3172,7 +3172,7 @@ const CRCAssessment = () => {
                                         label={`Q ${questionNumber}`}
                                         size="small"
                                         sx={{
-                                          bgcolor: colors.neutral.gray800,
+                                          bgcolor: "#1e40af",
                                           color: "white",
                                           fontWeight: 700,
                                           minWidth: "100px",
@@ -3463,7 +3463,7 @@ const CRCAssessment = () => {
                                       label={`Q ${questionNumber}`}
                                       size="small"
                                       sx={{
-                                        bgcolor: colors.accent.orangeDark,
+                                        bgcolor: "#2563eb",
                                         color: "white",
                                         fontWeight: 700,
                                         minWidth: "100px",
@@ -3839,7 +3839,7 @@ const CRCAssessment = () => {
                                       label={`Q ${questionNumber}`}
                                       size="small"
                                       sx={{
-                                        bgcolor: colors.accent.greenDark,
+                                        bgcolor: "#2563eb",
                                         color: "white",
                                         fontWeight: 700,
                                         minWidth: "80px",

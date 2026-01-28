@@ -245,9 +245,9 @@ const SchoolAssessment = () => {
             startIcon={<Assignment />}
             onClick={() => handleStartAssessment(school)}
             sx={{
-              bgcolor: colors.primary.blue,
+              bgcolor: "#2563eb",
               "&:hover": {
-                bgcolor: colors.primary.dark,
+                bgcolor: "#1d4ed8",
               },
               textTransform: "none",
               fontWeight: 600,
