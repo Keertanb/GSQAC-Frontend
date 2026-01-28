@@ -79,6 +79,7 @@ export const queryKeys = {
     schoolSections: (schoolId) => ["verifier", "school-sections", schoolId],
     allocatedSchools: (districtId) => ["verifier", "allocated-schools", districtId],
     districts: () => ["verifier", "districts"],
+    dashboard: (districtId) => ["verifier", "dashboard", districtId],
   },
   crc: {
     domains: (roleId, languageCode, schoolId) => ["crc", "domains", roleId, languageCode, schoolId],

@@ -107,20 +107,20 @@ export const inspectorMenuItems = [
     url: "/inspector-dashboard/allocated-schools",
     activeFinder: ["/inspector-dashboard/allocated-schools"],
   },
-  {
-    id: "school-verification",
-    label: "School Verification",
-    icon: Assignment,
-    url: "/inspector-dashboard/school-verification",
-    activeFinder: ["/inspector-dashboard/school-verification"],
-  },
-  {
-    id: "completed",
-    label: "Completed Reports",
-    icon: CheckCircle,
-    url: "/inspector-dashboard/completed",
-    activeFinder: ["/inspector-dashboard/completed"],
-  },
+  // {
+  //   id: "school-verification",
+  //   label: "School Verification",
+  //   icon: Assignment,
+  //   url: "/inspector-dashboard/school-verification",
+  //   activeFinder: ["/inspector-dashboard/school-verification"],
+  // },
+  // {
+  //   id: "completed",
+  //   label: "Completed Reports",
+  //   icon: CheckCircle,
+  //   url: "/inspector-dashboard/completed",
+  //   activeFinder: ["/inspector-dashboard/completed"],
+  // },
 ];
 
 // Admin Menu Items
