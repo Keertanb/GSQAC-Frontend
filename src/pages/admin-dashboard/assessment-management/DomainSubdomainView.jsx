@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { enqueueSnackbar } from "notistack";
 import {
   Box,
   Table,
@@ -116,7 +117,9 @@ const DomainSubdomainView = ({
 
   const handleTranslateSubdomain = async () => {
     if (!newSubdomainName.gu.trim()) {
-      alert("Please enter Gujarati text to translate.");
+      enqueueSnackbar("Please enter Gujarati text to translate.", {
+        variant: "warning",
+      });
       return;
     }
 
@@ -148,7 +151,21 @@ const DomainSubdomainView = ({
   const subdomains = domain.subDomain || [];
 
   const handleAddSubdomain = () => {
-    if (!newSubdomainName.en.trim()) {
+    // Count how many languages are filled
+    const filledLanguages = [
+      newSubdomainName.en.trim(),
+      newSubdomainName.hi.trim(),
+      newSubdomainName.gu.trim(),
+    ].filter((name) => name.length > 0);
+
+    // Check if at least 2 languages are provided
+    if (filledLanguages.length < 2) {
+      enqueueSnackbar(
+        "Please add subdomain name in at least 2 languages (Gujarati, English, or Hindi).",
+        {
+          variant: "warning",
+        }
+      );
       return;
     }
 

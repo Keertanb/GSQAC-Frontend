@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { enqueueSnackbar } from "notistack";
 import {
   Box,
   Paper,
@@ -278,7 +279,25 @@ const AssessmentManagement = () => {
   };
 
   const handleAddDomain = () => {
-    if (!newDomainName.en.trim() || !selectedRole) {
+    if (!selectedRole) {
+      return;
+    }
+
+    // Count how many languages are filled
+    const filledLanguages = [
+      newDomainName.en.trim(),
+      newDomainName.hi.trim(),
+      newDomainName.gu.trim(),
+    ].filter((name) => name.length > 0);
+
+    // Check if at least 2 languages are provided
+    if (filledLanguages.length < 2) {
+      enqueueSnackbar(
+        "Please add domain name in at least 2 languages (Gujarati, English, or Hindi).",
+        {
+          variant: "warning",
+        }
+      );
       return;
     }
 

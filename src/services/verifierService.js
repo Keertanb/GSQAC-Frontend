@@ -380,24 +380,45 @@ export const useSubmitAssessmentMutation = (options = {}) => {
  */
 export const getVerifierAllocatedSchools = async (params) => {
   const { districtId, userId, ...otherParams } = params;
-  const config = {
-    params: {},
-    headers: {},
-  };
-
+  
+  // Build params object - always include districtId
+  const queryParams = {};
+  
   // Always include districtId in params (can be null for "All" option)
   if (districtId !== undefined) {
-    config.params.districtId = districtId === null ? null : Number(districtId);
+    queryParams.districtId = districtId === null ? null : Number(districtId);
+  } else {
+    queryParams.districtId = null;
   }
 
   // Add any other params
   if (Object.keys(otherParams).length > 0) {
-    config.params = { ...config.params, ...otherParams };
+    Object.assign(queryParams, otherParams);
   }
 
   // Get userId from auth store if not provided in params, and set in header if present
   const authState = useAuthStore.getState();
   const userIdToSend = userId || authState.userId;
+  
+  const config = {
+    params: queryParams,
+    headers: {},
+    // Custom params serializer to handle null values properly
+    paramsSerializer: (params) => {
+      const searchParams = new URLSearchParams();
+      Object.keys(params).forEach((key) => {
+        const value = params[key];
+        // Only include the parameter if it's not null or undefined
+        // When null, omit the parameter entirely (don't send it)
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+        // If value is null, we omit it from the query string
+      });
+      return searchParams.toString();
+    },
+  };
+
   if (userIdToSend) {
     config.headers.userId = userIdToSend;
   }
