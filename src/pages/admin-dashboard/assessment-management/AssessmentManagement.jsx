@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { enqueueSnackbar } from "notistack";
 import {
   Box,
   Paper,
@@ -113,7 +114,7 @@ const AssessmentManagement = () => {
   } = useGetDomainsQuery({
     roleId,
     ...(hasLanguageChanged && { languageCode }), // Only include languageCode if language has been changed
-    enabled: !!roleId,
+    // enabled: !!roleId,
   });
 
   const domains = domainsData?.data || [];
@@ -278,16 +279,45 @@ const AssessmentManagement = () => {
   };
 
   const handleAddDomain = () => {
-    if (!newDomainName.en.trim() || !selectedRole) {
+    if (!selectedRole) {
       return;
     }
 
+    // Count how many languages are filled
+    const filledLanguages = [
+      newDomainName.en.trim(),
+      newDomainName.hi.trim(),
+      newDomainName.gu.trim(),
+    ].filter((name) => name.length > 0);
+
+    // Check if at least 2 languages are provided
+    if (filledLanguages.length < 2) {
+      enqueueSnackbar(
+        "Please add domain name in at least 2 languages (Gujarati, English, or Hindi).",
+        {
+          variant: "warning",
+        }
+      );
+      return;
+    }
+
+    // Find the assessment for the current roleId
+    const currentRoleId = getRoleId(selectedRole);
+    const assessmentForRole = assessmentsData?.data?.find(
+      (assessment) => assessment.roleId === currentRoleId
+    );
+
     const payload = {
-      roleId: getRoleId(selectedRole),
+      roleId: currentRoleId,
       domainNameEn: newDomainName.en.trim(),
       domainNameHi: newDomainName.hi.trim(),
       domainNameGu: newDomainName.gu.trim(),
     };
+
+    // Include assessmentId if found
+    if (assessmentForRole?.assessmentId) {
+      payload.assessmentId = assessmentForRole.assessmentId;
+    }
 
     // If editing, include domainId
     if (editingDomain) {
@@ -375,7 +405,8 @@ const AssessmentManagement = () => {
     const roleMap = {
       2: "School",
       3: "School Verifier",
-      5: "CRC",
+      4: "CRC",
+      5: "Verifier",
     };
     return roleMap[roleId] || `Role ${roleId}`;
   };
@@ -495,7 +526,7 @@ const AssessmentManagement = () => {
             >
               <MenuItem value="school">School</MenuItem>
               <MenuItem value="inspector">School Verifier</MenuItem>
-              <MenuItem value="parent">CRC</MenuItem>
+              <MenuItem value="crc">CRC</MenuItem>
             </Select>
           </FormControl>
           <Button
@@ -531,7 +562,10 @@ const AssessmentManagement = () => {
                 ? handleOpenUnpublishModal
                 : handleOpenPublishModal
             }
-            disabled={publishAssessmentMutation.isPending}
+            disabled={
+              publishAssessmentMutation.isPending ||
+              (!hasPublishedAssessment && domains.length === 0)
+            }
             sx={{
               bgcolor: hasPublishedAssessment
                 ? colors.semantic.error
@@ -542,6 +576,11 @@ const AssessmentManagement = () => {
                   : colors.accent.greenDark,
               },
             }}
+            title={
+              !hasPublishedAssessment && domains.length === 0
+                ? "Please add at least one domain before publishing"
+                : ""
+            }
           >
             {hasPublishedAssessment
               ? "Unpublish Assessment"
@@ -851,6 +890,10 @@ const AssessmentManagement = () => {
           <Box
             sx={{ display: "flex", flexDirection: "column", gap: 2.5, mt: 1 }}
           >
+            <Typography variant="body1" sx={{ color: "text.secondary" }}>
+              Are you sure you want to publish this assessment? Once published,
+              schools will be able to access and submit the assessment.
+            </Typography>
             {/* <FormControl fullWidth required>
               <InputLabel>Role</InputLabel>
               <Select

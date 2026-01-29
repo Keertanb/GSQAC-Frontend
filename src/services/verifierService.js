@@ -380,14 +380,45 @@ export const useSubmitAssessmentMutation = (options = {}) => {
  */
 export const getVerifierAllocatedSchools = async (params) => {
   const { districtId, userId, ...otherParams } = params;
-  const config = {
-    params: { districtId: districtId ?? null, ...otherParams },
-    headers: {},
-  };
+  
+  // Build params object - always include districtId
+  const queryParams = {};
+  
+  // Always include districtId in params (can be null for "All" option)
+  if (districtId !== undefined) {
+    queryParams.districtId = districtId === null ? null : Number(districtId);
+  } else {
+    queryParams.districtId = null;
+  }
+
+  // Add any other params
+  if (Object.keys(otherParams).length > 0) {
+    Object.assign(queryParams, otherParams);
+  }
 
   // Get userId from auth store if not provided in params, and set in header if present
   const authState = useAuthStore.getState();
   const userIdToSend = userId || authState.userId;
+  
+  const config = {
+    params: queryParams,
+    headers: {},
+    // Custom params serializer to handle null values properly
+    paramsSerializer: (params) => {
+      const searchParams = new URLSearchParams();
+      Object.keys(params).forEach((key) => {
+        const value = params[key];
+        // Only include the parameter if it's not null or undefined
+        // When null, omit the parameter entirely (don't send it)
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+        // If value is null, we omit it from the query string
+      });
+      return searchParams.toString();
+    },
+  };
+
   if (userIdToSend) {
     config.headers.userId = userIdToSend;
   }
@@ -452,7 +483,16 @@ export const useGetDistrictsByVerifierQuery = ({ enabled = true } = {}) => {
 /**
  * Get verifier dashboard counts
  * @param {Object} params - { districtId: number }
- * @returns {Promise} API response
+ * @returns {Promise} API response with structure:
+ * {
+ *   message: "Success",
+ *   data: {
+ *     userId: string,
+ *     totalAllocatedSchool: number,
+ *     totalPendingSchool: number,
+ *     totalCompletedSchool: number
+ *   }
+ * }
  */
 export const getVerifierDashboard = async (params) => {
   const { districtId, ...otherParams } = params;
@@ -465,6 +505,7 @@ export const getVerifierDashboard = async (params) => {
     "/verifier/get-verifier-dashboard",
     config
   );
+  // Response structure: { message: "Success", data: { userId, totalAllocatedSchool, totalPendingSchool, totalCompletedSchool } }
   return response.data;
 };
 

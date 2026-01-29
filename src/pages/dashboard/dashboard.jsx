@@ -1,14 +1,41 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@mui/material";
 import { Lock as LockIcon } from "@mui/icons-material";
 import FeatureCard from "../../components/FeatureCard/FeatureCard";
 import DomainPill from "../../components/DomainPill/DomainPill";
 import SectionBadge from "../../components/SectionBadge/SectionBadge";
+// Import CSS at the top level to ensure it's loaded
 import "./dashboard.css";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+
+  // Ensure CSS styles are applied after component mounts and on navigation
+  useEffect(() => {
+    // Force browser to recalculate styles without causing visual glitches
+    const forceStyleRecalc = () => {
+      const container = document.querySelector('.dashboard-container');
+      if (container) {
+        // Trigger a reflow to force style recalculation
+        // This ensures CSS is applied even if loaded asynchronously
+        void container.offsetHeight;
+      }
+    };
+
+    // Apply immediately on mount
+    forceStyleRecalc();
+
+    // Also apply after a microtask to catch any async CSS loading
+    Promise.resolve().then(() => {
+      forceStyleRecalc();
+    });
+
+    // Fallback: apply after a short delay to ensure styles are loaded
+    const timeoutId = setTimeout(forceStyleRecalc, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   return (
     <div className="dashboard-container">

@@ -7,10 +7,7 @@ import {
   InputAdornment,
   Button,
 } from "@mui/material";
-import {
-  Search,
-  Assignment,
-} from "@mui/icons-material";
+import { Search, Assignment } from "@mui/icons-material";
 import { useGetSchoolListQuery } from "../../../services/adminService";
 import useAuthStore from "../../../store/useAuthStore";
 import { colors } from "../../../constants/colors";
@@ -166,7 +163,7 @@ const SchoolAssessment = () => {
           <div className="school-assessment-stat-card school-assessment-stat-card-green">
             <div>
               <p className="school-assessment-stat-label school-assessment-stat-label-green">
-                Schools in View
+                Completed
               </p>
               <p className="school-assessment-stat-value school-assessment-stat-value-green">
                 {schoolsInView}
@@ -282,4 +279,3 @@ const SchoolAssessment = () => {
 };
 
 export default SchoolAssessment;
-

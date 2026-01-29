@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../../config/queryClient";
@@ -73,43 +73,49 @@ const SchoolAllocated = () => {
 
   // Ensure "All" is selected by default for verifiers
   useEffect(() => {
-    if (isVerifier && districts.length > 0 && (!selectedDistrictId || selectedDistrictId === "")) {
+    if (
+      isVerifier &&
+      districts.length > 0 &&
+      (!selectedDistrictId || selectedDistrictId === "")
+    ) {
       setSelectedDistrictId("all");
     }
   }, [isVerifier, districts, selectedDistrictId]);
 
-  // Use selected district for verifiers (from dropdown), userDistrictId for inspectors (from auth store)
-  // Since we're using verifier API for all, we need districtId for both cases
+  // Use selected district from dropdown if available, otherwise fallback to userDistrictId
   // If "all" is selected, send null to API
-  const districtIdForAPI = isVerifier
-    ? selectedDistrictId === "all" || selectedDistrictId === ""
-      ? null
-      : selectedDistrictId
-      ? Number(selectedDistrictId)
-      : undefined
-    : userDistrictId; // For inspectors, use districtId from auth store
+  // Always prioritize the dropdown selection if it exists
+  const districtIdForAPI = (() => {
+    // If dropdown has a selection, use it
+    if (
+      selectedDistrictId &&
+      selectedDistrictId !== "" &&
+      selectedDistrictId !== undefined
+    ) {
+      return selectedDistrictId === "all" ? null : Number(selectedDistrictId);
+    }
+    // Otherwise, fallback to userDistrictId
+    return userDistrictId ? Number(userDistrictId) : null;
+  })();
 
   // Fetch dashboard counts using verifier API
   // Note: The hook requires districtId to be truthy, so we only call it when districtId is not null
   // For "All" (null), we'll skip the dashboard API call
-  const {
-    data: dashboardData,
-    refetch: refetchDashboard,
-  } = useGetVerifierDashboardQuery({
-    districtId: districtIdForAPI,
-    enabled: districtIdForAPI !== null && districtIdForAPI !== undefined, // Enable only when districtId is not null
-  });
+  const { data: dashboardData, refetch: refetchDashboard } =
+    useGetVerifierDashboardQuery({
+      districtId: districtIdForAPI,
+      enabled: districtIdForAPI !== null && districtIdForAPI !== undefined, // Enable only when districtId is not null
+    });
 
   // Fetch allocated schools using verifier API
-  // For verifiers: use selectedDistrictId from dropdown
-  // For inspectors: use userDistrictId from auth store
+  // Always use districtIdForAPI which comes from dropdown selection or userDistrictId
   const {
     data: schoolsData,
     isLoading,
     isError,
     refetch: refetchSchools,
   } = useGetVerifierAllocatedSchoolsQuery({
-    districtId: districtIdForAPI,
+    districtId: districtIdForAPI !== undefined ? districtIdForAPI : null, // Ensure districtId is always defined (can be null)
     userId: userId ? Number(userId) : undefined,
     enabled: true, // Always enabled - React Query will handle refetching when districtId changes
   });
@@ -118,38 +124,36 @@ const SchoolAllocated = () => {
   const handleDistrictChange = (value) => {
     setSelectedDistrictId(value);
     setCurrentPage(0); // Reset to first page when district changes
-    
-    // Calculate new districtIdForAPI
-    const newDistrictIdForAPI = value === "all" || value === ""
-      ? null
-      : value
-      ? Number(value)
-      : undefined;
-    
-    // Remove old queries to clear cache
-    queryClient.removeQueries({
-      queryKey: ["verifier", "allocated-schools"],
-    });
-    queryClient.removeQueries({
-      queryKey: ["verifier", "dashboard"],
-    });
-    
-    // Invalidate and refetch with new districtId
-    // This will trigger React Query to create new queries with the updated districtId
+
+    // Calculate new districtIdForAPI immediately - always ensure it's defined (can be null)
+    const newDistrictIdForAPI =
+      value === "all" || value === "" ? null : value ? Number(value) : null; // Default to null instead of undefined
+
+    // Invalidate queries to mark them as stale
     queryClient.invalidateQueries({
       queryKey: ["verifier", "allocated-schools"],
     });
     queryClient.invalidateQueries({
       queryKey: ["verifier", "dashboard"],
     });
-    
-    // Force refetch after a small delay to ensure state is updated
+
+    // Refetch with the new districtId - React Query will use the new query key
+    // which includes the new districtId, ensuring it's sent in the API call
     setTimeout(() => {
-      refetchSchools();
+      // Refetch schools with new districtId (always defined, can be null)
+      queryClient.refetchQueries({
+        queryKey: queryKeys.verifier.allocatedSchools(newDistrictIdForAPI),
+        exact: false, // Refetch all matching queries
+      });
+
+      // Refetch dashboard if districtId is not null
       if (newDistrictIdForAPI !== null && newDistrictIdForAPI !== undefined) {
-        refetchDashboard();
+        queryClient.refetchQueries({
+          queryKey: queryKeys.verifier.dashboard(newDistrictIdForAPI),
+          exact: false,
+        });
       }
-    }, 100);
+    }, 0);
   };
 
   // Debug: Log API call parameters
@@ -160,11 +164,12 @@ const SchoolAllocated = () => {
         districtIdForAPI,
         userId,
         willCallAPI: districtIdForAPI !== undefined,
-        apiUrl: districtIdForAPI !== null && districtIdForAPI !== undefined
-          ? `/verifier/get-school-allocated-verifier?districtId=${districtIdForAPI}`
-          : districtIdForAPI === null
-          ? `/verifier/get-school-allocated-verifier?districtId=null`
-          : "Not called - no districtId",
+        apiUrl:
+          districtIdForAPI !== null && districtIdForAPI !== undefined
+            ? `/verifier/get-school-allocated-verifier?districtId=${districtIdForAPI}`
+            : districtIdForAPI === null
+            ? `/verifier/get-school-allocated-verifier?districtId=null`
+            : "Not called - no districtId",
       });
     }
   }, [selectedDistrictId, districtIdForAPI, userId, isVerifier]);
@@ -203,7 +208,7 @@ const SchoolAllocated = () => {
   // Filter schools based on search query
   const filteredSchools = staticSchoolsData.filter((school) => {
     if (!searchQuery) return true;
-    
+
     const query = searchQuery.toLowerCase();
     const matchesSearch =
       (school.schoolId?.toLowerCase() || "").includes(query) ||
@@ -238,9 +243,22 @@ const SchoolAllocated = () => {
   const dashboardStats = dashboardData?.data || {};
   const stats = {
     total: dashboardStats.totalAllocatedSchool ?? staticSchoolsData.length,
-    pending: dashboardStats.totalPendingSchool ?? staticSchoolsData.filter((s) => s.pcStatus === "pending" || s.pcStatus === "Allocated").length,
-    inProgress: staticSchoolsData.filter((s) => s.pcStatus === "in_progress" || s.pcStatus === "In Progress").length,
-    completed: dashboardStats.totalCompletedSchool ?? staticSchoolsData.filter((s) => s.pcStatus === "completed" || s.pcStatus === "Completed" || s.isSubmitted === 1).length,
+    pending:
+      dashboardStats.totalPendingSchool ??
+      staticSchoolsData.filter(
+        (s) => s.pcStatus === "pending" || s.pcStatus === "Allocated"
+      ).length,
+    inProgress: staticSchoolsData.filter(
+      (s) => s.pcStatus === "in_progress" || s.pcStatus === "In Progress"
+    ).length,
+    completed:
+      dashboardStats.totalCompletedSchool ??
+      staticSchoolsData.filter(
+        (s) =>
+          s.pcStatus === "completed" ||
+          s.pcStatus === "Completed" ||
+          s.isSubmitted === 1
+      ).length,
   };
 
   // Table columns definition
@@ -250,9 +268,10 @@ const SchoolAllocated = () => {
       label: "School ID",
       render: (school) => (
         <div className="cell-name">
-         
           <div>
-            <span className="name-text">{school.schoolId || school.schoolName || "N/A"}</span>
+            <span className="name-text">
+              {school.schoolId || school.schoolName || "N/A"}
+            </span>
             {school.schoolCode && (
               <span className="school-code-badge">{school.schoolCode}</span>
             )}
@@ -265,7 +284,9 @@ const SchoolAllocated = () => {
       label: "District",
       render: (school) => {
         // Try to find district name from districts array
-        const district = districts.find(d => d.districtId === school.districtId);
+        const district = districts.find(
+          (d) => d.districtId === school.districtId
+        );
         return (
           <span className="district-badge">
             {district?.districtName || `District ${school.districtId || "N/A"}`}
@@ -290,15 +311,17 @@ const SchoolAllocated = () => {
       id: "status",
       label: "Status",
       render: (school) => {
-        const isCompleted = school.pcStatus === "completed" || school.pcStatus === "Completed" || school.isSubmitted === 1;
-        const isInProgress = school.pcStatus === "in_progress" || school.pcStatus === "In Progress";
-        const statusLower = school.pcStatus?.toLowerCase() || "";
+        const pcStatus = school.pcStatus || "";
+        const statusLower = pcStatus.toLowerCase();
+        const isCompleted = statusLower === "completed" || school.isSubmitted === 1;
+        const isPending = statusLower === "pending" || statusLower === "allocated" || !pcStatus;
+        
         return (
           <span
             className={`status-badge ${
               isCompleted
                 ? "status-badge-active"
-                : isInProgress || statusLower === "allocated"
+                : isPending
                 ? "status-badge-warning"
                 : "status-badge-inactive"
             }`}
@@ -317,20 +340,6 @@ const SchoolAllocated = () => {
                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-            ) : isInProgress || statusLower === "allocated" ? (
-              <svg
-                className="status-icon"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
-              </svg>
             ) : (
               <svg
                 className="status-icon"
@@ -346,7 +355,7 @@ const SchoolAllocated = () => {
                 />
               </svg>
             )}
-            {getStatusLabel(school.pcStatus)}
+            {pcStatus || "Pending"}
           </span>
         );
       },
@@ -356,12 +365,12 @@ const SchoolAllocated = () => {
   // Render actions
   const renderActions = (school) => {
     if (!school) return null;
-    
-    const isCompleted = 
-      school.pcStatus === "completed" || 
-      school.pcStatus === "Completed" || 
+
+    const isCompleted =
+      school.pcStatus === "completed" ||
+      school.pcStatus === "Completed" ||
       school.isSubmitted === 1;
-    
+
     return (
       <>
         {/* <button
@@ -531,7 +540,7 @@ const SchoolAllocated = () => {
               </svg>
             </div>
           </div>
-{/* 
+          {/* 
           <div className="stat-card stat-card-orange">
             <div>
               <p className="stat-label stat-label-orange">In Progress</p>
