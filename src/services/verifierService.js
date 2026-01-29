@@ -381,9 +381,19 @@ export const useSubmitAssessmentMutation = (options = {}) => {
 export const getVerifierAllocatedSchools = async (params) => {
   const { districtId, userId, ...otherParams } = params;
   const config = {
-    params: { districtId: districtId ?? null, ...otherParams },
+    params: {},
     headers: {},
   };
+
+  // Always include districtId in params (can be null for "All" option)
+  if (districtId !== undefined) {
+    config.params.districtId = districtId === null ? null : Number(districtId);
+  }
+
+  // Add any other params
+  if (Object.keys(otherParams).length > 0) {
+    config.params = { ...config.params, ...otherParams };
+  }
 
   // Get userId from auth store if not provided in params, and set in header if present
   const authState = useAuthStore.getState();
@@ -452,7 +462,16 @@ export const useGetDistrictsByVerifierQuery = ({ enabled = true } = {}) => {
 /**
  * Get verifier dashboard counts
  * @param {Object} params - { districtId: number }
- * @returns {Promise} API response
+ * @returns {Promise} API response with structure:
+ * {
+ *   message: "Success",
+ *   data: {
+ *     userId: string,
+ *     totalAllocatedSchool: number,
+ *     totalPendingSchool: number,
+ *     totalCompletedSchool: number
+ *   }
+ * }
  */
 export const getVerifierDashboard = async (params) => {
   const { districtId, ...otherParams } = params;
@@ -465,6 +484,7 @@ export const getVerifierDashboard = async (params) => {
     "/verifier/get-verifier-dashboard",
     config
   );
+  // Response structure: { message: "Success", data: { userId, totalAllocatedSchool, totalPendingSchool, totalCompletedSchool } }
   return response.data;
 };
 

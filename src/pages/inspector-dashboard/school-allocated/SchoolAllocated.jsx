@@ -73,7 +73,11 @@ const SchoolAllocated = () => {
 
   // Ensure "All" is selected by default for verifiers
   useEffect(() => {
-    if (isVerifier && districts.length > 0 && (!selectedDistrictId || selectedDistrictId === "")) {
+    if (
+      isVerifier &&
+      districts.length > 0 &&
+      (!selectedDistrictId || selectedDistrictId === "")
+    ) {
       setSelectedDistrictId("all");
     }
   }, [isVerifier, districts, selectedDistrictId]);
@@ -92,13 +96,11 @@ const SchoolAllocated = () => {
   // Fetch dashboard counts using verifier API
   // Note: The hook requires districtId to be truthy, so we only call it when districtId is not null
   // For "All" (null), we'll skip the dashboard API call
-  const {
-    data: dashboardData,
-    refetch: refetchDashboard,
-  } = useGetVerifierDashboardQuery({
-    districtId: districtIdForAPI,
-    enabled: districtIdForAPI !== null && districtIdForAPI !== undefined, // Enable only when districtId is not null
-  });
+  const { data: dashboardData, refetch: refetchDashboard } =
+    useGetVerifierDashboardQuery({
+      districtId: districtIdForAPI,
+      enabled: districtIdForAPI !== null && districtIdForAPI !== undefined, // Enable only when districtId is not null
+    });
 
   // Fetch allocated schools using verifier API
   // For verifiers: use selectedDistrictId from dropdown
@@ -118,14 +120,15 @@ const SchoolAllocated = () => {
   const handleDistrictChange = (value) => {
     setSelectedDistrictId(value);
     setCurrentPage(0); // Reset to first page when district changes
-    
+
     // Calculate new districtIdForAPI
-    const newDistrictIdForAPI = value === "all" || value === ""
-      ? null
-      : value
-      ? Number(value)
-      : undefined;
-    
+    const newDistrictIdForAPI =
+      value === "all" || value === ""
+        ? null
+        : value
+        ? Number(value)
+        : undefined;
+
     // Remove old queries to clear cache
     queryClient.removeQueries({
       queryKey: ["verifier", "allocated-schools"],
@@ -133,7 +136,7 @@ const SchoolAllocated = () => {
     queryClient.removeQueries({
       queryKey: ["verifier", "dashboard"],
     });
-    
+
     // Invalidate and refetch with new districtId
     // This will trigger React Query to create new queries with the updated districtId
     queryClient.invalidateQueries({
@@ -142,7 +145,7 @@ const SchoolAllocated = () => {
     queryClient.invalidateQueries({
       queryKey: ["verifier", "dashboard"],
     });
-    
+
     // Force refetch after a small delay to ensure state is updated
     setTimeout(() => {
       refetchSchools();
@@ -160,11 +163,12 @@ const SchoolAllocated = () => {
         districtIdForAPI,
         userId,
         willCallAPI: districtIdForAPI !== undefined,
-        apiUrl: districtIdForAPI !== null && districtIdForAPI !== undefined
-          ? `/verifier/get-school-allocated-verifier?districtId=${districtIdForAPI}`
-          : districtIdForAPI === null
-          ? `/verifier/get-school-allocated-verifier?districtId=null`
-          : "Not called - no districtId",
+        apiUrl:
+          districtIdForAPI !== null && districtIdForAPI !== undefined
+            ? `/verifier/get-school-allocated-verifier?districtId=${districtIdForAPI}`
+            : districtIdForAPI === null
+            ? `/verifier/get-school-allocated-verifier?districtId=null`
+            : "Not called - no districtId",
       });
     }
   }, [selectedDistrictId, districtIdForAPI, userId, isVerifier]);
@@ -203,7 +207,7 @@ const SchoolAllocated = () => {
   // Filter schools based on search query
   const filteredSchools = staticSchoolsData.filter((school) => {
     if (!searchQuery) return true;
-    
+
     const query = searchQuery.toLowerCase();
     const matchesSearch =
       (school.schoolId?.toLowerCase() || "").includes(query) ||
@@ -238,9 +242,22 @@ const SchoolAllocated = () => {
   const dashboardStats = dashboardData?.data || {};
   const stats = {
     total: dashboardStats.totalAllocatedSchool ?? staticSchoolsData.length,
-    pending: dashboardStats.totalPendingSchool ?? staticSchoolsData.filter((s) => s.pcStatus === "pending" || s.pcStatus === "Allocated").length,
-    inProgress: staticSchoolsData.filter((s) => s.pcStatus === "in_progress" || s.pcStatus === "In Progress").length,
-    completed: dashboardStats.totalCompletedSchool ?? staticSchoolsData.filter((s) => s.pcStatus === "completed" || s.pcStatus === "Completed" || s.isSubmitted === 1).length,
+    pending:
+      dashboardStats.totalPendingSchool ??
+      staticSchoolsData.filter(
+        (s) => s.pcStatus === "pending" || s.pcStatus === "Allocated"
+      ).length,
+    inProgress: staticSchoolsData.filter(
+      (s) => s.pcStatus === "in_progress" || s.pcStatus === "In Progress"
+    ).length,
+    completed:
+      dashboardStats.totalCompletedSchool ??
+      staticSchoolsData.filter(
+        (s) =>
+          s.pcStatus === "completed" ||
+          s.pcStatus === "Completed" ||
+          s.isSubmitted === 1
+      ).length,
   };
 
   // Table columns definition
@@ -250,9 +267,10 @@ const SchoolAllocated = () => {
       label: "School ID",
       render: (school) => (
         <div className="cell-name">
-         
           <div>
-            <span className="name-text">{school.schoolId || school.schoolName || "N/A"}</span>
+            <span className="name-text">
+              {school.schoolId || school.schoolName || "N/A"}
+            </span>
             {school.schoolCode && (
               <span className="school-code-badge">{school.schoolCode}</span>
             )}
@@ -265,7 +283,9 @@ const SchoolAllocated = () => {
       label: "District",
       render: (school) => {
         // Try to find district name from districts array
-        const district = districts.find(d => d.districtId === school.districtId);
+        const district = districts.find(
+          (d) => d.districtId === school.districtId
+        );
         return (
           <span className="district-badge">
             {district?.districtName || `District ${school.districtId || "N/A"}`}
@@ -286,82 +306,82 @@ const SchoolAllocated = () => {
         });
       },
     },
-    {
-      id: "status",
-      label: "Status",
-      render: (school) => {
-        const isCompleted = school.pcStatus === "completed" || school.pcStatus === "Completed" || school.isSubmitted === 1;
-        const isInProgress = school.pcStatus === "in_progress" || school.pcStatus === "In Progress";
-        const statusLower = school.pcStatus?.toLowerCase() || "";
-        return (
-          <span
-            className={`status-badge ${
-              isCompleted
-                ? "status-badge-active"
-                : isInProgress || statusLower === "allocated"
-                ? "status-badge-warning"
-                : "status-badge-inactive"
-            }`}
-          >
-            {isCompleted ? (
-              <svg
-                className="status-icon"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            ) : isInProgress || statusLower === "allocated" ? (
-              <svg
-                className="status-icon"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="status-icon"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            )}
-            {getStatusLabel(school.pcStatus)}
-          </span>
-        );
-      },
-    },
+    // {
+    //   id: "status",
+    //   label: "Status",
+    //   render: (school) => {
+    //     const isCompleted = school.pcStatus === "completed" || school.pcStatus === "Completed" || school.isSubmitted === 1;
+    //     const isInProgress = school.pcStatus === "in_progress" || school.pcStatus === "In Progress";
+    //     const statusLower = school.pcStatus?.toLowerCase() || "";
+    //     return (
+    //       <span
+    //         className={`status-badge ${
+    //           isCompleted
+    //             ? "status-badge-active"
+    //             : isInProgress || statusLower === "allocated"
+    //             ? "status-badge-warning"
+    //             : "status-badge-inactive"
+    //         }`}
+    //       >
+    //         {isCompleted ? (
+    //           <svg
+    //             className="status-icon"
+    //             fill="none"
+    //             stroke="currentColor"
+    //             viewBox="0 0 24 24"
+    //           >
+    //             <path
+    //               strokeLinecap="round"
+    //               strokeLinejoin="round"
+    //               strokeWidth={2}
+    //               d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+    //             />
+    //           </svg>
+    //         ) : isInProgress || statusLower === "allocated" ? (
+    //           <svg
+    //             className="status-icon"
+    //             fill="none"
+    //             stroke="currentColor"
+    //             viewBox="0 0 24 24"
+    //           >
+    //             <path
+    //               strokeLinecap="round"
+    //               strokeLinejoin="round"
+    //               strokeWidth={2}
+    //               d="M13 10V3L4 14h7v7l9-11h-7z"
+    //             />
+    //           </svg>
+    //         ) : (
+    //           <svg
+    //             className="status-icon"
+    //             fill="none"
+    //             stroke="currentColor"
+    //             viewBox="0 0 24 24"
+    //           >
+    //             <path
+    //               strokeLinecap="round"
+    //               strokeLinejoin="round"
+    //               strokeWidth={2}
+    //               d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+    //             />
+    //           </svg>
+    //         )}
+    //         {getStatusLabel(school.pcStatus)}
+    //       </span>
+    //     );
+    //   },
+    // },
   ];
 
   // Render actions
   const renderActions = (school) => {
     if (!school) return null;
-    
-    const isCompleted = 
-      school.pcStatus === "completed" || 
-      school.pcStatus === "Completed" || 
+
+    const isCompleted =
+      school.pcStatus === "completed" ||
+      school.pcStatus === "Completed" ||
       school.isSubmitted === 1;
-    
+
     return (
       <>
         {/* <button
@@ -466,22 +486,23 @@ const SchoolAllocated = () => {
                 Error loading districts. Please try again.
               </div>
             ) : districts.length > 0 ? (
-              <AppDropdown
-                label="Select District"
-                options={[
-                  { value: "all", label: "All" },
-                  ...districts.map((district) => ({
-                    value: String(district.districtId),
-                    label:
-                      district.districtName ||
-                      `District ${district.districtId}`,
-                  })),
-                ]}
-                value={selectedDistrictId}
-                onChange={handleDistrictChange}
-                placeholder="Select District"
-                className="district-dropdown"
-              />
+              // <AppDropdown
+              //   label="Select District"
+              //   options={[
+              //     { value: "all", label: "All" },
+              //     ...districts.map((district) => ({
+              //       value: String(district.districtId),
+              //       label:
+              //         district.districtName ||
+              //         `District ${district.districtId}`,
+              //     })),
+              //   ]}
+              //   value={selectedDistrictId}
+              //   onChange={handleDistrictChange}
+              //   placeholder="Select District"
+              //   className="district-dropdown"
+              // />
+              <></>
             ) : (
               <div
                 style={{
@@ -531,7 +552,7 @@ const SchoolAllocated = () => {
               </svg>
             </div>
           </div>
-{/* 
+          {/* 
           <div className="stat-card stat-card-orange">
             <div>
               <p className="stat-label stat-label-orange">In Progress</p>
