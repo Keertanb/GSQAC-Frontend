@@ -93,7 +93,8 @@ export const submitAnswer = async (payload) => {
 
 /**
  * Submit all answers for a subdomain
- * @param {Object} payload - Answers payload (should include schoolId)
+ * @param {Object} payload - Answers payload (should include schoolId, questionType)
+ * @param {number} payload.questionType - Question type (1: General, 2: Classroom Observation, 3: Subject Observation, 4: FLN)
  * @returns {Promise} API response
  */
 export const submitSubdomainWiseAnswers = async (payload) => {
