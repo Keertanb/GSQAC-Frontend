@@ -8,7 +8,7 @@ import {
   Button,
 } from "@mui/material";
 import { Search, Assignment } from "@mui/icons-material";
-import { useGetSchoolListQuery } from "../../../services/adminService";
+import { useGetSchoolListQuery } from "../../../services/crcService";
 import useAuthStore from "../../../store/useAuthStore";
 import { colors } from "../../../constants/colors";
 import AppTable from "../../../components/AppTable/AppTable";
@@ -39,6 +39,7 @@ const SchoolAssessment = () => {
   // Get schools from API response - API returns data.rows
   const schools = schoolsData?.data?.rows || [];
   const totalCount = schoolsData?.data?.total || 0;
+  const summary = schoolsData?.data?.summary || { completed: 0, pending: 0 };
 
   // Filter schools based on search query (client-side filtering)
   const filteredSchools = useMemo(() => {
@@ -56,10 +57,14 @@ const SchoolAssessment = () => {
     });
   }, [schools, searchQuery]);
 
-  // Calculate statistics
+  // Calculate statistics - use summary from API when no search query, otherwise calculate from filtered results
   const totalSchools = totalCount;
-  const schoolsInView = searchQuery ? filteredSchools.length : schools.length;
-  const pendingSchools = totalSchools; // All schools are pending assessment initially
+  const completedSchools = searchQuery
+    ? filteredSchools.filter((s) => s.status === "Completed" || s.isSubmitted === 1).length
+    : summary.completed || 0;
+  const pendingSchools = searchQuery
+    ? filteredSchools.filter((s) => s.status === "Pending" || (s.isSubmitted !== 1 && s.status !== "Completed")).length
+    : summary.pending || 0;
 
   // Reset to first page when search query changes
   useEffect(() => {
@@ -115,6 +120,59 @@ const SchoolAssessment = () => {
       label: "Village",
       render: (school) => school.villageName || "-",
     },
+    {
+      id: "status",
+      label: "Status",
+      render: (school) => {
+        const status = school.status || "";
+        const statusLower = status.toLowerCase();
+        const isCompleted = statusLower === "completed" || statusLower === "done";
+        const isPending = statusLower === "pending" || !status;
+        
+        return (
+          <span
+            className={`status-badge ${
+              isCompleted
+                ? "status-badge-active"
+                : isPending
+                ? "status-badge-warning"
+                : "status-badge-inactive"
+            }`}
+          >
+            {isCompleted ? (
+              <svg
+                className="status-icon"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="status-icon"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            )}
+            {status || "Pending"}
+          </span>
+        );
+      },
+    },
   ];
 
   return (
@@ -166,7 +224,7 @@ const SchoolAssessment = () => {
                 Completed
               </p>
               <p className="school-assessment-stat-value school-assessment-stat-value-green">
-                {schoolsInView}
+                {completedSchools}
               </p>
             </div>
             <div className="school-assessment-stat-icon school-assessment-stat-icon-green">

@@ -125,7 +125,8 @@ export const getSchoolSections = async (params) => {
 
 /**
  * Submit subdomain-wise answers
- * @param {Object} payload - { isAns: number, subDomainId: number, cls: number, section: string, answers: Array }
+ * @param {Object} payload - { isAns: number, subDomainId: number, cls: number, section: string, questionType: number, answers: Array }
+ * @param {number} payload.questionType - Question type (1: General, 2: Classroom Observation, 3: Subject Observation, 4: FLN)
  * @returns {Promise} API response
  */
 export const submitSubdomainWiseAnswers = async (payload) => {

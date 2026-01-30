@@ -99,5 +99,15 @@ export const queryKeys = {
     schoolData: (schoolId, academicYear) => ["crc", "school-data", schoolId, academicYear],
     schoolSections: (schoolId) => ["crc", "school-sections", schoolId],
     allocatedSchools: (districtId) => ["crc", "allocated-schools", districtId],
+    schoolList: (blockId, clusterId, villageId, status, page, limit) => [
+      "crc",
+      "school-list",
+      blockId,
+      clusterId,
+      villageId,
+      status,
+      page,
+      limit,
+    ],
   },
 };
