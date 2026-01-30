@@ -440,3 +440,49 @@ export const useSubmitAssessmentMutation = (options = {}) => {
   });
 };
 
+/**
+ * Get school list for CRC
+ * @param {Object} params - { blockId?: number, clusterId?: string, villageId?: number, page?: number, limit?: number }
+ * @returns {Promise} API response
+ */
+export const getSchoolList = async (params = {}) => {
+  const { clusterId, userId, ...queryParams } = params;
+  
+  const config = {
+    params: queryParams, // Exclude clusterId from query params
+    headers: {},
+  };
+
+  // Get userId from auth store if not provided in params, and set in header if present
+  const authState = useAuthStore.getState();
+  const userIdToSend = userId || authState.userId;
+  if (userIdToSend) {
+    config.headers.userId = userIdToSend;
+  }
+
+  const response = await axiosInstance.get("/crc/school-list", config);
+  return response.data;
+};
+
+/**
+ * React Query hook for getting school list (CRC)
+ * @param {Object} params - { blockId?: number, clusterId?: string, villageId?: number, page?: number, limit?: number }
+ * @param {boolean} enabled - Whether the query should run
+ * @returns {Object} Query object from React Query
+ */
+export const useGetSchoolListQuery = (params = {}, enabled = true) => {
+  return useQuery({
+    queryKey: queryKeys.crc.schoolList(
+      params.blockId,
+      params.clusterId,
+      params.villageId,
+      params.status,
+      params.page,
+      params.limit
+    ),
+    queryFn: () => getSchoolList(params),
+    enabled: enabled,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
