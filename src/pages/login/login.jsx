@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -33,11 +33,20 @@ import "./login.css";
 
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [selectedRole, setSelectedRole] = useState("");
   const [userId, setUserId] = useState("");
   const [errors, setErrors] = useState({ role: "", userId: "" });
   const [focusedInput, setFocusedInput] = useState("");
   const { setOtpUserId } = useAuthStore();
+
+  // Check for role query parameter on mount and pre-select if present
+  useEffect(() => {
+    const roleParam = searchParams.get("role");
+    if (roleParam && roles.some((r) => r.value === roleParam)) {
+      setSelectedRole(roleParam);
+    }
+  }, [searchParams]);
 
   const sendOtpMutation = useSendOtpMutation({
     onSuccess: (data) => {

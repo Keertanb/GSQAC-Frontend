@@ -2146,7 +2146,7 @@ const QuestionsView = ({
                           ? "Saving Options..."
                           : editingQuestion
                           ? t("assessment.question.updateOptions")
-                          : t("assessment.question.addOptions")}
+                          : "Submit Options"}
                       </Button>
                       <Button
                         variant="outlined"
@@ -2681,7 +2681,7 @@ const QuestionsView = ({
                           ? "Saving Options..."
                           : editingQuestion
                           ? t("assessment.question.updateOptions")
-                          : t("assessment.question.addOptions")}
+                          : "Submit Options"}
                       </Button>
                       <Button
                         variant="outlined"

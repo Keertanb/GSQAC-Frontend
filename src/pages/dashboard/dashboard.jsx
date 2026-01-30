@@ -138,7 +138,10 @@ const Dashboard = () => {
               <span>Find Schools</span>
             </button>
 
-            <button className="btn-secondary">
+            <button 
+              className="btn-secondary"
+              onClick={() => navigate("/login?role=school")}
+            >
               <span>School Login</span>
               <svg
                 width="20"

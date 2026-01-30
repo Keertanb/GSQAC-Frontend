@@ -203,7 +203,7 @@ const CRCAssessment = () => {
 
   const { data: schoolDataResponse, isLoading: isLoadingSchoolData } =
     useGetSchoolDataQuery({
-      userName: schoolCode || undefined,
+      schoolId: schoolCode || undefined,
       enabled: !!schoolCode,
     });
 
@@ -326,6 +326,65 @@ const CRCAssessment = () => {
 
   const domains = domainsData?.data || [];
   const isPublished = domainsData?.isPublished || false;
+
+  // Helper function to map dropdown group range to API group range format
+  const mapGroupRangeToApiFormat = (groupRange) => {
+    const mapping = {
+      "1-2": "1-2",
+      "3-5": "3-4-5",
+      "6-8": "6-7-8",
+    };
+    return mapping[groupRange] || groupRange;
+  };
+
+  // Helper function to get flag color for a specific subdomain, question type, and group range
+  const getGroupFlagColor = (questionType, groupRange) => {
+    if (!selectedSubdomain || !domains) return null;
+    
+    const subdomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
+    
+    // Find the domain that contains this subdomain
+    const domain = domains.find((d) =>
+      d.subDomain?.some(
+        (sd) => (sd.subDomainId || sd.id) === subdomainId
+      )
+    );
+    
+    if (!domain) return null;
+    
+    // Find the subdomain
+    const subdomain = domain.subDomain?.find(
+      (sd) => (sd.subDomainId || sd.id) === subdomainId
+    );
+    
+    if (!subdomain || !subdomain.groupWise) return null;
+    
+    // Map the dropdown group range to API format
+    const apiGroupRange = mapGroupRangeToApiFormat(groupRange);
+    
+    // Find the matching groupWise entry
+    const groupWise = subdomain.groupWise.find(
+      (gw) =>
+        (gw.questionType === questionType || String(gw.questionType) === String(questionType)) &&
+        gw.groupRange === apiGroupRange
+    );
+    
+    return groupWise?.flag || null;
+  };
+
+  // Helper function to get color value from flag
+  const getFlagColorValue = (flag) => {
+    switch (flag) {
+      case "green":
+        return colors.accent.green;
+      case "yellow":
+        return colors.semantic.warning;
+      case "red":
+        return colors.semantic.error;
+      default:
+        return colors.neutral.gray400;
+    }
+  };
 
   // Extract and store sessionId from domains API response
   useEffect(() => {
@@ -2337,9 +2396,36 @@ const CRCAssessment = () => {
                             },
                           }}
                         >
-                          <MenuItem value="1-2">Class 1-2</MenuItem>
-                          <MenuItem value="3-5">Class 3-5</MenuItem>
-                          <MenuItem value="6-8">Class 6-8</MenuItem>
+                          {["1-2", "3-5", "6-8"].map((groupRange) => {
+                            const flag = getGroupFlagColor(2, groupRange);
+                            const flagColor = flag ? getFlagColorValue(flag) : null;
+                            const displayRange = groupRange === "3-5" ? "3-5" : groupRange;
+                            
+                            return (
+                              <MenuItem key={groupRange} value={groupRange}>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1,
+                                  }}
+                                >
+                                  {flagColor && (
+                                    <Box
+                                      sx={{
+                                        width: 10,
+                                        height: 10,
+                                        borderRadius: "50%",
+                                        bgcolor: flagColor,
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                  )}
+                                  <Typography>Class {displayRange}</Typography>
+                                </Box>
+                              </MenuItem>
+                            );
+                          })}
                         </Select>
                       </FormControl>
 
@@ -2810,9 +2896,36 @@ const CRCAssessment = () => {
                             },
                           }}
                         >
-                          <MenuItem value="1-2">Class 1-2</MenuItem>
-                          <MenuItem value="3-5">Class 3-5</MenuItem>
-                          <MenuItem value="6-8">Class 6-8</MenuItem>
+                          {["1-2", "3-5", "6-8"].map((groupRange) => {
+                            const flag = getGroupFlagColor(3, groupRange);
+                            const flagColor = flag ? getFlagColorValue(flag) : null;
+                            const displayRange = groupRange === "3-5" ? "3-5" : groupRange;
+                            
+                            return (
+                              <MenuItem key={groupRange} value={groupRange}>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1,
+                                  }}
+                                >
+                                  {flagColor && (
+                                    <Box
+                                      sx={{
+                                        width: 10,
+                                        height: 10,
+                                        borderRadius: "50%",
+                                        bgcolor: flagColor,
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                  )}
+                                  <Typography>Class {displayRange}</Typography>
+                                </Box>
+                              </MenuItem>
+                            );
+                          })}
                         </Select>
                       </FormControl>
 
