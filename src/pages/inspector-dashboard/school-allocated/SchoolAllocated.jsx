@@ -86,13 +86,17 @@ const SchoolAllocated = () => {
   // If "all" is selected, send null to API
   // Always prioritize the dropdown selection if it exists
   const districtIdForAPI = (() => {
-    // If dropdown has a selection, use it
+    // If "all" is selected, always return null
+    if (selectedDistrictId === "all" || selectedDistrictId === "") {
+      return null;
+    }
+    // If dropdown has a selection (and it's not "all"), use it
     if (
       selectedDistrictId &&
-      selectedDistrictId !== "" &&
-      selectedDistrictId !== undefined
+      selectedDistrictId !== undefined &&
+      selectedDistrictId !== "all"
     ) {
-      return selectedDistrictId === "all" ? null : Number(selectedDistrictId);
+      return Number(selectedDistrictId);
     }
     // Otherwise, fallback to userDistrictId
     return userDistrictId ? Number(userDistrictId) : null;
@@ -115,19 +119,29 @@ const SchoolAllocated = () => {
     isError,
     refetch: refetchSchools,
   } = useGetVerifierAllocatedSchoolsQuery({
-    districtId: districtIdForAPI !== undefined ? districtIdForAPI : null, // Ensure districtId is always defined (can be null)
+    districtId: districtIdForAPI, // Will be null when "All" is selected, or a number for specific district
     userId: userId ? Number(userId) : undefined,
     enabled: true, // Always enabled - React Query will handle refetching when districtId changes
   });
+
+  // Debug: Log what's being sent to API
+  useEffect(() => {
+    console.log("SchoolAllocated - districtId being sent to API:", {
+      selectedDistrictId,
+      districtIdForAPI,
+      isNull: districtIdForAPI === null,
+      type: typeof districtIdForAPI,
+    });
+  }, [selectedDistrictId, districtIdForAPI]);
 
   // Handle district dropdown change and refetch APIs
   const handleDistrictChange = (value) => {
     setSelectedDistrictId(value);
     setCurrentPage(0); // Reset to first page when district changes
 
-    // Calculate new districtIdForAPI immediately - always ensure it's defined (can be null)
+    // Calculate new districtIdForAPI immediately - send null when "All" is selected
     const newDistrictIdForAPI =
-      value === "all" || value === "" ? null : value ? Number(value) : null; // Default to null instead of undefined
+      value === "all" || value === "" ? null : value ? Number(value) : null;
 
     // Invalidate queries to mark them as stale
     queryClient.invalidateQueries({

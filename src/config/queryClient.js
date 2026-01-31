@@ -63,7 +63,7 @@ export const queryKeys = {
   },
   verifier: {
     domains: (roleId, languageCode, schoolId) => ["verifier", "domains", roleId, languageCode, schoolId],
-    subdomainQuestions: (subDomainId, roleId, languageCode = null, classNumber = null, section = null, subjectId = null) => [
+    subdomainQuestions: (subDomainId, roleId, languageCode = null, classNumber = null, section = null, subjectId = null, schoolId = null) => [
       "verifier",
       "subdomain-questions",
       subDomainId,
@@ -72,6 +72,7 @@ export const queryKeys = {
       classNumber,
       section,
       subjectId,
+      schoolId,
     ],
     submitAnswer: () => ["verifier", "submit-answer"],
     submitSubdomainWiseAnswers: () => ["verifier", "submit-subdomain-wise-answers"],

@@ -15,7 +15,7 @@ const Dashboard = () => {
   useEffect(() => {
     // Force browser to recalculate styles without causing visual glitches
     const forceStyleRecalc = () => {
-      const container = document.querySelector('.dashboard-container');
+      const container = document.querySelector(".dashboard-container");
       if (container) {
         // Trigger a reflow to force style recalculation
         // This ensures CSS is applied even if loaded asynchronously
@@ -138,7 +138,7 @@ const Dashboard = () => {
               <span>Find Schools</span>
             </button>
 
-            <button 
+            <button
               className="btn-secondary"
               onClick={() => navigate("/login?role=school")}
             >
@@ -254,8 +254,7 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* 5 Domains of Assessment Section */}
-      <section className="content-section">
+      {/* <section className="content-section">
         <div className="content-container">
           <div className="section-header">
             <SectionBadge text="SQAAF Parameters" />
@@ -276,7 +275,6 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* Complete Quality Assurance Workflow Section */}
       <section className="content-section content-section-alt">
         <div className="content-container">
           <div className="section-header">
@@ -349,7 +347,7 @@ const Dashboard = () => {
             />
           </div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 };

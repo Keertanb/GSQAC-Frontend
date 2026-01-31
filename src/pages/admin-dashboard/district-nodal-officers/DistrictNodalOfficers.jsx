@@ -122,16 +122,23 @@ const DistrictNodalOfficers = () => {
   // Helper function to parse districtIds
   const parseDistrictIds = (officer) => {
     let districtArray = [];
+    
+    // Try districtIds first (various formats)
     if (typeof officer.districtIds === "string") {
       try {
         const parsed = JSON.parse(officer.districtIds);
         if (Array.isArray(parsed)) {
           districtArray = parsed
-            .map((item) => item.districtId)
+            .map((item) => {
+              // Handle both object format {districtId: X} and direct value
+              return typeof item === "object" && item.districtId !== undefined
+                ? item.districtId
+                : item;
+            })
             .filter((id) => id !== undefined && id !== null);
         }
-      } catch {
-        // If parsing fails, try other formats
+      } catch (e) {
+        console.warn("Failed to parse districtIds string:", e);
       }
     } else if (Array.isArray(officer.districtIds)) {
       if (
@@ -139,13 +146,24 @@ const DistrictNodalOfficers = () => {
         typeof officer.districtIds[0] === "object" &&
         officer.districtIds[0].districtId !== undefined
       ) {
+        // Array of objects with districtId property
         districtArray = officer.districtIds.map((item) => item.districtId);
       } else {
+        // Array of direct values
         districtArray = officer.districtIds;
       }
-    } else if (Array.isArray(officer.districts)) {
+    }
+    
+    // Fallback to districts array if districtIds is empty
+    if (districtArray.length === 0 && Array.isArray(officer.districts)) {
       districtArray = officer.districts;
     }
+    
+    // Ensure all values are numbers and filter out invalid ones
+    districtArray = districtArray
+      .map((id) => Number(id))
+      .filter((id) => !isNaN(id) && id > 0);
+    
     return districtArray;
   };
 
@@ -378,14 +396,29 @@ const DistrictNodalOfficers = () => {
   };
 
   const handleToggleStatus = (officer) => {
-    let districtIds = [];
-    if (Array.isArray(officer.districtIds)) {
-      districtIds = officer.districtIds;
-    } else if (Array.isArray(officer.districts)) {
-      districtIds = officer.districts;
-    } else if (officer.district) {
+    // Use the parseDistrictIds helper function to properly extract district IDs
+    let districtIds = parseDistrictIds(officer);
+    
+    // If parseDistrictIds returns empty and we have a district string, try to find it
+    if (districtIds.length === 0 && officer.district) {
       const district = districts.find((d) => d.name === officer.district);
-      districtIds = district ? [district.value] : [];
+      districtIds = district ? [Number(district.value)] : [];
+    }
+
+    // Ensure districtIds is an array of numbers (not strings)
+    districtIds = Array.isArray(districtIds) 
+      ? districtIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0)
+      : [];
+
+    // If still empty after all attempts, this is a problem - but send empty array to avoid API error
+    if (districtIds.length === 0) {
+      console.error("Warning: No districtIds found for officer when toggling status. Officer data:", {
+        userId: officer.userId,
+        userName: officer.userName,
+        districtIds: officer.districtIds,
+        districts: officer.districts,
+        district: officer.district
+      });
     }
 
     const updatedData = {
@@ -393,8 +426,9 @@ const DistrictNodalOfficers = () => {
       userName: officer.userName,
       mobileNumber: officer.mobileNumber,
       isActive: officer.isActive === true || officer.isActive === 1 ? 0 : 1,
-      districtIds: districtIds,
+      districtIds: districtIds, // Always send as array, even if empty
     };
+    
     upsertMutation.mutate(updatedData);
   };
 
@@ -653,61 +687,38 @@ const DistrictNodalOfficers = () => {
                   />
 
                   <div className="form-group">
-                    <label className="form-label">
-                      Districts <span className="form-label-required">*</span>
-                    </label>
+                    <div className="form-label-container">
+                      <label className="form-label">
+                        Districts <span className="form-label-required">*</span>
+                      </label>
+                      {formik.values.districts?.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            formik.setFieldValue("districts", []);
+                          }}
+                          className="clear-districts-button"
+                          title="Clear all districts"
+                        >
+                          <svg
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                     {districtsLoading ? (
                       <div className="form-loading">Loading districts...</div>
                     ) : (
                       <div className="district-multiselect-container">
-                        {/* Selected Districts with Cross Icons */}
-                        {formik.values.districts?.length > 0 && (
-                          <div className="selected-districts-chips">
-                            {formik.values.districts.map((districtValue) => {
-                              const district = districts.find(
-                                (d) => d.value === districtValue
-                              );
-                              return district ? (
-                                <div key={districtValue} className="district-chip">
-                                  <span className="district-chip-text">
-                                    {district.name}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const currentDistricts =
-                                        formik.values.districts || [];
-                                      formik.setFieldValue(
-                                        "districts",
-                                        currentDistricts.filter(
-                                          (id) => id !== districtValue
-                                        )
-                                      );
-                                    }}
-                                    className="district-chip-remove"
-                                    title="Remove district"
-                                  >
-                                    <svg
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                      width="14"
-                                      height="14"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M6 18L18 6M6 6l12 12"
-                                      />
-                                    </svg>
-                                  </button>
-                                </div>
-                              ) : null;
-                            })}
-                          </div>
-                        )}
-
                         <div className="district-multiselect">
                           {districts.map((district) => {
                             const isSelected =

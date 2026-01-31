@@ -134,6 +134,7 @@ const SchoolVerification = () => {
     roleId,
     languageCode,
     userId: userId ? Number(userId) : undefined,
+    schoolId: schoolId || undefined,
     enabled: !!selectedSubdomain,
   });
 
@@ -164,6 +165,7 @@ const SchoolVerification = () => {
     ...(hasSubjectWiseQuestions &&
       selectedSubject && { subjectId: Number(selectedSubject) }),
     userId: userId ? Number(userId) : undefined,
+    schoolId: schoolId || undefined,
     enabled: !!selectedSubdomain,
   });
 
@@ -233,12 +235,18 @@ const SchoolVerification = () => {
     return classOptions.filter((cls) => cls >= minClass && cls <= maxClass);
   }, [classOptions, selectedClassGroup]);
 
-  // Reset class when class group changes
+  // Reset class and answers when class group changes
   useEffect(() => {
     if (selectedClassGroup) {
       setSelectedClass(null);
+      setSelectedSection(null);
+      setSelectedSubject(null);
+      // Clear answers when class group changes
+      setAnswers({});
+      setTextAnswers({});
     }
   }, [selectedClassGroup]);
+
 
   // Fetch all school sections once
   const { data: sectionsData, isLoading: isLoadingSections } =
@@ -346,7 +354,60 @@ const SchoolVerification = () => {
     }
   };
 
-  // All questions for counting (unfiltered by class)
+  // Helper function to get total questions count from groupWise array for a specific question type
+  const getTotalQuestionsFromGroupWise = (subdomain, questionType) => {
+    if (!subdomain || !subdomain.groupWise || !Array.isArray(subdomain.groupWise)) {
+      return 0;
+    }
+    
+    return subdomain.groupWise
+      .filter((gw) => 
+        gw.questionType === questionType || 
+        String(gw.questionType) === String(questionType)
+      )
+      .reduce((total, gw) => total + (gw.totalQuestions || 0), 0);
+  };
+
+  // Get total questions count from API groupWise data for current subdomain
+  const getTotalQuestionsCount = (questionType) => {
+    if (!selectedSubdomain) return 0;
+    
+    const subdomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
+    
+    // Find the subdomain in domains data
+    const domain = domains.find((d) =>
+      d.subDomain?.some(
+        (sd) => (sd.subDomainId || sd.id) === subdomainId
+      )
+    );
+    
+    if (!domain) return 0;
+    
+    const subdomain = domain.subDomain?.find(
+      (sd) => (sd.subDomainId || sd.id) === subdomainId
+    );
+    
+    if (!subdomain) return 0;
+    
+    // For question types 2 and 3, use groupWise data
+    if (questionType === 2 || questionType === "2" || questionType === 3 || questionType === "3") {
+      return getTotalQuestionsFromGroupWise(subdomain, questionType);
+    }
+    
+    // For question types 1 and 4, check if subdomain has totalQuestions
+    // If groupWise exists, subtract those counts to get type 1/4 count
+    if (subdomain.totalQuestions !== undefined && subdomain.totalQuestions !== null) {
+      const groupWiseTotal = subdomain.groupWise?.reduce(
+        (total, gw) => total + (gw.totalQuestions || 0),
+        0
+      ) || 0;
+      return Math.max(0, subdomain.totalQuestions - groupWiseTotal);
+    }
+    
+    return 0;
+  };
+
+  // All questions for counting (unfiltered by class) - kept for answer checking
   const allQuestionsForCount = useMemo(() => {
     if (
       allQuestionsData?.data?.data &&
@@ -370,7 +431,24 @@ const SchoolVerification = () => {
     return [];
   }, [questionsData?.data]);
 
-  // Questions for counting (unfiltered)
+  // Get total counts from API groupWise data
+  const generalQuestionsTotalCount = useMemo(() => {
+    return getTotalQuestionsCount(1);
+  }, [selectedSubdomain, domains]);
+
+  const classroomObservationQuestionsTotalCount = useMemo(() => {
+    return getTotalQuestionsCount(2);
+  }, [selectedSubdomain, domains]);
+
+  const subjectObservationQuestionsTotalCount = useMemo(() => {
+    return getTotalQuestionsCount(3);
+  }, [selectedSubdomain, domains]);
+
+  const flnQuestionsTotalCount = useMemo(() => {
+    return getTotalQuestionsCount(4);
+  }, [selectedSubdomain, domains]);
+
+  // Questions for counting (unfiltered) - kept for answer checking logic
   const singleChoiceQuestionsForCount = allQuestionsForCount.filter(
     (q) => q.questionType === 1 || q.questionType === "1"
   );
@@ -713,7 +791,16 @@ const SchoolVerification = () => {
 
   // Effect to handle class changes - reset section and subject
   useEffect(() => {
-    if (!selectedSubdomain || !selectedClass) return;
+    if (!selectedSubdomain) return;
+
+    // If class is cleared, also clear section and subject
+    if (!selectedClass) {
+      setSelectedSection(null);
+      setSelectedSubject(null);
+      setAnswers({});
+      setTextAnswers({});
+      return;
+    }
 
     // Reset subject when class changes (since it's class-specific)
     setSelectedSubject(null);
@@ -722,6 +809,42 @@ const SchoolVerification = () => {
     setAnswers({});
     setTextAnswers({});
   }, [selectedClass, selectedSubdomain]);
+
+  // Effect to handle section changes - reset subject and answers
+  useEffect(() => {
+    if (!selectedSubdomain) return;
+
+    // If section is cleared, also clear subject
+    if (!selectedSection) {
+      setSelectedSubject(null);
+      setAnswers({});
+      setTextAnswers({});
+      return;
+    }
+
+    // Reset subject when section changes
+    setSelectedSubject(null);
+
+    // Reset answers - they will be loaded from API if they exist
+    setAnswers({});
+    setTextAnswers({});
+  }, [selectedSection, selectedSubdomain]);
+
+  // Effect to handle subject changes - reset answers
+  useEffect(() => {
+    if (!selectedSubdomain) return;
+
+    // If subject is cleared, clear answers
+    if (!selectedSubject) {
+      setAnswers({});
+      setTextAnswers({});
+      return;
+    }
+
+    // Reset answers when subject changes - they will be loaded from API if they exist
+    setAnswers({});
+    setTextAnswers({});
+  }, [selectedSubject, selectedSubdomain]);
 
   // Effect to load API answers when questions are fetched (API answers take priority)
   useEffect(() => {
@@ -754,7 +877,8 @@ const SchoolVerification = () => {
         }
 
         // Only load answers if required dropdowns are selected
-        if (!shouldLoadAnswer) {
+        // AND if the question has a selectedOptionId (meaning it has an answer from API)
+        if (!shouldLoadAnswer || !question.selectedOptionId) {
           return;
         }
 
@@ -779,8 +903,17 @@ const SchoolVerification = () => {
             };
           }
         } else if (question.selectedOptionId) {
-          // For other questions, load selected option
-          apiAnswers[question.questionId] = String(question.selectedOptionId);
+          // For other questions, load selected option only if it matches current selections
+          // For subject questions, verify the question's subjectId matches selectedSubject
+          if (questionType === 3 || questionType === "3") {
+            // For subject questions, only load if question's subjectId matches selectedSubject
+            if (question.subjectId && Number(question.subjectId) === Number(selectedSubject)) {
+              apiAnswers[question.questionId] = String(question.selectedOptionId);
+            }
+          } else {
+            // For other question types, load the answer
+            apiAnswers[question.questionId] = String(question.selectedOptionId);
+          }
         }
       });
 
@@ -795,6 +928,7 @@ const SchoolVerification = () => {
       });
 
       // API answers take priority - they override any locally saved answers
+      // Only set answers if we have valid answers that match current selections
       if (Object.keys(apiAnswers).length > 0) {
         setAnswers(apiAnswers);
 
@@ -809,6 +943,10 @@ const SchoolVerification = () => {
             [storageKey]: apiAnswers,
           }));
         }
+      } else {
+        // If no API answers match current selections, ensure answers are cleared
+        // This prevents showing cached answers from previous selections
+        setAnswers({});
       }
 
       if (Object.keys(apiTextAnswers).length > 0) {
@@ -825,6 +963,9 @@ const SchoolVerification = () => {
             [storageKey]: apiTextAnswers,
           }));
         }
+      } else {
+        // If no API text answers match current selections, ensure textAnswers are cleared
+        setTextAnswers({});
       }
     }
   }, [
@@ -1242,7 +1383,7 @@ const SchoolVerification = () => {
   const questionTabs = useMemo(() => {
     const tabs = [];
 
-    if (generalQuestions.length > 0) {
+    if (generalQuestions.length > 0 || generalQuestionsTotalCount > 0) {
       tabs.push({
         id: "general",
         label: "General Questions",
@@ -1250,10 +1391,11 @@ const SchoolVerification = () => {
         color: colors.accent.green,
         questions: generalQuestions,
         questionsForCount: generalQuestionsForCount,
+        totalCount: generalQuestionsTotalCount,
       });
     }
 
-    if (classroomObservationQuestions.length > 0) {
+    if (classroomObservationQuestions.length > 0 || classroomObservationQuestionsTotalCount > 0) {
       tabs.push({
         id: "classroom",
         label: "Classroom Observation",
@@ -1261,10 +1403,11 @@ const SchoolVerification = () => {
         color: colors.primary.blue,
         questions: classroomObservationQuestions,
         questionsForCount: classroomObservationQuestionsForCount,
+        totalCount: classroomObservationQuestionsTotalCount,
       });
     }
 
-    if (subjectObservationQuestions.length > 0) {
+    if (subjectObservationQuestions.length > 0 || subjectObservationQuestionsTotalCount > 0) {
       tabs.push({
         id: "subject",
         label: "Subject-Wise Observation",
@@ -1272,10 +1415,11 @@ const SchoolVerification = () => {
         color: colors.accent.purple,
         questions: subjectObservationQuestions,
         questionsForCount: subjectObservationQuestionsForCount,
+        totalCount: subjectObservationQuestionsTotalCount,
       });
     }
 
-    if (flnQuestions.length > 0) {
+    if (flnQuestions.length > 0 || flnQuestionsTotalCount > 0) {
       tabs.push({
         id: "fln",
         label: "Input Type Questions",
@@ -1283,6 +1427,7 @@ const SchoolVerification = () => {
         color: colors.semantic.warning,
         questions: flnQuestions,
         questionsForCount: flnQuestionsForCount,
+        totalCount: flnQuestionsTotalCount,
       });
     }
 
@@ -1296,6 +1441,10 @@ const SchoolVerification = () => {
     classroomObservationQuestionsForCount,
     subjectObservationQuestionsForCount,
     flnQuestionsForCount,
+    generalQuestionsTotalCount,
+    classroomObservationQuestionsTotalCount,
+    subjectObservationQuestionsTotalCount,
+    flnQuestionsTotalCount,
   ]);
 
   // Reset tab to first when questions change
@@ -1307,6 +1456,31 @@ const SchoolVerification = () => {
 
   // Get current tab
   const currentTab = questionTabs[selectedQuestionTab] || null;
+
+  // Reset selected class group if it becomes unavailable (no flag)
+  useEffect(() => {
+    if (selectedClassGroup && selectedSubdomain && currentTab) {
+      let questionType = null;
+      if (currentTab.id === "classroom") {
+        questionType = 2;
+      } else if (currentTab.id === "subject") {
+        questionType = 3;
+      }
+      
+      if (questionType) {
+        const flag = getGroupFlagColor(questionType, selectedClassGroup);
+        if (flag === null || flag === undefined) {
+          // Reset if the selected group no longer has a flag
+          setSelectedClassGroup(null);
+          setSelectedClass(null);
+          setSelectedSection(null);
+          setSelectedSubject(null);
+          setAnswers({});
+          setTextAnswers({});
+        }
+      }
+    }
+  }, [selectedClassGroup, selectedSubdomain, currentTab]);
 
   // Check if all questions of the current tab type are answered
   const areAllQuestionsAnsweredForCurrentTab = useMemo(() => {
@@ -2136,9 +2310,17 @@ const SchoolVerification = () => {
                     <Box sx={{ mb: 3 }}>
                       <Tabs
                         value={selectedQuestionTab}
-                        onChange={(e, newValue) =>
-                          setSelectedQuestionTab(newValue)
-                        }
+                        onChange={(e, newValue) => {
+                          // Reset class group, class, section, and subject when changing question type tab
+                          setSelectedClassGroup(null);
+                          setSelectedClass(null);
+                          setSelectedSection(null);
+                          setSelectedSubject(null);
+                          // Clear answers when changing tabs
+                          setAnswers({});
+                          setTextAnswers({});
+                          setSelectedQuestionTab(newValue);
+                        }}
                         variant="scrollable"
                         scrollButtons="auto"
                         sx={{
@@ -2161,28 +2343,6 @@ const SchoolVerification = () => {
                         }}
                       >
                         {questionTabs.map((tab, index) => {
-                          const answeredCount = tab.questionsForCount.filter(
-                            (q) => {
-                              if (tab.id === "fln") {
-                                const textAnswer = textAnswers[q.questionId];
-                                if (!textAnswer) return false;
-                                try {
-                                  const flnData = JSON.parse(textAnswer);
-                                  return Object.keys(flnData).some(
-                                    (key) =>
-                                      flnData[key] && flnData[key].obtainedMarks
-                                  );
-                                } catch (e) {
-                                  return false;
-                                }
-                              }
-                              return (
-                                answers[q.questionId] ||
-                                textAnswers[q.questionId]
-                              );
-                            }
-                          ).length;
-
                           return (
                             <Tab
                               key={tab.id}
@@ -2203,17 +2363,6 @@ const SchoolVerification = () => {
                                   >
                                     {tab.label}
                                   </Typography>
-                                  <Chip
-                                    label={`${answeredCount}/${tab.questionsForCount.length}`}
-                                    size="small"
-                                    sx={{
-                                      height: 20,
-                                      fontSize: "0.7rem",
-                                      bgcolor: tab.color + "15",
-                                      color: tab.color,
-                                      fontWeight: 600,
-                                    }}
-                                  />
                                 </Box>
                               }
                               sx={{
@@ -2268,23 +2417,6 @@ const SchoolVerification = () => {
                               >
                                 Classroom Observation Questions
                               </Typography>
-                              <Chip
-                                label={`${
-                                  classroomObservationQuestionsForCount.filter(
-                                    (q) =>
-                                      answers[q.questionId] ||
-                                      textAnswers[q.questionId]
-                                  ).length
-                                }/${
-                                  classroomObservationQuestionsForCount.length
-                                } answered`}
-                                size="small"
-                                sx={{
-                                  bgcolor: colors.primary.blue + "15",
-                                  color: colors.primary.blue,
-                                  fontWeight: 600,
-                                }}
-                              />
                             </Box>
                             <Typography
                               variant="body2"
@@ -2342,9 +2474,15 @@ const SchoolVerification = () => {
                                 </InputLabel>
                                 <Select
                                   value={selectedClassGroup || ""}
-                                  onChange={(e) =>
-                                    setSelectedClassGroup(e.target.value)
-                                  }
+                                  onChange={(e) => {
+                                    // Clear all answers and selections when class group changes
+                                    setAnswers({});
+                                    setTextAnswers({});
+                                    setSelectedClass(null);
+                                    setSelectedSection(null);
+                                    setSelectedSubject(null);
+                                    setSelectedClassGroup(e.target.value);
+                                  }}
                                   label="Class Group"
                                   sx={{
                                     borderRadius: 2,
@@ -2363,36 +2501,42 @@ const SchoolVerification = () => {
                                       },
                                   }}
                                 >
-                                  {["1-2", "3-5", "6-8"].map((groupRange) => {
-                                    const flag = getGroupFlagColor(2, groupRange);
-                                    const flagColor = flag ? getFlagColorValue(flag) : null;
-                                    const displayRange = groupRange === "3-5" ? "3-5" : groupRange;
-                                    
-                                    return (
-                                      <MenuItem key={groupRange} value={groupRange}>
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 1,
-                                          }}
-                                        >
-                                          {flagColor && (
-                                            <Box
-                                              sx={{
-                                                width: 10,
-                                                height: 10,
-                                                borderRadius: "50%",
-                                                bgcolor: flagColor,
-                                                flexShrink: 0,
-                                              }}
-                                            />
-                                          )}
-                                          <Typography>Class {displayRange}</Typography>
-                                        </Box>
-                                      </MenuItem>
-                                    );
-                                  })}
+                                  {["1-2", "3-5", "6-8"]
+                                    .filter((groupRange) => {
+                                      // Filter out groups with grey/null flags
+                                      const flag = getGroupFlagColor(2, groupRange);
+                                      return flag !== null && flag !== undefined;
+                                    })
+                                    .map((groupRange) => {
+                                      const flag = getGroupFlagColor(2, groupRange);
+                                      const flagColor = flag ? getFlagColorValue(flag) : null;
+                                      const displayRange = groupRange === "3-5" ? "3-5" : groupRange;
+                                      
+                                      return (
+                                        <MenuItem key={groupRange} value={groupRange}>
+                                          <Box
+                                            sx={{
+                                              display: "flex",
+                                              alignItems: "center",
+                                              gap: 1,
+                                            }}
+                                          >
+                                            {flagColor && (
+                                              <Box
+                                                sx={{
+                                                  width: 10,
+                                                  height: 10,
+                                                  borderRadius: "50%",
+                                                  bgcolor: flagColor,
+                                                  flexShrink: 0,
+                                                }}
+                                              />
+                                            )}
+                                            <Typography>Class {displayRange}</Typography>
+                                          </Box>
+                                        </MenuItem>
+                                      );
+                                    })}
                                 </Select>
                               </FormControl>
 
@@ -2430,8 +2574,12 @@ const SchoolVerification = () => {
                                         [storageKey]: { ...textAnswers },
                                       }));
                                     }
-                                    setSelectedClass(e.target.value);
+                                    // Clear answers, section, and subject immediately
+                                    setAnswers({});
+                                    setTextAnswers({});
                                     setSelectedSection(null);
+                                    setSelectedSubject(null);
+                                    setSelectedClass(e.target.value);
                                   }}
                                   label="Select Class"
                                   disabled={
@@ -2492,9 +2640,13 @@ const SchoolVerification = () => {
                                 </InputLabel>
                                 <Select
                                   value={selectedSection || ""}
-                                  onChange={(e) =>
-                                    setSelectedSection(e.target.value)
-                                  }
+                                  onChange={(e) => {
+                                    // Clear answers and subject before changing section
+                                    setAnswers({});
+                                    setTextAnswers({});
+                                    setSelectedSubject(null);
+                                    setSelectedSection(e.target.value);
+                                  }}
                                   label="Select Section"
                                   disabled={
                                     !selectedClass || sections.length === 0
@@ -2825,23 +2977,6 @@ const SchoolVerification = () => {
                               >
                                 Subject-Wise Observation Questions
                               </Typography>
-                              <Chip
-                                label={`${
-                                  subjectObservationQuestionsForCount.filter(
-                                    (q) =>
-                                      answers[q.questionId] ||
-                                      textAnswers[q.questionId]
-                                  ).length
-                                }/${
-                                  subjectObservationQuestionsForCount.length
-                                } answered`}
-                                size="small"
-                                sx={{
-                                  bgcolor: colors.accent.purple + "15",
-                                  color: colors.accent.purple,
-                                  fontWeight: 600,
-                                }}
-                              />
                             </Box>
                             <Typography
                               variant="body2"
@@ -2900,9 +3035,15 @@ const SchoolVerification = () => {
                                 </InputLabel>
                                 <Select
                                   value={selectedClassGroup || ""}
-                                  onChange={(e) =>
-                                    setSelectedClassGroup(e.target.value)
-                                  }
+                                  onChange={(e) => {
+                                    // Clear all answers and selections when class group changes
+                                    setAnswers({});
+                                    setTextAnswers({});
+                                    setSelectedClass(null);
+                                    setSelectedSection(null);
+                                    setSelectedSubject(null);
+                                    setSelectedClassGroup(e.target.value);
+                                  }}
                                   label="Class Group"
                                   sx={{
                                     borderRadius: 2,
@@ -2921,36 +3062,42 @@ const SchoolVerification = () => {
                                       },
                                   }}
                                 >
-                                  {["1-2", "3-5", "6-8"].map((groupRange) => {
-                                    const flag = getGroupFlagColor(3, groupRange);
-                                    const flagColor = flag ? getFlagColorValue(flag) : null;
-                                    const displayRange = groupRange === "3-5" ? "3-5" : groupRange;
-                                    
-                                    return (
-                                      <MenuItem key={groupRange} value={groupRange}>
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 1,
-                                          }}
-                                        >
-                                          {flagColor && (
-                                            <Box
-                                              sx={{
-                                                width: 10,
-                                                height: 10,
-                                                borderRadius: "50%",
-                                                bgcolor: flagColor,
-                                                flexShrink: 0,
-                                              }}
-                                            />
-                                          )}
-                                          <Typography>Class {displayRange}</Typography>
-                                        </Box>
-                                      </MenuItem>
-                                    );
-                                  })}
+                                  {["1-2", "3-5", "6-8"]
+                                    .filter((groupRange) => {
+                                      // Filter out groups with grey/null flags
+                                      const flag = getGroupFlagColor(3, groupRange);
+                                      return flag !== null && flag !== undefined;
+                                    })
+                                    .map((groupRange) => {
+                                      const flag = getGroupFlagColor(3, groupRange);
+                                      const flagColor = flag ? getFlagColorValue(flag) : null;
+                                      const displayRange = groupRange === "3-5" ? "3-5" : groupRange;
+                                      
+                                      return (
+                                        <MenuItem key={groupRange} value={groupRange}>
+                                          <Box
+                                            sx={{
+                                              display: "flex",
+                                              alignItems: "center",
+                                              gap: 1,
+                                            }}
+                                          >
+                                            {flagColor && (
+                                              <Box
+                                                sx={{
+                                                  width: 10,
+                                                  height: 10,
+                                                  borderRadius: "50%",
+                                                  bgcolor: flagColor,
+                                                  flexShrink: 0,
+                                                }}
+                                              />
+                                            )}
+                                            <Typography>Class {displayRange}</Typography>
+                                          </Box>
+                                        </MenuItem>
+                                      );
+                                    })}
                                 </Select>
                               </FormControl>
 
@@ -2988,8 +3135,12 @@ const SchoolVerification = () => {
                                         [storageKey]: { ...textAnswers },
                                       }));
                                     }
-                                    setSelectedClass(e.target.value);
+                                    // Clear answers, section, and subject immediately
+                                    setAnswers({});
+                                    setTextAnswers({});
                                     setSelectedSection(null);
+                                    setSelectedSubject(null);
+                                    setSelectedClass(e.target.value);
                                   }}
                                   label="Select Class"
                                   disabled={
@@ -3050,9 +3201,13 @@ const SchoolVerification = () => {
                                 </InputLabel>
                                 <Select
                                   value={selectedSection || ""}
-                                  onChange={(e) =>
-                                    setSelectedSection(e.target.value)
-                                  }
+                                  onChange={(e) => {
+                                    // Clear answers and subject before changing section
+                                    setAnswers({});
+                                    setTextAnswers({});
+                                    setSelectedSubject(null);
+                                    setSelectedSection(e.target.value);
+                                  }}
                                   label="Select Section"
                                   disabled={
                                     !selectedClass || sections.length === 0
@@ -3120,11 +3275,11 @@ const SchoolVerification = () => {
                                 <Select
                                   value={selectedSubject || ""}
                                   onChange={(e) => {
+                                    // Clear answers before changing subject
+                                    setAnswers({});
+                                    setTextAnswers({});
+                                    // Set new subject - React Query will automatically refetch with new subjectId
                                     setSelectedSubject(e.target.value);
-                                    // Refetch questions when subject changes
-                                    if (refetchQuestions) {
-                                      refetchQuestions();
-                                    }
                                   }}
                                   label="Select Subject"
                                   disabled={
@@ -3437,31 +3592,6 @@ const SchoolVerification = () => {
                               >
                                 Input Type Questions
                               </Typography>
-                              <Chip
-                                label={`${
-                                  flnQuestionsForCount.filter((q) => {
-                                    const textAnswer =
-                                      textAnswers[q.questionId];
-                                    if (!textAnswer) return false;
-                                    try {
-                                      const flnData = JSON.parse(textAnswer);
-                                      return Object.keys(flnData).some(
-                                        (key) =>
-                                          flnData[key] &&
-                                          flnData[key].obtainedMarks
-                                      );
-                                    } catch (e) {
-                                      return false;
-                                    }
-                                  }).length
-                                }/${flnQuestionsForCount.length} answered`}
-                                size="small"
-                                sx={{
-                                  bgcolor: colors.semantic.warning + "15",
-                                  color: colors.semantic.warning,
-                                  fontWeight: 600,
-                                }}
-                              />
                             </Box>
                             <Typography
                               variant="body2"
@@ -3826,21 +3956,6 @@ const SchoolVerification = () => {
                               >
                                 General Questions
                               </Typography>
-                              <Chip
-                                label={`${
-                                  generalQuestionsForCount.filter(
-                                    (q) =>
-                                      answers[q.questionId] ||
-                                      textAnswers[q.questionId]
-                                  ).length
-                                }/${generalQuestionsForCount.length} answered`}
-                                size="small"
-                                sx={{
-                                  bgcolor: colors.accent.green + "15",
-                                  color: colors.accent.green,
-                                  fontWeight: 600,
-                                }}
-                              />
                             </Box>
                             <Typography
                               variant="body2"

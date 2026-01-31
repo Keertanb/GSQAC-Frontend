@@ -250,10 +250,15 @@ const SelfAssessment = () => {
     return classOptions.filter((cls) => cls >= minClass && cls <= maxClass);
   }, [classOptions, selectedClassGroup]);
 
-  // Reset class when class group changes
+  // Reset class and answers when class group changes
   useEffect(() => {
     if (selectedClassGroup) {
       setSelectedClass(null);
+      setSelectedSection(null);
+      setSelectedSubject(null);
+      // Clear answers when class group changes
+      setAnswers({});
+      setTextAnswers({});
     }
   }, [selectedClassGroup]);
 
@@ -368,6 +373,59 @@ const SelfAssessment = () => {
       default:
         return colors.neutral.gray400;
     }
+  };
+
+  // Helper function to get total questions count from groupWise array for a specific question type
+  const getTotalQuestionsFromGroupWise = (subdomain, questionType) => {
+    if (!subdomain || !subdomain.groupWise || !Array.isArray(subdomain.groupWise)) {
+      return 0;
+    }
+    
+    return subdomain.groupWise
+      .filter((gw) => 
+        gw.questionType === questionType || 
+        String(gw.questionType) === String(questionType)
+      )
+      .reduce((total, gw) => total + (gw.totalQuestions || 0), 0);
+  };
+
+  // Get total questions count from API groupWise data for current subdomain
+  const getTotalQuestionsCount = (questionType) => {
+    if (!selectedSubdomain) return 0;
+    
+    const subdomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
+    
+    // Find the subdomain in domains data
+    const domain = domains.find((d) =>
+      d.subDomain?.some(
+        (sd) => (sd.subDomainId || sd.id) === subdomainId
+      )
+    );
+    
+    if (!domain) return 0;
+    
+    const subdomain = domain.subDomain?.find(
+      (sd) => (sd.subDomainId || sd.id) === subdomainId
+    );
+    
+    if (!subdomain) return 0;
+    
+    // For question types 2 and 3, use groupWise data
+    if (questionType === 2 || questionType === "2" || questionType === 3 || questionType === "3") {
+      return getTotalQuestionsFromGroupWise(subdomain, questionType);
+    }
+    
+    // For question types 1 and 4, check if subdomain has totalQuestions
+    // If groupWise exists, subtract those counts to get type 1/4 count
+    if (subdomain.totalQuestions !== undefined && subdomain.totalQuestions !== null) {
+      const groupWiseTotal = subdomain.groupWise?.reduce(
+        (total, gw) => total + (gw.totalQuestions || 0),
+        0
+      ) || 0;
+      return Math.max(0, subdomain.totalQuestions - groupWiseTotal);
+    }
+    
+    return 0;
   };
 
   // All questions for counting (unfiltered by class)
@@ -701,17 +759,26 @@ const SelfAssessment = () => {
     setTextAnswers({});
   };
 
-  // Effect to handle class changes - reset section and subject
+  // Reset section and subject when class changes
   useEffect(() => {
-    if (!selectedSubdomain || !selectedClass) return;
+    if (selectedClass) {
+      setSelectedSection(null);
+      setSelectedSubject(null);
+      // Clear answers when class changes
+      setAnswers({});
+      setTextAnswers({});
+    }
+  }, [selectedClass]);
 
-    // Reset subject when class changes (since it's class-specific)
-    setSelectedSubject(null);
-
-    // Reset answers - they will be loaded from API if they exist
-    setAnswers({});
-    setTextAnswers({});
-  }, [selectedClass, selectedSubdomain]);
+  // Reset subject and answers when section changes
+  useEffect(() => {
+    if (selectedSection) {
+      setSelectedSubject(null);
+      // Clear answers when section changes
+      setAnswers({});
+      setTextAnswers({});
+    }
+  }, [selectedSection]);
 
   // Effect to load API answers when questions are fetched (API answers take priority)
   useEffect(() => {
@@ -736,8 +803,12 @@ const SelfAssessment = () => {
           shouldLoadAnswer = !!selectedClass && !!selectedSection;
         } else if (questionType === 3 || questionType === "3") {
           // Subject observation - needs class, section, and subject
+          // Also check if the question's subjectId matches the selected subject
           shouldLoadAnswer =
-            !!selectedClass && !!selectedSection && !!selectedSubject;
+            !!selectedClass &&
+            !!selectedSection &&
+            !!selectedSubject &&
+            question.subjectId === Number(selectedSubject);
         } else if (questionType === 4 || questionType === "4") {
           // FLN questions - no dropdowns needed
           shouldLoadAnswer = true;
@@ -785,6 +856,7 @@ const SelfAssessment = () => {
       });
 
       // API answers take priority - they override any locally saved answers
+      // Only set if we have answers to set
       if (Object.keys(apiAnswers).length > 0) {
         setAnswers(apiAnswers);
 
@@ -799,6 +871,9 @@ const SelfAssessment = () => {
             [storageKey]: apiAnswers,
           }));
         }
+      } else {
+        // Clear answers if no API answers match current selections
+        setAnswers({});
       }
 
       if (Object.keys(apiTextAnswers).length > 0) {
@@ -815,6 +890,9 @@ const SelfAssessment = () => {
             [storageKey]: apiTextAnswers,
           }));
         }
+      } else {
+        // Clear text answers if no API answers match current selections
+        setTextAnswers({});
       }
     }
   }, [allQuestions, selectedSubdomain, selectedClass, selectedSection, selectedSubject]);
@@ -2255,23 +2333,6 @@ const SelfAssessment = () => {
                             >
                               Classroom Observation Questions
                             </Typography>
-                            <Chip
-                              label={`${
-                                classroomObservationQuestionsForCount.filter(
-                                  (q) =>
-                                    answers[q.questionId] ||
-                                    textAnswers[q.questionId]
-                                ).length
-                              }/${
-                                classroomObservationQuestionsForCount.length
-                              } answered`}
-                              size="small"
-                              sx={{
-                                bgcolor: colors.primary.blue + "15",
-                                color: colors.primary.blue,
-                                fontWeight: 600,
-                              }}
-                            />
                           </Box>
                           <Typography
                             variant="body2"
@@ -2794,23 +2855,6 @@ const SelfAssessment = () => {
                             >
                               Subject-Wise Observation Questions
                             </Typography>
-                            <Chip
-                              label={`${
-                                subjectObservationQuestionsForCount.filter(
-                                  (q) =>
-                                    answers[q.questionId] ||
-                                    textAnswers[q.questionId]
-                                ).length
-                              }/${
-                                subjectObservationQuestionsForCount.length
-                              } answered`}
-                              size="small"
-                              sx={{
-                                bgcolor: colors.accent.purple + "15",
-                                color: colors.accent.purple,
-                                fontWeight: 600,
-                              }}
-                            />
                           </Box>
                           <Typography
                             variant="body2"
@@ -3395,30 +3439,6 @@ const SelfAssessment = () => {
                             >
                               Input Type Questions
                             </Typography>
-                            <Chip
-                              label={`${
-                                flnQuestionsForCount.filter((q) => {
-                                  const textAnswer = textAnswers[q.questionId];
-                                  if (!textAnswer) return false;
-                                  try {
-                                    const flnData = JSON.parse(textAnswer);
-                                    return Object.keys(flnData).some(
-                                      (key) =>
-                                        flnData[key] &&
-                                        flnData[key].obtainedMarks
-                                    );
-                                  } catch (e) {
-                                    return false;
-                                  }
-                                }).length
-                              }/${flnQuestionsForCount.length} answered`}
-                              size="small"
-                              sx={{
-                                bgcolor: colors.semantic.warning + "15",
-                                color: colors.semantic.warning,
-                                fontWeight: 600,
-                              }}
-                            />
                           </Box>
                           <Typography
                             variant="body2"
@@ -3790,21 +3810,6 @@ const SelfAssessment = () => {
                             >
                               General Questions
                             </Typography>
-                            <Chip
-                              label={`${
-                                generalQuestionsForCount.filter(
-                                  (q) =>
-                                    answers[q.questionId] ||
-                                    textAnswers[q.questionId]
-                                ).length
-                              }/${generalQuestionsForCount.length} answered`}
-                              size="small"
-                              sx={{
-                                bgcolor: colors.accent.green + "15",
-                                color: colors.accent.green,
-                                fontWeight: 600,
-                              }}
-                            />
                           </Box>
                           <Typography
                             variant="body2"
