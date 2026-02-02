@@ -420,15 +420,10 @@ export const getVerifierAllocatedSchools = async (params) => {
       const searchParams = new URLSearchParams();
       Object.keys(params).forEach((key) => {
         const value = params[key];
-        // Include the parameter even if it's null (for districtId when "All" is selected)
-        if (value !== undefined) {
-          if (value === null) {
-            // Explicitly send null as string "null" for districtId
-            // This ensures districtId=null is sent in the query string when "All" is selected
-            searchParams.append(key, "null");
-          } else {
-            searchParams.append(key, String(value));
-          }
+        // Only include the parameter if it's not null or undefined
+        // When districtId is null (for "All" selection), omit it from the query string
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
         }
       });
       const queryString = searchParams.toString();
@@ -437,6 +432,8 @@ export const getVerifierAllocatedSchools = async (params) => {
         originalParams: params,
         queryString,
         districtId: params.districtId,
+        districtIdType: typeof params.districtId,
+        districtIdIsNull: params.districtId === null,
       });
       return queryString;
     },

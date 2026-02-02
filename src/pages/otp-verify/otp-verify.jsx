@@ -38,6 +38,30 @@ const OtpVerify = () => {
   const userId = storeUserId || locationUserId;
   const currentRole = role || locationRole;
 
+  // Check if user is already authenticated - if so, redirect to dashboard
+  useEffect(() => {
+    const authState = useAuthStore.getState();
+    const { user, token, role: authRole } = authState;
+    
+    // If user is already authenticated (has token and user), redirect to dashboard
+    if (user && token && authRole) {
+      const dashboardRoutes = {
+        school: "/school-dashboard",
+        parent: "/parent-dashboard",
+        inspector: "/inspector-dashboard",
+        admin: "/admin-dashboard",
+        crc: "/crc-dashboard",
+      };
+      
+      const dashboardRoute = dashboardRoutes[authRole];
+      if (dashboardRoute) {
+        console.log("User already authenticated, redirecting to dashboard:", dashboardRoute);
+        navigate(dashboardRoute, { replace: true });
+        return;
+      }
+    }
+  }, [navigate]);
+
   // Set userId from location state to store if available
   useEffect(() => {
     if (locationUserId && locationRole) {

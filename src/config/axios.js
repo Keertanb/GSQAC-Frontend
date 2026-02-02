@@ -2,7 +2,8 @@ import axios from "axios";
 import useAuthStore from "../store/useAuthStore";
 
 // Base URL for API
-const BASE_URL = "https://16sm2wqr-5000.inc1.devtunnels.ms/api/v1";
+const BASE_URL =
+  "https://clement-untrammed-nonburdensomely.ngrok-free.app/api/v1";
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,

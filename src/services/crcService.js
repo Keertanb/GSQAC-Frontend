@@ -111,9 +111,12 @@ export const submitAnswer = async (payload) => {
  * @returns {Promise} API response
  */
 export const submitSubdomainWiseAnswers = async (payload, schoolId) => {
+  // Remove questionType from payload
+  const { questionType, ...payloadWithoutQuestionType } = payload;
+  
   // Add schoolId to payload if provided
   const finalPayload = {
-    ...payload,
+    ...payloadWithoutQuestionType,
     ...(schoolId && { schoolId }),
   };
 

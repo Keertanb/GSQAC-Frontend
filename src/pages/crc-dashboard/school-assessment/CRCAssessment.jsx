@@ -29,6 +29,8 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   TextField,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   CheckCircle,
@@ -108,6 +110,7 @@ const CRCAssessment = () => {
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [pendingFinalSubmit, setPendingFinalSubmit] = useState(false);
+  const [selectedQuestionTab, setSelectedQuestionTab] = useState(0);
 
   // Get school info from location state or use paramSchoolId
   const schoolFromState = location.state?.school;
@@ -390,6 +393,59 @@ const CRCAssessment = () => {
     }
   };
 
+  // Helper function to get total questions count from groupWise array for a specific question type
+  const getTotalQuestionsFromGroupWise = (subdomain, questionType) => {
+    if (!subdomain || !subdomain.groupWise || !Array.isArray(subdomain.groupWise)) {
+      return 0;
+    }
+    
+    return subdomain.groupWise
+      .filter((gw) => 
+        gw.questionType === questionType || 
+        String(gw.questionType) === String(questionType)
+      )
+      .reduce((total, gw) => total + (gw.totalQuestions || 0), 0);
+  };
+
+  // Get total questions count from API groupWise data for current subdomain
+  const getTotalQuestionsCount = (questionType) => {
+    if (!selectedSubdomain) return 0;
+    
+    const subdomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
+    
+    // Find the subdomain in domains data
+    const domain = domains.find((d) =>
+      d.subDomain?.some(
+        (sd) => (sd.subDomainId || sd.id) === subdomainId
+      )
+    );
+    
+    if (!domain) return 0;
+    
+    const subdomain = domain.subDomain?.find(
+      (sd) => (sd.subDomainId || sd.id) === subdomainId
+    );
+    
+    if (!subdomain) return 0;
+    
+    // For question types 2 and 3, use groupWise data
+    if (questionType === 2 || questionType === "2" || questionType === 3 || questionType === "3") {
+      return getTotalQuestionsFromGroupWise(subdomain, questionType);
+    }
+    
+    // For question types 1 and 4, check if subdomain has totalQuestions
+    // If groupWise exists, subtract those counts to get type 1/4 count
+    if (subdomain.totalQuestions !== undefined && subdomain.totalQuestions !== null) {
+      const groupWiseTotal = subdomain.groupWise?.reduce(
+        (total, gw) => total + (gw.totalQuestions || 0),
+        0
+      ) || 0;
+      return Math.max(0, subdomain.totalQuestions - groupWiseTotal);
+    }
+    
+    return 0;
+  };
+
   // Extract and store sessionId from domains API response
   useEffect(() => {
     if (domainsData?.sessionId !== undefined) {
@@ -502,6 +558,211 @@ const CRCAssessment = () => {
     return q.isClassroomObservation !== 1 || q.isClassroomObservation == null;
   });
 
+  // Get total counts from API groupWise data
+  const generalQuestionsTotalCount = useMemo(() => {
+    return getTotalQuestionsCount(1);
+  }, [selectedSubdomain, domains]);
+
+  const classroomObservationQuestionsTotalCount = useMemo(() => {
+    return getTotalQuestionsCount(2);
+  }, [selectedSubdomain, domains]);
+
+  const subjectObservationQuestionsTotalCount = useMemo(() => {
+    return getTotalQuestionsCount(3);
+  }, [selectedSubdomain, domains]);
+
+  const flnQuestionsTotalCount = useMemo(() => {
+    return getTotalQuestionsCount(4);
+  }, [selectedSubdomain, domains]);
+
+  // Define question type tabs - only show tabs that have actual questions to display
+  const questionTabs = useMemo(() => {
+    const tabs = [];
+
+    // Only add tab if there are actual questions to display
+    if (generalQuestions.length > 0) {
+      tabs.push({
+        id: "general",
+        label: "General Questions",
+        icon: <Assignment sx={{ fontSize: 20 }} />,
+        color: colors.accent.green,
+        questions: generalQuestions,
+        questionsForCount: generalQuestionsForCount,
+        totalCount: generalQuestionsTotalCount,
+      });
+    }
+
+    // Only add tab if there are actual questions to display
+    if (classroomObservationQuestions.length > 0) {
+      tabs.push({
+        id: "classroom",
+        label: "Classroom Observation",
+        icon: <Class sx={{ fontSize: 20 }} />,
+        color: colors.primary.blue,
+        questions: classroomObservationQuestions,
+        questionsForCount: classroomObservationQuestionsForCount,
+        totalCount: classroomObservationQuestionsTotalCount,
+      });
+    }
+
+    // Only add tab if there are actual questions to display
+    if (subjectObservationQuestions.length > 0) {
+      tabs.push({
+        id: "subject",
+        label: "Subject-Wise Observation",
+        icon: <MenuBook sx={{ fontSize: 20 }} />,
+        color: colors.accent.purple,
+        questions: subjectObservationQuestions,
+        questionsForCount: subjectObservationQuestionsForCount,
+        totalCount: subjectObservationQuestionsTotalCount,
+      });
+    }
+
+    // Only add tab if there are actual questions to display
+    if (flnQuestions.length > 0) {
+      tabs.push({
+        id: "fln",
+        label: "Input Type Questions",
+        icon: <Create sx={{ fontSize: 20 }} />,
+        color: colors.semantic.warning,
+        questions: flnQuestions,
+        questionsForCount: flnQuestionsForCount,
+        totalCount: flnQuestionsTotalCount,
+      });
+    }
+
+    return tabs;
+  }, [
+    generalQuestions,
+    classroomObservationQuestions,
+    subjectObservationQuestions,
+    flnQuestions,
+    generalQuestionsForCount,
+    classroomObservationQuestionsForCount,
+    subjectObservationQuestionsForCount,
+    flnQuestionsForCount,
+    generalQuestionsTotalCount,
+    classroomObservationQuestionsTotalCount,
+    subjectObservationQuestionsTotalCount,
+    flnQuestionsTotalCount,
+  ]);
+
+  // Reset tab to first when questions change
+  useEffect(() => {
+    if (questionTabs.length > 0 && selectedQuestionTab >= questionTabs.length) {
+      setSelectedQuestionTab(0);
+    }
+  }, [questionTabs.length, selectedQuestionTab]);
+
+  // Get current tab
+  const currentTab = questionTabs[selectedQuestionTab] || null;
+
+  // Helper function to check if API answer should be shown based on question type and selected dropdowns
+  const shouldShowApiAnswer = (question) => {
+    const questionType =
+      question.questionType || (question.isClassroomObservation === 1 ? 2 : 1);
+
+    if (questionType === 1 || questionType === "1") {
+      // General questions - no dropdowns needed
+      return true;
+    } else if (questionType === 2 || questionType === "2") {
+      // Classroom observation - needs class and section
+      return !!selectedClass && !!selectedSection;
+    } else if (questionType === 3 || questionType === "3") {
+      // Subject observation - needs class, section, and subject
+      return !!selectedClass && !!selectedSection && !!selectedSubject;
+    } else if (questionType === 4 || questionType === "4") {
+      // FLN questions - no dropdowns needed
+      return true;
+    }
+    return false;
+  };
+
+  // Reset selected class group if it becomes unavailable (no flag)
+  useEffect(() => {
+    if (selectedClassGroup && selectedSubdomain && currentTab) {
+      let questionType = null;
+      if (currentTab.id === "classroom") {
+        questionType = 2;
+      } else if (currentTab.id === "subject") {
+        questionType = 3;
+      }
+      
+      if (questionType) {
+        const flag = getGroupFlagColor(questionType, selectedClassGroup);
+        if (flag === null || flag === undefined) {
+          // Reset if the selected group no longer has a flag
+          setSelectedClassGroup(null);
+          setSelectedClass(null);
+          setSelectedSection(null);
+          setSelectedSubject(null);
+          setAnswers({});
+          setTextAnswers({});
+        }
+      }
+    }
+  }, [selectedClassGroup, selectedSubdomain, currentTab]);
+
+  // Check if all questions of the current tab type are answered
+  const areAllQuestionsAnsweredForCurrentTab = useMemo(() => {
+    if (
+      !currentTab ||
+      !currentTab.questionsForCount ||
+      currentTab.questionsForCount.length === 0
+    ) {
+      return false;
+    }
+
+    const questionsForCount = currentTab.questionsForCount;
+
+    // For FLN questions (type 4), check if all have valid JSON answers
+    if (currentTab.id === "fln") {
+      return questionsForCount.every((q) => {
+        const textAnswer = textAnswers[q.questionId];
+        if (!textAnswer) return false;
+        try {
+          const flnData = JSON.parse(textAnswer);
+          // Check if at least one class (2 or 3) has an answer
+          return Object.keys(flnData).some(
+            (key) => flnData[key] && flnData[key].obtainedMarks
+          );
+        } catch (e) {
+          return false;
+        }
+      });
+    }
+
+    // For other question types, check if all questions have answers
+    return questionsForCount.every((q) => {
+      // Check if question has an answer (either from user or API)
+      const userAnswer = answers[q.questionId];
+      const userTextAnswer = textAnswers[q.questionId];
+
+      // Find the question in allQuestions to check API answer
+      const questionInAll = allQuestions.find(
+        (aq) => aq.questionId === q.questionId
+      );
+
+      // For questions that need class/section/subject, check if API answer should be shown
+      const apiAnswer =
+        questionInAll &&
+        shouldShowApiAnswer(questionInAll) &&
+        questionInAll.selectedOptionId
+          ? String(questionInAll.selectedOptionId)
+          : null;
+
+      return userAnswer || userTextAnswer || apiAnswer;
+    });
+  }, [
+    currentTab,
+    answers,
+    textAnswers,
+    allQuestions,
+    selectedClass,
+    selectedSection,
+    selectedSubject,
+  ]);
+
   const getSubdomainProgress = (subdomain) => {
     const subdomainId = subdomain.subDomainId || subdomain.id;
     const subdomainIdKey = subdomainId;
@@ -595,27 +856,6 @@ const CRCAssessment = () => {
   // Get option text
   const getOptionText = (option) => {
     return option.optionText || "";
-  };
-
-  // Helper function to check if API answer should be shown based on question type and selected dropdowns
-  const shouldShowApiAnswer = (question) => {
-    const questionType =
-      question.questionType || (question.isClassroomObservation === 1 ? 2 : 1);
-
-    if (questionType === 1 || questionType === "1") {
-      // General questions - no dropdowns needed
-      return true;
-    } else if (questionType === 2 || questionType === "2") {
-      // Classroom observation - needs class and section
-      return !!selectedClass && !!selectedSection;
-    } else if (questionType === 3 || questionType === "3") {
-      // Subject observation - needs class, section, and subject
-      return !!selectedClass && !!selectedSection && !!selectedSubject;
-    } else if (questionType === 4 || questionType === "4") {
-      // FLN questions - no dropdowns needed
-      return true;
-    }
-    return false;
   };
 
   // Get domain icon based on domain ID or name
@@ -798,13 +1038,9 @@ const CRCAssessment = () => {
           shouldLoadAnswer = true;
         }
 
-        // Only load answers if required dropdowns are selected
-        if (!shouldLoadAnswer) {
-          return;
-        }
-
         // For FLN questions (type 4), group by questionId and std
         if (questionType === 4 || questionType === "4") {
+          // FLN questions don't need dropdowns, so always process them
           const qId = question.questionId;
 
           // Initialize map for this question if not exists
@@ -812,20 +1048,37 @@ const CRCAssessment = () => {
             flnAnswersMap[qId] = {};
           }
 
-          // Check if we have std (API format)
-          if (question.std) {
-            flnAnswersMap[qId][question.std] = {
-              obtainedMarks:
-                question.answerText !== null &&
-                question.answerText !== undefined
-                  ? String(question.answerText)
-                  : "",
+          // Check if we have std and answerText (API format)
+          // Convert std to number to ensure consistent key type
+          // Note: answerText can be 0, which is a valid value, so only check for null/undefined
+          // Don't check for empty string as 0 is a valid answer
+          if (question.std !== null && question.std !== undefined && 
+              question.answerText !== null && question.answerText !== undefined) {
+            const stdKey = Number(question.std);
+            flnAnswersMap[qId][stdKey] = {
+              obtainedMarks: String(question.answerText),
               answerId: question.answerId || null,
             };
+            // Debug log for FLN answer processing
+            console.log("FLN Answer Processed:", {
+              questionId: qId,
+              std: question.std,
+              stdKey,
+              answerText: question.answerText,
+              answerId: question.answerId,
+              flnAnswersMapEntry: flnAnswersMap[qId],
+            });
           }
-        } else if (question.selectedOptionId) {
-          // For other questions, load selected option
-          apiAnswers[question.questionId] = String(question.selectedOptionId);
+        } else {
+          // For other question types, only load answers if required dropdowns are selected
+          if (!shouldLoadAnswer) {
+            return;
+          }
+          
+          // Load selected option if present
+          if (question.selectedOptionId) {
+            apiAnswers[question.questionId] = String(question.selectedOptionId);
+          }
         }
       });
 
@@ -838,6 +1091,15 @@ const CRCAssessment = () => {
           );
         }
       });
+
+      // Debug: Log FLN answers processing
+      if (Object.keys(flnAnswersMap).length > 0) {
+        console.log("FLN Answers Debug:", {
+          flnAnswersMap,
+          apiTextAnswers,
+          allQuestionsFLN: allQuestions.filter(q => (q.questionType === 4 || q.questionType === "4")),
+        });
+      }
 
       // API answers take priority - they override any locally saved answers
       // Only set if we have answers to set
@@ -856,12 +1118,32 @@ const CRCAssessment = () => {
           }));
         }
       } else {
-        // Clear answers if no API answers match current selections
-        setAnswers({});
+        // Only clear answers if we're not dealing with FLN questions
+        // FLN questions don't use apiAnswers, so don't clear if we have FLN answers
+        if (Object.keys(apiTextAnswers).length === 0) {
+          setAnswers({});
+        }
       }
 
+      // Always set textAnswers if we have FLN answers, even if apiAnswers is empty
+      // Merge with existing textAnswers to preserve any user-entered data that's not in API
       if (Object.keys(apiTextAnswers).length > 0) {
-        setTextAnswers(apiTextAnswers);
+        // Debug log before setting textAnswers
+        console.log("Setting textAnswers from API:", {
+          apiTextAnswers,
+          currentTextAnswers: textAnswers,
+          willMerge: true,
+        });
+        
+        // Merge API answers with existing textAnswers (API takes priority)
+        setTextAnswers((prevTextAnswers) => {
+          const merged = {
+            ...prevTextAnswers,
+            ...apiTextAnswers,
+          };
+          console.log("Merged textAnswers:", merged);
+          return merged;
+        });
 
         // Also save to classWiseTextAnswers (if class is selected)
         if (selectedClass) {
@@ -871,12 +1153,19 @@ const CRCAssessment = () => {
           const storageKey = `${subdomainId}_${classKey}`;
           setClassWiseTextAnswers((prev) => ({
             ...prev,
-            [storageKey]: apiTextAnswers,
+            [storageKey]: {
+              ...(prev[storageKey] || {}),
+              ...apiTextAnswers,
+            },
           }));
         }
       } else {
-        // Clear text answers if no API answers match current selections
-        setTextAnswers({});
+        // Only clear text answers if we're not dealing with FLN questions
+        // and if we don't have any other answers
+        if (Object.keys(apiAnswers).length === 0) {
+          // Don't clear if we have existing textAnswers that might be user-entered
+          // Only clear if we're sure there are no answers at all
+        }
       }
     }
   }, [
@@ -1322,16 +1611,9 @@ const CRCAssessment = () => {
       return;
     }
 
-    // For class-based questions, validate class and section selection
-    const hasClassBasedQuestions = classBasedQuestions.length > 0;
-    const hasSubjectQuestions = subjectObservationQuestions.length > 0;
-
-    // Check if user has answered any subject observation questions (type 3)
-    const hasAnsweredSubjectQuestions = subjectObservationQuestions.some(
-      (q) => answers[q.questionId] || textAnswers[q.questionId],
-    );
-
-    if (hasClassBasedQuestions) {
+    // Validate class/section/subject based on CURRENT TAB TYPE only
+    // For classroom observation questions, validate class and section
+    if (currentTab?.id === "classroom") {
       if (!selectedClass) {
         enqueueSnackbar("Please select a class before submitting.", {
           variant: "warning",
@@ -1346,17 +1628,34 @@ const CRCAssessment = () => {
       }
     }
 
-    // For subject observation questions, only validate subject if user has answered type 3 questions
-    if (hasAnsweredSubjectQuestions && !selectedSubject) {
-      enqueueSnackbar("Please select a subject before submitting.", {
-        variant: "warning",
-      });
-      return;
+    // For subject observation questions, validate class, section, and subject
+    if (currentTab?.id === "subject") {
+      if (!selectedClass) {
+        enqueueSnackbar("Please select a class before submitting.", {
+          variant: "warning",
+        });
+        return;
+      }
+      if (!selectedSection) {
+        enqueueSnackbar("Please select a section before submitting.", {
+          variant: "warning",
+        });
+        return;
+      }
+      if (!selectedSubject) {
+        enqueueSnackbar("Please select a subject before submitting.", {
+          variant: "warning",
+        });
+        return;
+      }
     }
 
+    // Determine class and section values based on current tab type
     let clsValue = null;
     let sectionValue = null;
-    const isClassSelected = hasClassBasedQuestions && selectedClass;
+    const isClassSelected =
+      (currentTab?.id === "classroom" || currentTab?.id === "subject") &&
+      selectedClass;
 
     if (isClassSelected) {
       // Class-based questions - use selected class and section
@@ -1366,9 +1665,11 @@ const CRCAssessment = () => {
     // For General questions or FLN questions, clsValue and sectionValue remain null
 
     // Format answers array from current answers state
+    // Only include questions from the current tab
     const answersArray = [];
+    const questionsToProcess = currentTab?.questions || [];
 
-    allQuestions.forEach((question) => {
+    questionsToProcess.forEach((question) => {
       const questionType =
         question.questionType ||
         (question.isClassroomObservation === 1 ? 2 : 1);
@@ -1436,7 +1737,12 @@ const CRCAssessment = () => {
 
     const payload = {
       isAns: 1,
+      questionType: currentTab?.id === "general" ? 1 : 
+                    currentTab?.id === "classroom" ? 2 :
+                    currentTab?.id === "subject" ? 3 :
+                    currentTab?.id === "fln" ? 4 : null,
       userId: Number(userId),
+      schoolId: schoolId,
       cls: clsValue,
       section: sectionValue,
       subjectId: selectedSubject ? Number(selectedSubject) : null,
@@ -2316,9 +2622,89 @@ const CRCAssessment = () => {
                       </Box>
                     )}
 
-                    {/* Classroom Observation Questions Section (Type 2) */}
-                    {classroomObservationQuestions.length > 0 && (
-                      <Box sx={{ mb: 4 }}>
+                    {/* Question Type Tabs */}
+                    {!isLoadingQuestions &&
+                      allQuestions.length > 0 &&
+                      questionTabs.length > 0 && (
+                        <Box sx={{ mb: 3 }}>
+                          <Tabs
+                            value={selectedQuestionTab}
+                            onChange={(e, newValue) => {
+                              // Reset class group, class, section, and subject when changing question type tab
+                              setSelectedClassGroup(null);
+                              setSelectedClass(null);
+                              setSelectedSection(null);
+                              setSelectedSubject(null);
+                              // Clear answers when changing tabs
+                              setAnswers({});
+                              setTextAnswers({});
+                              setSelectedQuestionTab(newValue);
+                            }}
+                            variant="scrollable"
+                            scrollButtons="auto"
+                            sx={{
+                              borderBottom: 2,
+                              borderColor: colors.neutral.gray200,
+                              "& .MuiTabs-indicator": {
+                                height: 3,
+                                borderRadius: "3px 3px 0 0",
+                              },
+                              "& .MuiTab-root": {
+                                textTransform: "none",
+                                fontWeight: 600,
+                                fontSize: "0.875rem",
+                                minHeight: 48,
+                                px: 2,
+                                "&.Mui-selected": {
+                                  color: currentTab?.color || colors.primary.blue,
+                                },
+                              },
+                            }}
+                          >
+                            {questionTabs.map((tab, index) => {
+                              return (
+                                <Tab
+                                  key={tab.id}
+                                  label={
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 1,
+                                      }}
+                                    >
+                                      {tab.icon}
+                                      <Typography
+                                        sx={{
+                                          fontWeight: 600,
+                                          fontSize: "0.875rem",
+                                        }}
+                                      >
+                                        {tab.label}
+                                      </Typography>
+                                    </Box>
+                                  }
+                                  sx={{
+                                    color: colors.text.secondary,
+                                    "&.Mui-selected": {
+                                      color: tab.color,
+                                    },
+                                  }}
+                                />
+                              );
+                            })}
+                          </Tabs>
+                        </Box>
+                      )}
+
+                    {/* Questions Content Based on Selected Tab */}
+                    {!isLoadingQuestions &&
+                      allQuestions.length > 0 &&
+                      currentTab && (
+                        <Box>
+                          {/* Classroom Observation Questions Section (Type 2) */}
+                          {currentTab.id === "classroom" && (
+                            <Box sx={{ mb: 4 }}>
                         {/* Section Header */}
                         <Box
                           sx={{
@@ -2404,9 +2790,15 @@ const CRCAssessment = () => {
                               </InputLabel>
                               <Select
                                 value={selectedClassGroup || ""}
-                                onChange={(e) =>
-                                  setSelectedClassGroup(e.target.value)
-                                }
+                                onChange={(e) => {
+                                  // Clear all answers and selections when class group changes
+                                  setAnswers({});
+                                  setTextAnswers({});
+                                  setSelectedClass(null);
+                                  setSelectedSection(null);
+                                  setSelectedSubject(null);
+                                  setSelectedClassGroup(e.target.value);
+                                }}
                                 label="Class Group"
                                 sx={{
                                   borderRadius: 2,
@@ -2424,44 +2816,42 @@ const CRCAssessment = () => {
                                     },
                                 }}
                               >
-                                {["1-2", "3-5", "6-8"].map((groupRange) => {
-                                  const flag = getGroupFlagColor(2, groupRange);
-                                  const flagColor = flag
-                                    ? getFlagColorValue(flag)
-                                    : null;
-                                  const displayRange =
-                                    groupRange === "3-5" ? "3-5" : groupRange;
-
-                                  return (
-                                    <MenuItem
-                                      key={groupRange}
-                                      value={groupRange}
-                                    >
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: 1,
-                                        }}
-                                      >
-                                        {flagColor && (
-                                          <Box
-                                            sx={{
-                                              width: 10,
-                                              height: 10,
-                                              borderRadius: "50%",
-                                              bgcolor: flagColor,
-                                              flexShrink: 0,
-                                            }}
-                                          />
-                                        )}
-                                        <Typography>
-                                          Class {displayRange}
-                                        </Typography>
-                                      </Box>
-                                    </MenuItem>
-                                  );
-                                })}
+                                {["1-2", "3-5", "6-8"]
+                                  .filter((groupRange) => {
+                                    // Filter out groups with grey/null flags
+                                    const flag = getGroupFlagColor(2, groupRange);
+                                    return flag !== null && flag !== undefined;
+                                  })
+                                  .map((groupRange) => {
+                                    const flag = getGroupFlagColor(2, groupRange);
+                                    const flagColor = flag ? getFlagColorValue(flag) : null;
+                                    const displayRange = groupRange === "3-5" ? "3-5" : groupRange;
+                                    
+                                    return (
+                                      <MenuItem key={groupRange} value={groupRange}>
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1,
+                                          }}
+                                        >
+                                          {flagColor && (
+                                            <Box
+                                              sx={{
+                                                width: 10,
+                                                height: 10,
+                                                borderRadius: "50%",
+                                                bgcolor: flagColor,
+                                                flexShrink: 0,
+                                              }}
+                                            />
+                                          )}
+                                          <Typography>Class {displayRange}</Typography>
+                                        </Box>
+                                      </MenuItem>
+                                    );
+                                  })}
                               </Select>
                             </FormControl>
 
@@ -2499,9 +2889,12 @@ const CRCAssessment = () => {
                                       [storageKey]: { ...textAnswers },
                                     }));
                                   }
-                                  setSelectedClass(e.target.value);
-                                  // Reset section so it can be auto-selected for the new class
+                                  // Clear answers, section, and subject immediately
+                                  setAnswers({});
+                                  setTextAnswers({});
                                   setSelectedSection(null);
+                                  setSelectedSubject(null);
+                                  setSelectedClass(e.target.value);
                                 }}
                                 label="Select Class"
                                 disabled={
@@ -2561,9 +2954,13 @@ const CRCAssessment = () => {
                               </InputLabel>
                               <Select
                                 value={selectedSection || ""}
-                                onChange={(e) =>
-                                  setSelectedSection(e.target.value)
-                                }
+                                onChange={(e) => {
+                                  // Clear answers and subject before changing section
+                                  setAnswers({});
+                                  setTextAnswers({});
+                                  setSelectedSubject(null);
+                                  setSelectedSection(e.target.value);
+                                }}
                                 label="Select Section"
                                 disabled={
                                   !selectedClass || sections.length === 0
@@ -2849,11 +3246,11 @@ const CRCAssessment = () => {
                       </Box>
                     )}
 
-                    {/* Subject-Wise Observation Questions Section (Type 3) */}
-                    {subjectObservationQuestions.length > 0 && (
-                      <Box sx={{ mb: 4 }}>
-                        {/* Section Header */}
-                        <Box
+                          {/* Subject-Wise Observation Questions Section (Type 3) */}
+                          {currentTab.id === "subject" && (
+                            <Box sx={{ mb: 4 }}>
+                              {/* Section Header */}
+                              <Box
                           sx={{
                             mb: 3,
                             pb: 2,
@@ -2938,9 +3335,12 @@ const CRCAssessment = () => {
                               <Select
                                 value={selectedClassGroup || ""}
                                 onChange={(e) => {
-                                  // Clear answers before changing class group
+                                  // Clear all answers and selections when class group changes
                                   setAnswers({});
                                   setTextAnswers({});
+                                  setSelectedClass(null);
+                                  setSelectedSection(null);
+                                  setSelectedSubject(null);
                                   setSelectedClassGroup(e.target.value);
                                 }}
                                 label="Class Group"
@@ -2960,44 +3360,42 @@ const CRCAssessment = () => {
                                     },
                                 }}
                               >
-                                {["1-2", "3-5", "6-8"].map((groupRange) => {
-                                  const flag = getGroupFlagColor(3, groupRange);
-                                  const flagColor = flag
-                                    ? getFlagColorValue(flag)
-                                    : null;
-                                  const displayRange =
-                                    groupRange === "3-5" ? "3-5" : groupRange;
-
-                                  return (
-                                    <MenuItem
-                                      key={groupRange}
-                                      value={groupRange}
-                                    >
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: 1,
-                                        }}
-                                      >
-                                        {flagColor && (
-                                          <Box
-                                            sx={{
-                                              width: 10,
-                                              height: 10,
-                                              borderRadius: "50%",
-                                              bgcolor: flagColor,
-                                              flexShrink: 0,
-                                            }}
-                                          />
-                                        )}
-                                        <Typography>
-                                          Class {displayRange}
-                                        </Typography>
-                                      </Box>
-                                    </MenuItem>
-                                  );
-                                })}
+                                {["1-2", "3-5", "6-8"]
+                                  .filter((groupRange) => {
+                                    // Filter out groups with grey/null flags
+                                    const flag = getGroupFlagColor(3, groupRange);
+                                    return flag !== null && flag !== undefined;
+                                  })
+                                  .map((groupRange) => {
+                                    const flag = getGroupFlagColor(3, groupRange);
+                                    const flagColor = flag ? getFlagColorValue(flag) : null;
+                                    const displayRange = groupRange === "3-5" ? "3-5" : groupRange;
+                                    
+                                    return (
+                                      <MenuItem key={groupRange} value={groupRange}>
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1,
+                                          }}
+                                        >
+                                          {flagColor && (
+                                            <Box
+                                              sx={{
+                                                width: 10,
+                                                height: 10,
+                                                borderRadius: "50%",
+                                                bgcolor: flagColor,
+                                                flexShrink: 0,
+                                              }}
+                                            />
+                                          )}
+                                          <Typography>Class {displayRange}</Typography>
+                                        </Box>
+                                      </MenuItem>
+                                    );
+                                  })}
                               </Select>
                             </FormControl>
 
@@ -3019,12 +3417,28 @@ const CRCAssessment = () => {
                               <Select
                                 value={selectedClass || ""}
                                 onChange={(e) => {
-                                  // Clear answers before changing class
+                                  // Save current answers before changing class
+                                  if (selectedSubdomain && selectedClass) {
+                                    const subdomainId =
+                                      selectedSubdomain.subDomainId ||
+                                      selectedSubdomain.id;
+                                    const classKey = String(selectedClass);
+                                    const storageKey = `${subdomainId}_${classKey}`;
+                                    setClassWiseAnswers((prev) => ({
+                                      ...prev,
+                                      [storageKey]: { ...answers },
+                                    }));
+                                    setClassWiseTextAnswers((prev) => ({
+                                      ...prev,
+                                      [storageKey]: { ...textAnswers },
+                                    }));
+                                  }
+                                  // Clear answers, section, and subject immediately
                                   setAnswers({});
                                   setTextAnswers({});
-                                  setSelectedClass(e.target.value);
-                                  // Reset section so it can be auto-selected for the new class
                                   setSelectedSection(null);
+                                  setSelectedSubject(null);
+                                  setSelectedClass(e.target.value);
                                 }}
                                 label="Select Class"
                                 disabled={
@@ -3085,9 +3499,10 @@ const CRCAssessment = () => {
                               <Select
                                 value={selectedSection || ""}
                                 onChange={(e) => {
-                                  // Clear answers before changing section
+                                  // Clear answers and subject before changing section
                                   setAnswers({});
                                   setTextAnswers({});
+                                  setSelectedSubject(null);
                                   setSelectedSection(e.target.value);
                                 }}
                                 label="Select Section"
@@ -3431,9 +3846,9 @@ const CRCAssessment = () => {
                       </Box>
                     )}
 
-                    {/* FLN Questions Section (Type 4) */}
-                    {flnQuestions.length > 0 && (
-                      <Box sx={{ mb: 4 }}>
+                          {/* FLN Questions Section (Type 4) */}
+                          {currentTab.id === "fln" && (
+                            <Box sx={{ mb: 4 }}>
                         {/* Section Header */}
                         <Box
                           sx={{
@@ -3506,6 +3921,17 @@ const CRCAssessment = () => {
                             {flnQuestions.map((question, index) => {
                               const textAnswer =
                                 textAnswers[question.questionId] || "";
+                              
+                              // Debug log for FLN question rendering
+                              if (index === 0) {
+                                console.log("FLN Question Render Debug:", {
+                                  questionId: question.questionId,
+                                  textAnswer,
+                                  textAnswers,
+                                  allTextAnswersKeys: Object.keys(textAnswers),
+                                });
+                              }
+                              
                               const isExpanded =
                                 expandedQuestions[question.questionId] ?? true;
 
@@ -3629,9 +4055,8 @@ const CRCAssessment = () => {
                                             flnData = {};
                                           }
 
-                                          const classData = flnData[
-                                            classNum
-                                          ] || {
+                                          // Access with both number and string key to handle JSON parsing
+                                          const classData = flnData[classNum] || flnData[String(classNum)] || {
                                             obtainedMarks: "",
                                             answerId: null,
                                           };
@@ -3808,9 +4233,9 @@ const CRCAssessment = () => {
                       </Box>
                     )}
 
-                    {/* General Questions Section */}
-                    {generalQuestions.length > 0 && (
-                      <Box sx={{ mb: 4 }}>
+                          {/* General Questions Section */}
+                          {currentTab.id === "general" && (
+                            <Box sx={{ mb: 4 }}>
                         {/* Section Header */}
                         <Box
                           sx={{
@@ -4061,6 +4486,8 @@ const CRCAssessment = () => {
                         )}
                       </Box>
                     )}
+                        </Box>
+                      )}
 
                     {/* Submit Button */}
                     {isPublished && !isSubmitted && (
@@ -4093,10 +4520,26 @@ const CRCAssessment = () => {
                           onClick={handleSubmit}
                           disabled={
                             submitSubdomainWiseAnswersMutation.isPending ||
-                            (Object.keys(answers).length === 0 &&
-                              Object.keys(textAnswers).length === 0) ||
-                            (classBasedQuestions.length > 0 &&
-                              (!selectedClass || !selectedSection))
+                            !areAllQuestionsAnsweredForCurrentTab ||
+                            // For class-based questions (classroom and subject), validate class and section
+                            ((currentTab?.id === "classroom" ||
+                              currentTab?.id === "subject") &&
+                              (!selectedClass || !selectedSection)) ||
+                            // For subject questions, also validate subject selection
+                            (currentTab?.id === "subject" && !selectedSubject)
+                          }
+                          title={
+                            !areAllQuestionsAnsweredForCurrentTab
+                              ? `Please answer all ${
+                                  currentTab?.label || "questions"
+                                } before saving`
+                              : (currentTab?.id === "classroom" ||
+                                  currentTab?.id === "subject") &&
+                                (!selectedClass || !selectedSection)
+                              ? "Please select class and section before saving"
+                              : currentTab?.id === "subject" && !selectedSubject
+                              ? "Please select subject before saving"
+                              : "Save assessment for this question type"
                           }
                           sx={{
                             bgcolor: colors.accent.green,
