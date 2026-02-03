@@ -1181,6 +1181,7 @@ const AssessmentManagement = () => {
                           <Select
                             value={roleAssignments[role.roleId]?.assessmentId || ''}
                             onChange={(e) => handleRoleAssignmentChange(role.roleId, 'assessmentId', e.target.value)}
+                            disabled={roleAssignments[role.roleId]?.isPublished}
                           >
                             <MenuItem value=""><em>None</em></MenuItem>
                             {assessmentsData?.data?.map((assessment) => (
