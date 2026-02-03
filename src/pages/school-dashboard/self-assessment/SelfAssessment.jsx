@@ -105,6 +105,7 @@ const SelfAssessment = () => {
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
   const [selectedQuestionTab, setSelectedQuestionTab] = useState(0);
+  const [sessionId, setSessionId] = useState(null);
 
   const logoutMutation = useLogoutMutation({
     onSuccess: () => {
@@ -318,6 +319,13 @@ const SelfAssessment = () => {
   const isPublished = domainsData?.isPublished || false;
   const endDate = domainsData?.endDate || null;
   const isSubmitted = domainsData?.isSubmitted || false;
+
+  // Extract and store sessionId from domains API response
+  useEffect(() => {
+    if (domainsData?.sessionId !== undefined) {
+      setSessionId(domainsData.sessionId);
+    }
+  }, [domainsData?.sessionId]);
 
   // Helper function to map dropdown group range to API group range format
   const mapGroupRangeToApiFormat = (groupRange) => {
@@ -1124,9 +1132,21 @@ const SelfAssessment = () => {
             [subdomainId]: { ...answers },
           }));
         }
-        // Refetch questions and domains to update progress bars
-        refetchQuestions();
-        refetchDomains();
+        // If sessionId is null, create session by calling submit-assessment API
+        if (sessionId === null) {
+          const sessionPayload = {
+            sessionId: null,
+            userId: Number(userId),
+            roleId: Number(roleId),
+            schoolId: userName || undefined,
+            isSubmitted: 0,
+          };
+          submitAssessmentMutation.mutate(sessionPayload);
+        } else {
+          // Refetch questions and domains to update progress bars
+          refetchQuestions();
+          refetchDomains();
+        }
         // Optionally clear answers or navigate
         console.log("Subdomain answers submitted successfully:", data);
         enqueueSnackbar("All answers submitted successfully!", {
@@ -1146,40 +1166,50 @@ const SelfAssessment = () => {
     });
 
   const submitAssessmentMutation = useSubmitAssessmentMutation({
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       console.log("Assessment submitted successfully:", data);
-      // Close the confirmation modal
-      setShowSubmitConfirmation(false);
 
-      // Refetch domains to update progress and isSubmitted status
-      refetchDomains();
+      // Check if this was a session creation (isSubmitted: 0)
+      if (variables.isSubmitted === 0) {
+        // Session creation - refetch domains to get the sessionId
+        refetchDomains();
+        enqueueSnackbar("Session created successfully!", {
+          variant: "success",
+        });
+      } else {
+        // Final submission - close the confirmation modal
+        setShowSubmitConfirmation(false);
 
-      // Refetch questions if subdomain is selected
-      if (selectedSubdomain) {
-        refetchQuestions();
+        // Refetch domains to update progress and isSubmitted status
+        refetchDomains();
+
+        // Refetch questions if subdomain is selected
+        if (selectedSubdomain) {
+          refetchQuestions();
+        }
+
+        // Invalidate all school-related queries to refresh dashboard data
+        queryClient.invalidateQueries({
+          queryKey: ["school"],
+        });
+
+        // Invalidate specific queries
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.school.domains(roleId, languageCode),
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.school.schoolData(userName),
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.school.schoolSections(userName),
+        });
+
+        enqueueSnackbar("Assessment submitted successfully!", {
+          variant: "success",
+        });
       }
-
-      // Invalidate all school-related queries to refresh dashboard data
-      queryClient.invalidateQueries({
-        queryKey: ["school"],
-      });
-
-      // Invalidate specific queries
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.school.domains(roleId, languageCode),
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.school.schoolData(userName),
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.school.schoolSections(userName),
-      });
-
-      enqueueSnackbar("Assessment submitted successfully!", {
-        variant: "success",
-      });
     },
     onError: (error) => {
       console.error("Error submitting assessment:", error);
