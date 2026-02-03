@@ -350,17 +350,6 @@ const AssessmentManagement = () => {
   };
 
   const handleAddDomain = (assessment) => {
-    const fullAssessment = assessmentsData?.data?.find(
-      (a) => a.assessmentId === assessment.assessmentId
-    );
-
-    if (!fullAssessment?.roleId) {
-      enqueueSnackbar("Could not determine the role for this assessment.", {
-        variant: "error",
-      });
-      return;
-    }
-
     // Count how many languages are filled
     const filledLanguages = [
       newDomainName.en.trim(),
@@ -380,7 +369,6 @@ const AssessmentManagement = () => {
     }
 
     const payload = {
-      roleId: fullAssessment.roleId,
       domainNameEn: newDomainName.en.trim(),
       domainNameHi: newDomainName.hi.trim(),
       domainNameGu: newDomainName.gu.trim(),
@@ -684,15 +672,33 @@ const AssessmentManagement = () => {
                         <Typography sx={{ fontWeight: 700 }}>
                           {getAssessmentName(assessment)}
                         </Typography>
-                        <Chip
-                          size="small"
-                          label={getRoleName(assessment.roleId)}
-                          sx={{
-                            bgcolor: colors.primary.blue + "15",
-                            color: colors.primary.blue,
-                            fontWeight: 600,
-                          }}
-                        />
+                        {assessment.schoolType && (
+                          <Chip
+                            size="small"
+                            label={assessment.schoolType === 1 || assessment.schoolType === "1" ? "Primary" : "Secondary"}
+                            sx={{
+                              bgcolor: colors.accent.purple + "15",
+                              color: colors.accent.purple,
+                              fontWeight: 600,
+                            }}
+                          />
+                        )}
+                        {assessment.roleId && (
+                          <Chip
+                            size="small"
+                            label={getRoleName(assessment.roleId)}
+                            sx={{
+                              bgcolor: colors.primary.blue + "15",
+                              color: colors.primary.blue,
+                              fontWeight: 600,
+                            }}
+                          />
+                        )}
+                      </Box>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                          {assessmentDomains.length} domain(s)
+                        </Typography>
                         <FormControlLabel
                           control={
                             <Switch
@@ -714,11 +720,6 @@ const AssessmentManagement = () => {
                           sx={{ m: 0 }}
                           onClick={(e) => e.stopPropagation()}
                         />
-                      </Box>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                          {assessmentDomains.length} domain(s)
-                        </Typography>
                         <IconButton
                           size="small"
                           onClick={(e) => {
