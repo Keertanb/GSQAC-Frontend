@@ -2818,9 +2818,9 @@ const CRCAssessment = () => {
                               >
                                 {["1-2", "3-5", "6-8"]
                                   .filter((groupRange) => {
-                                    // Filter out groups with grey/null flags
+                                    // Filter out groups with gray/null/undefined flags
                                     const flag = getGroupFlagColor(2, groupRange);
-                                    return flag !== null && flag !== undefined;
+                                    return flag !== null && flag !== undefined && flag !== "gray";
                                   })
                                   .map((groupRange) => {
                                     const flag = getGroupFlagColor(2, groupRange);
@@ -3362,9 +3362,9 @@ const CRCAssessment = () => {
                               >
                                 {["1-2", "3-5", "6-8"]
                                   .filter((groupRange) => {
-                                    // Filter out groups with grey/null flags
+                                    // Filter out groups with gray/null/undefined flags
                                     const flag = getGroupFlagColor(3, groupRange);
-                                    return flag !== null && flag !== undefined;
+                                    return flag !== null && flag !== undefined && flag !== "gray";
                                   })
                                   .map((groupRange) => {
                                     const flag = getGroupFlagColor(3, groupRange);

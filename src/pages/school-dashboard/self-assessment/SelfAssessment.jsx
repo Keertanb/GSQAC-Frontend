@@ -1239,8 +1239,10 @@ const SelfAssessment = () => {
   // Handler to confirm final submit
   const handleConfirmSubmit = () => {
     const payload = {
+      sessionId: sessionId || null,
       userId: Number(userId),
       roleId: Number(roleId),
+      schoolId: userName || undefined,
       isSubmitted: 1,
     };
     submitAssessmentMutation.mutate(payload);
@@ -2668,44 +2670,50 @@ const SelfAssessment = () => {
                                     },
                                 }}
                               >
-                                {["1-2", "3-5", "6-8"].map((groupRange) => {
-                                  const flag = getGroupFlagColor(2, groupRange);
-                                  const flagColor = flag
-                                    ? getFlagColorValue(flag)
-                                    : null;
-                                  const displayRange =
-                                    groupRange === "3-5" ? "3-5" : groupRange;
+                                {["1-2", "3-5", "6-8"]
+                                  .filter((groupRange) => {
+                                    // Filter out groups with gray/null/undefined flags
+                                    const flag = getGroupFlagColor(2, groupRange);
+                                    return flag !== null && flag !== undefined && flag !== "gray";
+                                  })
+                                  .map((groupRange) => {
+                                    const flag = getGroupFlagColor(2, groupRange);
+                                    const flagColor = flag
+                                      ? getFlagColorValue(flag)
+                                      : null;
+                                    const displayRange =
+                                      groupRange === "3-5" ? "3-5" : groupRange;
 
-                                  return (
-                                    <MenuItem
-                                      key={groupRange}
-                                      value={groupRange}
-                                    >
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: 1,
-                                        }}
+                                    return (
+                                      <MenuItem
+                                        key={groupRange}
+                                        value={groupRange}
                                       >
-                                        {flagColor && (
-                                          <Box
-                                            sx={{
-                                              width: 10,
-                                              height: 10,
-                                              borderRadius: "50%",
-                                              bgcolor: flagColor,
-                                              flexShrink: 0,
-                                            }}
-                                          />
-                                        )}
-                                        <Typography>
-                                          Class {displayRange}
-                                        </Typography>
-                                      </Box>
-                                    </MenuItem>
-                                  );
-                                })}
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1,
+                                          }}
+                                        >
+                                          {flagColor && (
+                                            <Box
+                                              sx={{
+                                                width: 10,
+                                                height: 10,
+                                                borderRadius: "50%",
+                                                bgcolor: flagColor,
+                                                flexShrink: 0,
+                                              }}
+                                            />
+                                          )}
+                                          <Typography>
+                                            Class {displayRange}
+                                          </Typography>
+                                        </Box>
+                                      </MenuItem>
+                                    );
+                                  })}
                               </Select>
                             </FormControl>
 
@@ -3201,44 +3209,50 @@ const SelfAssessment = () => {
                                     },
                                 }}
                               >
-                                {["1-2", "3-5", "6-8"].map((groupRange) => {
-                                  const flag = getGroupFlagColor(3, groupRange);
-                                  const flagColor = flag
-                                    ? getFlagColorValue(flag)
-                                    : null;
-                                  const displayRange =
-                                    groupRange === "3-5" ? "3-5" : groupRange;
+                                {["1-2", "3-5", "6-8"]
+                                  .filter((groupRange) => {
+                                    // Filter out groups with gray/null/undefined flags
+                                    const flag = getGroupFlagColor(3, groupRange);
+                                    return flag !== null && flag !== undefined && flag !== "gray";
+                                  })
+                                  .map((groupRange) => {
+                                    const flag = getGroupFlagColor(3, groupRange);
+                                    const flagColor = flag
+                                      ? getFlagColorValue(flag)
+                                      : null;
+                                    const displayRange =
+                                      groupRange === "3-5" ? "3-5" : groupRange;
 
-                                  return (
-                                    <MenuItem
-                                      key={groupRange}
-                                      value={groupRange}
-                                    >
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: 1,
-                                        }}
+                                    return (
+                                      <MenuItem
+                                        key={groupRange}
+                                        value={groupRange}
                                       >
-                                        {flagColor && (
-                                          <Box
-                                            sx={{
-                                              width: 10,
-                                              height: 10,
-                                              borderRadius: "50%",
-                                              bgcolor: flagColor,
-                                              flexShrink: 0,
-                                            }}
-                                          />
-                                        )}
-                                        <Typography>
-                                          Class {displayRange}
-                                        </Typography>
-                                      </Box>
-                                    </MenuItem>
-                                  );
-                                })}
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1,
+                                          }}
+                                        >
+                                          {flagColor && (
+                                            <Box
+                                              sx={{
+                                                width: 10,
+                                                height: 10,
+                                                borderRadius: "50%",
+                                                bgcolor: flagColor,
+                                                flexShrink: 0,
+                                              }}
+                                            />
+                                          )}
+                                          <Typography>
+                                            Class {displayRange}
+                                          </Typography>
+                                        </Box>
+                                      </MenuItem>
+                                    );
+                                  })}
                               </Select>
                             </FormControl>
 
