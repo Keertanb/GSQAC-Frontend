@@ -1186,19 +1186,7 @@ const AssessmentManagement = () => {
                             <MenuItem value=""><em>None</em></MenuItem>
                             {assessmentsData?.data?.map((assessment) => (
                               <MenuItem key={assessment.assessmentId} value={assessment.assessmentId}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                                  <span>{getAssessmentName(assessment)}</span>
-                                  <IconButton 
-                                    size="small" 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleEditAssessment(assessment);
-                                    }}
-                                    sx={{ ml: 1 }}
-                                  >
-                                    <Edit fontSize="small" />
-                                  </IconButton>
-                                </Box>
+                                {getAssessmentName(assessment)}
                               </MenuItem>
                             ))}
                           </Select>
