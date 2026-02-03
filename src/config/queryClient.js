@@ -7,7 +7,13 @@ export const queryKeys = {
     logout: () => ["auth", "logout"],
   },
   admin: {
-    domains: (roleId, languageCode) => ["admin", "domains", roleId, languageCode],
+    domains: (roleId, languageCode, assessmentId = null) => [
+      "admin",
+      "domains",
+      roleId,
+      languageCode,
+      assessmentId,
+    ],
     criteriaQuestions: (subDomainId, roleId, languageCode) => [
       "admin",
       "criteria-questions",

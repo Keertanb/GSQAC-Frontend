@@ -688,33 +688,33 @@ const DistrictNodalOfficers = () => {
 
                   <div className="form-group">
                     <div className="form-label-container">
-                      <label className="form-label">
-                        Districts <span className="form-label-required">*</span>
-                      </label>
-                      {formik.values.districts?.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => {
+                    <label className="form-label">
+                      Districts <span className="form-label-required">*</span>
+                    </label>
+                        {formik.values.districts?.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
                             formik.setFieldValue("districts", []);
-                          }}
+                                    }}
                           className="clear-districts-button"
                           title="Clear all districts"
-                        >
-                          <svg
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
+                                  >
+                                    <svg
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M6 18L18 6M6 6l12 12"
+                                      />
+                                    </svg>
+                                  </button>
                       )}
-                    </div>
+                                </div>
                     {districtsLoading ? (
                       <div className="form-loading">Loading districts...</div>
                     ) : (

@@ -6,19 +6,15 @@ import useAuthStore from "../store/useAuthStore";
 
 /**
  * Get domains and subdomains (admin)
- * @param {Object} params - { roleId?: number, languageCode?: string }
+ * @param {Object} params - { roleId?: number, languageCode?: string, assessmentId?: number|string }
  * @returns {Promise} API response
  */
 export const getDomains = async (params = {}) => {
-  const { roleId, languageCode, ...otherParams } = params;
+  const { languageCode, ...otherParams } = params;
   const config = {
     params: { languageCode, ...otherParams },
     headers: {},
   };
-
-  if (roleId) {
-    config.params.roleId = roleId;
-  }
 
   const response = await axiosInstance.get("/admin/domain", config);
   return response.data;
@@ -187,14 +183,14 @@ export const submitAnswer = async (payload) => {
  * @returns {Object} Query object from React Query
  */
 export const useGetDomainsQuery = ({
-  roleId,
   languageCode,
+  assessmentId,
   enabled = true,
 }) => {
   return useQuery({
-    queryKey: queryKeys.admin.domains(roleId, languageCode),
-    queryFn: () => getDomains({ roleId, languageCode }),
-    enabled: enabled && !!roleId,
+    queryKey: queryKeys.admin.domains(languageCode, assessmentId || null),
+    queryFn: () => getDomains({ languageCode, assessmentId }),
+    enabled: enabled,
     staleTime: 5 * 60 * 1000,
   });
 };
@@ -961,6 +957,35 @@ export const publishAssessment = async (payload) => {
 };
 
 /**
+ * Get assessment-role assignments
+ * @returns {Promise} API response
+ */
+export const getAssessmentRoleAssignments = async () => {
+  const response = await axiosInstance.get("/admin/assessment-role-assignment");
+  return response.data;
+};
+
+/**
+ * Update assessment-role assignment
+ * @param {Object} payload - { roleId, assessmentId, startDate, endDate }
+ * @returns {Promise} API response
+ */
+export const updateAssessmentRoleAssignment = async (payload) => {
+  const response = await axiosInstance.post("/admin/assessment-role-assignment", payload);
+  return response.data;
+};
+
+/**
+ * Delete a subdomain
+ * @param {string} subDomainId - ID of the subdomain to delete
+ * @returns {Promise} API response
+ */
+export const deleteSubdomain = async (subDomainId) => {
+  const response = await axiosInstance.delete(`/questionnaire/sub-domain/${subDomainId}`);
+  return response.data;
+};
+
+/**
  * React Query hook to get assessments
  * @param {string} academicYear - Optional academic year filter
  * @param {object} options - React Query options
@@ -1024,6 +1049,78 @@ export const usePublishAssessmentMutation = (options = {}) => {
     onError: (error) => {
       enqueueSnackbar(
         error?.response?.data?.message || "Failed to publish assessment",
+        {
+          variant: "error",
+        }
+      );
+      if (options.onError) {
+        options.onError(error);
+      }
+    },
+    ...options,
+  });
+};
+
+/**
+ * React Query hook to get assessment-role assignments
+ */
+export const useGetAssessmentRoleAssignmentsQuery = (options = {}) => {
+  return useQuery({
+    queryKey: ["admin", "assessment-role-assignments"],
+    queryFn: getAssessmentRoleAssignments,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    ...options,
+  });
+};
+
+/**
+ * React Query hook to update assessment-role assignment
+ */
+export const useUpdateAssessmentRoleAssignmentMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => updateAssessmentRoleAssignment(data),
+    mutationKey: ["admin", "update-assessment-role-assignment"],
+    onSuccess: (data) => {
+      enqueueSnackbar(data?.message || "Assignment updated successfully", {
+        variant: "success",
+      });
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to update assignment",
+        {
+          variant: "error",
+        }
+      );
+      if (options.onError) {
+        options.onError(error);
+      }
+    },
+    ...options,
+  });
+};
+
+/**
+ * React Query mutation hook for deleting a subdomain
+ */
+export const useDeleteSubdomainMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (subDomainId) => deleteSubdomain(subDomainId),
+    mutationKey: ["admin", "delete-subdomain"],
+    onSuccess: (data) => {
+      enqueueSnackbar(data?.message || "Subdomain deleted successfully", {
+        variant: "success",
+      });
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to delete subdomain",
         {
           variant: "error",
         }
