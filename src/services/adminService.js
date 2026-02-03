@@ -986,6 +986,18 @@ export const deleteSubdomain = async (subDomainId) => {
 };
 
 /**
+ * Delete assessment by ID
+ * @param {number} assessmentId - Assessment ID to delete
+ * @returns {Promise} API response
+ */
+export const deleteAssessment = async (assessmentId) => {
+  const response = await axiosInstance.delete("/questionnaire/assessment", {
+    params: { assessmentId },
+  });
+  return response.data;
+};
+
+/**
  * React Query hook to get assessments
  * @param {string} academicYear - Optional academic year filter
  * @param {object} options - React Query options
@@ -1121,6 +1133,36 @@ export const useDeleteSubdomainMutation = (options = {}) => {
     onError: (error) => {
       enqueueSnackbar(
         error?.response?.data?.message || "Failed to delete subdomain",
+        {
+          variant: "error",
+        }
+      );
+      if (options.onError) {
+        options.onError(error);
+      }
+    },
+    ...options,
+  });
+};
+
+/**
+ * React Query mutation hook for deleting an assessment
+ */
+export const useDeleteAssessmentMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (assessmentId) => deleteAssessment(assessmentId),
+    mutationKey: ["admin", "delete-assessment"],
+    onSuccess: (data) => {
+      enqueueSnackbar(data?.message || "Assessment deleted successfully", {
+        variant: "success",
+      });
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to delete assessment",
         {
           variant: "error",
         }

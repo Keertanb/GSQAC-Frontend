@@ -59,6 +59,7 @@ import {
   useDeleteDomainMutation,
   useGetAssessmentRoleAssignmentsQuery,
   useUpdateAssessmentRoleAssignmentMutation,
+  useDeleteAssessmentMutation,
 } from "../../../services/adminService";
 import { getRoleId } from "../../../constants/roles";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
@@ -142,6 +143,9 @@ const AssessmentManagement = () => {
 
   const [deleteDomainModalOpen, setDeleteDomainModalOpen] = useState(false);
   const [domainToDelete, setDomainToDelete] = useState(null);
+  
+  const [deleteAssessmentModalOpen, setDeleteAssessmentModalOpen] = useState(false);
+  const [assessmentToDelete, setAssessmentToDelete] = useState(null);
   
   // Assessment editing state
   const [showEditAssessment, setShowEditAssessment] = useState(false);
@@ -261,6 +265,12 @@ const AssessmentManagement = () => {
     },
   });
 
+  const deleteAssessmentMutation = useDeleteAssessmentMutation({
+    onSuccess: () => {
+      refetchAssessments();
+    },
+  });
+
   const handleOpenSettingsModal = () => {
     setSettingsModalOpen(true);
   };
@@ -344,6 +354,23 @@ const AssessmentManagement = () => {
         onSuccess: () => {
           setDeleteDomainModalOpen(false);
           setDomainToDelete(null);
+        },
+      });
+    }
+  };
+
+  const handleDeleteAssessment = (assessment, event) => {
+    if (event) event.stopPropagation();
+    setAssessmentToDelete(assessment);
+    setDeleteAssessmentModalOpen(true);
+  };
+
+  const confirmDeleteAssessment = () => {
+    if (assessmentToDelete) {
+      deleteAssessmentMutation.mutate(assessmentToDelete.assessmentId, {
+        onSuccess: () => {
+          setDeleteAssessmentModalOpen(false);
+          setAssessmentToDelete(null);
         },
       });
     }
@@ -735,6 +762,19 @@ const AssessmentManagement = () => {
                           }}
                         >
                           <Edit fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={(e) => handleDeleteAssessment(assessment, e)}
+                          sx={{
+                            bgcolor: colors.semantic.error + "15",
+                            "&:hover": {
+                              bgcolor: colors.semantic.error + "25",
+                            },
+                          }}
+                        >
+                          <Delete fontSize="small" />
                         </IconButton>
                       </Box>
                     </Box>
@@ -1239,6 +1279,18 @@ const AssessmentManagement = () => {
         cancelText="Cancel"
         variant="danger"
         isLoading={deleteDomainMutation.isPending}
+      />
+
+      <ConfirmationModal
+        open={deleteAssessmentModalOpen}
+        onClose={() => setDeleteAssessmentModalOpen(false)}
+        onConfirm={confirmDeleteAssessment}
+        title="Delete Assessment"
+        message={`Are you sure you want to delete the assessment "${assessmentToDelete ? getAssessmentName(assessmentToDelete) : ''}"? This action cannot be undone and will delete all associated domains and questions.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={deleteAssessmentMutation.isPending}
       />
     </Box>
   );
