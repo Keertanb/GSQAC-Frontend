@@ -319,6 +319,17 @@ const SelfAssessment = () => {
   const isPublished = domainsData?.isPublished || false;
   const endDate = domainsData?.endDate || null;
   const isSubmitted = domainsData?.isSubmitted || false;
+  
+  // Check if endDate has passed
+  const isEndDatePassed = useMemo(() => {
+    if (!endDate) return false;
+    const endDateObj = new Date(endDate);
+    const currentDate = new Date();
+    return currentDate > endDateObj;
+  }, [endDate]);
+  
+  // Assessment is read-only if submitted or endDate has passed
+  const isReadOnly = isSubmitted || isEndDatePassed;
 
   // Extract and store sessionId from domains API response
   useEffect(() => {
@@ -1822,14 +1833,14 @@ const SelfAssessment = () => {
                       variant="body2"
                       sx={{
                         color:
-                          isSubmitted === 1 || isSubmitted === true
+                          isReadOnly
                             ? colors.semantic.error
                             : colors.semantic.warning,
                         fontWeight: 600,
                         fontSize: "0.875rem",
                       }}
                     >
-                      {isSubmitted === 1 || isSubmitted === true
+                      {isReadOnly
                         ? `The assessment submission time is ended and closed on ${endDate}`
                         : `Submit all questions before ${endDate}`}
                     </Typography>
@@ -2313,7 +2324,7 @@ const SelfAssessment = () => {
                 </Box>
 
                 {/* Final Submit Button */}
-                {isPublished && !isSubmitted && (
+                {isPublished && !isReadOnly && (
                   <Box
                     sx={{
                       p: 2.5,
@@ -2327,7 +2338,8 @@ const SelfAssessment = () => {
                       onClick={handleOpenSubmitConfirmation}
                       disabled={
                         submitAssessmentMutation.isPending ||
-                        !allDomainsComplete
+                        !allDomainsComplete ||
+                        isReadOnly
                       }
                       title={
                         !allDomainsComplete
@@ -2654,6 +2666,7 @@ const SelfAssessment = () => {
                                   setSelectedClassGroup(e.target.value)
                                 }
                                 label="Class Group"
+                                disabled={isReadOnly}
                                 sx={{
                                   borderRadius: 2,
                                   bgcolor: "white",
@@ -2758,7 +2771,8 @@ const SelfAssessment = () => {
                                 label="Select Class"
                                 disabled={
                                   isLoadingSchoolData ||
-                                  filteredClassOptions.length === 0
+                                  filteredClassOptions.length === 0 ||
+                                  isReadOnly
                                 }
                                 sx={{
                                   borderRadius: 2,
@@ -2818,7 +2832,7 @@ const SelfAssessment = () => {
                                 }
                                 label="Select Section"
                                 disabled={
-                                  !selectedClass || sections.length === 0
+                                  !selectedClass || sections.length === 0 || isReadOnly
                                 }
                                 sx={{
                                   borderRadius: 2,
@@ -3039,7 +3053,7 @@ const SelfAssessment = () => {
                                                       <Radio
                                                         disabled={
                                                           !isPublished ||
-                                                          isSubmitted
+                                                          isReadOnly
                                                         }
                                                         sx={{
                                                           color:
@@ -3193,6 +3207,7 @@ const SelfAssessment = () => {
                                   setSelectedClassGroup(e.target.value)
                                 }
                                 label="Class Group"
+                                disabled={isReadOnly}
                                 sx={{
                                   borderRadius: 2,
                                   bgcolor: "white",
@@ -3297,7 +3312,8 @@ const SelfAssessment = () => {
                                 label="Select Class"
                                 disabled={
                                   isLoadingSchoolData ||
-                                  filteredClassOptions.length === 0
+                                  filteredClassOptions.length === 0 ||
+                                  isReadOnly
                                 }
                                 sx={{
                                   borderRadius: 2,
@@ -3357,7 +3373,7 @@ const SelfAssessment = () => {
                                 }
                                 label="Select Section"
                                 disabled={
-                                  !selectedClass || sections.length === 0
+                                  !selectedClass || sections.length === 0 || isReadOnly
                                 }
                                 sx={{
                                   borderRadius: 2,
@@ -3434,7 +3450,8 @@ const SelfAssessment = () => {
                                 disabled={
                                   !selectedClass ||
                                   isLoadingSubjects ||
-                                  subjects.length === 0
+                                  subjects.length === 0 ||
+                                  isReadOnly
                                 }
                                 sx={{
                                   borderRadius: 2,
@@ -3634,7 +3651,7 @@ const SelfAssessment = () => {
                                                       <Radio
                                                         disabled={
                                                           !isPublished ||
-                                                          isSubmitted
+                                                          isReadOnly
                                                         }
                                                         sx={{
                                                           color:
@@ -3983,7 +4000,7 @@ const SelfAssessment = () => {
                                                   size="small"
                                                   type="number"
                                                   disabled={
-                                                    !isPublished || isSubmitted
+                                                    !isPublished || isReadOnly
                                                   }
                                                   value={
                                                     classData.obtainedMarks ||
@@ -4328,7 +4345,7 @@ const SelfAssessment = () => {
                       )}
 
                     {/* Submit Button */}
-                    {isPublished && !isSubmitted && (
+                    {isPublished && !isReadOnly && (
                       <Box
                         sx={{
                           display: "flex",

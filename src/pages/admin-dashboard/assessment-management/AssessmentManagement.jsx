@@ -337,6 +337,7 @@ const AssessmentManagement = () => {
 
     const payload = {
       roleId: roleId,
+      assessmentId: assignment.assessmentId,
       isPublished: 1, // or toggle logic
     };
     publishAssessmentMutation.mutate(payload);
@@ -1239,9 +1240,9 @@ const AssessmentManagement = () => {
                             variant="outlined"
                             size="small"
                             onClick={() => handlePublishRoleAssignment(role.roleId)}
-                            disabled={roleAssignments[role.roleId]?.isPublished || publishAssessmentMutation.isPending}
+                            disabled={roleAssignments[role.roleId]?.isPublished === 1 || publishAssessmentMutation.isPending}
                           >
-                            {roleAssignments[role.roleId]?.isPublished ? "Published" : "Publish"}
+                            {roleAssignments[role.roleId]?.isPublished === 1 ? "Published" : "Publish"}
                           </Button>
                         </Box>
                       </TableCell>
