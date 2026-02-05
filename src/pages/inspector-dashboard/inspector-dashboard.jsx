@@ -220,7 +220,7 @@ const InspectorDashboard = () => {
                     backgroundClip: "text",
                   }}
                 >
-                  GSQAC Inspector
+                  GSQAC Verifier
                 </Typography>
                 <Typography
                   variant="caption"

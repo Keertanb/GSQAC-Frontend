@@ -29,6 +29,8 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   TextField,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   CheckCircle,
@@ -102,6 +104,8 @@ const SelfAssessment = () => {
   const [textAnswers, setTextAnswers] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
+  const [selectedQuestionTab, setSelectedQuestionTab] = useState(0);
+  const [sessionId, setSessionId] = useState(null);
 
   const logoutMutation = useLogoutMutation({
     onSuccess: () => {
@@ -161,7 +165,7 @@ const SelfAssessment = () => {
       allQuestionsData?.data?.data ||
       (Array.isArray(allQuestionsData?.data) ? allQuestionsData.data : []);
     return questions.some(
-      (q) => q.questionType === 3 || q.questionType === "3"
+      (q) => q.questionType === 3 || q.questionType === "3",
     );
   }, [allQuestionsData]);
 
@@ -223,7 +227,7 @@ const SelfAssessment = () => {
     ) {
       return Array.from(
         { length: upperClass - lowerClass + 1 },
-        (_, i) => lowerClass + i
+        (_, i) => lowerClass + i,
       );
     }
     return [];
@@ -250,10 +254,15 @@ const SelfAssessment = () => {
     return classOptions.filter((cls) => cls >= minClass && cls <= maxClass);
   }, [classOptions, selectedClassGroup]);
 
-  // Reset class when class group changes
+  // Reset class and answers when class group changes
   useEffect(() => {
     if (selectedClassGroup) {
       setSelectedClass(null);
+      setSelectedSection(null);
+      setSelectedSubject(null);
+      // Clear answers when class group changes
+      setAnswers({});
+      setTextAnswers({});
     }
   }, [selectedClassGroup]);
 
@@ -310,6 +319,24 @@ const SelfAssessment = () => {
   const isPublished = domainsData?.isPublished || false;
   const endDate = domainsData?.endDate || null;
   const isSubmitted = domainsData?.isSubmitted || false;
+  
+  // Check if endDate has passed
+  const isEndDatePassed = useMemo(() => {
+    if (!endDate) return false;
+    const endDateObj = new Date(endDate);
+    const currentDate = new Date();
+    return currentDate > endDateObj;
+  }, [endDate]);
+  
+  // Assessment is read-only if submitted or endDate has passed
+  const isReadOnly = isSubmitted || isEndDatePassed;
+
+  // Extract and store sessionId from domains API response
+  useEffect(() => {
+    if (domainsData?.sessionId !== undefined) {
+      setSessionId(domainsData.sessionId);
+    }
+  }, [domainsData?.sessionId]);
 
   // Helper function to map dropdown group range to API group range format
   const mapGroupRangeToApiFormat = (groupRange) => {
@@ -324,35 +351,34 @@ const SelfAssessment = () => {
   // Helper function to get flag color for a specific subdomain, question type, and group range
   const getGroupFlagColor = (questionType, groupRange) => {
     if (!selectedSubdomain || !domains) return null;
-    
+
     const subdomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
-    
+
     // Find the domain that contains this subdomain
     const domain = domains.find((d) =>
-      d.subDomain?.some(
-        (sd) => (sd.subDomainId || sd.id) === subdomainId
-      )
+      d.subDomain?.some((sd) => (sd.subDomainId || sd.id) === subdomainId),
     );
-    
+
     if (!domain) return null;
-    
+
     // Find the subdomain
     const subdomain = domain.subDomain?.find(
-      (sd) => (sd.subDomainId || sd.id) === subdomainId
+      (sd) => (sd.subDomainId || sd.id) === subdomainId,
     );
-    
+
     if (!subdomain || !subdomain.groupWise) return null;
-    
+
     // Map the dropdown group range to API format
     const apiGroupRange = mapGroupRangeToApiFormat(groupRange);
-    
+
     // Find the matching groupWise entry
     const groupWise = subdomain.groupWise.find(
       (gw) =>
-        (gw.questionType === questionType || String(gw.questionType) === String(questionType)) &&
-        gw.groupRange === apiGroupRange
+        (gw.questionType === questionType ||
+          String(gw.questionType) === String(questionType)) &&
+        gw.groupRange === apiGroupRange,
     );
-    
+
     return groupWise?.flag || null;
   };
 
@@ -368,6 +394,71 @@ const SelfAssessment = () => {
       default:
         return colors.neutral.gray400;
     }
+  };
+
+  // Helper function to get total questions count from groupWise array for a specific question type
+  const getTotalQuestionsFromGroupWise = (subdomain, questionType) => {
+    if (
+      !subdomain ||
+      !subdomain.groupWise ||
+      !Array.isArray(subdomain.groupWise)
+    ) {
+      return 0;
+    }
+
+    return subdomain.groupWise
+      .filter(
+        (gw) =>
+          gw.questionType === questionType ||
+          String(gw.questionType) === String(questionType),
+      )
+      .reduce((total, gw) => total + (gw.totalQuestions || 0), 0);
+  };
+
+  // Get total questions count from API groupWise data for current subdomain
+  const getTotalQuestionsCount = (questionType) => {
+    if (!selectedSubdomain) return 0;
+
+    const subdomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
+
+    // Find the subdomain in domains data
+    const domain = domains.find((d) =>
+      d.subDomain?.some((sd) => (sd.subDomainId || sd.id) === subdomainId),
+    );
+
+    if (!domain) return 0;
+
+    const subdomain = domain.subDomain?.find(
+      (sd) => (sd.subDomainId || sd.id) === subdomainId,
+    );
+
+    if (!subdomain) return 0;
+
+    // For question types 2 and 3, use groupWise data
+    if (
+      questionType === 2 ||
+      questionType === "2" ||
+      questionType === 3 ||
+      questionType === "3"
+    ) {
+      return getTotalQuestionsFromGroupWise(subdomain, questionType);
+    }
+
+    // For question types 1 and 4, check if subdomain has totalQuestions
+    // If groupWise exists, subtract those counts to get type 1/4 count
+    if (
+      subdomain.totalQuestions !== undefined &&
+      subdomain.totalQuestions !== null
+    ) {
+      const groupWiseTotal =
+        subdomain.groupWise?.reduce(
+          (total, gw) => total + (gw.totalQuestions || 0),
+          0,
+        ) || 0;
+      return Math.max(0, subdomain.totalQuestions - groupWiseTotal);
+    }
+
+    return 0;
   };
 
   // All questions for counting (unfiltered by class)
@@ -396,13 +487,13 @@ const SelfAssessment = () => {
 
   // Questions for counting (unfiltered)
   const singleChoiceQuestionsForCount = allQuestionsForCount.filter(
-    (q) => q.questionType === 1 || q.questionType === "1"
+    (q) => q.questionType === 1 || q.questionType === "1",
   );
   const classroomObservationQuestionsForCount = allQuestionsForCount.filter(
-    (q) => q.questionType === 2 || q.questionType === "2"
+    (q) => q.questionType === 2 || q.questionType === "2",
   );
   const subjectObservationQuestionsForCount = allQuestionsForCount.filter(
-    (q) => q.questionType === 3 || q.questionType === "3"
+    (q) => q.questionType === 3 || q.questionType === "3",
   );
   // FLN questions for counting - deduplicate by questionId
   const flnQuestionsForCount = allQuestionsForCount
@@ -422,13 +513,13 @@ const SelfAssessment = () => {
 
   // Questions for display (filtered by class/section)
   const singleChoiceQuestions = allQuestions.filter(
-    (q) => q.questionType === 1 || q.questionType === "1"
+    (q) => q.questionType === 1 || q.questionType === "1",
   );
   const classroomObservationQuestions = allQuestions.filter(
-    (q) => q.questionType === 2 || q.questionType === "2"
+    (q) => q.questionType === 2 || q.questionType === "2",
   );
   const subjectObservationQuestions = allQuestions.filter(
-    (q) => q.questionType === 3 || q.questionType === "3"
+    (q) => q.questionType === 3 || q.questionType === "3",
   );
   // FLN questions - deduplicate by questionId since API returns one per class
   const flnQuestions = allQuestions
@@ -459,6 +550,105 @@ const SelfAssessment = () => {
     return q.isClassroomObservation !== 1 || q.isClassroomObservation == null;
   });
 
+  // Calculate total questions count for each type
+  const generalQuestionsTotalCount = useMemo(() => {
+    return getTotalQuestionsCount(1);
+  }, [selectedSubdomain, domains]);
+
+  const classroomObservationQuestionsTotalCount = useMemo(() => {
+    return getTotalQuestionsCount(2);
+  }, [selectedSubdomain, domains]);
+
+  const subjectObservationQuestionsTotalCount = useMemo(() => {
+    return getTotalQuestionsCount(3);
+  }, [selectedSubdomain, domains]);
+
+  const flnQuestionsTotalCount = useMemo(() => {
+    return getTotalQuestionsCount(4);
+  }, [selectedSubdomain, domains]);
+
+  // Define question type tabs - only show tabs that have actual questions to display
+  const questionTabs = useMemo(() => {
+    const tabs = [];
+
+    // Only add tab if there are actual questions to display
+    if (generalQuestions.length > 0) {
+      tabs.push({
+        id: "general",
+        label: "General Questions",
+        icon: <Assignment sx={{ fontSize: 20 }} />,
+        color: colors.accent.green,
+        questions: generalQuestions,
+        questionsForCount: generalQuestionsForCount,
+        totalCount: generalQuestionsTotalCount,
+      });
+    }
+
+    // Only add tab if there are actual questions to display
+    if (classroomObservationQuestions.length > 0) {
+      tabs.push({
+        id: "classroom",
+        label: "Classroom Observation",
+        icon: <Class sx={{ fontSize: 20 }} />,
+        color: colors.primary.blue,
+        questions: classroomObservationQuestions,
+        questionsForCount: classroomObservationQuestionsForCount,
+        totalCount: classroomObservationQuestionsTotalCount,
+      });
+    }
+
+    // Only add tab if there are actual questions to display
+    if (subjectObservationQuestions.length > 0) {
+      tabs.push({
+        id: "subject",
+        label: "Subject-Wise Observation",
+        icon: <MenuBook sx={{ fontSize: 20 }} />,
+        color: colors.accent.purple,
+        questions: subjectObservationQuestions,
+        questionsForCount: subjectObservationQuestionsForCount,
+        totalCount: subjectObservationQuestionsTotalCount,
+      });
+    }
+
+    // Only add tab if there are actual questions to display
+    if (flnQuestions.length > 0) {
+      tabs.push({
+        id: "fln",
+        label: "Input Type Questions",
+        icon: <Create sx={{ fontSize: 20 }} />,
+        color: colors.semantic.warning,
+        questions: flnQuestions,
+        questionsForCount: flnQuestionsForCount,
+        totalCount: flnQuestionsTotalCount,
+      });
+    }
+
+    return tabs;
+  }, [
+    generalQuestions,
+    classroomObservationQuestions,
+    subjectObservationQuestions,
+    flnQuestions,
+    generalQuestionsForCount,
+    classroomObservationQuestionsForCount,
+    subjectObservationQuestionsForCount,
+    flnQuestionsForCount,
+    generalQuestionsTotalCount,
+    classroomObservationQuestionsTotalCount,
+    subjectObservationQuestionsTotalCount,
+    flnQuestionsTotalCount,
+  ]);
+
+  // Reset tab to first when questions change
+  useEffect(() => {
+    if (questionTabs.length > 0 && selectedQuestionTab >= questionTabs.length) {
+      setSelectedQuestionTab(0);
+    }
+  }, [questionTabs.length, selectedQuestionTab]);
+
+  // Get current tab
+  const currentTab = questionTabs[selectedQuestionTab] || null;
+
   const getSubdomainProgress = (subdomain) => {
     const subdomainId = subdomain.subDomainId || subdomain.id;
     const subdomainIdKey = subdomainId;
@@ -479,7 +669,7 @@ const SelfAssessment = () => {
       const totalQuestions = allQuestions.length;
       if (totalQuestions === 0) return 0;
       const answeredQuestions = allQuestions.filter(
-        (q) => answers[q.questionId]
+        (q) => answers[q.questionId],
       ).length;
       return (answeredQuestions / totalQuestions) * 100;
     }
@@ -557,8 +747,7 @@ const SelfAssessment = () => {
   // Helper function to check if API answer should be shown based on question type and selected dropdowns
   const shouldShowApiAnswer = (question) => {
     const questionType =
-      question.questionType ||
-      (question.isClassroomObservation === 1 ? 2 : 1);
+      question.questionType || (question.isClassroomObservation === 1 ? 2 : 1);
 
     if (questionType === 1 || questionType === "1") {
       // General questions - no dropdowns needed
@@ -578,41 +767,68 @@ const SelfAssessment = () => {
 
   // Get domain icon based on domain ID or name
   const getDomainIcon = (domain) => {
-    const domainId = domain.domainId;
-    const domainName = getDomainName(domain).toLowerCase();
-
-    if (
-      domainId === 1 ||
-      domainName.includes("leadership") ||
-      domainName.includes("governance")
-    ) {
-      return <WorkspacePremium />;
-    } else if (
-      domainId === 2 ||
-      domainName.includes("curriculum") ||
-      domainName.includes("instruction")
-    ) {
-      return <MenuBook />;
-    } else if (
-      domainId === 3 ||
-      domainName.includes("human") ||
-      domainName.includes("resource")
-    ) {
-      return <Groups />;
-    } else if (
-      domainId === 4 ||
-      domainName.includes("facility") ||
-      domainName.includes("infrastructure")
-    ) {
-      return <Business />;
-    } else if (
-      domainId === 5 ||
-      domainName.includes("student") ||
-      domainName.includes("outcome")
-    ) {
-      return <SchoolIcon />;
+    // Default icon
+    const defaultIcon = <Assessment sx={{ fontSize: 24 }} />;
+    
+    try {
+      // Check if domain is null/undefined
+      if (!domain) {
+        console.warn('getDomainIcon: Domain is null or undefined');
+        return defaultIcon;
+      }
+      
+      // Get domain ID and name
+      const domainId = domain.domainId;
+      const domainName = getDomainName(domain);
+      
+      // Check if domainName is valid
+      if (!domainName || typeof domainName !== 'string') {
+        console.warn('getDomainIcon: Invalid domain name for domain:', domain);
+        return defaultIcon;
+      }
+      
+      // Safely convert to lowercase
+      const domainNameLower = String(domainName).toLowerCase();
+      
+      // Determine icon based on domain ID or name
+      if (
+        domainId === 1 ||
+        domainNameLower.includes("leadership") ||
+        domainNameLower.includes("governance")
+      ) {
+        return <WorkspacePremium sx={{ fontSize: 24 }} />;
+      } else if (
+        domainId === 2 ||
+        domainNameLower.includes("curricul") || // Changed from "curriculum" to catch variations
+        domainNameLower.includes("instruction")
+      ) {
+        return <MenuBook sx={{ fontSize: 24 }} />;
+      } else if (
+        domainId === 3 ||
+        domainNameLower.includes("human") ||
+        domainNameLower.includes("resource") ||
+        domainNameLower.includes("staff") ||
+        domainNameLower.includes("teacher")
+      ) {
+        return <Groups sx={{ fontSize: 24 }} />;
+      } else if (
+        domainId === 4 ||
+        domainNameLower.includes("facilit") || // Changed from "facility" to catch variations
+        domainNameLower.includes("infrastructure")
+      ) {
+        return <Business sx={{ fontSize: 24 }} />;
+      } else if (
+        domainId === 5 ||
+        domainNameLower.includes("student") ||
+        domainNameLower.includes("outcome")
+      ) {
+        return <SchoolIcon sx={{ fontSize: 24 }} />;
+      }
+    } catch (error) {
+      console.error('Error in getDomainIcon:', error, 'Domain:', domain);
     }
-    return <Assessment />;
+    
+    return defaultIcon;
   };
 
   const toggleQuestionExpansion = (questionId) => {
@@ -651,7 +867,7 @@ const SelfAssessment = () => {
         domain.subDomain?.some(
           (sd) =>
             (sd.subDomainId || sd.id) ===
-            (selectedSubdomain.subDomainId || selectedSubdomain.id)
+            (selectedSubdomain.subDomainId || selectedSubdomain.id),
         )
       ) {
         // Subdomain belongs to this domain, keep it selected
@@ -699,19 +915,30 @@ const SelfAssessment = () => {
     setSelectedSection(null);
     setSelectedSubject(null);
     setTextAnswers({});
+    // Reset question tab to first
+    setSelectedQuestionTab(0);
   };
 
-  // Effect to handle class changes - reset section and subject
+  // Reset section and subject when class changes
   useEffect(() => {
-    if (!selectedSubdomain || !selectedClass) return;
+    if (selectedClass) {
+      setSelectedSection(null);
+      setSelectedSubject(null);
+      // Clear answers when class changes
+      setAnswers({});
+      setTextAnswers({});
+    }
+  }, [selectedClass]);
 
-    // Reset subject when class changes (since it's class-specific)
-    setSelectedSubject(null);
-
-    // Reset answers - they will be loaded from API if they exist
-    setAnswers({});
-    setTextAnswers({});
-  }, [selectedClass, selectedSubdomain]);
+  // Reset subject and answers when section changes
+  useEffect(() => {
+    if (selectedSection) {
+      setSelectedSubject(null);
+      // Clear answers when section changes
+      setAnswers({});
+      setTextAnswers({});
+    }
+  }, [selectedSection]);
 
   // Effect to load API answers when questions are fetched (API answers take priority)
   useEffect(() => {
@@ -736,8 +963,12 @@ const SelfAssessment = () => {
           shouldLoadAnswer = !!selectedClass && !!selectedSection;
         } else if (questionType === 3 || questionType === "3") {
           // Subject observation - needs class, section, and subject
+          // Also check if the question's subjectId matches the selected subject
           shouldLoadAnswer =
-            !!selectedClass && !!selectedSection && !!selectedSubject;
+            !!selectedClass &&
+            !!selectedSection &&
+            !!selectedSubject &&
+            question.subjectId === Number(selectedSubject);
         } else if (questionType === 4 || questionType === "4") {
           // FLN questions - no dropdowns needed
           shouldLoadAnswer = true;
@@ -779,12 +1010,13 @@ const SelfAssessment = () => {
         // Only add if there's actual data
         if (Object.keys(flnAnswersMap[questionId]).length > 0) {
           apiTextAnswers[questionId] = JSON.stringify(
-            flnAnswersMap[questionId]
+            flnAnswersMap[questionId],
           );
         }
       });
 
       // API answers take priority - they override any locally saved answers
+      // Only set if we have answers to set
       if (Object.keys(apiAnswers).length > 0) {
         setAnswers(apiAnswers);
 
@@ -799,6 +1031,9 @@ const SelfAssessment = () => {
             [storageKey]: apiAnswers,
           }));
         }
+      } else {
+        // Clear answers if no API answers match current selections
+        setAnswers({});
       }
 
       if (Object.keys(apiTextAnswers).length > 0) {
@@ -815,9 +1050,18 @@ const SelfAssessment = () => {
             [storageKey]: apiTextAnswers,
           }));
         }
+      } else {
+        // Clear text answers if no API answers match current selections
+        setTextAnswers({});
       }
     }
-  }, [allQuestions, selectedSubdomain, selectedClass, selectedSection, selectedSubject]);
+  }, [
+    allQuestions,
+    selectedSubdomain,
+    selectedClass,
+    selectedSection,
+    selectedSubject,
+  ]);
 
   // Handle answer selection
   const handleAnswerChange = (questionId, optionId) => {
@@ -882,7 +1126,7 @@ const SelfAssessment = () => {
           "Failed to submit answer. Please try again.",
         {
           variant: "error",
-        }
+        },
       );
     },
   });
@@ -899,9 +1143,21 @@ const SelfAssessment = () => {
             [subdomainId]: { ...answers },
           }));
         }
-        // Refetch questions and domains to update progress bars
-        refetchQuestions();
-        refetchDomains();
+        // If sessionId is null, create session by calling submit-assessment API
+        if (sessionId === null) {
+          const sessionPayload = {
+            sessionId: null,
+            userId: Number(userId),
+            roleId: Number(roleId),
+            schoolId: userName || undefined,
+            isSubmitted: 0,
+          };
+          submitAssessmentMutation.mutate(sessionPayload);
+        } else {
+          // Refetch questions and domains to update progress bars
+          refetchQuestions();
+          refetchDomains();
+        }
         // Optionally clear answers or navigate
         console.log("Subdomain answers submitted successfully:", data);
         enqueueSnackbar("All answers submitted successfully!", {
@@ -915,46 +1171,56 @@ const SelfAssessment = () => {
             "Failed to submit answers. Please try again.",
           {
             variant: "error",
-          }
+          },
         );
       },
     });
 
   const submitAssessmentMutation = useSubmitAssessmentMutation({
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       console.log("Assessment submitted successfully:", data);
-      // Close the confirmation modal
-      setShowSubmitConfirmation(false);
-      
-      // Refetch domains to update progress and isSubmitted status
-      refetchDomains();
-      
-      // Refetch questions if subdomain is selected
-      if (selectedSubdomain) {
-        refetchQuestions();
+
+      // Check if this was a session creation (isSubmitted: 0)
+      if (variables.isSubmitted === 0) {
+        // Session creation - refetch domains to get the sessionId
+        refetchDomains();
+        enqueueSnackbar("Session created successfully!", {
+          variant: "success",
+        });
+      } else {
+        // Final submission - close the confirmation modal
+        setShowSubmitConfirmation(false);
+
+        // Refetch domains to update progress and isSubmitted status
+        refetchDomains();
+
+        // Refetch questions if subdomain is selected
+        if (selectedSubdomain) {
+          refetchQuestions();
+        }
+
+        // Invalidate all school-related queries to refresh dashboard data
+        queryClient.invalidateQueries({
+          queryKey: ["school"],
+        });
+
+        // Invalidate specific queries
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.school.domains(roleId, languageCode),
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.school.schoolData(userName),
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.school.schoolSections(userName),
+        });
+
+        enqueueSnackbar("Assessment submitted successfully!", {
+          variant: "success",
+        });
       }
-      
-      // Invalidate all school-related queries to refresh dashboard data
-      queryClient.invalidateQueries({
-        queryKey: ["school"],
-      });
-      
-      // Invalidate specific queries
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.school.domains(roleId, languageCode),
-      });
-      
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.school.schoolData(userName),
-      });
-      
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.school.schoolSections(userName),
-      });
-      
-      enqueueSnackbar("Assessment submitted successfully!", {
-        variant: "success",
-      });
     },
     onError: (error) => {
       console.error("Error submitting assessment:", error);
@@ -965,7 +1231,7 @@ const SelfAssessment = () => {
           "Failed to submit assessment. Please try again.",
         {
           variant: "error",
-        }
+        },
       );
     },
   });
@@ -984,8 +1250,10 @@ const SelfAssessment = () => {
   // Handler to confirm final submit
   const handleConfirmSubmit = () => {
     const payload = {
+      sessionId: sessionId || null,
       userId: Number(userId),
       roleId: Number(roleId),
+      schoolId: userName || undefined,
       isSubmitted: 1,
     };
     submitAssessmentMutation.mutate(payload);
@@ -1028,7 +1296,7 @@ const SelfAssessment = () => {
           const flnData = JSON.parse(textAnswer);
           // Check if at least one class has an answer
           return Object.keys(flnData).some(
-            (key) => flnData[key] && flnData[key].obtainedMarks
+            (key) => flnData[key] && flnData[key].obtainedMarks,
           );
         } catch (e) {
           return false;
@@ -1036,9 +1304,10 @@ const SelfAssessment = () => {
       }
       // For other questions, check if option is selected
       // Only count API answer if required dropdowns are selected
-      const apiAnswer = shouldShowApiAnswer(q) && q.selectedOptionId
-        ? q.selectedOptionId
-        : null;
+      const apiAnswer =
+        shouldShowApiAnswer(q) && q.selectedOptionId
+          ? q.selectedOptionId
+          : null;
       return answers[q.questionId] || apiAnswer;
     }).length;
     return { totalAnswered: answered, totalQuestions: total };
@@ -1051,12 +1320,12 @@ const SelfAssessment = () => {
     }
 
     const domainIdx = domains.findIndex(
-      (d) => d.domainId === selectedDomain.domainId
+      (d) => d.domainId === selectedDomain.domainId,
     );
     const subdomainIdx = selectedDomain.subDomain?.findIndex(
       (sd) =>
         (sd.subDomainId || sd.id) ===
-        (selectedSubdomain.subDomainId || selectedSubdomain.id)
+        (selectedSubdomain.subDomainId || selectedSubdomain.id),
     );
 
     return {
@@ -1090,7 +1359,7 @@ const SelfAssessment = () => {
       try {
         const flnData = JSON.parse(textAnswer);
         const hasAnswer = Object.keys(flnData).some(
-          (key) => flnData[key] && flnData[key].obtainedMarks
+          (key) => flnData[key] && flnData[key].obtainedMarks,
         );
         if (!hasAnswer) {
           enqueueSnackbar("Please enter marks for at least one class.", {
@@ -1172,7 +1441,7 @@ const SelfAssessment = () => {
               answers[question.questionId] ||
                 (shouldShowApiAnswer(question) && question.selectedOptionId
                   ? question.selectedOptionId
-                  : null)
+                  : null),
             ),
       obtainedMarks:
         questionType === 4 || questionType === "4"
@@ -1204,7 +1473,7 @@ const SelfAssessment = () => {
         "Please answer at least one question before submitting.",
         {
           variant: "warning",
-        }
+        },
       );
       return;
     }
@@ -1215,7 +1484,7 @@ const SelfAssessment = () => {
 
     // Check if user has answered any subject observation questions (type 3)
     const hasAnsweredSubjectQuestions = subjectObservationQuestions.some(
-      (q) => answers[q.questionId] || textAnswers[q.questionId]
+      (q) => answers[q.questionId] || textAnswers[q.questionId],
     );
 
     if (hasClassBasedQuestions) {
@@ -1309,7 +1578,7 @@ const SelfAssessment = () => {
         "Please answer at least one question before submitting.",
         {
           variant: "warning",
-        }
+        },
       );
       return;
     }
@@ -1564,14 +1833,14 @@ const SelfAssessment = () => {
                       variant="body2"
                       sx={{
                         color:
-                          isSubmitted === 1 || isSubmitted === true
+                          isReadOnly
                             ? colors.semantic.error
                             : colors.semantic.warning,
                         fontWeight: 600,
                         fontSize: "0.875rem",
                       }}
                     >
-                      {isSubmitted === 1 || isSubmitted === true
+                      {isReadOnly
                         ? `The assessment submission time is ended and closed on ${endDate}`
                         : `Submit all questions before ${endDate}`}
                     </Typography>
@@ -1926,7 +2195,7 @@ const SelfAssessment = () => {
                                                   }}
                                                 >
                                                   {String.fromCharCode(
-                                                    65 + (subdomainIndex % 26)
+                                                    65 + (subdomainIndex % 26),
                                                   )}
                                                 </Typography>
                                               </Box>
@@ -1987,13 +2256,13 @@ const SelfAssessment = () => {
                                                     fontSize: "0.625rem",
                                                     color:
                                                       getProgressColor(
-                                                        subdomainProgress
+                                                        subdomainProgress,
                                                       ),
                                                     fontWeight: 600,
                                                   }}
                                                 >
                                                   {Math.round(
-                                                    subdomainProgress
+                                                    subdomainProgress,
                                                   )}
                                                   %
                                                 </Typography>
@@ -2010,7 +2279,7 @@ const SelfAssessment = () => {
                                                     borderRadius: 2,
                                                     bgcolor:
                                                       getProgressColor(
-                                                        subdomainProgress
+                                                        subdomainProgress,
                                                       ),
                                                   },
                                                 }}
@@ -2019,7 +2288,7 @@ const SelfAssessment = () => {
                                           </CardContent>
                                         </Card>
                                       );
-                                    }
+                                    },
                                   )}
                                 </Box>
                               )}
@@ -2055,7 +2324,7 @@ const SelfAssessment = () => {
                 </Box>
 
                 {/* Final Submit Button */}
-                {isPublished && !isSubmitted && (
+                {isPublished && !isReadOnly && (
                   <Box
                     sx={{
                       p: 2.5,
@@ -2069,7 +2338,8 @@ const SelfAssessment = () => {
                       onClick={handleOpenSubmitConfirmation}
                       disabled={
                         submitAssessmentMutation.isPending ||
-                        !allDomainsComplete
+                        !allDomainsComplete ||
+                        isReadOnly
                       }
                       title={
                         !allDomainsComplete
@@ -2098,8 +2368,8 @@ const SelfAssessment = () => {
                       {submitAssessmentMutation.isPending
                         ? "Submitting..."
                         : !allDomainsComplete
-                        ? "Final Submit"
-                        : "Submit Assessment"}
+                          ? "Final Submit"
+                          : "Submit Assessment"}
                     </Button>
                   </Box>
                 )}
@@ -2140,9 +2410,9 @@ const SelfAssessment = () => {
                     >
                       {selectedDomain && selectedSubdomain
                         ? `${domainNumber}. ${getDomainName(
-                            selectedDomain
+                            selectedDomain,
                           )} / ${domainNumber}.${subdomainNumber}. ${getSubdomainName(
-                            selectedSubdomain
+                            selectedSubdomain,
                           )}`
                         : ""}
                     </Typography>
@@ -2224,9 +2494,89 @@ const SelfAssessment = () => {
                       </Box>
                     )}
 
-                    {/* Classroom Observation Questions Section (Type 2) */}
-                    {classroomObservationQuestions.length > 0 && (
-                      <Box sx={{ mb: 4 }}>
+                    {/* Question Type Tabs */}
+                    {!isLoadingQuestions &&
+                      allQuestions.length > 0 &&
+                      questionTabs.length > 0 && (
+                        <Box sx={{ mb: 3 }}>
+                          <Tabs
+                            value={selectedQuestionTab}
+                            onChange={(e, newValue) => {
+                              // Reset class group, class, section, and subject when changing question type tab
+                              setSelectedClassGroup(null);
+                              setSelectedClass(null);
+                              setSelectedSection(null);
+                              setSelectedSubject(null);
+                              // Clear answers when changing tabs
+                              setAnswers({});
+                              setTextAnswers({});
+                              setSelectedQuestionTab(newValue);
+                            }}
+                            variant="scrollable"
+                            scrollButtons="auto"
+                            sx={{
+                              borderBottom: 2,
+                              borderColor: colors.neutral.gray200,
+                              "& .MuiTabs-indicator": {
+                                height: 3,
+                                borderRadius: "3px 3px 0 0",
+                              },
+                              "& .MuiTab-root": {
+                                textTransform: "none",
+                                fontWeight: 600,
+                                fontSize: "0.875rem",
+                                minHeight: 48,
+                                px: 2,
+                                "&.Mui-selected": {
+                                  color: currentTab?.color || colors.primary.blue,
+                                },
+                              },
+                            }}
+                          >
+                            {questionTabs.map((tab, index) => {
+                              return (
+                                <Tab
+                                  key={tab.id}
+                                  label={
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 1,
+                                      }}
+                                    >
+                                      {tab.icon}
+                                      <Typography
+                                        sx={{
+                                          fontWeight: 600,
+                                          fontSize: "0.875rem",
+                                        }}
+                                      >
+                                        {tab.label}
+                                      </Typography>
+                                    </Box>
+                                  }
+                                  sx={{
+                                    color: colors.text.secondary,
+                                    "&.Mui-selected": {
+                                      color: tab.color,
+                                    },
+                                  }}
+                                />
+                              );
+                            })}
+                          </Tabs>
+                        </Box>
+                      )}
+
+                    {/* Questions Content Based on Selected Tab */}
+                    {!isLoadingQuestions &&
+                      allQuestions.length > 0 &&
+                      currentTab && (
+                        <Box>
+                          {/* Classroom Observation Questions Section (Type 2) */}
+                          {currentTab.id === "classroom" && (
+                            <Box sx={{ mb: 4 }}>
                         {/* Section Header */}
                         <Box
                           sx={{
@@ -2255,23 +2605,6 @@ const SelfAssessment = () => {
                             >
                               Classroom Observation Questions
                             </Typography>
-                            <Chip
-                              label={`${
-                                classroomObservationQuestionsForCount.filter(
-                                  (q) =>
-                                    answers[q.questionId] ||
-                                    textAnswers[q.questionId]
-                                ).length
-                              }/${
-                                classroomObservationQuestionsForCount.length
-                              } answered`}
-                              size="small"
-                              sx={{
-                                bgcolor: colors.primary.blue + "15",
-                                color: colors.primary.blue,
-                                fontWeight: 600,
-                              }}
-                            />
                           </Box>
                           <Typography
                             variant="body2"
@@ -2333,6 +2666,7 @@ const SelfAssessment = () => {
                                   setSelectedClassGroup(e.target.value)
                                 }
                                 label="Class Group"
+                                disabled={isReadOnly}
                                 sx={{
                                   borderRadius: 2,
                                   bgcolor: "white",
@@ -2349,36 +2683,50 @@ const SelfAssessment = () => {
                                     },
                                 }}
                               >
-                                {["1-2", "3-5", "6-8"].map((groupRange) => {
-                                  const flag = getGroupFlagColor(2, groupRange);
-                                  const flagColor = flag ? getFlagColorValue(flag) : null;
-                                  const displayRange = groupRange === "3-5" ? "3-5" : groupRange;
-                                  
-                                  return (
-                                    <MenuItem key={groupRange} value={groupRange}>
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: 1,
-                                        }}
+                                {["1-2", "3-5", "6-8"]
+                                  .filter((groupRange) => {
+                                    // Filter out groups with gray/null/undefined flags
+                                    const flag = getGroupFlagColor(2, groupRange);
+                                    return flag !== null && flag !== undefined && flag !== "gray";
+                                  })
+                                  .map((groupRange) => {
+                                    const flag = getGroupFlagColor(2, groupRange);
+                                    const flagColor = flag
+                                      ? getFlagColorValue(flag)
+                                      : null;
+                                    const displayRange =
+                                      groupRange === "3-5" ? "3-5" : groupRange;
+
+                                    return (
+                                      <MenuItem
+                                        key={groupRange}
+                                        value={groupRange}
                                       >
-                                        {flagColor && (
-                                          <Box
-                                            sx={{
-                                              width: 10,
-                                              height: 10,
-                                              borderRadius: "50%",
-                                              bgcolor: flagColor,
-                                              flexShrink: 0,
-                                            }}
-                                          />
-                                        )}
-                                        <Typography>Class {displayRange}</Typography>
-                                      </Box>
-                                    </MenuItem>
-                                  );
-                                })}
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1,
+                                          }}
+                                        >
+                                          {flagColor && (
+                                            <Box
+                                              sx={{
+                                                width: 10,
+                                                height: 10,
+                                                borderRadius: "50%",
+                                                bgcolor: flagColor,
+                                                flexShrink: 0,
+                                              }}
+                                            />
+                                          )}
+                                          <Typography>
+                                            Class {displayRange}
+                                          </Typography>
+                                        </Box>
+                                      </MenuItem>
+                                    );
+                                  })}
                               </Select>
                             </FormControl>
 
@@ -2423,7 +2771,8 @@ const SelfAssessment = () => {
                                 label="Select Class"
                                 disabled={
                                   isLoadingSchoolData ||
-                                  filteredClassOptions.length === 0
+                                  filteredClassOptions.length === 0 ||
+                                  isReadOnly
                                 }
                                 sx={{
                                   borderRadius: 2,
@@ -2483,7 +2832,7 @@ const SelfAssessment = () => {
                                 }
                                 label="Select Section"
                                 disabled={
-                                  !selectedClass || sections.length === 0
+                                  !selectedClass || sections.length === 0 || isReadOnly
                                 }
                                 sx={{
                                   borderRadius: 2,
@@ -2556,7 +2905,7 @@ const SelfAssessment = () => {
                               gap: 2.5,
                             }}
                           >
-                            {classroomObservationQuestions.map(
+                            {currentTab.questions.map(
                               (question, index) => {
                                 const options = parseOptions(question.options);
                                 const userSelectedAnswer =
@@ -2597,7 +2946,7 @@ const SelfAssessment = () => {
                                     <Box
                                       onClick={() =>
                                         toggleQuestionExpansion(
-                                          question.questionId
+                                          question.questionId,
                                         )
                                       }
                                       sx={{
@@ -2686,7 +3035,7 @@ const SelfAssessment = () => {
                                               onChange={(e) =>
                                                 handleAnswerChange(
                                                   question.questionId,
-                                                  e.target.value
+                                                  e.target.value,
                                                 )
                                               }
                                             >
@@ -2698,11 +3047,14 @@ const SelfAssessment = () => {
                                                       optIndex
                                                     }
                                                     value={String(
-                                                      option.optionId
+                                                      option.optionId,
                                                     )}
                                                     control={
                                                       <Radio
-                                                        disabled={!isPublished || isSubmitted}
+                                                        disabled={
+                                                          !isPublished ||
+                                                          isReadOnly
+                                                        }
                                                         sx={{
                                                           color:
                                                             colors.primary.blue,
@@ -2747,7 +3099,7 @@ const SelfAssessment = () => {
                                                       },
                                                     }}
                                                   />
-                                                )
+                                                ),
                                               )}
                                             </RadioGroup>
                                           </FormControl>
@@ -2756,15 +3108,15 @@ const SelfAssessment = () => {
                                     )}
                                   </Card>
                                 );
-                              }
+                              },
                             )}
                           </Box>
                         )}
                       </Box>
-                    )}
+                          )}
 
-                    {/* Subject-Wise Observation Questions Section (Type 3) */}
-                    {subjectObservationQuestions.length > 0 && (
+                          {/* Subject-Wise Observation Questions Section (Type 3) */}
+                          {currentTab.id === "subject" && (
                       <Box sx={{ mb: 4 }}>
                         {/* Section Header */}
                         <Box
@@ -2794,23 +3146,6 @@ const SelfAssessment = () => {
                             >
                               Subject-Wise Observation Questions
                             </Typography>
-                            <Chip
-                              label={`${
-                                subjectObservationQuestionsForCount.filter(
-                                  (q) =>
-                                    answers[q.questionId] ||
-                                    textAnswers[q.questionId]
-                                ).length
-                              }/${
-                                subjectObservationQuestionsForCount.length
-                              } answered`}
-                              size="small"
-                              sx={{
-                                bgcolor: colors.accent.purple + "15",
-                                color: colors.accent.purple,
-                                fontWeight: 600,
-                              }}
-                            />
                           </Box>
                           <Typography
                             variant="body2"
@@ -2872,6 +3207,7 @@ const SelfAssessment = () => {
                                   setSelectedClassGroup(e.target.value)
                                 }
                                 label="Class Group"
+                                disabled={isReadOnly}
                                 sx={{
                                   borderRadius: 2,
                                   bgcolor: "white",
@@ -2888,36 +3224,50 @@ const SelfAssessment = () => {
                                     },
                                 }}
                               >
-                                {["1-2", "3-5", "6-8"].map((groupRange) => {
-                                  const flag = getGroupFlagColor(3, groupRange);
-                                  const flagColor = flag ? getFlagColorValue(flag) : null;
-                                  const displayRange = groupRange === "3-5" ? "3-5" : groupRange;
-                                  
-                                  return (
-                                    <MenuItem key={groupRange} value={groupRange}>
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: 1,
-                                        }}
+                                {["1-2", "3-5", "6-8"]
+                                  .filter((groupRange) => {
+                                    // Filter out groups with gray/null/undefined flags
+                                    const flag = getGroupFlagColor(3, groupRange);
+                                    return flag !== null && flag !== undefined && flag !== "gray";
+                                  })
+                                  .map((groupRange) => {
+                                    const flag = getGroupFlagColor(3, groupRange);
+                                    const flagColor = flag
+                                      ? getFlagColorValue(flag)
+                                      : null;
+                                    const displayRange =
+                                      groupRange === "3-5" ? "3-5" : groupRange;
+
+                                    return (
+                                      <MenuItem
+                                        key={groupRange}
+                                        value={groupRange}
                                       >
-                                        {flagColor && (
-                                          <Box
-                                            sx={{
-                                              width: 10,
-                                              height: 10,
-                                              borderRadius: "50%",
-                                              bgcolor: flagColor,
-                                              flexShrink: 0,
-                                            }}
-                                          />
-                                        )}
-                                        <Typography>Class {displayRange}</Typography>
-                                      </Box>
-                                    </MenuItem>
-                                  );
-                                })}
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1,
+                                          }}
+                                        >
+                                          {flagColor && (
+                                            <Box
+                                              sx={{
+                                                width: 10,
+                                                height: 10,
+                                                borderRadius: "50%",
+                                                bgcolor: flagColor,
+                                                flexShrink: 0,
+                                              }}
+                                            />
+                                          )}
+                                          <Typography>
+                                            Class {displayRange}
+                                          </Typography>
+                                        </Box>
+                                      </MenuItem>
+                                    );
+                                  })}
                               </Select>
                             </FormControl>
 
@@ -2962,7 +3312,8 @@ const SelfAssessment = () => {
                                 label="Select Class"
                                 disabled={
                                   isLoadingSchoolData ||
-                                  filteredClassOptions.length === 0
+                                  filteredClassOptions.length === 0 ||
+                                  isReadOnly
                                 }
                                 sx={{
                                   borderRadius: 2,
@@ -3022,7 +3373,7 @@ const SelfAssessment = () => {
                                 }
                                 label="Select Section"
                                 disabled={
-                                  !selectedClass || sections.length === 0
+                                  !selectedClass || sections.length === 0 || isReadOnly
                                 }
                                 sx={{
                                   borderRadius: 2,
@@ -3099,7 +3450,8 @@ const SelfAssessment = () => {
                                 disabled={
                                   !selectedClass ||
                                   isLoadingSubjects ||
-                                  subjects.length === 0
+                                  subjects.length === 0 ||
+                                  isReadOnly
                                 }
                                 sx={{
                                   borderRadius: 2,
@@ -3169,7 +3521,7 @@ const SelfAssessment = () => {
                               gap: 2.5,
                             }}
                           >
-                            {subjectObservationQuestions.map(
+                            {currentTab.questions.map(
                               (question, index) => {
                                 const options = parseOptions(question.options);
                                 const userSelectedAnswer =
@@ -3188,9 +3540,7 @@ const SelfAssessment = () => {
                                   ? 100
                                   : 0;
                                 const questionNumber = `${domainNumber}.${subdomainNumber}.${
-                                  index +
-                                  1 +
-                                  classroomObservationQuestions.length
+                                  index + 1
                                 }`;
 
                                 return (
@@ -3212,7 +3562,7 @@ const SelfAssessment = () => {
                                     <Box
                                       onClick={() =>
                                         toggleQuestionExpansion(
-                                          question.questionId
+                                          question.questionId,
                                         )
                                       }
                                       sx={{
@@ -3283,7 +3633,7 @@ const SelfAssessment = () => {
                                               onChange={(e) =>
                                                 handleAnswerChange(
                                                   question.questionId,
-                                                  e.target.value
+                                                  e.target.value,
                                                 )
                                               }
                                             >
@@ -3295,11 +3645,14 @@ const SelfAssessment = () => {
                                                       optIndex
                                                     }
                                                     value={String(
-                                                      option.optionId
+                                                      option.optionId,
                                                     )}
                                                     control={
                                                       <Radio
-                                                        disabled={!isPublished || isSubmitted}
+                                                        disabled={
+                                                          !isPublished ||
+                                                          isReadOnly
+                                                        }
                                                         sx={{
                                                           color:
                                                             colors.accent
@@ -3345,7 +3698,7 @@ const SelfAssessment = () => {
                                                       },
                                                     }}
                                                   />
-                                                )
+                                                ),
                                               )}
                                             </RadioGroup>
                                           </FormControl>
@@ -3354,15 +3707,15 @@ const SelfAssessment = () => {
                                     )}
                                   </Card>
                                 );
-                              }
+                              },
                             )}
                           </Box>
                         )}
                       </Box>
-                    )}
+                          )}
 
-                    {/* FLN Questions Section (Type 4) */}
-                    {flnQuestions.length > 0 && (
+                          {/* FLN Questions Section (Type 4) */}
+                          {currentTab.id === "fln" && (
                       <Box sx={{ mb: 4 }}>
                         {/* Section Header */}
                         <Box
@@ -3395,30 +3748,6 @@ const SelfAssessment = () => {
                             >
                               Input Type Questions
                             </Typography>
-                            <Chip
-                              label={`${
-                                flnQuestionsForCount.filter((q) => {
-                                  const textAnswer = textAnswers[q.questionId];
-                                  if (!textAnswer) return false;
-                                  try {
-                                    const flnData = JSON.parse(textAnswer);
-                                    return Object.keys(flnData).some(
-                                      (key) =>
-                                        flnData[key] &&
-                                        flnData[key].obtainedMarks
-                                    );
-                                  } catch (e) {
-                                    return false;
-                                  }
-                                }).length
-                              }/${flnQuestionsForCount.length} answered`}
-                              size="small"
-                              sx={{
-                                bgcolor: colors.semantic.warning + "15",
-                                color: colors.semantic.warning,
-                                fontWeight: 600,
-                              }}
-                            />
                           </Box>
                           <Typography
                             variant="body2"
@@ -3457,7 +3786,7 @@ const SelfAssessment = () => {
                               gap: 2.5,
                             }}
                           >
-                            {flnQuestions.map((question, index) => {
+                            {currentTab.questions.map((question, index) => {
                               const textAnswer =
                                 textAnswers[question.questionId] || "";
                               const isExpanded =
@@ -3470,7 +3799,8 @@ const SelfAssessment = () => {
                                   const flnData = JSON.parse(textAnswer);
                                   const hasAnswer = Object.keys(flnData).some(
                                     (key) =>
-                                      flnData[key] && flnData[key].obtainedMarks
+                                      flnData[key] &&
+                                      flnData[key].obtainedMarks,
                                   );
                                   questionProgress = hasAnswer ? 100 : 0;
                                 } catch (e) {
@@ -3478,10 +3808,7 @@ const SelfAssessment = () => {
                                 }
                               }
                               const questionNumber = `${domainNumber}.${subdomainNumber}.${
-                                index +
-                                1 +
-                                classroomObservationQuestions.length +
-                                subjectObservationQuestions.length
+                                index + 1
                               }`;
 
                               return (
@@ -3503,7 +3830,7 @@ const SelfAssessment = () => {
                                   <Box
                                     onClick={() =>
                                       toggleQuestionExpansion(
-                                        question.questionId
+                                        question.questionId,
                                       )
                                     }
                                     sx={{
@@ -3672,7 +3999,9 @@ const SelfAssessment = () => {
                                                 <TextField
                                                   size="small"
                                                   type="number"
-                                                  disabled={!isPublished || isSubmitted}
+                                                  disabled={
+                                                    !isPublished || isReadOnly
+                                                  }
                                                   value={
                                                     classData.obtainedMarks ||
                                                     ""
@@ -3698,7 +4027,7 @@ const SelfAssessment = () => {
                                                       };
                                                       handleTextAnswerChange(
                                                         question.questionId,
-                                                        JSON.stringify(newData)
+                                                        JSON.stringify(newData),
                                                       );
                                                     }
                                                   }}
@@ -3721,7 +4050,7 @@ const SelfAssessment = () => {
                                                   error={
                                                     classData.obtainedMarks &&
                                                     Number(
-                                                      classData.obtainedMarks
+                                                      classData.obtainedMarks,
                                                     ) > maxMarks
                                                   }
                                                   sx={{
@@ -3757,10 +4086,10 @@ const SelfAssessment = () => {
                           </Box>
                         )}
                       </Box>
-                    )}
+                          )}
 
-                    {/* General Questions Section */}
-                    {generalQuestions.length > 0 && (
+                          {/* General Questions Section */}
+                          {currentTab.id === "general" && (
                       <Box sx={{ mb: 4 }}>
                         {/* Section Header */}
                         <Box
@@ -3790,21 +4119,6 @@ const SelfAssessment = () => {
                             >
                               General Questions
                             </Typography>
-                            <Chip
-                              label={`${
-                                generalQuestionsForCount.filter(
-                                  (q) =>
-                                    answers[q.questionId] ||
-                                    textAnswers[q.questionId]
-                                ).length
-                              }/${generalQuestionsForCount.length} answered`}
-                              size="small"
-                              sx={{
-                                bgcolor: colors.accent.green + "15",
-                                color: colors.accent.green,
-                                fontWeight: 600,
-                              }}
-                            />
                           </Box>
                           <Typography
                             variant="body2"
@@ -3843,7 +4157,7 @@ const SelfAssessment = () => {
                               gap: 2.5,
                             }}
                           >
-                            {generalQuestions.map((question, index) => {
+                            {currentTab.questions.map((question, index) => {
                               const options = parseOptions(question.options);
                               const userSelectedAnswer =
                                 answers[question.questionId];
@@ -3857,7 +4171,7 @@ const SelfAssessment = () => {
                                 expandedQuestions[question.questionId] ?? true;
                               const questionProgress = selectedAnswer ? 100 : 0;
                               const questionNumber = `${domainNumber}.${subdomainNumber}.${
-                                classBasedQuestions.length + index + 1
+                                index + 1
                               }`;
 
                               return (
@@ -3879,7 +4193,7 @@ const SelfAssessment = () => {
                                   <Box
                                     onClick={() =>
                                       toggleQuestionExpansion(
-                                        question.questionId
+                                        question.questionId,
                                       )
                                     }
                                     sx={{
@@ -3958,7 +4272,7 @@ const SelfAssessment = () => {
                                             onChange={(e) =>
                                               handleAnswerChange(
                                                 question.questionId,
-                                                e.target.value
+                                                e.target.value,
                                               )
                                             }
                                           >
@@ -3970,7 +4284,10 @@ const SelfAssessment = () => {
                                                 value={String(option.optionId)}
                                                 control={
                                                   <Radio
-                                                    disabled={!isPublished || isSubmitted}
+                                                    disabled={
+                                                      !isPublished ||
+                                                      isSubmitted
+                                                    }
                                                     sx={{
                                                       color:
                                                         colors.primary.blue,
@@ -4023,10 +4340,12 @@ const SelfAssessment = () => {
                           </Box>
                         )}
                       </Box>
-                    )}
+                          )}
+                        </Box>
+                      )}
 
                     {/* Submit Button */}
-                    {isPublished && !isSubmitted && (
+                    {isPublished && !isReadOnly && (
                       <Box
                         sx={{
                           display: "flex",
@@ -4085,7 +4404,7 @@ const SelfAssessment = () => {
                 !selectedSubdomain &&
                 (() => {
                   const domainIdx = domains.findIndex(
-                    (d) => d.domainId === selectedDomain.domainId
+                    (d) => d.domainId === selectedDomain.domainId,
                   );
                   const currentDomainNumber = domainIdx + 1;
 
@@ -4138,7 +4457,7 @@ const SelfAssessment = () => {
                               sx={{ fontSize: "0.875rem" }}
                             >
                               Assessment of{" "}
-                              {getDomainName(selectedDomain).toLowerCase()}
+                              {(getDomainName(selectedDomain) || '').toLowerCase()}
                             </Typography>
                           </Box>
 
@@ -4178,7 +4497,7 @@ const SelfAssessment = () => {
                                 thickness={4}
                                 sx={{
                                   color: getProgressColor(
-                                    getDomainProgress(selectedDomain)
+                                    getDomainProgress(selectedDomain),
                                   ),
                                 }}
                               />
@@ -4221,7 +4540,7 @@ const SelfAssessment = () => {
                                 const subdomainProgress =
                                   getSubdomainProgress(subdomain);
                                 const domainIdx = domains.findIndex(
-                                  (d) => d.domainId === selectedDomain.domainId
+                                  (d) => d.domainId === selectedDomain.domainId,
                                 );
                                 const subdomainNumber = `${domainIdx + 1}.${
                                   index + 1
@@ -4285,7 +4604,7 @@ const SelfAssessment = () => {
                                               }}
                                             >
                                               {String.fromCharCode(
-                                                65 + (index % 26)
+                                                65 + (index % 26),
                                               )}
                                             </Typography>
                                           </Box>
@@ -4324,7 +4643,7 @@ const SelfAssessment = () => {
                                               sx={{
                                                 color:
                                                   getProgressColor(
-                                                    subdomainProgress
+                                                    subdomainProgress,
                                                   ),
                                               }}
                                             />
@@ -4358,7 +4677,7 @@ const SelfAssessment = () => {
                                     </CardContent>
                                   </Card>
                                 );
-                              }
+                              },
                             )}
                           </Box>
                         ) : (
@@ -4457,19 +4776,30 @@ const SelfAssessment = () => {
                             <BarChart
                               data={chartData}
                               layout="vertical"
-                              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                              margin={{
+                                top: 20,
+                                right: 30,
+                                left: 20,
+                                bottom: 5,
+                              }}
                             >
                               <XAxis
                                 type="number"
                                 domain={[0, 100]}
-                                tick={{ fill: colors.text.secondary, fontSize: 12 }}
+                                tick={{
+                                  fill: colors.text.secondary,
+                                  fontSize: 12,
+                                }}
                                 stroke={colors.neutral.gray400}
                               />
                               <YAxis
                                 type="category"
                                 dataKey="name"
                                 width={200}
-                                tick={{ fill: colors.text.primary, fontSize: 12 }}
+                                tick={{
+                                  fill: colors.text.primary,
+                                  fontSize: 12,
+                                }}
                                 stroke={colors.neutral.gray400}
                               />
                               <Tooltip
@@ -4491,7 +4821,7 @@ const SelfAssessment = () => {
                                 radius={[0, 8, 8, 0]}
                                 onClick={(data) => {
                                   const domain = domains.find(
-                                    (d) => d.domainId === data.domainId
+                                    (d) => d.domainId === data.domainId,
                                   );
                                   if (domain) {
                                     handleDomainSelect(domain);
@@ -4500,7 +4830,10 @@ const SelfAssessment = () => {
                                 cursor="pointer"
                               >
                                 {chartData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={entry.color} />
+                                  <Cell
+                                    key={`cell-${index}`}
+                                    fill={entry.color}
+                                  />
                                 ))}
                               </Bar>
                             </BarChart>
@@ -4562,4 +4895,3 @@ const SelfAssessment = () => {
 };
 
 export default SelfAssessment;
-

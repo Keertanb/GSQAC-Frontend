@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@mui/material";
 import { Lock as LockIcon } from "@mui/icons-material";
+import useAuthStore from "../../store/useAuthStore";
 import FeatureCard from "../../components/FeatureCard/FeatureCard";
 import DomainPill from "../../components/DomainPill/DomainPill";
 import SectionBadge from "../../components/SectionBadge/SectionBadge";
@@ -10,12 +11,32 @@ import "./dashboard.css";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, token, role } = useAuthStore();
+
+  // Redirect authenticated users to their role-specific dashboard
+  useEffect(() => {
+    const isAuthenticated = !!(user && token);
+    if (isAuthenticated && role) {
+      const dashboardRoutes = {
+        school: "/school-dashboard",
+        parent: "/parent-dashboard",
+        inspector: "/inspector-dashboard",
+        admin: "/admin-dashboard",
+        crc: "/crc-dashboard",
+      };
+
+      const dashboardRoute = dashboardRoutes[role];
+      if (dashboardRoute) {
+        navigate(dashboardRoute, { replace: true });
+      }
+    }
+  }, [user, token, role, navigate]);
 
   // Ensure CSS styles are applied after component mounts and on navigation
   useEffect(() => {
     // Force browser to recalculate styles without causing visual glitches
     const forceStyleRecalc = () => {
-      const container = document.querySelector('.dashboard-container');
+      const container = document.querySelector(".dashboard-container");
       if (container) {
         // Trigger a reflow to force style recalculation
         // This ensures CSS is applied even if loaded asynchronously
@@ -138,7 +159,10 @@ const Dashboard = () => {
               <span>Find Schools</span>
             </button>
 
-            <button className="btn-secondary">
+            <button
+              className="btn-secondary"
+              onClick={() => navigate("/login?role=school")}
+            >
               <span>School Login</span>
               <svg
                 width="20"
@@ -251,8 +275,7 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* 5 Domains of Assessment Section */}
-      <section className="content-section">
+      {/* <section className="content-section">
         <div className="content-container">
           <div className="section-header">
             <SectionBadge text="SQAAF Parameters" />
@@ -273,7 +296,6 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* Complete Quality Assurance Workflow Section */}
       <section className="content-section content-section-alt">
         <div className="content-container">
           <div className="section-header">
@@ -346,7 +368,7 @@ const Dashboard = () => {
             />
           </div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 };

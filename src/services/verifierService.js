@@ -43,6 +43,7 @@ export const getSubdomainQuestions = async (params) => {
     cls,
     section,
     subjectId,
+    schoolId,
     ...otherParams
   } = params;
   const config = {
@@ -63,6 +64,11 @@ export const getSubdomainQuestions = async (params) => {
   // Add subjectId to params if provided
   if (subjectId) {
     config.params.subjectId = subjectId;
+  }
+
+  // Add schoolId to params if provided
+  if (schoolId) {
+    config.params.schoolId = schoolId;
   }
 
   // Set roleId in header if provided
@@ -141,6 +147,7 @@ export const useGetSubdomainQuestionsQuery = ({
   section,
   subjectId,
   userId,
+  schoolId,
   enabled = true,
 }) => {
   return useQuery({
@@ -150,7 +157,8 @@ export const useGetSubdomainQuestionsQuery = ({
       languageCode,
       classNumber,
       section,
-      subjectId
+      subjectId,
+      schoolId
     ),
     queryFn: () =>
       getSubdomainQuestions({
@@ -161,6 +169,7 @@ export const useGetSubdomainQuestionsQuery = ({
         section,
         subjectId,
         userId,
+        schoolId,
       }),
     enabled: enabled && !!subDomainId && !!roleId,
     staleTime: 5 * 60 * 1000,
@@ -386,9 +395,11 @@ export const getVerifierAllocatedSchools = async (params) => {
   const queryParams = {};
   
   // Always include districtId in params (can be null for "All" option)
-  if (districtId !== undefined) {
-    queryParams.districtId = districtId === null ? null : Number(districtId);
+  // Explicitly set districtId - if it's null or undefined, set it to null
+  if (districtId !== undefined && districtId !== null) {
+    queryParams.districtId = Number(districtId);
   } else {
+    // Explicitly set to null when "All" is selected or districtId is undefined
     queryParams.districtId = null;
   }
 
@@ -410,13 +421,21 @@ export const getVerifierAllocatedSchools = async (params) => {
       Object.keys(params).forEach((key) => {
         const value = params[key];
         // Only include the parameter if it's not null or undefined
-        // When null, omit the parameter entirely (don't send it)
+        // When districtId is null (for "All" selection), omit it from the query string
         if (value !== undefined && value !== null) {
           searchParams.append(key, String(value));
         }
-        // If value is null, we omit it from the query string
       });
-      return searchParams.toString();
+      const queryString = searchParams.toString();
+      // Debug log to verify what's being sent
+      console.log("API Query Params:", {
+        originalParams: params,
+        queryString,
+        districtId: params.districtId,
+        districtIdType: typeof params.districtId,
+        districtIdIsNull: params.districtId === null,
+      });
+      return queryString;
     },
   };
 

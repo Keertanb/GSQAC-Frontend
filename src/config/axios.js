@@ -36,14 +36,39 @@ axiosInstance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 axiosInstance.interceptors.response.use(
   (response) => {
+    // Check for "Invalid token" message in successful responses
+    if (response?.data?.message && typeof response.data.message === 'string') {
+      const message = response.data.message.toLowerCase();
+      if (message.includes("invalid token")) {
+        useAuthStore.getState().logout();
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+        return Promise.reject(new Error("Invalid token"));
+      }
+    }
     return response;
   },
   async (error) => {
+    const errorMessage = error.response?.data?.message;
+    
+    // Check for "Invalid token" message in error responses
+    if (errorMessage && typeof errorMessage === 'string') {
+      const message = errorMessage.toLowerCase();
+      if (message.includes("invalid token")) {
+        useAuthStore.getState().logout();
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+        return Promise.reject(error);
+      }
+    }
+
     if (error.response?.status === 401) {
       const { data } = error.response;
 
@@ -51,7 +76,8 @@ axiosInstance.interceptors.response.use(
         data?.message?.includes("Token mismatch") ||
         data?.message?.includes("Token Invalid") ||
         data?.message?.includes("jwt expired") ||
-        data?.message?.includes("Unauthorized")
+        data?.message?.includes("Unauthorized") ||
+        (data?.message && data.message.toLowerCase().includes("invalid token"))
       ) {
         useAuthStore.getState().logout();
 
@@ -72,7 +98,7 @@ axiosInstance.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;

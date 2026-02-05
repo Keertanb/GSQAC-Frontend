@@ -3,7 +3,7 @@ export const roles = [
     value: "school",
     label: "School",
     description: "School administration login",
-    authMethod: "UDISE Code", 
+    authMethod: "UDISE Code",
     color: "#1e3a8a",
     dashboardRoute: "/school-dashboard",
   },
@@ -17,7 +17,7 @@ export const roles = [
   // },
   {
     value: "inspector",
-    label: "School Inspector",
+    label: "Verifier",
     description: "Verification & inspection",
     authMethod: "Employee ID",
     color: "#10b981",

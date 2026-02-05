@@ -35,6 +35,7 @@ import { colors } from "../../../constants/colors";
 import {
   useUpsertSubdomainMutation,
   useTranslateTextMutation,
+  useDeleteSubdomainMutation,
 } from "../../../services/adminService";
 import { roleIdMap } from "../../../constants/roles";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
@@ -82,6 +83,16 @@ const DomainSubdomainView = ({
       setShowAddSubdomain(false);
       setEditingSubdomain(null);
       setTranslationId(null);
+      if (onSubdomainAdded) {
+        onSubdomainAdded();
+      }
+    },
+  });
+
+  const deleteSubdomainMutation = useDeleteSubdomainMutation({
+    onSuccess: () => {
+      setDeleteModalOpen(false);
+      setSubdomainToDelete(null);
       if (onSubdomainAdded) {
         onSubdomainAdded();
       }
@@ -221,24 +232,17 @@ const DomainSubdomainView = ({
 
   const confirmDeleteSubdomain = () => {
     if (subdomainToDelete) {
-      // TODO: Implement delete subdomain API call
-      // const deleteSubdomain = async (subDomainId) => {
-      //   try {
-      //     const response = await axiosInstance.delete(`/questionnaire/sub-domain/${subDomainId}`);
-      //     // Refetch domains after deletion
-      //     if (onSubdomainAdded) {
-      //       onSubdomainAdded();
-      //     }
-      //     return response.data;
-      //   } catch (error) {
-      //     console.error("Error deleting subdomain:", error);
-      //     throw error;
-      //   }
-      // };
-      // deleteSubdomain(subdomainToDelete.subDomainId || subdomainToDelete.id);
-      console.log("Delete subdomain:", subdomainToDelete);
-      setDeleteModalOpen(false);
-      setSubdomainToDelete(null);
+      const subDomainId = subdomainToDelete.subDomainId || subdomainToDelete.id;
+      if (subDomainId) {
+        deleteSubdomainMutation.mutate(subDomainId);
+      } else {
+        console.error("Cannot delete subdomain: Missing subDomainId");
+        enqueueSnackbar("Error: Cannot delete subdomain - Missing ID", {
+          variant: "error",
+        });
+        setDeleteModalOpen(false);
+        setSubdomainToDelete(null);
+      }
     }
   };
 

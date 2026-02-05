@@ -41,9 +41,11 @@ export const publicRoutes = [
       {
         path: ROUTE_URLS.ROOT_URL,
         element: (
+          <PublicRoute>
           <Suspense fallback={<LazyLoad />}>
             <Dashboard />
           </Suspense>
+          </PublicRoute>
         ),
       },
       {

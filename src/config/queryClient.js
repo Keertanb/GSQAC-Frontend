@@ -7,7 +7,13 @@ export const queryKeys = {
     logout: () => ["auth", "logout"],
   },
   admin: {
-    domains: (roleId, languageCode) => ["admin", "domains", roleId, languageCode],
+    domains: (roleId, languageCode, assessmentId = null) => [
+      "admin",
+      "domains",
+      roleId,
+      languageCode,
+      assessmentId,
+    ],
     criteriaQuestions: (subDomainId, roleId, languageCode) => [
       "admin",
       "criteria-questions",
@@ -63,7 +69,7 @@ export const queryKeys = {
   },
   verifier: {
     domains: (roleId, languageCode, schoolId) => ["verifier", "domains", roleId, languageCode, schoolId],
-    subdomainQuestions: (subDomainId, roleId, languageCode = null, classNumber = null, section = null, subjectId = null) => [
+    subdomainQuestions: (subDomainId, roleId, languageCode = null, classNumber = null, section = null, subjectId = null, schoolId = null) => [
       "verifier",
       "subdomain-questions",
       subDomainId,
@@ -72,6 +78,7 @@ export const queryKeys = {
       classNumber,
       section,
       subjectId,
+      schoolId,
     ],
     submitAnswer: () => ["verifier", "submit-answer"],
     submitSubdomainWiseAnswers: () => ["verifier", "submit-subdomain-wise-answers"],
