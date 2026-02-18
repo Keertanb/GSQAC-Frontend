@@ -21,7 +21,7 @@ export const queryKeys = {
       roleId,
       languageCode,
     ],
-    subdomainQuestions: (subDomainId, roleId, languageCode = null, classNumber = null, section = null, subjectId = null) => [
+    subdomainQuestions: (subDomainId, roleId, languageCode = null, classNumber = null, section = null, subjectId = null, userId = null) => [
       "admin",
       "subdomain-questions",
       subDomainId,
@@ -30,6 +30,7 @@ export const queryKeys = {
       classNumber,
       section,
       subjectId,
+      userId,
     ],
     upsertDomain: () => ["admin", "upsert-domain"],
     upsertSubdomain: () => ["admin", "upsert-subdomain"],
@@ -41,7 +42,7 @@ export const queryKeys = {
     assessments: (academicYear) => ["admin", "assessments", academicYear],
   },
   school: {
-    domains: (roleId, languageCode) => ["school", "domains", roleId, languageCode],
+    domains: (roleId, languageCode, userId) => ["school", "domains", roleId, languageCode, userId],
     schoolData: (schoolId, academicYear) => ["school", "school-data", schoolId, academicYear],
     classWiseSections: (userId, classNumber) => ["school", "class-wise-sections", userId, classNumber],
     schoolSections: (schoolId) => ["school", "school-sections", schoolId],

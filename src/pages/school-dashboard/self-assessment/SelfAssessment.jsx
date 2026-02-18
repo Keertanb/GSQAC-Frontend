@@ -146,6 +146,7 @@ const SelfAssessment = () => {
   } = useGetDomainsQuery({
     roleId,
     languageCode,
+    userId: userId ? Number(userId) : undefined,
     enabled: true,
   });
 
