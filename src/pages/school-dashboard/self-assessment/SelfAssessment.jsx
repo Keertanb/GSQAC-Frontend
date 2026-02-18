@@ -146,6 +146,7 @@ const SelfAssessment = () => {
   } = useGetDomainsQuery({
     roleId,
     languageCode,
+    userId: userId ? Number(userId) : undefined,
     enabled: true,
   });
 
@@ -319,7 +320,7 @@ const SelfAssessment = () => {
   const isPublished = domainsData?.isPublished || false;
   const endDate = domainsData?.endDate || null;
   const isSubmitted = domainsData?.isSubmitted || false;
-  
+
   // Check if endDate has passed
   const isEndDatePassed = useMemo(() => {
     if (!endDate) return false;
@@ -327,7 +328,7 @@ const SelfAssessment = () => {
     const currentDate = new Date();
     return currentDate > endDateObj;
   }, [endDate]);
-  
+
   // Assessment is read-only if submitted or endDate has passed
   const isReadOnly = isSubmitted || isEndDatePassed;
 
@@ -769,27 +770,27 @@ const SelfAssessment = () => {
   const getDomainIcon = (domain) => {
     // Default icon
     const defaultIcon = <Assessment sx={{ fontSize: 24 }} />;
-    
+
     try {
       // Check if domain is null/undefined
       if (!domain) {
-        console.warn('getDomainIcon: Domain is null or undefined');
+        console.warn("getDomainIcon: Domain is null or undefined");
         return defaultIcon;
       }
-      
+
       // Get domain ID and name
       const domainId = domain.domainId;
       const domainName = getDomainName(domain);
-      
+
       // Check if domainName is valid
-      if (!domainName || typeof domainName !== 'string') {
-        console.warn('getDomainIcon: Invalid domain name for domain:', domain);
+      if (!domainName || typeof domainName !== "string") {
+        console.warn("getDomainIcon: Invalid domain name for domain:", domain);
         return defaultIcon;
       }
-      
+
       // Safely convert to lowercase
       const domainNameLower = String(domainName).toLowerCase();
-      
+
       // Determine icon based on domain ID or name
       if (
         domainId === 1 ||
@@ -825,9 +826,9 @@ const SelfAssessment = () => {
         return <SchoolIcon sx={{ fontSize: 24 }} />;
       }
     } catch (error) {
-      console.error('Error in getDomainIcon:', error, 'Domain:', domain);
+      console.error("Error in getDomainIcon:", error, "Domain:", domain);
     }
-    
+
     return defaultIcon;
   };
 
@@ -1478,16 +1479,18 @@ const SelfAssessment = () => {
       return;
     }
 
-    // For class-based questions, validate class and section selection
-    const hasClassBasedQuestions = classBasedQuestions.length > 0;
-    const hasSubjectQuestions = subjectObservationQuestions.length > 0;
+    // Check if user has answered any class-based questions (type 2 or 3)
+    const hasAnsweredClassBasedQuestions = classBasedQuestions.some(
+      (q) => answers[q.questionId] || textAnswers[q.questionId],
+    );
 
     // Check if user has answered any subject observation questions (type 3)
     const hasAnsweredSubjectQuestions = subjectObservationQuestions.some(
       (q) => answers[q.questionId] || textAnswers[q.questionId],
     );
 
-    if (hasClassBasedQuestions) {
+    // Only require class/section if user has answered class-based questions
+    if (hasAnsweredClassBasedQuestions) {
       if (!selectedClass) {
         enqueueSnackbar("Please select a class before submitting.", {
           variant: "warning",
@@ -1500,19 +1503,19 @@ const SelfAssessment = () => {
         });
         return;
       }
-    }
-
-    // For subject observation questions, only validate subject if user has answered type 3 questions
-    if (hasAnsweredSubjectQuestions && !selectedSubject) {
-      enqueueSnackbar("Please select a subject before submitting.", {
-        variant: "warning",
-      });
-      return;
+      
+      // For subject observation questions, only validate subject if user has answered type 3 questions
+      if (hasAnsweredSubjectQuestions && !selectedSubject) {
+        enqueueSnackbar("Please select a subject before submitting.", {
+          variant: "warning",
+        });
+        return;
+      }
     }
 
     let clsValue = null;
     let sectionValue = null;
-    const isClassSelected = hasClassBasedQuestions && selectedClass;
+    const isClassSelected = hasAnsweredClassBasedQuestions && selectedClass;
 
     if (isClassSelected) {
       // Class-based questions - use selected class and section
@@ -1617,7 +1620,10 @@ const SelfAssessment = () => {
       </Box>
     );
   }
-  console.log(isPublished, endDate, "answersanswersanswers");
+  console.log(
+    (classBasedQuestions.length > 0, !selectedClass || !selectedSection),
+    "answersanswersanswers",
+  );
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
       <AppDrawer open={drawerOpen} handleDrawerToggle={handleDrawerToggle} />
@@ -1832,10 +1838,9 @@ const SelfAssessment = () => {
                     <Typography
                       variant="body2"
                       sx={{
-                        color:
-                          isReadOnly
-                            ? colors.semantic.error
-                            : colors.semantic.warning,
+                        color: isReadOnly
+                          ? colors.semantic.error
+                          : colors.semantic.warning,
                         fontWeight: 600,
                         fontSize: "0.875rem",
                       }}
@@ -2528,7 +2533,8 @@ const SelfAssessment = () => {
                                 minHeight: 48,
                                 px: 2,
                                 "&.Mui-selected": {
-                                  color: currentTab?.color || colors.primary.blue,
+                                  color:
+                                    currentTab?.color || colors.primary.blue,
                                 },
                               },
                             }}
@@ -2577,1769 +2583,1958 @@ const SelfAssessment = () => {
                           {/* Classroom Observation Questions Section (Type 2) */}
                           {currentTab.id === "classroom" && (
                             <Box sx={{ mb: 4 }}>
-                        {/* Section Header */}
-                        <Box
-                          sx={{
-                            mb: 3,
-                            pb: 2,
-                            borderBottom: `2px solid ${colors.neutral.gray200}`,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1.5,
-                              mb: 1,
-                            }}
-                          >
-                            <Class
-                              sx={{ fontSize: 24, color: colors.primary.blue }}
-                            />
-                            <Typography
-                              variant="h6"
-                              sx={{
-                                fontWeight: 700,
-                                color: colors.text.primary,
-                              }}
-                            >
-                              Classroom Observation Questions
-                            </Typography>
-                          </Box>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: colors.text.secondary,
-                              fontSize: "0.875rem",
-                            }}
-                          >
-                            These questions require classroom observation and
-                            class selection
-                          </Typography>
-                        </Box>
-
-                        {/* Class and Section Dropdowns */}
-                        <Box
-                          sx={{
-                            mb: 3,
-                            p: 2.5,
-                            borderRadius: 2,
-                            bgcolor: colors.background.secondary,
-                            border: `1.5px solid ${colors.neutral.gray200}`,
-                          }}
-                        >
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              fontWeight: 600,
-                              color: colors.text.primary,
-                              mb: 2,
-                            }}
-                          >
-                            Select Class Group, Class and Section
-                          </Typography>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              gap: 2,
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            {/* Class Group Dropdown */}
-                            <FormControl
-                              size="small"
-                              sx={{
-                                minWidth: { xs: "100%", sm: "150px" },
-                              }}
-                            >
-                              <InputLabel
+                              {/* Section Header */}
+                              <Box
                                 sx={{
-                                  fontWeight: 600,
-                                  color: colors.text.secondary,
+                                  mb: 3,
+                                  pb: 2,
+                                  borderBottom: `2px solid ${colors.neutral.gray200}`,
                                 }}
                               >
-                                Class Group
-                              </InputLabel>
-                              <Select
-                                value={selectedClassGroup || ""}
-                                onChange={(e) =>
-                                  setSelectedClassGroup(e.target.value)
-                                }
-                                label="Class Group"
-                                disabled={isReadOnly}
-                                sx={{
-                                  borderRadius: 2,
-                                  bgcolor: "white",
-                                  "& .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.neutral.gray300,
-                                  },
-                                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.primary.blue,
-                                  },
-                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                    {
-                                      borderColor: colors.primary.blue,
-                                      borderWidth: 2,
-                                    },
-                                }}
-                              >
-                                {["1-2", "3-5", "6-8"]
-                                  .filter((groupRange) => {
-                                    // Filter out groups with gray/null/undefined flags
-                                    const flag = getGroupFlagColor(2, groupRange);
-                                    return flag !== null && flag !== undefined && flag !== "gray";
-                                  })
-                                  .map((groupRange) => {
-                                    const flag = getGroupFlagColor(2, groupRange);
-                                    const flagColor = flag
-                                      ? getFlagColorValue(flag)
-                                      : null;
-                                    const displayRange =
-                                      groupRange === "3-5" ? "3-5" : groupRange;
-
-                                    return (
-                                      <MenuItem
-                                        key={groupRange}
-                                        value={groupRange}
-                                      >
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 1,
-                                          }}
-                                        >
-                                          {flagColor && (
-                                            <Box
-                                              sx={{
-                                                width: 10,
-                                                height: 10,
-                                                borderRadius: "50%",
-                                                bgcolor: flagColor,
-                                                flexShrink: 0,
-                                              }}
-                                            />
-                                          )}
-                                          <Typography>
-                                            Class {displayRange}
-                                          </Typography>
-                                        </Box>
-                                      </MenuItem>
-                                    );
-                                  })}
-                              </Select>
-                            </FormControl>
-
-                            {/* Class Dropdown */}
-                            <FormControl
-                              size="small"
-                              sx={{
-                                minWidth: { xs: "100%", sm: "200px" },
-                              }}
-                            >
-                              <InputLabel
-                                sx={{
-                                  fontWeight: 600,
-                                  color: colors.text.secondary,
-                                }}
-                              >
-                                Select Class
-                              </InputLabel>
-                              <Select
-                                value={selectedClass || ""}
-                                onChange={(e) => {
-                                  // Save current answers before changing class
-                                  if (selectedSubdomain && selectedClass) {
-                                    const subdomainId =
-                                      selectedSubdomain.subDomainId ||
-                                      selectedSubdomain.id;
-                                    const classKey = String(selectedClass);
-                                    const storageKey = `${subdomainId}_${classKey}`;
-                                    setClassWiseAnswers((prev) => ({
-                                      ...prev,
-                                      [storageKey]: { ...answers },
-                                    }));
-                                    setClassWiseTextAnswers((prev) => ({
-                                      ...prev,
-                                      [storageKey]: { ...textAnswers },
-                                    }));
-                                  }
-                                  setSelectedClass(e.target.value);
-                                  // Reset section so it can be auto-selected for the new class
-                                  setSelectedSection(null);
-                                }}
-                                label="Select Class"
-                                disabled={
-                                  isLoadingSchoolData ||
-                                  filteredClassOptions.length === 0 ||
-                                  isReadOnly
-                                }
-                                sx={{
-                                  borderRadius: 2,
-                                  bgcolor: "white",
-                                  "& .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.neutral.gray300,
-                                  },
-                                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.primary.blue,
-                                  },
-                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                    {
-                                      borderColor: colors.primary.blue,
-                                      borderWidth: 2,
-                                    },
-                                }}
-                              >
-                                {isLoadingSchoolData ? (
-                                  <MenuItem disabled>
-                                    Loading classes...
-                                  </MenuItem>
-                                ) : filteredClassOptions.length === 0 ? (
-                                  <MenuItem disabled>
-                                    {selectedClassGroup
-                                      ? `No classes available in ${selectedClassGroup} range`
-                                      : "Please select a class group first"}
-                                  </MenuItem>
-                                ) : (
-                                  filteredClassOptions.map((classNum) => (
-                                    <MenuItem key={classNum} value={classNum}>
-                                      Class {classNum}
-                                    </MenuItem>
-                                  ))
-                                )}
-                              </Select>
-                            </FormControl>
-
-                            {/* Section Dropdown */}
-                            <FormControl
-                              size="small"
-                              sx={{
-                                minWidth: { xs: "100%", sm: "200px" },
-                              }}
-                            >
-                              <InputLabel
-                                sx={{
-                                  fontWeight: 600,
-                                  color: colors.text.secondary,
-                                }}
-                              >
-                                Select Section
-                              </InputLabel>
-                              <Select
-                                value={selectedSection || ""}
-                                onChange={(e) =>
-                                  setSelectedSection(e.target.value)
-                                }
-                                label="Select Section"
-                                disabled={
-                                  !selectedClass || sections.length === 0 || isReadOnly
-                                }
-                                sx={{
-                                  borderRadius: 2,
-                                  bgcolor: "white",
-                                  "& .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.neutral.gray300,
-                                  },
-                                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.primary.blue,
-                                  },
-                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                    {
-                                      borderColor: colors.primary.blue,
-                                      borderWidth: 2,
-                                    },
-                                }}
-                              >
-                                {!selectedClass ? (
-                                  <MenuItem disabled>
-                                    Please select a class first
-                                  </MenuItem>
-                                ) : sections.length === 0 ? (
-                                  <MenuItem disabled>
-                                    No sections available for this class
-                                  </MenuItem>
-                                ) : (
-                                  sections.map((section, index) => (
-                                    <MenuItem
-                                      key={section.id || index}
-                                      value={
-                                        section.sectionName ||
-                                        section.name ||
-                                        section.value
-                                      }
-                                    >
-                                      Section{" "}
-                                      {section.sectionName ||
-                                        section.name ||
-                                        section.value}
-                                    </MenuItem>
-                                  ))
-                                )}
-                              </Select>
-                            </FormControl>
-                          </Box>
-                        </Box>
-
-                        {/* Classroom Observation Questions List */}
-                        {isLoadingQuestions ? (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                              minHeight: "200px",
-                            }}
-                          >
-                            <CircularProgress />
-                          </Box>
-                        ) : isErrorQuestions ? (
-                          <Alert severity="error">
-                            {isErrorQuestions?.message ||
-                              "Failed to load questions"}
-                          </Alert>
-                        ) : (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 2.5,
-                            }}
-                          >
-                            {currentTab.questions.map(
-                              (question, index) => {
-                                const options = parseOptions(question.options);
-                                const userSelectedAnswer =
-                                  answers[question.questionId];
-                                const apiSelectedAnswer =
-                                  shouldShowApiAnswer(question) &&
-                                  question.selectedOptionId
-                                    ? String(question.selectedOptionId)
-                                    : null;
-                                const selectedAnswer =
-                                  userSelectedAnswer || apiSelectedAnswer;
-                                const isExpanded =
-                                  expandedQuestions[question.questionId] ??
-                                  true;
-                                const questionProgress = selectedAnswer
-                                  ? 100
-                                  : 0;
-                                const questionNumber = `${domainNumber}.${subdomainNumber}.${
-                                  index + 1
-                                }`;
-
-                                return (
-                                  <Card
-                                    key={question.questionId}
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1.5,
+                                    mb: 1,
+                                  }}
+                                >
+                                  <Class
                                     sx={{
-                                      borderRadius: 2,
-                                      border: "1px solid",
-                                      borderColor: colors.neutral.gray200,
-                                      transition: "all 0.2s ease",
-                                      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                                      overflow: "hidden",
-                                      "&:hover": {
-                                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                                      },
+                                      fontSize: 24,
+                                      color: colors.primary.blue,
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="h6"
+                                    sx={{
+                                      fontWeight: 700,
+                                      color: colors.text.primary,
                                     }}
                                   >
-                                    {/* Question Header - Always Visible */}
-                                    <Box
-                                      onClick={() =>
-                                        toggleQuestionExpansion(
-                                          question.questionId,
-                                        )
-                                      }
+                                    Classroom Observation Questions
+                                  </Typography>
+                                </Box>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    color: colors.text.secondary,
+                                    fontSize: "0.875rem",
+                                  }}
+                                >
+                                  These questions require classroom observation
+                                  and class selection
+                                </Typography>
+                              </Box>
+
+                              {/* Class and Section Dropdowns */}
+                              <Box
+                                sx={{
+                                  mb: 3,
+                                  p: 2.5,
+                                  borderRadius: 2,
+                                  bgcolor: colors.background.secondary,
+                                  border: `1.5px solid ${colors.neutral.gray200}`,
+                                }}
+                              >
+                                <Typography
+                                  variant="subtitle2"
+                                  sx={{
+                                    fontWeight: 600,
+                                    color: colors.text.primary,
+                                    mb: 2,
+                                  }}
+                                >
+                                  Select Class Group, Class and Section
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    gap: 2,
+                                    flexWrap: "wrap",
+                                  }}
+                                >
+                                  {/* Class Group Dropdown */}
+                                  <FormControl
+                                    size="small"
+                                    sx={{
+                                      minWidth: { xs: "100%", sm: "150px" },
+                                    }}
+                                  >
+                                    <InputLabel
                                       sx={{
-                                        p: 2.5,
-                                        cursor: "pointer",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 2,
-                                        bgcolor: colors.background.primary,
-                                        borderBottom: isExpanded
-                                          ? `1px solid ${colors.neutral.gray200}`
-                                          : "none",
-                                        "&:hover": {
-                                          bgcolor: colors.background.secondary,
-                                        },
+                                        fontWeight: 600,
+                                        color: colors.text.secondary,
                                       }}
                                     >
-                                      <Chip
-                                        label={`Q ${questionNumber}`}
-                                        size="small"
-                                        sx={{
-                                          bgcolor: colors.primary.dark,
-                                          color: "white",
-                                          fontWeight: 700,
-                                          minWidth: "100px",
-                                          height: "28px",
-                                          fontSize: "0.75rem",
-                                        }}
-                                      />
-                                      <Box sx={{ flex: 1 }}>
-                                        <Typography
-                                          variant="body2"
-                                          sx={{
-                                            fontWeight: 700,
-                                            fontSize: "1rem",
-                                            color: colors.text.primary,
-                                            lineHeight: 1.5,
-                                          }}
-                                        >
-                                          {getQuestionText(question)}
-                                        </Typography>
-                                      </Box>
-                                      <IconButton
-                                        size="small"
-                                        sx={{
-                                          color: colors.text.secondary,
-                                        }}
-                                      >
-                                        {isExpanded ? (
-                                          <ExpandLess />
-                                        ) : (
-                                          <ExpandMore />
-                                        )}
-                                      </IconButton>
-                                    </Box>
+                                      Class Group
+                                    </InputLabel>
+                                    <Select
+                                      value={selectedClassGroup || ""}
+                                      onChange={(e) =>
+                                        setSelectedClassGroup(e.target.value)
+                                      }
+                                      label="Class Group"
+                                      // disabled={isReadOnly}
+                                      sx={{
+                                        borderRadius: 2,
+                                        bgcolor: "white",
+                                        "& .MuiOutlinedInput-notchedOutline": {
+                                          borderColor: colors.neutral.gray300,
+                                        },
+                                        "&:hover .MuiOutlinedInput-notchedOutline":
+                                          {
+                                            borderColor: colors.primary.blue,
+                                          },
+                                        "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                          {
+                                            borderColor: colors.primary.blue,
+                                            borderWidth: 2,
+                                          },
+                                      }}
+                                    >
+                                      {["1-2", "3-5", "6-8"]
+                                        .filter((groupRange) => {
+                                          // Filter out groups with gray/null/undefined flags
+                                          const flag = getGroupFlagColor(
+                                            2,
+                                            groupRange,
+                                          );
+                                          return (
+                                            flag !== null &&
+                                            flag !== undefined &&
+                                            flag !== "gray"
+                                          );
+                                        })
+                                        .map((groupRange) => {
+                                          const flag = getGroupFlagColor(
+                                            2,
+                                            groupRange,
+                                          );
+                                          const flagColor = flag
+                                            ? getFlagColorValue(flag)
+                                            : null;
+                                          const displayRange =
+                                            groupRange === "3-5"
+                                              ? "3-5"
+                                              : groupRange;
 
-                                    {/* Question Content - Expandable */}
-                                    {isExpanded && (
-                                      <CardContent sx={{ p: 3, pt: 2.5 }}>
-                                        {question.isClassroomObservation ===
-                                          1 &&
-                                          question.observationCount && (
-                                            <Chip
-                                              label={`Observation Count: ${question.observationCount}`}
-                                              size="small"
-                                              sx={{
-                                                bgcolor:
-                                                  colors.semantic.warning +
-                                                  "20",
-                                                color: colors.semantic.warning,
-                                                fontWeight: 600,
-                                                fontSize: "0.75rem",
-                                                mb: 2.5,
-                                              }}
-                                            />
-                                          )}
-
-                                        {options && options.length > 0 && (
-                                          <FormControl
-                                            component="fieldset"
-                                            fullWidth
-                                            sx={{ mb: 3 }}
-                                          >
-                                            <RadioGroup
-                                              value={selectedAnswer || ""}
-                                              onChange={(e) =>
-                                                handleAnswerChange(
-                                                  question.questionId,
-                                                  e.target.value,
-                                                )
-                                              }
+                                          return (
+                                            <MenuItem
+                                              key={groupRange}
+                                              value={groupRange}
                                             >
-                                              {options.map(
-                                                (option, optIndex) => (
-                                                  <FormControlLabel
-                                                    key={
-                                                      option.optionId ||
-                                                      optIndex
-                                                    }
-                                                    value={String(
-                                                      option.optionId,
-                                                    )}
-                                                    control={
-                                                      <Radio
-                                                        disabled={
-                                                          !isPublished ||
-                                                          isReadOnly
-                                                        }
-                                                        sx={{
-                                                          color:
-                                                            colors.primary.blue,
-                                                          "&.Mui-checked": {
-                                                            color:
-                                                              colors.primary
-                                                                .blue,
-                                                          },
-                                                        }}
-                                                      />
-                                                    }
-                                                    label={
-                                                      <Typography variant="body2">
-                                                        {getOptionText(option)}
-                                                      </Typography>
-                                                    }
+                                              <Box
+                                                sx={{
+                                                  display: "flex",
+                                                  alignItems: "center",
+                                                  gap: 1,
+                                                }}
+                                              >
+                                                {flagColor && (
+                                                  <Box
                                                     sx={{
-                                                      mb: 1.5,
-                                                      p: 2,
-                                                      borderRadius: 2,
-                                                      bgcolor:
-                                                        selectedAnswer ===
-                                                        String(option.optionId)
-                                                          ? colors.primary
-                                                              .lightest
-                                                          : "transparent",
-                                                      border: "1.5px solid",
-                                                      borderColor:
-                                                        selectedAnswer ===
-                                                        String(option.optionId)
-                                                          ? colors.primary.blue
-                                                          : colors.neutral
-                                                              .gray200,
-                                                      transition:
-                                                        "all 0.2s ease",
-                                                      "&:hover": {
-                                                        bgcolor:
-                                                          colors.primary
-                                                            .lightest + "80",
-                                                        borderColor:
-                                                          colors.primary.blue,
-                                                      },
+                                                      width: 10,
+                                                      height: 10,
+                                                      borderRadius: "50%",
+                                                      bgcolor: flagColor,
+                                                      flexShrink: 0,
                                                     }}
                                                   />
-                                                ),
+                                                )}
+                                                <Typography>
+                                                  Class {displayRange}
+                                                </Typography>
+                                              </Box>
+                                            </MenuItem>
+                                          );
+                                        })}
+                                    </Select>
+                                  </FormControl>
+
+                                  {/* Class Dropdown */}
+                                  <FormControl
+                                    size="small"
+                                    sx={{
+                                      minWidth: { xs: "100%", sm: "200px" },
+                                    }}
+                                  >
+                                    <InputLabel
+                                      sx={{
+                                        fontWeight: 600,
+                                        color: colors.text.secondary,
+                                      }}
+                                    >
+                                      Select Class
+                                    </InputLabel>
+                                    <Select
+                                      value={selectedClass || ""}
+                                      onChange={(e) => {
+                                        // Save current answers before changing class
+                                        if (
+                                          selectedSubdomain &&
+                                          selectedClass
+                                        ) {
+                                          const subdomainId =
+                                            selectedSubdomain.subDomainId ||
+                                            selectedSubdomain.id;
+                                          const classKey =
+                                            String(selectedClass);
+                                          const storageKey = `${subdomainId}_${classKey}`;
+                                          setClassWiseAnswers((prev) => ({
+                                            ...prev,
+                                            [storageKey]: { ...answers },
+                                          }));
+                                          setClassWiseTextAnswers((prev) => ({
+                                            ...prev,
+                                            [storageKey]: { ...textAnswers },
+                                          }));
+                                        }
+                                        setSelectedClass(e.target.value);
+                                        // Reset section so it can be auto-selected for the new class
+                                        setSelectedSection(null);
+                                      }}
+                                      label="Select Class"
+                                      disabled={
+                                        isLoadingSchoolData ||
+                                        filteredClassOptions.length === 0 ||
+                                        isReadOnly
+                                      }
+                                      sx={{
+                                        borderRadius: 2,
+                                        bgcolor: "white",
+                                        "& .MuiOutlinedInput-notchedOutline": {
+                                          borderColor: colors.neutral.gray300,
+                                        },
+                                        "&:hover .MuiOutlinedInput-notchedOutline":
+                                          {
+                                            borderColor: colors.primary.blue,
+                                          },
+                                        "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                          {
+                                            borderColor: colors.primary.blue,
+                                            borderWidth: 2,
+                                          },
+                                      }}
+                                    >
+                                      {isLoadingSchoolData ? (
+                                        <MenuItem disabled>
+                                          Loading classes...
+                                        </MenuItem>
+                                      ) : filteredClassOptions.length === 0 ? (
+                                        <MenuItem disabled>
+                                          {selectedClassGroup
+                                            ? `No classes available in ${selectedClassGroup} range`
+                                            : "Please select a class group first"}
+                                        </MenuItem>
+                                      ) : (
+                                        filteredClassOptions.map((classNum) => (
+                                          <MenuItem
+                                            key={classNum}
+                                            value={classNum}
+                                          >
+                                            Class {classNum}
+                                          </MenuItem>
+                                        ))
+                                      )}
+                                    </Select>
+                                  </FormControl>
+
+                                  {/* Section Dropdown */}
+                                  <FormControl
+                                    size="small"
+                                    sx={{
+                                      minWidth: { xs: "100%", sm: "200px" },
+                                    }}
+                                  >
+                                    <InputLabel
+                                      sx={{
+                                        fontWeight: 600,
+                                        color: colors.text.secondary,
+                                      }}
+                                    >
+                                      Select Section
+                                    </InputLabel>
+                                    <Select
+                                      value={selectedSection || ""}
+                                      onChange={(e) =>
+                                        setSelectedSection(e.target.value)
+                                      }
+                                      label="Select Section"
+                                      disabled={
+                                        !selectedClass ||
+                                        sections.length === 0 ||
+                                        isReadOnly
+                                      }
+                                      sx={{
+                                        borderRadius: 2,
+                                        bgcolor: "white",
+                                        "& .MuiOutlinedInput-notchedOutline": {
+                                          borderColor: colors.neutral.gray300,
+                                        },
+                                        "&:hover .MuiOutlinedInput-notchedOutline":
+                                          {
+                                            borderColor: colors.primary.blue,
+                                          },
+                                        "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                          {
+                                            borderColor: colors.primary.blue,
+                                            borderWidth: 2,
+                                          },
+                                      }}
+                                    >
+                                      {!selectedClass ? (
+                                        <MenuItem disabled>
+                                          Please select a class first
+                                        </MenuItem>
+                                      ) : sections.length === 0 ? (
+                                        <MenuItem disabled>
+                                          No sections available for this class
+                                        </MenuItem>
+                                      ) : (
+                                        sections.map((section, index) => (
+                                          <MenuItem
+                                            key={section.id || index}
+                                            value={
+                                              section.sectionName ||
+                                              section.name ||
+                                              section.value
+                                            }
+                                          >
+                                            Section{" "}
+                                            {section.sectionName ||
+                                              section.name ||
+                                              section.value}
+                                          </MenuItem>
+                                        ))
+                                      )}
+                                    </Select>
+                                  </FormControl>
+                                </Box>
+                              </Box>
+
+                              {/* Classroom Observation Questions List */}
+                              {isLoadingQuestions ? (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    minHeight: "200px",
+                                  }}
+                                >
+                                  <CircularProgress />
+                                </Box>
+                              ) : isErrorQuestions ? (
+                                <Alert severity="error">
+                                  {isErrorQuestions?.message ||
+                                    "Failed to load questions"}
+                                </Alert>
+                              ) : (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 2.5,
+                                  }}
+                                >
+                                  {currentTab.questions.map(
+                                    (question, index) => {
+                                      const options = parseOptions(
+                                        question.options,
+                                      );
+                                      const userSelectedAnswer =
+                                        answers[question.questionId];
+                                      const apiSelectedAnswer =
+                                        shouldShowApiAnswer(question) &&
+                                        question.selectedOptionId
+                                          ? String(question.selectedOptionId)
+                                          : null;
+                                      const selectedAnswer =
+                                        userSelectedAnswer || apiSelectedAnswer;
+                                      const isExpanded =
+                                        expandedQuestions[
+                                          question.questionId
+                                        ] ?? true;
+                                      const questionProgress = selectedAnswer
+                                        ? 100
+                                        : 0;
+                                      const questionNumber = `${domainNumber}.${subdomainNumber}.${
+                                        index + 1
+                                      }`;
+
+                                      return (
+                                        <Card
+                                          key={question.questionId}
+                                          sx={{
+                                            borderRadius: 2,
+                                            border: "1px solid",
+                                            borderColor: colors.neutral.gray200,
+                                            transition: "all 0.2s ease",
+                                            boxShadow:
+                                              "0 2px 8px rgba(0,0,0,0.08)",
+                                            overflow: "hidden",
+                                            "&:hover": {
+                                              boxShadow:
+                                                "0 4px 12px rgba(0,0,0,0.1)",
+                                            },
+                                          }}
+                                        >
+                                          {/* Question Header - Always Visible */}
+                                          <Box
+                                            onClick={() =>
+                                              toggleQuestionExpansion(
+                                                question.questionId,
+                                              )
+                                            }
+                                            sx={{
+                                              p: 2.5,
+                                              cursor: "pointer",
+                                              display: "flex",
+                                              alignItems: "center",
+                                              gap: 2,
+                                              bgcolor:
+                                                colors.background.primary,
+                                              borderBottom: isExpanded
+                                                ? `1px solid ${colors.neutral.gray200}`
+                                                : "none",
+                                              "&:hover": {
+                                                bgcolor:
+                                                  colors.background.secondary,
+                                              },
+                                            }}
+                                          >
+                                            <Chip
+                                              label={`Q ${questionNumber}`}
+                                              size="small"
+                                              sx={{
+                                                bgcolor: colors.primary.dark,
+                                                color: "white",
+                                                fontWeight: 700,
+                                                minWidth: "100px",
+                                                height: "28px",
+                                                fontSize: "0.75rem",
+                                              }}
+                                            />
+                                            <Box sx={{ flex: 1 }}>
+                                              <Typography
+                                                variant="body2"
+                                                sx={{
+                                                  fontWeight: 700,
+                                                  fontSize: "1rem",
+                                                  color: colors.text.primary,
+                                                  lineHeight: 1.5,
+                                                }}
+                                              >
+                                                {getQuestionText(question)}
+                                              </Typography>
+                                            </Box>
+                                            <IconButton
+                                              size="small"
+                                              sx={{
+                                                color: colors.text.secondary,
+                                              }}
+                                            >
+                                              {isExpanded ? (
+                                                <ExpandLess />
+                                              ) : (
+                                                <ExpandMore />
                                               )}
-                                            </RadioGroup>
-                                          </FormControl>
-                                        )}
-                                      </CardContent>
-                                    )}
-                                  </Card>
-                                );
-                              },
-                            )}
-                          </Box>
-                        )}
-                      </Box>
+                                            </IconButton>
+                                          </Box>
+
+                                          {/* Question Content - Expandable */}
+                                          {isExpanded && (
+                                            <CardContent sx={{ p: 3, pt: 2.5 }}>
+                                              {question.isClassroomObservation ===
+                                                1 &&
+                                                question.observationCount && (
+                                                  <Chip
+                                                    label={`Observation Count: ${question.observationCount}`}
+                                                    size="small"
+                                                    sx={{
+                                                      bgcolor:
+                                                        colors.semantic
+                                                          .warning + "20",
+                                                      color:
+                                                        colors.semantic.warning,
+                                                      fontWeight: 600,
+                                                      fontSize: "0.75rem",
+                                                      mb: 2.5,
+                                                    }}
+                                                  />
+                                                )}
+
+                                              {options &&
+                                                options.length > 0 && (
+                                                  <FormControl
+                                                    component="fieldset"
+                                                    fullWidth
+                                                    sx={{ mb: 3 }}
+                                                  >
+                                                    <RadioGroup
+                                                      value={
+                                                        selectedAnswer || ""
+                                                      }
+                                                      onChange={(e) =>
+                                                        handleAnswerChange(
+                                                          question.questionId,
+                                                          e.target.value,
+                                                        )
+                                                      }
+                                                    >
+                                                      {options.map(
+                                                        (option, optIndex) => (
+                                                          <FormControlLabel
+                                                            key={
+                                                              option.optionId ||
+                                                              optIndex
+                                                            }
+                                                            value={String(
+                                                              option.optionId,
+                                                            )}
+                                                            control={
+                                                              <Radio
+                                                                disabled={
+                                                                  !isPublished ||
+                                                                  isReadOnly
+                                                                }
+                                                                sx={{
+                                                                  color:
+                                                                    colors
+                                                                      .primary
+                                                                      .blue,
+                                                                  "&.Mui-checked":
+                                                                    {
+                                                                      color:
+                                                                        colors
+                                                                          .primary
+                                                                          .blue,
+                                                                    },
+                                                                }}
+                                                              />
+                                                            }
+                                                            label={
+                                                              <Typography variant="body2">
+                                                                {getOptionText(
+                                                                  option,
+                                                                )}
+                                                              </Typography>
+                                                            }
+                                                            sx={{
+                                                              mb: 1.5,
+                                                              p: 2,
+                                                              borderRadius: 2,
+                                                              bgcolor:
+                                                                selectedAnswer ===
+                                                                String(
+                                                                  option.optionId,
+                                                                )
+                                                                  ? colors
+                                                                      .primary
+                                                                      .lightest
+                                                                  : "transparent",
+                                                              border:
+                                                                "1.5px solid",
+                                                              borderColor:
+                                                                selectedAnswer ===
+                                                                String(
+                                                                  option.optionId,
+                                                                )
+                                                                  ? colors
+                                                                      .primary
+                                                                      .blue
+                                                                  : colors
+                                                                      .neutral
+                                                                      .gray200,
+                                                              transition:
+                                                                "all 0.2s ease",
+                                                              "&:hover": {
+                                                                bgcolor:
+                                                                  colors.primary
+                                                                    .lightest +
+                                                                  "80",
+                                                                borderColor:
+                                                                  colors.primary
+                                                                    .blue,
+                                                              },
+                                                            }}
+                                                          />
+                                                        ),
+                                                      )}
+                                                    </RadioGroup>
+                                                  </FormControl>
+                                                )}
+                                            </CardContent>
+                                          )}
+                                        </Card>
+                                      );
+                                    },
+                                  )}
+                                </Box>
+                              )}
+                            </Box>
                           )}
 
                           {/* Subject-Wise Observation Questions Section (Type 3) */}
                           {currentTab.id === "subject" && (
-                      <Box sx={{ mb: 4 }}>
-                        {/* Section Header */}
-                        <Box
-                          sx={{
-                            mb: 3,
-                            pb: 2,
-                            borderBottom: `2px solid ${colors.neutral.gray200}`,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1.5,
-                              mb: 1,
-                            }}
-                          >
-                            <MenuBook
-                              sx={{ fontSize: 24, color: colors.accent.purple }}
-                            />
-                            <Typography
-                              variant="h6"
-                              sx={{
-                                fontWeight: 700,
-                                color: colors.text.primary,
-                              }}
-                            >
-                              Subject-Wise Observation Questions
-                            </Typography>
-                          </Box>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: colors.text.secondary,
-                              fontSize: "0.875rem",
-                            }}
-                          >
-                            These questions require subject-specific observation
-                            and class, section, and subject selection
-                          </Typography>
-                        </Box>
-
-                        {/* Class, Section, and Subject Dropdowns */}
-                        <Box
-                          sx={{
-                            mb: 3,
-                            p: 2.5,
-                            borderRadius: 2,
-                            bgcolor: colors.background.secondary,
-                            border: `1.5px solid ${colors.neutral.gray200}`,
-                          }}
-                        >
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              fontWeight: 600,
-                              color: colors.text.primary,
-                              mb: 2,
-                            }}
-                          >
-                            Select Class Group, Class, Section, and Subject
-                          </Typography>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              gap: 2,
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            {/* Class Group Dropdown */}
-                            <FormControl
-                              size="small"
-                              sx={{
-                                minWidth: { xs: "100%", sm: "150px" },
-                              }}
-                            >
-                              <InputLabel
+                            <Box sx={{ mb: 4 }}>
+                              {/* Section Header */}
+                              <Box
                                 sx={{
-                                  fontWeight: 600,
-                                  color: colors.text.secondary,
+                                  mb: 3,
+                                  pb: 2,
+                                  borderBottom: `2px solid ${colors.neutral.gray200}`,
                                 }}
                               >
-                                Class Group
-                              </InputLabel>
-                              <Select
-                                value={selectedClassGroup || ""}
-                                onChange={(e) =>
-                                  setSelectedClassGroup(e.target.value)
-                                }
-                                label="Class Group"
-                                disabled={isReadOnly}
-                                sx={{
-                                  borderRadius: 2,
-                                  bgcolor: "white",
-                                  "& .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.neutral.gray300,
-                                  },
-                                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.accent.purple,
-                                  },
-                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                    {
-                                      borderColor: colors.accent.purple,
-                                      borderWidth: 2,
-                                    },
-                                }}
-                              >
-                                {["1-2", "3-5", "6-8"]
-                                  .filter((groupRange) => {
-                                    // Filter out groups with gray/null/undefined flags
-                                    const flag = getGroupFlagColor(3, groupRange);
-                                    return flag !== null && flag !== undefined && flag !== "gray";
-                                  })
-                                  .map((groupRange) => {
-                                    const flag = getGroupFlagColor(3, groupRange);
-                                    const flagColor = flag
-                                      ? getFlagColorValue(flag)
-                                      : null;
-                                    const displayRange =
-                                      groupRange === "3-5" ? "3-5" : groupRange;
-
-                                    return (
-                                      <MenuItem
-                                        key={groupRange}
-                                        value={groupRange}
-                                      >
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 1,
-                                          }}
-                                        >
-                                          {flagColor && (
-                                            <Box
-                                              sx={{
-                                                width: 10,
-                                                height: 10,
-                                                borderRadius: "50%",
-                                                bgcolor: flagColor,
-                                                flexShrink: 0,
-                                              }}
-                                            />
-                                          )}
-                                          <Typography>
-                                            Class {displayRange}
-                                          </Typography>
-                                        </Box>
-                                      </MenuItem>
-                                    );
-                                  })}
-                              </Select>
-                            </FormControl>
-
-                            {/* Class Dropdown */}
-                            <FormControl
-                              size="small"
-                              sx={{
-                                minWidth: { xs: "100%", sm: "180px" },
-                              }}
-                            >
-                              <InputLabel
-                                sx={{
-                                  fontWeight: 600,
-                                  color: colors.text.secondary,
-                                }}
-                              >
-                                Select Class
-                              </InputLabel>
-                              <Select
-                                value={selectedClass || ""}
-                                onChange={(e) => {
-                                  // Save current answers before changing class
-                                  if (selectedSubdomain && selectedClass) {
-                                    const subdomainId =
-                                      selectedSubdomain.subDomainId ||
-                                      selectedSubdomain.id;
-                                    const classKey = String(selectedClass);
-                                    const storageKey = `${subdomainId}_${classKey}`;
-                                    setClassWiseAnswers((prev) => ({
-                                      ...prev,
-                                      [storageKey]: { ...answers },
-                                    }));
-                                    setClassWiseTextAnswers((prev) => ({
-                                      ...prev,
-                                      [storageKey]: { ...textAnswers },
-                                    }));
-                                  }
-                                  setSelectedClass(e.target.value);
-                                  // Reset section so it can be auto-selected for the new class
-                                  setSelectedSection(null);
-                                }}
-                                label="Select Class"
-                                disabled={
-                                  isLoadingSchoolData ||
-                                  filteredClassOptions.length === 0 ||
-                                  isReadOnly
-                                }
-                                sx={{
-                                  borderRadius: 2,
-                                  bgcolor: "white",
-                                  "& .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.neutral.gray300,
-                                  },
-                                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.accent.purple,
-                                  },
-                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                    {
-                                      borderColor: colors.accent.purple,
-                                      borderWidth: 2,
-                                    },
-                                }}
-                              >
-                                {isLoadingSchoolData ? (
-                                  <MenuItem disabled>
-                                    Loading classes...
-                                  </MenuItem>
-                                ) : filteredClassOptions.length === 0 ? (
-                                  <MenuItem disabled>
-                                    {selectedClassGroup
-                                      ? `No classes available in ${selectedClassGroup} range`
-                                      : "Please select a class group first"}
-                                  </MenuItem>
-                                ) : (
-                                  filteredClassOptions.map((classNum) => (
-                                    <MenuItem key={classNum} value={classNum}>
-                                      Class {classNum}
-                                    </MenuItem>
-                                  ))
-                                )}
-                              </Select>
-                            </FormControl>
-
-                            {/* Section Dropdown */}
-                            <FormControl
-                              size="small"
-                              sx={{
-                                minWidth: { xs: "100%", sm: "180px" },
-                              }}
-                            >
-                              <InputLabel
-                                sx={{
-                                  fontWeight: 600,
-                                  color: colors.text.secondary,
-                                }}
-                              >
-                                Select Section
-                              </InputLabel>
-                              <Select
-                                value={selectedSection || ""}
-                                onChange={(e) =>
-                                  setSelectedSection(e.target.value)
-                                }
-                                label="Select Section"
-                                disabled={
-                                  !selectedClass || sections.length === 0 || isReadOnly
-                                }
-                                sx={{
-                                  borderRadius: 2,
-                                  bgcolor: "white",
-                                  "& .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.neutral.gray300,
-                                  },
-                                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.accent.purple,
-                                  },
-                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                    {
-                                      borderColor: colors.accent.purple,
-                                      borderWidth: 2,
-                                    },
-                                }}
-                              >
-                                {!selectedClass ? (
-                                  <MenuItem disabled>
-                                    Please select a class first
-                                  </MenuItem>
-                                ) : sections.length === 0 ? (
-                                  <MenuItem disabled>
-                                    No sections available for this class
-                                  </MenuItem>
-                                ) : (
-                                  sections.map((section, index) => (
-                                    <MenuItem
-                                      key={section.id || index}
-                                      value={
-                                        section.sectionName ||
-                                        section.name ||
-                                        section.value
-                                      }
-                                    >
-                                      Section{" "}
-                                      {section.sectionName ||
-                                        section.name ||
-                                        section.value}
-                                    </MenuItem>
-                                  ))
-                                )}
-                              </Select>
-                            </FormControl>
-
-                            {/* Subject Dropdown */}
-                            <FormControl
-                              size="small"
-                              sx={{
-                                minWidth: { xs: "100%", sm: "180px" },
-                              }}
-                            >
-                              <InputLabel
-                                sx={{
-                                  fontWeight: 600,
-                                  color: colors.text.secondary,
-                                }}
-                              >
-                                Select Subject
-                              </InputLabel>
-                              <Select
-                                value={selectedSubject || ""}
-                                onChange={(e) => {
-                                  // Clear answers before changing subject so they can be reloaded from API
-                                  setAnswers({});
-                                  setTextAnswers({});
-                                  setSelectedSubject(e.target.value);
-                                  // Refetch questions when subject changes
-                                  if (refetchQuestions) {
-                                    refetchQuestions();
-                                  }
-                                }}
-                                label="Select Subject"
-                                disabled={
-                                  !selectedClass ||
-                                  isLoadingSubjects ||
-                                  subjects.length === 0 ||
-                                  isReadOnly
-                                }
-                                sx={{
-                                  borderRadius: 2,
-                                  bgcolor: "white",
-                                  "& .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.neutral.gray300,
-                                  },
-                                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: colors.accent.purple,
-                                  },
-                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                    {
-                                      borderColor: colors.accent.purple,
-                                      borderWidth: 2,
-                                    },
-                                }}
-                              >
-                                {!selectedClass ? (
-                                  <MenuItem disabled>
-                                    Please select a class first
-                                  </MenuItem>
-                                ) : isLoadingSubjects ? (
-                                  <MenuItem disabled>
-                                    Loading subjects...
-                                  </MenuItem>
-                                ) : subjects.length === 0 ? (
-                                  <MenuItem disabled>
-                                    No subjects available for this class
-                                  </MenuItem>
-                                ) : (
-                                  subjects.map((subject) => (
-                                    <MenuItem
-                                      key={subject.id}
-                                      value={subject.id}
-                                    >
-                                      {subject.subject}
-                                    </MenuItem>
-                                  ))
-                                )}
-                              </Select>
-                            </FormControl>
-                          </Box>
-                        </Box>
-
-                        {/* Subject-Wise Questions List */}
-                        {isLoadingQuestions ? (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                              minHeight: "200px",
-                            }}
-                          >
-                            <CircularProgress />
-                          </Box>
-                        ) : isErrorQuestions ? (
-                          <Alert severity="error">
-                            {isErrorQuestions?.message ||
-                              "Failed to load questions"}
-                          </Alert>
-                        ) : (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 2.5,
-                            }}
-                          >
-                            {currentTab.questions.map(
-                              (question, index) => {
-                                const options = parseOptions(question.options);
-                                const userSelectedAnswer =
-                                  answers[question.questionId];
-                                const apiSelectedAnswer =
-                                  shouldShowApiAnswer(question) &&
-                                  question.selectedOptionId
-                                    ? String(question.selectedOptionId)
-                                    : null;
-                                const selectedAnswer =
-                                  userSelectedAnswer || apiSelectedAnswer;
-                                const isExpanded =
-                                  expandedQuestions[question.questionId] ??
-                                  true;
-                                const questionProgress = selectedAnswer
-                                  ? 100
-                                  : 0;
-                                const questionNumber = `${domainNumber}.${subdomainNumber}.${
-                                  index + 1
-                                }`;
-
-                                return (
-                                  <Card
-                                    key={question.questionId}
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1.5,
+                                    mb: 1,
+                                  }}
+                                >
+                                  <MenuBook
                                     sx={{
-                                      borderRadius: 2,
-                                      border: "1px solid",
-                                      borderColor: colors.neutral.gray200,
-                                      transition: "all 0.2s ease",
-                                      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                                      overflow: "hidden",
-                                      "&:hover": {
-                                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                                      },
+                                      fontSize: 24,
+                                      color: colors.accent.purple,
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="h6"
+                                    sx={{
+                                      fontWeight: 700,
+                                      color: colors.text.primary,
                                     }}
                                   >
-                                    {/* Question Header - Always Visible */}
-                                    <Box
-                                      onClick={() =>
-                                        toggleQuestionExpansion(
-                                          question.questionId,
-                                        )
-                                      }
+                                    Subject-Wise Observation Questions
+                                  </Typography>
+                                </Box>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    color: colors.text.secondary,
+                                    fontSize: "0.875rem",
+                                  }}
+                                >
+                                  These questions require subject-specific
+                                  observation and class, section, and subject
+                                  selection
+                                </Typography>
+                              </Box>
+
+                              {/* Class, Section, and Subject Dropdowns */}
+                              <Box
+                                sx={{
+                                  mb: 3,
+                                  p: 2.5,
+                                  borderRadius: 2,
+                                  bgcolor: colors.background.secondary,
+                                  border: `1.5px solid ${colors.neutral.gray200}`,
+                                }}
+                              >
+                                <Typography
+                                  variant="subtitle2"
+                                  sx={{
+                                    fontWeight: 600,
+                                    color: colors.text.primary,
+                                    mb: 2,
+                                  }}
+                                >
+                                  Select Class Group, Class, Section, and
+                                  Subject
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    gap: 2,
+                                    flexWrap: "wrap",
+                                  }}
+                                >
+                                  {/* Class Group Dropdown */}
+                                  <FormControl
+                                    size="small"
+                                    sx={{
+                                      minWidth: { xs: "100%", sm: "150px" },
+                                    }}
+                                  >
+                                    <InputLabel
                                       sx={{
-                                        p: 2.5,
-                                        cursor: "pointer",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 2,
-                                        bgcolor: colors.background.primary,
-                                        borderBottom: isExpanded
-                                          ? `1px solid ${colors.neutral.gray200}`
-                                          : "none",
-                                        "&:hover": {
-                                          bgcolor: colors.background.secondary,
-                                        },
+                                        fontWeight: 600,
+                                        color: colors.text.secondary,
                                       }}
                                     >
-                                      <Chip
-                                        label={`Q ${questionNumber}`}
-                                        size="small"
-                                        sx={{
-                                          bgcolor: colors.neutral.gray800,
-                                          color: "white",
-                                          fontWeight: 700,
-                                          minWidth: "100px",
-                                          height: "28px",
-                                          fontSize: "0.75rem",
-                                        }}
-                                      />
-                                      <Box sx={{ flex: 1 }}>
-                                        <Typography
-                                          variant="body2"
-                                          sx={{
-                                            fontWeight: 700,
-                                            fontSize: "1rem",
-                                            color: colors.text.primary,
-                                            lineHeight: 1.5,
-                                          }}
-                                        >
-                                          {getQuestionText(question)}
-                                        </Typography>
-                                      </Box>
-                                      <IconButton
-                                        size="small"
-                                        sx={{
-                                          color: colors.text.secondary,
-                                        }}
-                                      >
-                                        {isExpanded ? (
-                                          <ExpandLess />
-                                        ) : (
-                                          <ExpandMore />
-                                        )}
-                                      </IconButton>
-                                    </Box>
+                                      Class Group
+                                    </InputLabel>
+                                    <Select
+                                      value={selectedClassGroup || ""}
+                                      onChange={(e) =>
+                                        setSelectedClassGroup(e.target.value)
+                                      }
+                                      label="Class Group"
+                                      disabled={isReadOnly}
+                                      sx={{
+                                        borderRadius: 2,
+                                        bgcolor: "white",
+                                        "& .MuiOutlinedInput-notchedOutline": {
+                                          borderColor: colors.neutral.gray300,
+                                        },
+                                        "&:hover .MuiOutlinedInput-notchedOutline":
+                                          {
+                                            borderColor: colors.accent.purple,
+                                          },
+                                        "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                          {
+                                            borderColor: colors.accent.purple,
+                                            borderWidth: 2,
+                                          },
+                                      }}
+                                    >
+                                      {["1-2", "3-5", "6-8"]
+                                        .filter((groupRange) => {
+                                          // Filter out groups with gray/null/undefined flags
+                                          const flag = getGroupFlagColor(
+                                            3,
+                                            groupRange,
+                                          );
+                                          return (
+                                            flag !== null &&
+                                            flag !== undefined &&
+                                            flag !== "gray"
+                                          );
+                                        })
+                                        .map((groupRange) => {
+                                          const flag = getGroupFlagColor(
+                                            3,
+                                            groupRange,
+                                          );
+                                          const flagColor = flag
+                                            ? getFlagColorValue(flag)
+                                            : null;
+                                          const displayRange =
+                                            groupRange === "3-5"
+                                              ? "3-5"
+                                              : groupRange;
 
-                                    {/* Question Content - Expandable */}
-                                    {isExpanded && (
-                                      <CardContent sx={{ p: 3, pt: 2.5 }}>
-                                        {options && options.length > 0 && (
-                                          <FormControl
-                                            component="fieldset"
-                                            fullWidth
-                                            sx={{ mb: 3 }}
-                                          >
-                                            <RadioGroup
-                                              value={selectedAnswer || ""}
-                                              onChange={(e) =>
-                                                handleAnswerChange(
-                                                  question.questionId,
-                                                  e.target.value,
-                                                )
-                                              }
+                                          return (
+                                            <MenuItem
+                                              key={groupRange}
+                                              value={groupRange}
                                             >
-                                              {options.map(
-                                                (option, optIndex) => (
-                                                  <FormControlLabel
-                                                    key={
-                                                      option.optionId ||
-                                                      optIndex
-                                                    }
-                                                    value={String(
-                                                      option.optionId,
-                                                    )}
-                                                    control={
-                                                      <Radio
-                                                        disabled={
-                                                          !isPublished ||
-                                                          isReadOnly
-                                                        }
-                                                        sx={{
-                                                          color:
-                                                            colors.accent
-                                                              .purple,
-                                                          "&.Mui-checked": {
-                                                            color:
-                                                              colors.accent
-                                                                .purple,
-                                                          },
-                                                        }}
-                                                      />
-                                                    }
-                                                    label={
-                                                      <Typography variant="body2">
-                                                        {getOptionText(option)}
-                                                      </Typography>
-                                                    }
+                                              <Box
+                                                sx={{
+                                                  display: "flex",
+                                                  alignItems: "center",
+                                                  gap: 1,
+                                                }}
+                                              >
+                                                {flagColor && (
+                                                  <Box
                                                     sx={{
-                                                      mb: 1.5,
-                                                      p: 2,
-                                                      borderRadius: 2,
-                                                      bgcolor:
-                                                        selectedAnswer ===
-                                                        String(option.optionId)
-                                                          ? colors.accent
-                                                              .purple + "15"
-                                                          : "transparent",
-                                                      border: "1.5px solid",
-                                                      borderColor:
-                                                        selectedAnswer ===
-                                                        String(option.optionId)
-                                                          ? colors.accent.purple
-                                                          : colors.neutral
-                                                              .gray200,
-                                                      transition:
-                                                        "all 0.2s ease",
-                                                      "&:hover": {
-                                                        bgcolor:
-                                                          colors.accent.purple +
-                                                          "15",
-                                                        borderColor:
-                                                          colors.accent.purple,
-                                                      },
+                                                      width: 10,
+                                                      height: 10,
+                                                      borderRadius: "50%",
+                                                      bgcolor: flagColor,
+                                                      flexShrink: 0,
                                                     }}
                                                   />
-                                                ),
+                                                )}
+                                                <Typography>
+                                                  Class {displayRange}
+                                                </Typography>
+                                              </Box>
+                                            </MenuItem>
+                                          );
+                                        })}
+                                    </Select>
+                                  </FormControl>
+
+                                  {/* Class Dropdown */}
+                                  <FormControl
+                                    size="small"
+                                    sx={{
+                                      minWidth: { xs: "100%", sm: "180px" },
+                                    }}
+                                  >
+                                    <InputLabel
+                                      sx={{
+                                        fontWeight: 600,
+                                        color: colors.text.secondary,
+                                      }}
+                                    >
+                                      Select Class
+                                    </InputLabel>
+                                    <Select
+                                      value={selectedClass || ""}
+                                      onChange={(e) => {
+                                        // Save current answers before changing class
+                                        if (
+                                          selectedSubdomain &&
+                                          selectedClass
+                                        ) {
+                                          const subdomainId =
+                                            selectedSubdomain.subDomainId ||
+                                            selectedSubdomain.id;
+                                          const classKey =
+                                            String(selectedClass);
+                                          const storageKey = `${subdomainId}_${classKey}`;
+                                          setClassWiseAnswers((prev) => ({
+                                            ...prev,
+                                            [storageKey]: { ...answers },
+                                          }));
+                                          setClassWiseTextAnswers((prev) => ({
+                                            ...prev,
+                                            [storageKey]: { ...textAnswers },
+                                          }));
+                                        }
+                                        setSelectedClass(e.target.value);
+                                        // Reset section so it can be auto-selected for the new class
+                                        setSelectedSection(null);
+                                      }}
+                                      label="Select Class"
+                                      disabled={
+                                        isLoadingSchoolData ||
+                                        filteredClassOptions.length === 0 ||
+                                        isReadOnly
+                                      }
+                                      sx={{
+                                        borderRadius: 2,
+                                        bgcolor: "white",
+                                        "& .MuiOutlinedInput-notchedOutline": {
+                                          borderColor: colors.neutral.gray300,
+                                        },
+                                        "&:hover .MuiOutlinedInput-notchedOutline":
+                                          {
+                                            borderColor: colors.accent.purple,
+                                          },
+                                        "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                          {
+                                            borderColor: colors.accent.purple,
+                                            borderWidth: 2,
+                                          },
+                                      }}
+                                    >
+                                      {isLoadingSchoolData ? (
+                                        <MenuItem disabled>
+                                          Loading classes...
+                                        </MenuItem>
+                                      ) : filteredClassOptions.length === 0 ? (
+                                        <MenuItem disabled>
+                                          {selectedClassGroup
+                                            ? `No classes available in ${selectedClassGroup} range`
+                                            : "Please select a class group first"}
+                                        </MenuItem>
+                                      ) : (
+                                        filteredClassOptions.map((classNum) => (
+                                          <MenuItem
+                                            key={classNum}
+                                            value={classNum}
+                                          >
+                                            Class {classNum}
+                                          </MenuItem>
+                                        ))
+                                      )}
+                                    </Select>
+                                  </FormControl>
+
+                                  {/* Section Dropdown */}
+                                  <FormControl
+                                    size="small"
+                                    sx={{
+                                      minWidth: { xs: "100%", sm: "180px" },
+                                    }}
+                                  >
+                                    <InputLabel
+                                      sx={{
+                                        fontWeight: 600,
+                                        color: colors.text.secondary,
+                                      }}
+                                    >
+                                      Select Section
+                                    </InputLabel>
+                                    <Select
+                                      value={selectedSection || ""}
+                                      onChange={(e) =>
+                                        setSelectedSection(e.target.value)
+                                      }
+                                      label="Select Section"
+                                      disabled={
+                                        !selectedClass ||
+                                        sections.length === 0 ||
+                                        isReadOnly
+                                      }
+                                      sx={{
+                                        borderRadius: 2,
+                                        bgcolor: "white",
+                                        "& .MuiOutlinedInput-notchedOutline": {
+                                          borderColor: colors.neutral.gray300,
+                                        },
+                                        "&:hover .MuiOutlinedInput-notchedOutline":
+                                          {
+                                            borderColor: colors.accent.purple,
+                                          },
+                                        "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                          {
+                                            borderColor: colors.accent.purple,
+                                            borderWidth: 2,
+                                          },
+                                      }}
+                                    >
+                                      {!selectedClass ? (
+                                        <MenuItem disabled>
+                                          Please select a class first
+                                        </MenuItem>
+                                      ) : sections.length === 0 ? (
+                                        <MenuItem disabled>
+                                          No sections available for this class
+                                        </MenuItem>
+                                      ) : (
+                                        sections.map((section, index) => (
+                                          <MenuItem
+                                            key={section.id || index}
+                                            value={
+                                              section.sectionName ||
+                                              section.name ||
+                                              section.value
+                                            }
+                                          >
+                                            Section{" "}
+                                            {section.sectionName ||
+                                              section.name ||
+                                              section.value}
+                                          </MenuItem>
+                                        ))
+                                      )}
+                                    </Select>
+                                  </FormControl>
+
+                                  {/* Subject Dropdown */}
+                                  <FormControl
+                                    size="small"
+                                    sx={{
+                                      minWidth: { xs: "100%", sm: "180px" },
+                                    }}
+                                  >
+                                    <InputLabel
+                                      sx={{
+                                        fontWeight: 600,
+                                        color: colors.text.secondary,
+                                      }}
+                                    >
+                                      Select Subject
+                                    </InputLabel>
+                                    <Select
+                                      value={selectedSubject || ""}
+                                      onChange={(e) => {
+                                        // Clear answers before changing subject so they can be reloaded from API
+                                        setAnswers({});
+                                        setTextAnswers({});
+                                        setSelectedSubject(e.target.value);
+                                        // Refetch questions when subject changes
+                                        if (refetchQuestions) {
+                                          refetchQuestions();
+                                        }
+                                      }}
+                                      label="Select Subject"
+                                      disabled={
+                                        !selectedClass ||
+                                        isLoadingSubjects ||
+                                        subjects.length === 0 ||
+                                        isReadOnly
+                                      }
+                                      sx={{
+                                        borderRadius: 2,
+                                        bgcolor: "white",
+                                        "& .MuiOutlinedInput-notchedOutline": {
+                                          borderColor: colors.neutral.gray300,
+                                        },
+                                        "&:hover .MuiOutlinedInput-notchedOutline":
+                                          {
+                                            borderColor: colors.accent.purple,
+                                          },
+                                        "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                          {
+                                            borderColor: colors.accent.purple,
+                                            borderWidth: 2,
+                                          },
+                                      }}
+                                    >
+                                      {!selectedClass ? (
+                                        <MenuItem disabled>
+                                          Please select a class first
+                                        </MenuItem>
+                                      ) : isLoadingSubjects ? (
+                                        <MenuItem disabled>
+                                          Loading subjects...
+                                        </MenuItem>
+                                      ) : subjects.length === 0 ? (
+                                        <MenuItem disabled>
+                                          No subjects available for this class
+                                        </MenuItem>
+                                      ) : (
+                                        subjects.map((subject) => (
+                                          <MenuItem
+                                            key={subject.id}
+                                            value={subject.id}
+                                          >
+                                            {subject.subject}
+                                          </MenuItem>
+                                        ))
+                                      )}
+                                    </Select>
+                                  </FormControl>
+                                </Box>
+                              </Box>
+
+                              {/* Subject-Wise Questions List */}
+                              {isLoadingQuestions ? (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    minHeight: "200px",
+                                  }}
+                                >
+                                  <CircularProgress />
+                                </Box>
+                              ) : isErrorQuestions ? (
+                                <Alert severity="error">
+                                  {isErrorQuestions?.message ||
+                                    "Failed to load questions"}
+                                </Alert>
+                              ) : (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 2.5,
+                                  }}
+                                >
+                                  {currentTab.questions.map(
+                                    (question, index) => {
+                                      const options = parseOptions(
+                                        question.options,
+                                      );
+                                      const userSelectedAnswer =
+                                        answers[question.questionId];
+                                      const apiSelectedAnswer =
+                                        shouldShowApiAnswer(question) &&
+                                        question.selectedOptionId
+                                          ? String(question.selectedOptionId)
+                                          : null;
+                                      const selectedAnswer =
+                                        userSelectedAnswer || apiSelectedAnswer;
+                                      const isExpanded =
+                                        expandedQuestions[
+                                          question.questionId
+                                        ] ?? true;
+                                      const questionProgress = selectedAnswer
+                                        ? 100
+                                        : 0;
+                                      const questionNumber = `${domainNumber}.${subdomainNumber}.${
+                                        index + 1
+                                      }`;
+
+                                      return (
+                                        <Card
+                                          key={question.questionId}
+                                          sx={{
+                                            borderRadius: 2,
+                                            border: "1px solid",
+                                            borderColor: colors.neutral.gray200,
+                                            transition: "all 0.2s ease",
+                                            boxShadow:
+                                              "0 2px 8px rgba(0,0,0,0.08)",
+                                            overflow: "hidden",
+                                            "&:hover": {
+                                              boxShadow:
+                                                "0 4px 12px rgba(0,0,0,0.1)",
+                                            },
+                                          }}
+                                        >
+                                          {/* Question Header - Always Visible */}
+                                          <Box
+                                            onClick={() =>
+                                              toggleQuestionExpansion(
+                                                question.questionId,
+                                              )
+                                            }
+                                            sx={{
+                                              p: 2.5,
+                                              cursor: "pointer",
+                                              display: "flex",
+                                              alignItems: "center",
+                                              gap: 2,
+                                              bgcolor:
+                                                colors.background.primary,
+                                              borderBottom: isExpanded
+                                                ? `1px solid ${colors.neutral.gray200}`
+                                                : "none",
+                                              "&:hover": {
+                                                bgcolor:
+                                                  colors.background.secondary,
+                                              },
+                                            }}
+                                          >
+                                            <Chip
+                                              label={`Q ${questionNumber}`}
+                                              size="small"
+                                              sx={{
+                                                bgcolor: colors.neutral.gray800,
+                                                color: "white",
+                                                fontWeight: 700,
+                                                minWidth: "100px",
+                                                height: "28px",
+                                                fontSize: "0.75rem",
+                                              }}
+                                            />
+                                            <Box sx={{ flex: 1 }}>
+                                              <Typography
+                                                variant="body2"
+                                                sx={{
+                                                  fontWeight: 700,
+                                                  fontSize: "1rem",
+                                                  color: colors.text.primary,
+                                                  lineHeight: 1.5,
+                                                }}
+                                              >
+                                                {getQuestionText(question)}
+                                              </Typography>
+                                            </Box>
+                                            <IconButton
+                                              size="small"
+                                              sx={{
+                                                color: colors.text.secondary,
+                                              }}
+                                            >
+                                              {isExpanded ? (
+                                                <ExpandLess />
+                                              ) : (
+                                                <ExpandMore />
                                               )}
-                                            </RadioGroup>
-                                          </FormControl>
-                                        )}
-                                      </CardContent>
-                                    )}
-                                  </Card>
-                                );
-                              },
-                            )}
-                          </Box>
-                        )}
-                      </Box>
+                                            </IconButton>
+                                          </Box>
+
+                                          {/* Question Content - Expandable */}
+                                          {isExpanded && (
+                                            <CardContent sx={{ p: 3, pt: 2.5 }}>
+                                              {options &&
+                                                options.length > 0 && (
+                                                  <FormControl
+                                                    component="fieldset"
+                                                    fullWidth
+                                                    sx={{ mb: 3 }}
+                                                  >
+                                                    <RadioGroup
+                                                      value={
+                                                        selectedAnswer || ""
+                                                      }
+                                                      onChange={(e) =>
+                                                        handleAnswerChange(
+                                                          question.questionId,
+                                                          e.target.value,
+                                                        )
+                                                      }
+                                                    >
+                                                      {options.map(
+                                                        (option, optIndex) => (
+                                                          <FormControlLabel
+                                                            key={
+                                                              option.optionId ||
+                                                              optIndex
+                                                            }
+                                                            value={String(
+                                                              option.optionId,
+                                                            )}
+                                                            control={
+                                                              <Radio
+                                                                disabled={
+                                                                  !isPublished ||
+                                                                  isReadOnly
+                                                                }
+                                                                sx={{
+                                                                  color:
+                                                                    colors
+                                                                      .accent
+                                                                      .purple,
+                                                                  "&.Mui-checked":
+                                                                    {
+                                                                      color:
+                                                                        colors
+                                                                          .accent
+                                                                          .purple,
+                                                                    },
+                                                                }}
+                                                              />
+                                                            }
+                                                            label={
+                                                              <Typography variant="body2">
+                                                                {getOptionText(
+                                                                  option,
+                                                                )}
+                                                              </Typography>
+                                                            }
+                                                            sx={{
+                                                              mb: 1.5,
+                                                              p: 2,
+                                                              borderRadius: 2,
+                                                              bgcolor:
+                                                                selectedAnswer ===
+                                                                String(
+                                                                  option.optionId,
+                                                                )
+                                                                  ? colors
+                                                                      .accent
+                                                                      .purple +
+                                                                    "15"
+                                                                  : "transparent",
+                                                              border:
+                                                                "1.5px solid",
+                                                              borderColor:
+                                                                selectedAnswer ===
+                                                                String(
+                                                                  option.optionId,
+                                                                )
+                                                                  ? colors
+                                                                      .accent
+                                                                      .purple
+                                                                  : colors
+                                                                      .neutral
+                                                                      .gray200,
+                                                              transition:
+                                                                "all 0.2s ease",
+                                                              "&:hover": {
+                                                                bgcolor:
+                                                                  colors.accent
+                                                                    .purple +
+                                                                  "15",
+                                                                borderColor:
+                                                                  colors.accent
+                                                                    .purple,
+                                                              },
+                                                            }}
+                                                          />
+                                                        ),
+                                                      )}
+                                                    </RadioGroup>
+                                                  </FormControl>
+                                                )}
+                                            </CardContent>
+                                          )}
+                                        </Card>
+                                      );
+                                    },
+                                  )}
+                                </Box>
+                              )}
+                            </Box>
                           )}
 
                           {/* FLN Questions Section (Type 4) */}
                           {currentTab.id === "fln" && (
-                      <Box sx={{ mb: 4 }}>
-                        {/* Section Header */}
-                        <Box
-                          sx={{
-                            mb: 3,
-                            pb: 2,
-                            borderBottom: `2px solid ${colors.neutral.gray200}`,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1.5,
-                              mb: 1,
-                            }}
-                          >
-                            <Create
-                              sx={{
-                                fontSize: 24,
-                                color: colors.semantic.warning,
-                              }}
-                            />
-                            <Typography
-                              variant="h6"
-                              sx={{
-                                fontWeight: 700,
-                                color: colors.text.primary,
-                              }}
-                            >
-                              Input Type Questions
-                            </Typography>
-                          </Box>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: colors.text.secondary,
-                              fontSize: "0.875rem",
-                            }}
-                          >
-                            Foundational Literacy and Numeracy questions that
-                            require text responses
-                          </Typography>
-                        </Box>
-
-                        {/* FLN Questions List */}
-                        {isLoadingQuestions ? (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                              minHeight: "200px",
-                            }}
-                          >
-                            <CircularProgress />
-                          </Box>
-                        ) : isErrorQuestions ? (
-                          <Alert severity="error">
-                            {isErrorQuestions?.message ||
-                              "Failed to load questions"}
-                          </Alert>
-                        ) : (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 2.5,
-                            }}
-                          >
-                            {currentTab.questions.map((question, index) => {
-                              const textAnswer =
-                                textAnswers[question.questionId] || "";
-                              const isExpanded =
-                                expandedQuestions[question.questionId] ?? true;
-
-                              // Check if FLN question has any answers
-                              let questionProgress = 0;
-                              if (textAnswer) {
-                                try {
-                                  const flnData = JSON.parse(textAnswer);
-                                  const hasAnswer = Object.keys(flnData).some(
-                                    (key) =>
-                                      flnData[key] &&
-                                      flnData[key].obtainedMarks,
-                                  );
-                                  questionProgress = hasAnswer ? 100 : 0;
-                                } catch (e) {
-                                  questionProgress = 0;
-                                }
-                              }
-                              const questionNumber = `${domainNumber}.${subdomainNumber}.${
-                                index + 1
-                              }`;
-
-                              return (
-                                <Card
-                                  key={question.questionId}
+                            <Box sx={{ mb: 4 }}>
+                              {/* Section Header */}
+                              <Box
+                                sx={{
+                                  mb: 3,
+                                  pb: 2,
+                                  borderBottom: `2px solid ${colors.neutral.gray200}`,
+                                }}
+                              >
+                                <Box
                                   sx={{
-                                    borderRadius: 2,
-                                    border: "1px solid",
-                                    borderColor: colors.neutral.gray200,
-                                    transition: "all 0.2s ease",
-                                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                                    overflow: "hidden",
-                                    "&:hover": {
-                                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                                    },
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1.5,
+                                    mb: 1,
                                   }}
                                 >
-                                  {/* Question Header - Always Visible */}
-                                  <Box
-                                    onClick={() =>
-                                      toggleQuestionExpansion(
-                                        question.questionId,
-                                      )
-                                    }
+                                  <Create
                                     sx={{
-                                      p: 2.5,
-                                      cursor: "pointer",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 2,
-                                      bgcolor: colors.background.primary,
-                                      borderBottom: isExpanded
-                                        ? `1px solid ${colors.neutral.gray200}`
-                                        : "none",
-                                      "&:hover": {
-                                        bgcolor: colors.background.secondary,
-                                      },
+                                      fontSize: 24,
+                                      color: colors.semantic.warning,
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="h6"
+                                    sx={{
+                                      fontWeight: 700,
+                                      color: colors.text.primary,
                                     }}
                                   >
-                                    <Chip
-                                      label={`Q ${questionNumber}`}
-                                      size="small"
-                                      sx={{
-                                        bgcolor: colors.accent.orangeDark,
-                                        color: "white",
-                                        fontWeight: 700,
-                                        minWidth: "100px",
-                                        height: "28px",
-                                        fontSize: "0.75rem",
-                                      }}
-                                    />
-                                    <Box sx={{ flex: 1 }}>
-                                      <Typography
-                                        variant="body2"
-                                        sx={{
-                                          fontWeight: 500,
-                                          fontSize: "0.875rem",
-                                          color: colors.text.primary,
-                                          lineHeight: 1.5,
-                                        }}
-                                      >
-                                        {getQuestionText(question)}
-                                      </Typography>
-                                    </Box>
-                                    <IconButton
-                                      size="small"
-                                      sx={{
-                                        color: colors.text.secondary,
-                                      }}
-                                    >
-                                      {isExpanded ? (
-                                        <ExpandLess />
-                                      ) : (
-                                        <ExpandMore />
-                                      )}
-                                    </IconButton>
-                                  </Box>
+                                    Input Type Questions
+                                  </Typography>
+                                </Box>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    color: colors.text.secondary,
+                                    fontSize: "0.875rem",
+                                  }}
+                                >
+                                  Foundational Literacy and Numeracy questions
+                                  that require text responses
+                                </Typography>
+                              </Box>
 
-                                  {/* Question Content - Expandable */}
-                                  {isExpanded && (
-                                    <CardContent sx={{ p: 3, pt: 2.5 }}>
-                                      {/* FLN Input Fields for classes 2 and 3 */}
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          flexDirection: "column",
-                                          gap: 2.5,
-                                        }}
-                                      >
-                                        {[2, 3].map((classNum) => {
-                                          // Parse existing answer if it exists
-                                          let flnData = {};
-                                          try {
-                                            flnData = textAnswer
-                                              ? JSON.parse(textAnswer)
-                                              : {};
-                                          } catch (e) {
-                                            flnData = {};
-                                          }
+                              {/* FLN Questions List */}
+                              {isLoadingQuestions ? (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    minHeight: "200px",
+                                  }}
+                                >
+                                  <CircularProgress />
+                                </Box>
+                              ) : isErrorQuestions ? (
+                                <Alert severity="error">
+                                  {isErrorQuestions?.message ||
+                                    "Failed to load questions"}
+                                </Alert>
+                              ) : (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 2.5,
+                                  }}
+                                >
+                                  {currentTab.questions.map(
+                                    (question, index) => {
+                                      const textAnswer =
+                                        textAnswers[question.questionId] || "";
+                                      const isExpanded =
+                                        expandedQuestions[
+                                          question.questionId
+                                        ] ?? true;
 
-                                          const classData = flnData[
-                                            classNum
-                                          ] || {
-                                            obtainedMarks: "",
-                                            answerId: null,
-                                          };
+                                      // Check if FLN question has any answers
+                                      let questionProgress = 0;
+                                      if (textAnswer) {
+                                        try {
+                                          const flnData =
+                                            JSON.parse(textAnswer);
+                                          const hasAnswer = Object.keys(
+                                            flnData,
+                                          ).some(
+                                            (key) =>
+                                              flnData[key] &&
+                                              flnData[key].obtainedMarks,
+                                          );
+                                          questionProgress = hasAnswer
+                                            ? 100
+                                            : 0;
+                                        } catch (e) {
+                                          questionProgress = 0;
+                                        }
+                                      }
+                                      const questionNumber = `${domainNumber}.${subdomainNumber}.${
+                                        index + 1
+                                      }`;
 
-                                          // Get total students count from API
-                                          const totalStudents =
-                                            gradesCounts[classNum] || 0;
-                                          const maxMarks = totalStudents * 10;
-
-                                          return (
-                                            <Box
-                                              key={classNum}
-                                              sx={{
-                                                p: 2.5,
-                                                borderRadius: 2,
+                                      return (
+                                        <Card
+                                          key={question.questionId}
+                                          sx={{
+                                            borderRadius: 2,
+                                            border: "1px solid",
+                                            borderColor: colors.neutral.gray200,
+                                            transition: "all 0.2s ease",
+                                            boxShadow:
+                                              "0 2px 8px rgba(0,0,0,0.08)",
+                                            overflow: "hidden",
+                                            "&:hover": {
+                                              boxShadow:
+                                                "0 4px 12px rgba(0,0,0,0.1)",
+                                            },
+                                          }}
+                                        >
+                                          {/* Question Header - Always Visible */}
+                                          <Box
+                                            onClick={() =>
+                                              toggleQuestionExpansion(
+                                                question.questionId,
+                                              )
+                                            }
+                                            sx={{
+                                              p: 2.5,
+                                              cursor: "pointer",
+                                              display: "flex",
+                                              alignItems: "center",
+                                              gap: 2,
+                                              bgcolor:
+                                                colors.background.primary,
+                                              borderBottom: isExpanded
+                                                ? `1px solid ${colors.neutral.gray200}`
+                                                : "none",
+                                              "&:hover": {
                                                 bgcolor:
                                                   colors.background.secondary,
-                                                border: `1px solid ${colors.neutral.gray200}`,
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: 3,
-                                                flexWrap: "wrap",
+                                              },
+                                            }}
+                                          >
+                                            <Chip
+                                              label={`Q ${questionNumber}`}
+                                              size="small"
+                                              sx={{
+                                                bgcolor:
+                                                  colors.accent.orangeDark,
+                                                color: "white",
+                                                fontWeight: 700,
+                                                minWidth: "100px",
+                                                height: "28px",
+                                                fontSize: "0.75rem",
+                                              }}
+                                            />
+                                            <Box sx={{ flex: 1 }}>
+                                              <Typography
+                                                variant="body2"
+                                                sx={{
+                                                  fontWeight: 500,
+                                                  fontSize: "0.875rem",
+                                                  color: colors.text.primary,
+                                                  lineHeight: 1.5,
+                                                }}
+                                              >
+                                                {getQuestionText(question)}
+                                              </Typography>
+                                            </Box>
+                                            <IconButton
+                                              size="small"
+                                              sx={{
+                                                color: colors.text.secondary,
                                               }}
                                             >
-                                              {/* Total Students - Static Display */}
-                                              <Box
-                                                sx={{
-                                                  display: "flex",
-                                                  alignItems: "center",
-                                                  gap: 1.5,
-                                                  flex: "1 1 300px",
-                                                }}
-                                              >
-                                                <Typography
-                                                  variant="body2"
-                                                  sx={{
-                                                    fontWeight: 600,
-                                                    color: colors.text.primary,
-                                                    whiteSpace: "nowrap",
-                                                  }}
-                                                >
-                                                  Total number of students for
-                                                  Class {classNum}:
-                                                </Typography>
-                                                <Box
-                                                  sx={{
-                                                    px: 2,
-                                                    py: 1,
-                                                    // bgcolor:
-                                                    //   colors.primary.lightest,
-                                                  }}
-                                                >
-                                                  <Typography
-                                                    variant="body2"
-                                                    sx={{
-                                                      fontWeight: 700,
-                                                      color:
-                                                        colors.primary.blue,
-                                                    }}
-                                                  >
-                                                    {totalStudents}
-                                                  </Typography>
-                                                </Box>
-                                              </Box>
+                                              {isExpanded ? (
+                                                <ExpandLess />
+                                              ) : (
+                                                <ExpandMore />
+                                              )}
+                                            </IconButton>
+                                          </Box>
 
-                                              {/* Obtained Marks Field */}
+                                          {/* Question Content - Expandable */}
+                                          {isExpanded && (
+                                            <CardContent sx={{ p: 3, pt: 2.5 }}>
+                                              {/* FLN Input Fields for classes 2 and 3 */}
                                               <Box
                                                 sx={{
                                                   display: "flex",
-                                                  alignItems: "center",
-                                                  gap: 1.5,
-                                                  flex: "1 1 250px",
+                                                  flexDirection: "column",
+                                                  gap: 2.5,
                                                 }}
                                               >
-                                                <Typography
-                                                  variant="body2"
-                                                  sx={{
-                                                    fontWeight: 600,
-                                                    color: colors.text.primary,
-                                                    whiteSpace: "nowrap",
-                                                  }}
-                                                >
-                                                  Obtained marks:
-                                                </Typography>
-                                                <TextField
-                                                  size="small"
-                                                  type="number"
-                                                  disabled={
-                                                    !isPublished || isReadOnly
+                                                {[2, 3].map((classNum) => {
+                                                  // Parse existing answer if it exists
+                                                  let flnData = {};
+                                                  try {
+                                                    flnData = textAnswer
+                                                      ? JSON.parse(textAnswer)
+                                                      : {};
+                                                  } catch (e) {
+                                                    flnData = {};
                                                   }
-                                                  value={
-                                                    classData.obtainedMarks ||
-                                                    ""
-                                                  }
-                                                  onChange={(e) => {
-                                                    const value =
-                                                      e.target.value;
-                                                    // Validate: only positive numbers and <= max marks
-                                                    if (
-                                                      value === "" ||
-                                                      (Number(value) >= 0 &&
-                                                        Number(value) <=
-                                                          maxMarks)
-                                                    ) {
-                                                      const newData = {
-                                                        ...flnData,
-                                                        [classNum]: {
-                                                          obtainedMarks: value,
-                                                          answerId:
-                                                            classData.answerId ||
-                                                            null, // Preserve answerId
-                                                        },
-                                                      };
-                                                      handleTextAnswerChange(
-                                                        question.questionId,
-                                                        JSON.stringify(newData),
-                                                      );
-                                                    }
-                                                  }}
-                                                  onKeyDown={(e) => {
-                                                    // Prevent minus sign, plus sign, and 'e'
-                                                    if (
-                                                      e.key === "-" ||
-                                                      e.key === "+" ||
-                                                      e.key === "e" ||
-                                                      e.key === "E"
-                                                    ) {
-                                                      e.preventDefault();
-                                                    }
-                                                  }}
-                                                  placeholder="Enter marks"
-                                                  inputProps={{
-                                                    min: 0,
-                                                    max: maxMarks,
-                                                  }}
-                                                  error={
-                                                    classData.obtainedMarks &&
-                                                    Number(
-                                                      classData.obtainedMarks,
-                                                    ) > maxMarks
-                                                  }
-                                                  sx={{
-                                                    width: "150px",
-                                                    "& .MuiOutlinedInput-root":
-                                                      {
-                                                        borderRadius: 0.5,
-                                                        bgcolor: "white",
-                                                      },
-                                                  }}
-                                                />
-                                                <Typography
-                                                  variant="body2"
-                                                  sx={{
-                                                    fontWeight: 600,
-                                                    color:
-                                                      colors.semantic.warning,
-                                                    whiteSpace: "nowrap",
-                                                  }}
-                                                >
-                                                  Max: {maxMarks}
-                                                </Typography>
+
+                                                  const classData = flnData[
+                                                    classNum
+                                                  ] || {
+                                                    obtainedMarks: "",
+                                                    answerId: null,
+                                                  };
+
+                                                  // Get total students count from API
+                                                  const totalStudents =
+                                                    gradesCounts[classNum] || 0;
+                                                  const maxMarks =
+                                                    totalStudents * 10;
+
+                                                  return (
+                                                    <Box
+                                                      key={classNum}
+                                                      sx={{
+                                                        p: 2.5,
+                                                        borderRadius: 2,
+                                                        bgcolor:
+                                                          colors.background
+                                                            .secondary,
+                                                        border: `1px solid ${colors.neutral.gray200}`,
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: 3,
+                                                        flexWrap: "wrap",
+                                                      }}
+                                                    >
+                                                      {/* Total Students - Static Display */}
+                                                      <Box
+                                                        sx={{
+                                                          display: "flex",
+                                                          alignItems: "center",
+                                                          gap: 1.5,
+                                                          flex: "1 1 300px",
+                                                        }}
+                                                      >
+                                                        <Typography
+                                                          variant="body2"
+                                                          sx={{
+                                                            fontWeight: 600,
+                                                            color:
+                                                              colors.text
+                                                                .primary,
+                                                            whiteSpace:
+                                                              "nowrap",
+                                                          }}
+                                                        >
+                                                          Total number of
+                                                          students for Class{" "}
+                                                          {classNum}:
+                                                        </Typography>
+                                                        <Box
+                                                          sx={{
+                                                            px: 2,
+                                                            py: 1,
+                                                            // bgcolor:
+                                                            //   colors.primary.lightest,
+                                                          }}
+                                                        >
+                                                          <Typography
+                                                            variant="body2"
+                                                            sx={{
+                                                              fontWeight: 700,
+                                                              color:
+                                                                colors.primary
+                                                                  .blue,
+                                                            }}
+                                                          >
+                                                            {totalStudents}
+                                                          </Typography>
+                                                        </Box>
+                                                      </Box>
+
+                                                      {/* Obtained Marks Field */}
+                                                      <Box
+                                                        sx={{
+                                                          display: "flex",
+                                                          alignItems: "center",
+                                                          gap: 1.5,
+                                                          flex: "1 1 250px",
+                                                        }}
+                                                      >
+                                                        <Typography
+                                                          variant="body2"
+                                                          sx={{
+                                                            fontWeight: 600,
+                                                            color:
+                                                              colors.text
+                                                                .primary,
+                                                            whiteSpace:
+                                                              "nowrap",
+                                                          }}
+                                                        >
+                                                          Obtained marks:
+                                                        </Typography>
+                                                        <TextField
+                                                          size="small"
+                                                          type="number"
+                                                          disabled={
+                                                            !isPublished ||
+                                                            isReadOnly
+                                                          }
+                                                          value={
+                                                            classData.obtainedMarks ||
+                                                            ""
+                                                          }
+                                                          onChange={(e) => {
+                                                            const value =
+                                                              e.target.value;
+                                                            // Validate: only positive numbers and <= max marks
+                                                            if (
+                                                              value === "" ||
+                                                              (Number(value) >=
+                                                                0 &&
+                                                                Number(value) <=
+                                                                  maxMarks)
+                                                            ) {
+                                                              const newData = {
+                                                                ...flnData,
+                                                                [classNum]: {
+                                                                  obtainedMarks:
+                                                                    value,
+                                                                  answerId:
+                                                                    classData.answerId ||
+                                                                    null, // Preserve answerId
+                                                                },
+                                                              };
+                                                              handleTextAnswerChange(
+                                                                question.questionId,
+                                                                JSON.stringify(
+                                                                  newData,
+                                                                ),
+                                                              );
+                                                            }
+                                                          }}
+                                                          onKeyDown={(e) => {
+                                                            // Prevent minus sign, plus sign, and 'e'
+                                                            if (
+                                                              e.key === "-" ||
+                                                              e.key === "+" ||
+                                                              e.key === "e" ||
+                                                              e.key === "E"
+                                                            ) {
+                                                              e.preventDefault();
+                                                            }
+                                                          }}
+                                                          placeholder="Enter marks"
+                                                          inputProps={{
+                                                            min: 0,
+                                                            max: maxMarks,
+                                                          }}
+                                                          error={
+                                                            classData.obtainedMarks &&
+                                                            Number(
+                                                              classData.obtainedMarks,
+                                                            ) > maxMarks
+                                                          }
+                                                          sx={{
+                                                            width: "150px",
+                                                            "& .MuiOutlinedInput-root":
+                                                              {
+                                                                borderRadius: 0.5,
+                                                                bgcolor:
+                                                                  "white",
+                                                              },
+                                                          }}
+                                                        />
+                                                        <Typography
+                                                          variant="body2"
+                                                          sx={{
+                                                            fontWeight: 600,
+                                                            color:
+                                                              colors.semantic
+                                                                .warning,
+                                                            whiteSpace:
+                                                              "nowrap",
+                                                          }}
+                                                        >
+                                                          Max: {maxMarks}
+                                                        </Typography>
+                                                      </Box>
+                                                    </Box>
+                                                  );
+                                                })}
                                               </Box>
-                                            </Box>
-                                          );
-                                        })}
-                                      </Box>
-                                    </CardContent>
+                                            </CardContent>
+                                          )}
+                                        </Card>
+                                      );
+                                    },
                                   )}
-                                </Card>
-                              );
-                            })}
-                          </Box>
-                        )}
-                      </Box>
+                                </Box>
+                              )}
+                            </Box>
                           )}
 
                           {/* General Questions Section */}
                           {currentTab.id === "general" && (
-                      <Box sx={{ mb: 4 }}>
-                        {/* Section Header */}
-                        <Box
-                          sx={{
-                            mb: 3,
-                            pb: 2,
-                            borderBottom: `2px solid ${colors.neutral.gray200}`,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1.5,
-                              mb: 1,
-                            }}
-                          >
-                            <Assignment
-                              sx={{ fontSize: 24, color: colors.accent.green }}
-                            />
-                            <Typography
-                              variant="h6"
-                              sx={{
-                                fontWeight: 700,
-                                color: colors.text.primary,
-                              }}
-                            >
-                              General Questions
-                            </Typography>
-                          </Box>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: colors.text.secondary,
-                              fontSize: "0.875rem",
-                            }}
-                          >
-                            General assessment questions that don't require
-                            classroom observation
-                          </Typography>
-                        </Box>
-
-                        {/* General Questions List */}
-                        {isLoadingQuestions ? (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                              minHeight: "200px",
-                            }}
-                          >
-                            <CircularProgress />
-                          </Box>
-                        ) : isErrorQuestions ? (
-                          <Alert severity="error">
-                            {isErrorQuestions?.message ||
-                              "Failed to load questions"}
-                          </Alert>
-                        ) : (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 2.5,
-                            }}
-                          >
-                            {currentTab.questions.map((question, index) => {
-                              const options = parseOptions(question.options);
-                              const userSelectedAnswer =
-                                answers[question.questionId];
-                              const apiSelectedAnswer =
-                                question.selectedOptionId
-                                  ? String(question.selectedOptionId)
-                                  : null;
-                              const selectedAnswer =
-                                userSelectedAnswer || apiSelectedAnswer;
-                              const isExpanded =
-                                expandedQuestions[question.questionId] ?? true;
-                              const questionProgress = selectedAnswer ? 100 : 0;
-                              const questionNumber = `${domainNumber}.${subdomainNumber}.${
-                                index + 1
-                              }`;
-
-                              return (
-                                <Card
-                                  key={question.questionId}
+                            <Box sx={{ mb: 4 }}>
+                              {/* Section Header */}
+                              <Box
+                                sx={{
+                                  mb: 3,
+                                  pb: 2,
+                                  borderBottom: `2px solid ${colors.neutral.gray200}`,
+                                }}
+                              >
+                                <Box
                                   sx={{
-                                    borderRadius: 2,
-                                    border: "1px solid",
-                                    borderColor: colors.neutral.gray200,
-                                    transition: "all 0.2s ease",
-                                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                                    overflow: "hidden",
-                                    "&:hover": {
-                                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                                    },
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1.5,
+                                    mb: 1,
                                   }}
                                 >
-                                  {/* Question Header - Always Visible */}
-                                  <Box
-                                    onClick={() =>
-                                      toggleQuestionExpansion(
-                                        question.questionId,
-                                      )
-                                    }
+                                  <Assignment
                                     sx={{
-                                      p: 2.5,
-                                      cursor: "pointer",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 2,
-                                      bgcolor: colors.background.primary,
-                                      borderBottom: isExpanded
-                                        ? `1px solid ${colors.neutral.gray200}`
-                                        : "none",
-                                      "&:hover": {
-                                        bgcolor: colors.background.secondary,
-                                      },
+                                      fontSize: 24,
+                                      color: colors.accent.green,
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="h6"
+                                    sx={{
+                                      fontWeight: 700,
+                                      color: colors.text.primary,
                                     }}
                                   >
-                                    <Chip
-                                      label={`Q ${questionNumber}`}
-                                      size="small"
-                                      sx={{
-                                        bgcolor: colors.accent.greenDark,
-                                        color: "white",
-                                        fontWeight: 700,
-                                        minWidth: "80px",
-                                        height: "28px",
-                                        fontSize: "0.75rem",
-                                      }}
-                                    />
-                                    <Box sx={{ flex: 1 }}>
-                                      <Typography
-                                        variant="body2"
-                                        sx={{
-                                          fontWeight: 500,
-                                          fontSize: "0.875rem",
-                                          color: colors.text.primary,
-                                          lineHeight: 1.5,
-                                        }}
-                                      >
-                                        {getQuestionText(question)}
-                                      </Typography>
-                                    </Box>
-                                    <Box
-                                      sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 2,
-                                      }}
-                                    >
-                                      <IconButton
-                                        size="small"
-                                        sx={{
-                                          color: colors.text.secondary,
-                                        }}
-                                      >
-                                        {isExpanded ? (
-                                          <ExpandLess />
-                                        ) : (
-                                          <ExpandMore />
-                                        )}
-                                      </IconButton>
-                                    </Box>
-                                  </Box>
+                                    General Questions
+                                  </Typography>
+                                </Box>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    color: colors.text.secondary,
+                                    fontSize: "0.875rem",
+                                  }}
+                                >
+                                  General assessment questions that don't
+                                  require classroom observation
+                                </Typography>
+                              </Box>
 
-                                  {/* Question Content - Expandable */}
-                                  {isExpanded && (
-                                    <CardContent sx={{ p: 3, pt: 2.5 }}>
-                                      {options && options.length > 0 && (
-                                        <FormControl
-                                          component="fieldset"
-                                          fullWidth
-                                          sx={{ mb: 3 }}
+                              {/* General Questions List */}
+                              {isLoadingQuestions ? (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    minHeight: "200px",
+                                  }}
+                                >
+                                  <CircularProgress />
+                                </Box>
+                              ) : isErrorQuestions ? (
+                                <Alert severity="error">
+                                  {isErrorQuestions?.message ||
+                                    "Failed to load questions"}
+                                </Alert>
+                              ) : (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 2.5,
+                                  }}
+                                >
+                                  {currentTab.questions.map(
+                                    (question, index) => {
+                                      const options = parseOptions(
+                                        question.options,
+                                      );
+                                      const userSelectedAnswer =
+                                        answers[question.questionId];
+                                      const apiSelectedAnswer =
+                                        question.selectedOptionId
+                                          ? String(question.selectedOptionId)
+                                          : null;
+                                      const selectedAnswer =
+                                        userSelectedAnswer || apiSelectedAnswer;
+                                      const isExpanded =
+                                        expandedQuestions[
+                                          question.questionId
+                                        ] ?? true;
+                                      const questionProgress = selectedAnswer
+                                        ? 100
+                                        : 0;
+                                      const questionNumber = `${domainNumber}.${subdomainNumber}.${
+                                        index + 1
+                                      }`;
+
+                                      return (
+                                        <Card
+                                          key={question.questionId}
+                                          sx={{
+                                            borderRadius: 2,
+                                            border: "1px solid",
+                                            borderColor: colors.neutral.gray200,
+                                            transition: "all 0.2s ease",
+                                            boxShadow:
+                                              "0 2px 8px rgba(0,0,0,0.08)",
+                                            overflow: "hidden",
+                                            "&:hover": {
+                                              boxShadow:
+                                                "0 4px 12px rgba(0,0,0,0.1)",
+                                            },
+                                          }}
                                         >
-                                          <RadioGroup
-                                            value={selectedAnswer || ""}
-                                            onChange={(e) =>
-                                              handleAnswerChange(
+                                          {/* Question Header - Always Visible */}
+                                          <Box
+                                            onClick={() =>
+                                              toggleQuestionExpansion(
                                                 question.questionId,
-                                                e.target.value,
                                               )
                                             }
+                                            sx={{
+                                              p: 2.5,
+                                              cursor: "pointer",
+                                              display: "flex",
+                                              alignItems: "center",
+                                              gap: 2,
+                                              bgcolor:
+                                                colors.background.primary,
+                                              borderBottom: isExpanded
+                                                ? `1px solid ${colors.neutral.gray200}`
+                                                : "none",
+                                              "&:hover": {
+                                                bgcolor:
+                                                  colors.background.secondary,
+                                              },
+                                            }}
                                           >
-                                            {options.map((option, optIndex) => (
-                                              <FormControlLabel
-                                                key={
-                                                  option.optionId || optIndex
-                                                }
-                                                value={String(option.optionId)}
-                                                control={
-                                                  <Radio
-                                                    disabled={
-                                                      !isPublished ||
-                                                      isSubmitted
-                                                    }
-                                                    sx={{
-                                                      color:
-                                                        colors.primary.blue,
-                                                      "&.Mui-checked": {
-                                                        color:
-                                                          colors.primary.blue,
-                                                      },
-                                                    }}
-                                                  />
-                                                }
-                                                label={
-                                                  <Typography variant="body2">
-                                                    {getOptionText(option)}
-                                                  </Typography>
-                                                }
+                                            <Chip
+                                              label={`Q ${questionNumber}`}
+                                              size="small"
+                                              sx={{
+                                                bgcolor:
+                                                  colors.accent.greenDark,
+                                                color: "white",
+                                                fontWeight: 700,
+                                                minWidth: "80px",
+                                                height: "28px",
+                                                fontSize: "0.75rem",
+                                              }}
+                                            />
+                                            <Box sx={{ flex: 1 }}>
+                                              <Typography
+                                                variant="body2"
                                                 sx={{
-                                                  mb: 1.5,
-                                                  p: 2,
-                                                  borderRadius: 2,
-                                                  bgcolor:
-                                                    selectedAnswer ===
-                                                    String(option.optionId)
-                                                      ? colors.primary.lightest
-                                                      : "transparent",
-                                                  border: "1.5px solid",
-                                                  borderColor:
-                                                    selectedAnswer ===
-                                                    String(option.optionId)
-                                                      ? colors.primary.blue
-                                                      : colors.neutral.gray200,
-                                                  transition: "all 0.2s ease",
-                                                  "&:hover": {
-                                                    bgcolor:
-                                                      colors.primary.lightest +
-                                                      "80",
-                                                    borderColor:
-                                                      colors.primary.blue,
-                                                  },
+                                                  fontWeight: 500,
+                                                  fontSize: "0.875rem",
+                                                  color: colors.text.primary,
+                                                  lineHeight: 1.5,
                                                 }}
-                                              />
-                                            ))}
-                                          </RadioGroup>
-                                        </FormControl>
-                                      )}
-                                    </CardContent>
+                                              >
+                                                {getQuestionText(question)}
+                                              </Typography>
+                                            </Box>
+                                            <Box
+                                              sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 2,
+                                              }}
+                                            >
+                                              <IconButton
+                                                size="small"
+                                                sx={{
+                                                  color: colors.text.secondary,
+                                                }}
+                                              >
+                                                {isExpanded ? (
+                                                  <ExpandLess />
+                                                ) : (
+                                                  <ExpandMore />
+                                                )}
+                                              </IconButton>
+                                            </Box>
+                                          </Box>
+
+                                          {/* Question Content - Expandable */}
+                                          {isExpanded && (
+                                            <CardContent sx={{ p: 3, pt: 2.5 }}>
+                                              {options &&
+                                                options.length > 0 && (
+                                                  <FormControl
+                                                    component="fieldset"
+                                                    fullWidth
+                                                    sx={{ mb: 3 }}
+                                                  >
+                                                    <RadioGroup
+                                                      value={
+                                                        selectedAnswer || ""
+                                                      }
+                                                      onChange={(e) =>
+                                                        handleAnswerChange(
+                                                          question.questionId,
+                                                          e.target.value,
+                                                        )
+                                                      }
+                                                    >
+                                                      {options.map(
+                                                        (option, optIndex) => (
+                                                          <FormControlLabel
+                                                            key={
+                                                              option.optionId ||
+                                                              optIndex
+                                                            }
+                                                            value={String(
+                                                              option.optionId,
+                                                            )}
+                                                            control={
+                                                              <Radio
+                                                                disabled={
+                                                                  !isPublished ||
+                                                                  isSubmitted
+                                                                }
+                                                                sx={{
+                                                                  color:
+                                                                    colors
+                                                                      .primary
+                                                                      .blue,
+                                                                  "&.Mui-checked":
+                                                                    {
+                                                                      color:
+                                                                        colors
+                                                                          .primary
+                                                                          .blue,
+                                                                    },
+                                                                }}
+                                                              />
+                                                            }
+                                                            label={
+                                                              <Typography variant="body2">
+                                                                {getOptionText(
+                                                                  option,
+                                                                )}
+                                                              </Typography>
+                                                            }
+                                                            sx={{
+                                                              mb: 1.5,
+                                                              p: 2,
+                                                              borderRadius: 2,
+                                                              bgcolor:
+                                                                selectedAnswer ===
+                                                                String(
+                                                                  option.optionId,
+                                                                )
+                                                                  ? colors
+                                                                      .primary
+                                                                      .lightest
+                                                                  : "transparent",
+                                                              border:
+                                                                "1.5px solid",
+                                                              borderColor:
+                                                                selectedAnswer ===
+                                                                String(
+                                                                  option.optionId,
+                                                                )
+                                                                  ? colors
+                                                                      .primary
+                                                                      .blue
+                                                                  : colors
+                                                                      .neutral
+                                                                      .gray200,
+                                                              transition:
+                                                                "all 0.2s ease",
+                                                              "&:hover": {
+                                                                bgcolor:
+                                                                  colors.primary
+                                                                    .lightest +
+                                                                  "80",
+                                                                borderColor:
+                                                                  colors.primary
+                                                                    .blue,
+                                                              },
+                                                            }}
+                                                          />
+                                                        ),
+                                                      )}
+                                                    </RadioGroup>
+                                                  </FormControl>
+                                                )}
+                                            </CardContent>
+                                          )}
+                                        </Card>
+                                      );
+                                    },
                                   )}
-                                </Card>
-                              );
-                            })}
-                          </Box>
-                        )}
-                      </Box>
+                                </Box>
+                              )}
+                            </Box>
                           )}
                         </Box>
                       )}
@@ -4373,13 +4568,44 @@ const SelfAssessment = () => {
                         <Button
                           variant="contained"
                           onClick={handleSubmit}
-                          disabled={
-                            submitSubdomainWiseAnswersMutation.isPending ||
-                            (Object.keys(answers).length === 0 &&
-                              Object.keys(textAnswers).length === 0) ||
-                            (classBasedQuestions.length > 0 &&
-                              (!selectedClass || !selectedSection))
-                          }
+                          disabled={(() => {
+                            // Check if mutation is pending
+                            if (submitSubdomainWiseAnswersMutation.isPending) {
+                              return true;
+                            }
+                            
+                            // Check if there are any answers
+                            const hasAnswers =
+                              (answers && Object.keys(answers).length > 0) ||
+                              (textAnswers && Object.keys(textAnswers).length > 0);
+                            
+                            if (!hasAnswers) {
+                              return true; // Disable if no answers
+                            }
+                            
+                            // Check if user has answered any class-based questions (type 2 or 3)
+                            const hasAnsweredClassBasedQuestions = classBasedQuestions.some(
+                              (q) => answers[q.questionId] || textAnswers[q.questionId]
+                            );
+                            
+                            // Check if user has answered any subject observation questions (type 3)
+                            const hasAnsweredSubjectQuestions = subjectObservationQuestions.some(
+                              (q) => answers[q.questionId] || textAnswers[q.questionId]
+                            );
+                            
+                            // Only require class/section if user has answered class-based questions
+                            if (hasAnsweredClassBasedQuestions) {
+                              if (!selectedClass || !selectedSection) {
+                                return true; // Disable button
+                              }
+                              // If answered subject questions, also require subject selection
+                              if (hasAnsweredSubjectQuestions && !selectedSubject) {
+                                return true; // Disable button
+                              }
+                            }
+                            
+                            return false; // Enable button
+                          })()}
                           sx={{
                             bgcolor: colors.accent.green,
                             "&:hover": { bgcolor: colors.accent.greenDark },
@@ -4457,7 +4683,9 @@ const SelfAssessment = () => {
                               sx={{ fontSize: "0.875rem" }}
                             >
                               Assessment of{" "}
-                              {(getDomainName(selectedDomain) || '').toLowerCase()}
+                              {(
+                                getDomainName(selectedDomain) || ""
+                              ).toLowerCase()}
                             </Typography>
                           </Box>
 

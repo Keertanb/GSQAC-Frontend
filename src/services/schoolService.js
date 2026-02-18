@@ -34,6 +34,9 @@ export const useGetSubdomainQuestionsQuery = ({
   userId,
   enabled = true,
 }) => {
+  // Get userId from auth store if not provided
+  const userIdToUse = userId || useAuthStore.getState().userId;
+  
   return useQuery({
     queryKey: queryKeys.admin.subdomainQuestions(
       subDomainId,
@@ -41,7 +44,8 @@ export const useGetSubdomainQuestionsQuery = ({
       languageCode,
       classNumber,
       section,
-      subjectId
+      subjectId,
+      userIdToUse // Include userId in query key
     ),
     queryFn: () =>
       getSubdomainQuestions({
@@ -51,10 +55,12 @@ export const useGetSubdomainQuestionsQuery = ({
         cls: classNumber,
         section,
         subjectId,
-        userId,
+        userId: userIdToUse,
       }),
     enabled: enabled && !!subDomainId && !!roleId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0, // Always consider data stale to refetch on mount
+    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 };
 
@@ -69,13 +75,19 @@ export const useGetSubdomainQuestionsQuery = ({
 export const useGetDomainsQuery = ({
   roleId,
   languageCode,
+  userId,
   enabled = true,
 }) => {
+  // Get userId from auth store if not provided
+  const userIdToUse = userId || useAuthStore.getState().userId;
+  
   return useQuery({
-    queryKey: queryKeys.school.domains(roleId, languageCode),
+    queryKey: queryKeys.school.domains(roleId, languageCode, userIdToUse),
     queryFn: () => getDomains({ roleId, languageCode }),
     enabled: enabled && !!roleId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0, // Always consider data stale to refetch on mount
+    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 };
 

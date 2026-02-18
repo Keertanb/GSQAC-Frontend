@@ -209,7 +209,15 @@ const AssessmentManagement = () => {
 
 
   const upsertDomainMutation = useUpsertDomainMutation({
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Show success message - check if it's an edit by checking if domainId exists in payload
+      const isEdit = variables?.domainId !== undefined;
+      enqueueSnackbar(
+        isEdit
+          ? (data?.message || "Domain updated successfully")
+          : (data?.message || "Domain added successfully"),
+        { variant: "success" }
+      );
       // Refetch domains
       refetchDomains();
       setNewDomainName({ en: "", hi: "", gu: "" });
@@ -248,13 +256,23 @@ const AssessmentManagement = () => {
   });
 
   const publishAssessmentMutation = usePublishAssessmentMutation({
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Check if it was a publish or unpublish based on isPublished value
+      const isPublish = variables?.isPublished === 1;
+      enqueueSnackbar(
+        isPublish
+          ? (data?.message || "Assessment published successfully")
+          : (data?.message || "Assessment unpublished successfully"),
+        { variant: "success" }
+      );
       refetchAssessmentRoleAssignments();
     },
   });
 
   const updateAssessmentMutation = useUpdateAssessmentMutation({
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Only show generic message here if not called from add/edit modal
+      // The add/edit modal will show its own specific message
       refetchAssessments();
     },
   });
@@ -277,6 +295,8 @@ const AssessmentManagement = () => {
 
   const handleCloseSettingsModal = () => {
     setSettingsModalOpen(false);
+    // Reset roleAssignments to initial values
+    setRoleAssignments(initialRoleAssignments);
     refetchAssessmentRoleAssignments(); // Refetch to discard any unsaved changes
   };
 
@@ -291,7 +311,10 @@ const AssessmentManagement = () => {
   };
 
   const updateAssessmentRoleAssignmentMutation = useUpdateAssessmentRoleAssignmentMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      enqueueSnackbar(data?.message || "Role assignment updated successfully", {
+        variant: "success",
+      });
       refetchAssessmentRoleAssignments();
     },
   });
@@ -335,10 +358,14 @@ const AssessmentManagement = () => {
       return;
     }
 
+    // Toggle publish/unpublish: if currently published (1), unpublish (0), otherwise publish (1)
+    const currentIsPublished = assignment.isPublished === 1;
+    const newIsPublished = currentIsPublished ? 0 : 1;
+
     const payload = {
       roleId: roleId,
       assessmentId: assignment.assessmentId,
-      isPublished: 1, // or toggle logic
+      isPublished: newIsPublished,
     };
     publishAssessmentMutation.mutate(payload);
   };
@@ -1049,7 +1076,17 @@ const AssessmentManagement = () => {
       {/* Add/Edit Assessment Modal */}
       <Dialog
         open={addAssessmentModalOpen}
-        onClose={() => setAddAssessmentModalOpen(false)}
+        onClose={() => {
+          setAddAssessmentModalOpen(false);
+          // Reset form data when modal closes
+          setNewAssessment({
+            schoolType: "1",
+            assessmentEn: "",
+            assessmentHi: "",
+            assessmentGu: "",
+          });
+          setEditingAssessment(null);
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -1073,11 +1110,27 @@ const AssessmentManagement = () => {
             </FormControl>
             <TextField
               size="small"
+              label="Assessment Name (Gujarati)"
+              value={newAssessment.assessmentGu}
+              onChange={(e) =>
+                setNewAssessment((prev) => ({ ...prev, assessmentGu: e.target.value }))
+              }
+              required
+              InputLabelProps={{
+                required: true,
+              }}
+            />
+            <TextField
+              size="small"
               label="Assessment Name (English)"
               value={newAssessment.assessmentEn}
               onChange={(e) =>
                 setNewAssessment((prev) => ({ ...prev, assessmentEn: e.target.value }))
               }
+              required
+              InputLabelProps={{
+                required: true,
+              }}
             />
             <TextField
               size="small"
@@ -1087,24 +1140,26 @@ const AssessmentManagement = () => {
                 setNewAssessment((prev) => ({ ...prev, assessmentHi: e.target.value }))
               }
             />
-            <TextField
-              size="small"
-              label="Assessment Name (Gujarati)"
-              value={newAssessment.assessmentGu}
-              onChange={(e) =>
-                setNewAssessment((prev) => ({ ...prev, assessmentGu: e.target.value }))
-              }
-            />
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setAddAssessmentModalOpen(false)}>Cancel</Button>
+          <Button onClick={() => {
+            setAddAssessmentModalOpen(false);
+            // Reset form data when modal closes
+            setNewAssessment({
+              schoolType: "1",
+              assessmentEn: "",
+              assessmentHi: "",
+              assessmentGu: "",
+            });
+            setEditingAssessment(null);
+          }}>Cancel</Button>
           <Button
             variant="contained"
-            disabled={updateAssessmentMutation.isPending || !newAssessment.assessmentEn || !newAssessment.assessmentHi || !newAssessment.assessmentGu}
+            disabled={updateAssessmentMutation.isPending || !newAssessment.assessmentEn || !newAssessment.assessmentGu}
             onClick={() => {
-              if (!newAssessment.assessmentEn || !newAssessment.assessmentHi || !newAssessment.assessmentGu) {
-                enqueueSnackbar("Please fill in all language fields", { variant: "warning" });
+              if (!newAssessment.assessmentEn || !newAssessment.assessmentGu) {
+                enqueueSnackbar("Please fill in Gujarati and English fields (required)", { variant: "warning" });
                 return;
               }
               const payload = {
@@ -1115,7 +1170,15 @@ const AssessmentManagement = () => {
                 assessmentGu: newAssessment.assessmentGu,
               };
               updateAssessmentMutation.mutate(payload, {
-                onSuccess: () => {
+                onSuccess: (data) => {
+                  // Show success message - check if it's an edit by checking if assessmentId exists
+                  const isEdit = !!editingAssessment;
+                  enqueueSnackbar(
+                    isEdit
+                      ? (data?.message || "Assessment updated successfully")
+                      : (data?.message || "Assessment added successfully"),
+                    { variant: "success" }
+                  );
                   setAddAssessmentModalOpen(false);
                   setNewAssessment({
                     schoolType: "1",
@@ -1240,9 +1303,9 @@ const AssessmentManagement = () => {
                             variant="outlined"
                             size="small"
                             onClick={() => handlePublishRoleAssignment(role.roleId)}
-                            disabled={roleAssignments[role.roleId]?.isPublished === 1 || publishAssessmentMutation.isPending}
+                            disabled={!roleAssignments[role.roleId]?.assessmentId || publishAssessmentMutation.isPending}
                           >
-                            {roleAssignments[role.roleId]?.isPublished === 1 ? "Published" : "Publish"}
+                            {roleAssignments[role.roleId]?.isPublished === 1 ? "Unpublish" : "Publish"}
                           </Button>
                         </Box>
                       </TableCell>
