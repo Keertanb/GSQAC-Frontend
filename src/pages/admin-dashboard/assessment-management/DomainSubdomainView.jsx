@@ -78,7 +78,15 @@ const DomainSubdomainView = ({
   const [translationId, setTranslationId] = useState(null);
 
   const upsertSubdomainMutation = useUpsertSubdomainMutation({
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Show success message - check if it's an edit by checking if subDomainId exists in payload
+      const isEdit = variables?.subDomainId !== undefined;
+      enqueueSnackbar(
+        isEdit
+          ? (data?.message || "Subdomain updated successfully")
+          : (data?.message || "Subdomain added successfully"),
+        { variant: "success" }
+      );
       setNewSubdomainName({ en: "", hi: "", gu: "" });
       setShowAddSubdomain(false);
       setEditingSubdomain(null);
@@ -389,7 +397,7 @@ const DomainSubdomainView = ({
                 disabled={upsertSubdomainMutation.isPending}
                 sx={{ bgcolor: colors.primary.blue }}
               >
-                {editingSubdomain ? t("common.save") : t("common.add")}
+                {editingSubdomain ? "Save Subdomain" : "Add Subdomain"}
               </Button>
               <Button
                 variant="outlined"

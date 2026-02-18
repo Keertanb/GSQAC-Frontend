@@ -73,7 +73,7 @@ const QuestionsView = ({
 
   // Local language state for QuestionsView (independent of parent)
   const [selectedLanguage, setSelectedLanguage] = useState(
-    currentLanguage || "en"
+    currentLanguage || "en",
   );
   const [hasLanguageChanged, setHasLanguageChanged] = useState(false); // Track if language has been changed by user
   const languageCode = languageCodeMap[selectedLanguage] || "EN";
@@ -126,7 +126,7 @@ const QuestionsView = ({
   };
 
   const [selectedQuestionRole, setSelectedQuestionRole] = useState(
-    getRoleByRoleId(roleId)
+    getRoleByRoleId(roleId),
   );
 
   // Fetch questions - only send languageCode when user has changed the language
@@ -242,24 +242,25 @@ const QuestionsView = ({
   // Validation function to check for duplicate options
   const validateOptions = (options) => {
     const errors = { en: "", hi: "", gu: "" };
-    
+
     // Check for duplicates in each language
     ["en", "hi", "gu"].forEach((lang) => {
       const values = options
         .map((opt) => opt.text[lang]?.trim())
         .filter((val) => val !== "");
-      
+
       // Check for duplicates
       const duplicates = values.filter(
-        (val, index) => values.indexOf(val) !== index
+        (val, index) => values.indexOf(val) !== index,
       );
-      
+
       if (duplicates.length > 0) {
-        const langName = lang === "en" ? "English" : lang === "hi" ? "Hindi" : "Gujarati";
+        const langName =
+          lang === "en" ? "English" : lang === "hi" ? "Hindi" : "Gujarati";
         errors[lang] = `Duplicate ${langName} options are not allowed`;
       }
     });
-    
+
     return errors;
   };
 
@@ -267,11 +268,11 @@ const QuestionsView = ({
     const updatedOptions = newOptions.map((opt) =>
       opt.id === optionId
         ? { ...opt, text: { ...opt.text, [field]: value } }
-        : opt
+        : opt,
     );
-    
+
     setNewOptions(updatedOptions);
-    
+
     // Validate options after change
     const errors = validateOptions(updatedOptions);
     setOptionErrors(errors);
@@ -284,7 +285,7 @@ const QuestionsView = ({
         "Please fill in the question text (English is required)",
         {
           variant: "warning",
-        }
+        },
       );
       return;
     }
@@ -304,9 +305,8 @@ const QuestionsView = ({
       }
 
       // Call question API
-      const questionResponse = await upsertQuestionMutation.mutateAsync(
-        questionPayload
-      );
+      const questionResponse =
+        await upsertQuestionMutation.mutateAsync(questionPayload);
 
       // Extract questionId from response
       let questionId = extractQuestionId(questionResponse);
@@ -335,7 +335,7 @@ const QuestionsView = ({
             : "Question added successfully",
           {
             variant: "success",
-          }
+          },
         );
 
         // Invalidate and refetch questions query
@@ -392,7 +392,7 @@ const QuestionsView = ({
           : "Question added successfully. Now add options.",
         {
           variant: "success",
-        }
+        },
       );
 
       // Scroll to options form after state update
@@ -408,7 +408,7 @@ const QuestionsView = ({
         error?.response?.data?.message || "Failed to save question",
         {
           variant: "error",
-        }
+        },
       );
     }
   };
@@ -425,7 +425,7 @@ const QuestionsView = ({
     // Validate for duplicate options
     const errors = validateOptions(newOptions);
     setOptionErrors(errors);
-    
+
     // Check if there are any validation errors
     if (errors.en || errors.hi || errors.gu) {
       enqueueSnackbar("Please fix duplicate options before saving", {
@@ -471,7 +471,7 @@ const QuestionsView = ({
           : "Options added successfully",
         {
           variant: "success",
-        }
+        },
       );
 
       // Invalidate and refetch questions query
@@ -497,7 +497,7 @@ const QuestionsView = ({
         error?.response?.data?.message || "Failed to save options",
         {
           variant: "error",
-        }
+        },
       );
     }
   };
@@ -633,7 +633,7 @@ const QuestionsView = ({
             };
           }
           return opt;
-        })
+        }),
       );
 
       enqueueSnackbar("Option translated successfully", {
@@ -650,7 +650,7 @@ const QuestionsView = ({
   const handleDeleteQuestionOption = (questionId) => {
     if (
       window.confirm(
-        `Are you sure you want to delete all options for this question?`
+        `Are you sure you want to delete all options for this question?`,
       )
     ) {
       deleteQuestionOptionMutation.mutate(questionId);
@@ -1011,7 +1011,7 @@ const QuestionsView = ({
                               }}
                             >
                               <MenuItem value="single_choice">
-                                Single Choice Question
+                                MCQ Type Question
                               </MenuItem>
                               <MenuItem value="classroom_observation">
                                 Classroom Observation
@@ -1028,7 +1028,7 @@ const QuestionsView = ({
                             <TextField
                               fullWidth
                               label={`${t(
-                                "assessment.question.questionText"
+                                "assessment.question.questionText",
                               )} (Gujarati)`}
                               value={newQuestionText.gu}
                               onChange={(e) =>
@@ -1046,7 +1046,7 @@ const QuestionsView = ({
                             <TextField
                               fullWidth
                               label={`${t(
-                                "assessment.question.questionText"
+                                "assessment.question.questionText",
                               )} (English)`}
                               value={newQuestionText.en}
                               onChange={(e) =>
@@ -1064,7 +1064,7 @@ const QuestionsView = ({
                             <TextField
                               fullWidth
                               label={`${t(
-                                "assessment.question.questionText"
+                                "assessment.question.questionText",
                               )} (Hindi)`}
                               value={newQuestionText.hi}
                               onChange={(e) =>
@@ -1223,7 +1223,9 @@ const QuestionsView = ({
                           </Button>
                         </Box>
                         {/* Validation Errors Display */}
-                        {(optionErrors.en || optionErrors.hi || optionErrors.gu) && (
+                        {(optionErrors.en ||
+                          optionErrors.hi ||
+                          optionErrors.gu) && (
                           <Alert
                             severity="error"
                             sx={{
@@ -1231,7 +1233,10 @@ const QuestionsView = ({
                               borderRadius: 1,
                             }}
                           >
-                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: 600, mb: 0.5 }}
+                            >
                               Validation Errors:
                             </Typography>
                             {optionErrors.en && (
@@ -1311,14 +1316,14 @@ const QuestionsView = ({
                                 <TextField
                                   fullWidth
                                   label={`${t(
-                                    "assessment.question.options"
+                                    "assessment.question.options",
                                   )} (Gujarati)`}
                                   value={option.text.gu}
                                   onChange={(e) =>
                                     handleOptionChange(
                                       option.id,
                                       "gu",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   variant="outlined"
@@ -1332,14 +1337,14 @@ const QuestionsView = ({
                                 <TextField
                                   fullWidth
                                   label={`${t(
-                                    "assessment.question.options"
+                                    "assessment.question.options",
                                   )} (English)`}
                                   value={option.text.en}
                                   onChange={(e) =>
                                     handleOptionChange(
                                       option.id,
                                       "en",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   variant="outlined"
@@ -1353,14 +1358,14 @@ const QuestionsView = ({
                                 <TextField
                                   fullWidth
                                   label={`${t(
-                                    "assessment.question.options"
+                                    "assessment.question.options",
                                   )} (Hindi)`}
                                   value={option.text.hi}
                                   onChange={(e) =>
                                     handleOptionChange(
                                       option.id,
                                       "hi",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   variant="outlined"
@@ -1696,7 +1701,7 @@ const QuestionsView = ({
                         }}
                       >
                         <MenuItem value="single_choice">
-                          Single Choice Question
+                          MCQ Type Question
                         </MenuItem>
                         <MenuItem value="classroom_observation">
                           Classroom Observation
@@ -1711,7 +1716,7 @@ const QuestionsView = ({
                       <TextField
                         fullWidth
                         label={`${t(
-                          "assessment.question.questionText"
+                          "assessment.question.questionText",
                         )} (Gujarati)`}
                         value={newQuestionText.gu}
                         onChange={(e) =>
@@ -1729,7 +1734,7 @@ const QuestionsView = ({
                       <TextField
                         fullWidth
                         label={`${t(
-                          "assessment.question.questionText"
+                          "assessment.question.questionText",
                         )} (English)`}
                         value={newQuestionText.en}
                         onChange={(e) =>
@@ -1747,7 +1752,7 @@ const QuestionsView = ({
                       <TextField
                         fullWidth
                         label={`${t(
-                          "assessment.question.questionText"
+                          "assessment.question.questionText",
                         )} (Hindi)`}
                         value={newQuestionText.hi}
                         onChange={(e) =>
@@ -1867,8 +1872,8 @@ const QuestionsView = ({
                     {questionType === "fln"
                       ? "Add FLN Answer"
                       : editingQuestion
-                      ? t("assessment.question.editOptions")
-                      : t("assessment.question.addOptions")}
+                        ? t("assessment.question.editOptions")
+                        : t("assessment.question.addOptions")}
                   </Typography>
                   <Box sx={{ mb: 2 }}>
                     {questionType === "fln" ? (
@@ -1932,7 +1937,9 @@ const QuestionsView = ({
                           </Button>
                         </Box>
                         {/* Validation Errors Display */}
-                        {(optionErrors.en || optionErrors.hi || optionErrors.gu) && (
+                        {(optionErrors.en ||
+                          optionErrors.hi ||
+                          optionErrors.gu) && (
                           <Alert
                             severity="error"
                             sx={{
@@ -1940,7 +1947,10 @@ const QuestionsView = ({
                               borderRadius: 1,
                             }}
                           >
-                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: 600, mb: 0.5 }}
+                            >
                               Validation Errors:
                             </Typography>
                             {optionErrors.en && (
@@ -2028,14 +2038,14 @@ const QuestionsView = ({
                               <TextField
                                 fullWidth
                                 label={`${t(
-                                  "assessment.question.options"
+                                  "assessment.question.options",
                                 )} (Gujarati)`}
                                 value={option.text.gu}
                                 onChange={(e) =>
                                   handleOptionChange(
                                     option.id,
                                     "gu",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 variant="outlined"
@@ -2049,14 +2059,14 @@ const QuestionsView = ({
                               <TextField
                                 fullWidth
                                 label={`${t(
-                                  "assessment.question.options"
+                                  "assessment.question.options",
                                 )} (English)`}
                                 value={option.text.en}
                                 onChange={(e) =>
                                   handleOptionChange(
                                     option.id,
                                     "en",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 variant="outlined"
@@ -2070,14 +2080,14 @@ const QuestionsView = ({
                               <TextField
                                 fullWidth
                                 label={`${t(
-                                  "assessment.question.options"
+                                  "assessment.question.options",
                                 )} (Hindi)`}
                                 value={option.text.hi}
                                 onChange={(e) =>
                                   handleOptionChange(
                                     option.id,
                                     "hi",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 variant="outlined"
@@ -2145,8 +2155,8 @@ const QuestionsView = ({
                         {upsertQuestionOptionMutation.isPending
                           ? "Saving Options..."
                           : editingQuestion
-                          ? t("assessment.question.updateOptions")
-                          : "Submit Options"}
+                            ? t("assessment.question.updateOptions")
+                            : "Submit Options"}
                       </Button>
                       <Button
                         variant="outlined"
@@ -2155,7 +2165,7 @@ const QuestionsView = ({
                           if (currentQuestionId && !editingQuestion) {
                             enqueueSnackbar(
                               "You discarded the options. The question was saved but has no options. Please edit the question to add options.",
-                              { variant: "warning" }
+                              { variant: "warning" },
                             );
                           }
                           setShowOptionsForm(false);
@@ -2280,7 +2290,7 @@ const QuestionsView = ({
                         }}
                       >
                         <MenuItem value="single_choice">
-                          Single Choice Question
+                          MCQ Type Question
                         </MenuItem>
                         <MenuItem value="classroom_observation">
                           Classroom Observation
@@ -2295,7 +2305,7 @@ const QuestionsView = ({
                       <TextField
                         fullWidth
                         label={`${t(
-                          "assessment.question.questionText"
+                          "assessment.question.questionText",
                         )} (Gujarati)`}
                         value={newQuestionText.gu}
                         onChange={(e) =>
@@ -2313,7 +2323,7 @@ const QuestionsView = ({
                       <TextField
                         fullWidth
                         label={`${t(
-                          "assessment.question.questionText"
+                          "assessment.question.questionText",
                         )} (English)`}
                         value={newQuestionText.en}
                         onChange={(e) =>
@@ -2331,7 +2341,7 @@ const QuestionsView = ({
                       <TextField
                         fullWidth
                         label={`${t(
-                          "assessment.question.questionText"
+                          "assessment.question.questionText",
                         )} (Hindi)`}
                         value={newQuestionText.hi}
                         onChange={(e) =>
@@ -2485,7 +2495,9 @@ const QuestionsView = ({
                       </Button>
                     </Box>
                     {/* Validation Errors Display */}
-                    {(optionErrors.en || optionErrors.hi || optionErrors.gu) && (
+                    {(optionErrors.en ||
+                      optionErrors.hi ||
+                      optionErrors.gu) && (
                       <Alert
                         severity="error"
                         sx={{
@@ -2493,7 +2505,10 @@ const QuestionsView = ({
                           borderRadius: 1,
                         }}
                       >
-                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, mb: 0.5 }}
+                        >
                           Validation Errors:
                         </Typography>
                         {optionErrors.en && (
@@ -2567,14 +2582,14 @@ const QuestionsView = ({
                             <TextField
                               fullWidth
                               label={`${t(
-                                "assessment.question.options"
+                                "assessment.question.options",
                               )} (Gujarati)`}
                               value={option.text.gu}
                               onChange={(e) =>
                                 handleOptionChange(
                                   option.id,
                                   "gu",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               variant="outlined"
@@ -2588,14 +2603,14 @@ const QuestionsView = ({
                             <TextField
                               fullWidth
                               label={`${t(
-                                "assessment.question.options"
+                                "assessment.question.options",
                               )} (English)`}
                               value={option.text.en}
                               onChange={(e) =>
                                 handleOptionChange(
                                   option.id,
                                   "en",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               variant="outlined"
@@ -2608,14 +2623,14 @@ const QuestionsView = ({
                             <TextField
                               fullWidth
                               label={`${t(
-                                "assessment.question.options"
+                                "assessment.question.options",
                               )} (Hindi)`}
                               value={option.text.hi}
                               onChange={(e) =>
                                 handleOptionChange(
                                   option.id,
                                   "hi",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               variant="outlined"
@@ -2626,8 +2641,7 @@ const QuestionsView = ({
                               helperText={optionErrors.hi || ""}
                             />
                           </Box>
-                          {/* Translation Button for Option */}
-                          {option.text.gu.trim() && (
+                          {/* {option.text.gu.trim() && (
                             <Box
                               sx={{
                                 display: "flex",
@@ -2649,7 +2663,7 @@ const QuestionsView = ({
                                 Translate
                               </Button>
                             </Box>
-                          )}
+                          )} */}
                         </Card>
                       ))}
                     </Box>
@@ -2680,8 +2694,8 @@ const QuestionsView = ({
                         {upsertQuestionOptionMutation.isPending
                           ? "Saving Options..."
                           : editingQuestion
-                          ? t("assessment.question.updateOptions")
-                          : "Submit Options"}
+                            ? t("assessment.question.updateOptions")
+                            : "Submit Options"}
                       </Button>
                       <Button
                         variant="outlined"
@@ -2690,7 +2704,7 @@ const QuestionsView = ({
                           if (currentQuestionId && !editingQuestion) {
                             enqueueSnackbar(
                               "You discarded the options. The question was saved but has no options. Please edit the question to add options.",
-                              { variant: "warning" }
+                              { variant: "warning" },
                             );
                           }
                           setShowOptionsForm(false);
