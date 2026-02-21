@@ -45,6 +45,7 @@ import {
   Edit,
   Check,
   Close,
+  CameraAlt,
 } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import DomainSubdomainView from "./DomainSubdomainView";
@@ -157,6 +158,35 @@ const AssessmentManagement = () => {
 
   // View Only Mode
   const [isViewOnlyMode, setIsViewOnlyMode] = useState(false);
+
+  // Capture image from React Native WebView camera
+  const [capturedImage, setCapturedImage] = useState(null);
+
+  // Listen for messages from React Native WebView (IMAGE_CAPTURED with base64 payload)
+  useEffect(() => {
+    const handleMessage = (event) => {
+      try {
+        const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        if (data?.type === "IMAGE_CAPTURED" && data?.payload) {
+          setCapturedImage(data.payload);
+        }
+      } catch (e) {
+        // Ignore non-JSON or unrelated messages
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
+  const openCamera = () => {
+    if (window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(
+        JSON.stringify({ type: "OPEN_CAMERA" })
+      );
+    } else {
+      enqueueSnackbar("Not inside React Native WebView", { variant: "info" });
+    }
+  };
 
   const languageCodeMap = {
     en: "EN",
@@ -677,6 +707,18 @@ const AssessmentManagement = () => {
           >
             Add Assessment
           </Button>
+          <Button
+            variant="outlined"
+            startIcon={<CameraAlt />}
+            onClick={openCamera}
+            sx={{
+              borderColor: colors.primary.blue,
+              color: colors.primary.blue,
+              "&:hover": { borderColor: colors.primary.dark, bgcolor: colors.primary.blue + "10" },
+            }}
+          >
+            Capture
+          </Button>
           <IconButton
             onClick={handleOpenSettingsModal}
             sx={{
@@ -688,6 +730,45 @@ const AssessmentManagement = () => {
           </IconButton>
         </Box>
       </Box>
+
+      {/* Captured image preview (when opened in React Native WebView) */}
+      {capturedImage && (
+        <Box
+          sx={{
+            mb: 3,
+            p: 2,
+            borderRadius: 2,
+            border: `1px solid ${colors.neutral.gray200}`,
+            bgcolor: colors.background.secondary,
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+            Captured Image
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, flexWrap: "wrap" }}>
+            <Box
+              component="img"
+              src={capturedImage}
+              alt="Captured"
+              sx={{
+                maxWidth: 280,
+                maxHeight: 280,
+                objectFit: "contain",
+                borderRadius: 2,
+                border: `1px solid ${colors.neutral.gray300}`,
+              }}
+            />
+            <Button
+              variant="outlined"
+              size="small"
+              color="error"
+              onClick={() => setCapturedImage(null)}
+            >
+              Remove
+            </Button>
+          </Box>
+        </Box>
+      )}
 
       {/* Assessments as Accordions */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
