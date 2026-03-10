@@ -118,42 +118,47 @@ const AssessmentManagement = () => {
     setAddAssessmentModalOpen(true);
   };
 
-  const getRoleName = (roleId, format = 'display') => {
+  const getRoleName = (roleId, format = "display") => {
     const roleMaps = {
       code: {
-        2: 'school',
-        3: 'inspector',
-        4: 'crc',
-        5: 'verifier'
+        2: "school",
+        3: "inspector",
+        4: "crc",
+        5: "verifier",
       },
       display: {
-        2: 'School',
-        3: 'School Verifier',
-        4: 'CRC',
-        5: 'Verifier'
-      }
+        2: "School",
+        3: "School Verifier",
+        4: "CRC",
+        5: "Verifier",
+      },
     };
-    
+
     const roleMap = roleMaps[format] || roleMaps.display;
-    return roleMap[roleId] || (format === 'display' ? `Role ${roleId}` : '');
+    return roleMap[roleId] || (format === "display" ? `Role ${roleId}` : "");
   };
 
   // Settings Modal
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  const [roleAssignments, setRoleAssignments] = useState({ 2: {}, 3: {}, 4: {} });
+  const [roleAssignments, setRoleAssignments] = useState({
+    2: {},
+    3: {},
+    4: {},
+  });
 
   const [deleteDomainModalOpen, setDeleteDomainModalOpen] = useState(false);
   const [domainToDelete, setDomainToDelete] = useState(null);
-  
-  const [deleteAssessmentModalOpen, setDeleteAssessmentModalOpen] = useState(false);
+
+  const [deleteAssessmentModalOpen, setDeleteAssessmentModalOpen] =
+    useState(false);
   const [assessmentToDelete, setAssessmentToDelete] = useState(null);
-  
+
   // Assessment editing state
   const [showEditAssessment, setShowEditAssessment] = useState(false);
   const [tempAssessmentName, setTempAssessmentName] = useState({
-    en: '',
-    hi: '',
-    gu: ''
+    en: "",
+    hi: "",
+    gu: "",
   });
 
   // View Only Mode
@@ -166,7 +171,8 @@ const AssessmentManagement = () => {
   useEffect(() => {
     const handleMessage = (event) => {
       try {
-        const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        const data =
+          typeof event.data === "string" ? JSON.parse(event.data) : event.data;
         if (data?.type === "IMAGE_CAPTURED" && data?.payload) {
           setCapturedImage(data.payload);
         }
@@ -181,7 +187,7 @@ const AssessmentManagement = () => {
   const openCamera = () => {
     if (window.ReactNativeWebView) {
       window.ReactNativeWebView.postMessage(
-        JSON.stringify({ type: "OPEN_CAMERA" })
+        JSON.stringify({ type: "OPEN_CAMERA" }),
       );
     } else {
       enqueueSnackbar("Not inside React Native WebView", { variant: "info" });
@@ -195,9 +201,14 @@ const AssessmentManagement = () => {
   };
   const languageCode = languageCodeMap[currentLanguage] || "EN";
 
-
   // Fetch all domains and then group them by assessmentId
-  const { data: domainsData, isLoading: isLoadingDomains, isError: isErrorDomains, error: domainsError, refetch: refetchDomains } = useGetDomainsQuery({});
+  const {
+    data: domainsData,
+    isLoading: isLoadingDomains,
+    isError: isErrorDomains,
+    error: domainsError,
+    refetch: refetchDomains,
+  } = useGetDomainsQuery({});
 
   const domainsByAssessmentId = useMemo(() => {
     if (!domainsData?.data) return {};
@@ -212,22 +223,35 @@ const AssessmentManagement = () => {
   }, [domainsData]);
 
   // Fetch assessments (no academic year filter)
-  const { data: assessmentsData, isLoading: isLoadingAssessments, isError: isErrorAssessments, error: assessmentsError, refetch: refetchAssessments } = useGetAssessmentsQuery();
+  const {
+    data: assessmentsData,
+    isLoading: isLoadingAssessments,
+    isError: isErrorAssessments,
+    error: assessmentsError,
+    refetch: refetchAssessments,
+  } = useGetAssessmentsQuery();
 
-  const { data: assessmentRoleAssignmentsData, isLoading: isLoadingAssessmentRoleAssignments, refetch: refetchAssessmentRoleAssignments } = useGetAssessmentRoleAssignmentsQuery();
+  const {
+    data: assessmentRoleAssignmentsData,
+    isLoading: isLoadingAssessmentRoleAssignments,
+    refetch: refetchAssessmentRoleAssignments,
+  } = useGetAssessmentRoleAssignmentsQuery();
 
   const initialRoleAssignments = useMemo(() => {
     if (assessmentRoleAssignmentsData?.data) {
-      return assessmentRoleAssignmentsData.data.reduce((acc, assignment) => {
-        acc[assignment.roleId] = {
-          id: assignment.id,
-          assessmentId: assignment.assessmentId,
-          startDate: assignment.startDate,
-          endDate: assignment.endDate,
-          isPublished: assignment.isPublished,
-        };
-        return acc;
-      }, { 2: {}, 3: {}, 4: {} });
+      return assessmentRoleAssignmentsData.data.reduce(
+        (acc, assignment) => {
+          acc[assignment.roleId] = {
+            id: assignment.id,
+            assessmentId: assignment.assessmentId,
+            startDate: assignment.startDate,
+            endDate: assignment.endDate,
+            isPublished: assignment.isPublished,
+          };
+          return acc;
+        },
+        { 2: {}, 3: {}, 4: {} },
+      );
     }
     return { 2: {}, 3: {}, 4: {} };
   }, [assessmentRoleAssignmentsData]);
@@ -236,17 +260,15 @@ const AssessmentManagement = () => {
     setRoleAssignments(initialRoleAssignments);
   }, [initialRoleAssignments]);
 
-
-
   const upsertDomainMutation = useUpsertDomainMutation({
     onSuccess: (data, variables) => {
       // Show success message - check if it's an edit by checking if domainId exists in payload
       const isEdit = variables?.domainId !== undefined;
       enqueueSnackbar(
         isEdit
-          ? (data?.message || "Domain updated successfully")
-          : (data?.message || "Domain added successfully"),
-        { variant: "success" }
+          ? data?.message || "Domain updated successfully"
+          : data?.message || "Domain added successfully",
+        { variant: "success" },
       );
       // Refetch domains
       refetchDomains();
@@ -291,9 +313,9 @@ const AssessmentManagement = () => {
       const isPublish = variables?.isPublished === 1;
       enqueueSnackbar(
         isPublish
-          ? (data?.message || "Assessment published successfully")
-          : (data?.message || "Assessment unpublished successfully"),
-        { variant: "success" }
+          ? data?.message || "Assessment published successfully"
+          : data?.message || "Assessment unpublished successfully",
+        { variant: "success" },
       );
       refetchAssessmentRoleAssignments();
     },
@@ -340,19 +362,25 @@ const AssessmentManagement = () => {
     }));
   };
 
-  const updateAssessmentRoleAssignmentMutation = useUpdateAssessmentRoleAssignmentMutation({
-    onSuccess: (data) => {
-      enqueueSnackbar(data?.message || "Role assignment updated successfully", {
-        variant: "success",
-      });
-      refetchAssessmentRoleAssignments();
-    },
-  });
+  const updateAssessmentRoleAssignmentMutation =
+    useUpdateAssessmentRoleAssignmentMutation({
+      onSuccess: (data) => {
+        enqueueSnackbar(
+          data?.message || "Role assignment updated successfully",
+          {
+            variant: "success",
+          },
+        );
+        refetchAssessmentRoleAssignments();
+      },
+    });
 
   const handleUpdateRoleAssignment = (roleId) => {
     const assignment = roleAssignments[roleId];
     if (!assignment || !assignment.assessmentId) {
-      enqueueSnackbar("Please select an assessment for this role.", { variant: "warning" });
+      enqueueSnackbar("Please select an assessment for this role.", {
+        variant: "warning",
+      });
       return;
     }
 
@@ -384,7 +412,10 @@ const AssessmentManagement = () => {
   const handlePublishRoleAssignment = (roleId) => {
     const assignment = roleAssignments[roleId];
     if (!assignment || !assignment.assessmentId) {
-      enqueueSnackbar("Please select an assessment for this role before publishing.", { variant: "warning" });
+      enqueueSnackbar(
+        "Please select an assessment for this role before publishing.",
+        { variant: "warning" },
+      );
       return;
     }
 
@@ -448,7 +479,7 @@ const AssessmentManagement = () => {
         "Please add domain name in at least 2 languages (Gujarati, English, or Hindi).",
         {
           variant: "warning",
-        }
+        },
       );
       return;
     }
@@ -517,9 +548,12 @@ const AssessmentManagement = () => {
   // };
 
   const getAssessmentName = (assessment) => {
-    const name = languageCode === "EN" ? assessment.assessmentEn
-      : languageCode === "HI" ? assessment.assessmentHi
-      : assessment.assessmentGu;
+    const name =
+      languageCode === "EN"
+        ? assessment.assessmentEn
+        : languageCode === "HI"
+          ? assessment.assessmentHi
+          : assessment.assessmentGu;
     return name || `Assessment ${assessment.assessmentId}`;
   };
 
@@ -527,16 +561,16 @@ const AssessmentManagement = () => {
     if (e) e.stopPropagation();
     setEditingAssessment(assessment);
     setTempAssessmentName({
-      en: assessment.assessmentEn || '',
-      hi: assessment.assessmentHi || '',
-      gu: assessment.assessmentGu || ''
+      en: assessment.assessmentEn || "",
+      hi: assessment.assessmentHi || "",
+      gu: assessment.assessmentGu || "",
     });
     setShowEditAssessment(true);
   };
 
   const saveAssessmentName = async () => {
     if (!editingAssessment) return;
-    
+
     try {
       const payload = {
         assessmentId: editingAssessment.assessmentId,
@@ -544,30 +578,32 @@ const AssessmentManagement = () => {
         schoolType: editingAssessment.schoolType,
         assessmentEn: tempAssessmentName.en,
         assessmentHi: tempAssessmentName.hi,
-        assessmentGu: tempAssessmentName.gu
+        assessmentGu: tempAssessmentName.gu,
       };
-      
+
       await updateAssessmentMutation.mutateAsync(payload);
       setShowEditAssessment(false);
       setEditingAssessment(null);
       refetchAssessments();
-      enqueueSnackbar('Assessment updated successfully', { variant: 'success' });
+      enqueueSnackbar("Assessment updated successfully", {
+        variant: "success",
+      });
     } catch (error) {
-      console.error('Error updating assessment:', error);
-      enqueueSnackbar('Failed to update assessment', { variant: 'error' });
+      console.error("Error updating assessment:", error);
+      enqueueSnackbar("Failed to update assessment", { variant: "error" });
     }
   };
-  
+
   const cancelEditAssessment = () => {
     setShowEditAssessment(false);
     setEditingAssessment(null);
-    setTempAssessmentName({ en: '', hi: '', gu: '' });
+    setTempAssessmentName({ en: "", hi: "", gu: "" });
   };
 
   const handleToggleActive = async (assessment, event) => {
     event.stopPropagation();
     const newIsActive = assessment.isActive ? 0 : 1;
-    
+
     try {
       const payload = {
         assessmentId: assessment.assessmentId,
@@ -577,10 +613,10 @@ const AssessmentManagement = () => {
         schoolType: assessment.schoolType,
         isActive: newIsActive,
       };
-      
+
       await updateAssessmentMutation.mutateAsync(payload);
     } catch (error) {
-      console.error('Error toggling assessment status:', error);
+      console.error("Error toggling assessment status:", error);
     }
   };
 
@@ -707,7 +743,7 @@ const AssessmentManagement = () => {
           >
             Add Assessment
           </Button>
-          <Button
+          {/* <Button
             variant="outlined"
             startIcon={<CameraAlt />}
             onClick={openCamera}
@@ -718,7 +754,7 @@ const AssessmentManagement = () => {
             }}
           >
             Capture
-          </Button>
+          </Button> */}
           <IconButton
             onClick={handleOpenSettingsModal}
             sx={{
@@ -745,7 +781,14 @@ const AssessmentManagement = () => {
           <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
             Captured Image
           </Typography>
-          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, flexWrap: "wrap" }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 2,
+              flexWrap: "wrap",
+            }}
+          >
             <Box
               component="img"
               src={capturedImage}
@@ -778,317 +821,370 @@ const AssessmentManagement = () => {
           </Box>
         ) : assessmentsData?.data && assessmentsData.data.length > 0 ? (
           assessmentsData.data.map((assessment) => {
-              const assessmentDomains = domainsByAssessmentId[assessment.assessmentId] || [];
-              return (
-                <Accordion
-                  key={assessment.assessmentId}
-                  expanded={expandedAssessmentId === assessment.assessmentId}
-                  onChange={() => {
-                    setExpandedAssessmentId((prev) =>
-                      prev === assessment.assessmentId
-                        ? null
-                        : assessment.assessmentId
-                    );
-                    setExpandedDomain(null);
-                  }}
-                  sx={{ borderRadius: 2, overflow: "hidden" }}
-                >
-                  <AccordionSummary expandIcon={<ExpandMore />}>
+            const assessmentDomains =
+              domainsByAssessmentId[assessment.assessmentId] || [];
+            return (
+              <Accordion
+                key={assessment.assessmentId}
+                expanded={expandedAssessmentId === assessment.assessmentId}
+                onChange={() => {
+                  setExpandedAssessmentId((prev) =>
+                    prev === assessment.assessmentId
+                      ? null
+                      : assessment.assessmentId,
+                  );
+                  setExpandedDomain(null);
+                }}
+                sx={{ borderRadius: 2, overflow: "hidden" }}
+              >
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      flexWrap: "wrap",
+                      width: "100%",
+                      justifyContent: "space-between",
+                    }}
+                  >
                     <Box
                       sx={{
                         display: "flex",
-                        alignItems: "center",
                         gap: 1.5,
                         flexWrap: "wrap",
-                        width: "100%",
-                        justifyContent: "space-between",
+                        alignItems: "center",
                       }}
                     >
-                      <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center" }}>
-                        <Typography sx={{ fontWeight: 700 }}>
-                          {getAssessmentName(assessment)}
-                        </Typography>
-                        {assessment.schoolType && (
-                          <Chip
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {getAssessmentName(assessment)}
+                      </Typography>
+                      {assessment.schoolType && (
+                        <Chip
+                          size="small"
+                          label={
+                            assessment.schoolType === 1 ||
+                            assessment.schoolType === "1"
+                              ? "Primary"
+                              : "Secondary"
+                          }
+                          sx={{
+                            bgcolor: colors.accent.purple + "15",
+                            color: colors.accent.purple,
+                            fontWeight: 600,
+                          }}
+                        />
+                      )}
+                      {assessment.roleId && (
+                        <Chip
+                          size="small"
+                          label={getRoleName(assessment.roleId)}
+                          sx={{
+                            bgcolor: colors.primary.blue + "15",
+                            color: colors.primary.blue,
+                            fontWeight: 600,
+                          }}
+                        />
+                      )}
+                    </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mr: 1 }}
+                      >
+                        {assessmentDomains.length} domain(s)
+                      </Typography>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={assessment.isActive === 1}
+                            onChange={(e) => handleToggleActive(assessment, e)}
                             size="small"
-                            label={assessment.schoolType === 1 || assessment.schoolType === "1" ? "Primary" : "Secondary"}
                             sx={{
-                              bgcolor: colors.accent.purple + "15",
-                              color: colors.accent.purple,
-                              fontWeight: 600,
-                            }}
-                          />
-                        )}
-                        {assessment.roleId && (
-                          <Chip
-                            size="small"
-                            label={getRoleName(assessment.roleId)}
-                            sx={{
-                              bgcolor: colors.primary.blue + "15",
-                              color: colors.primary.blue,
-                              fontWeight: 600,
-                            }}
-                          />
-                        )}
-                      </Box>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                          {assessmentDomains.length} domain(s)
-                        </Typography>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={assessment.isActive === 1}
-                              onChange={(e) => handleToggleActive(assessment, e)}
-                              size="small"
-                              sx={{
-                                '& .MuiSwitch-switchBase.Mui-checked': {
-                                  color: colors.accent.green,
-                                },
-                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                              "& .MuiSwitch-switchBase.Mui-checked": {
+                                color: colors.accent.green,
+                              },
+                              "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                                {
                                   backgroundColor: colors.accent.green,
                                 },
-                              }}
-                            />
-                          }
-                          label={assessment.isActive ? "Active" : "Inactive"}
-                          labelPlacement="end"
-                          sx={{ m: 0 }}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startEditingAssessment(assessment, e);
-                          }}
-                          sx={{
-                            color: 'text.secondary',
-                            '&:hover': {
-                              bgcolor: colors.primary.blue + "15",
-                              color: colors.primary.blue,
-                            },
-                          }}
-                        >
-                          <Edit fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={(e) => handleDeleteAssessment(assessment, e)}
-                          sx={{
-                            bgcolor: colors.semantic.error + "15",
-                            "&:hover": {
-                              bgcolor: colors.semantic.error + "25",
-                            },
-                          }}
-                        >
-                          <Delete fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    </Box>
-                  </AccordionSummary>
-                  <AccordionDetails sx={{ bgcolor: "#f9fafb" }}>
-                    <Box sx={{ mb: 2.5 }}>
-                      <Button
-                        variant="outlined"
-                        startIcon={<Add />}
-                        onClick={() => {
-                          setEditingDomain(null);
-                          setNewDomainName({ en: "", hi: "", gu: "" });
-                          setTranslationId(null);
-                          setShowAddDomain(true);
-                          setActiveAssessmentForDomainForm({
-                            assessmentId: assessment.assessmentId,
-                          });
+                            }}
+                          />
+                        }
+                        label={assessment.isActive ? "Active" : "Inactive"}
+                        labelPlacement="end"
+                        sx={{ m: 0 }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEditingAssessment(assessment, e);
+                        }}
+                        sx={{
+                          color: "text.secondary",
+                          "&:hover": {
+                            bgcolor: colors.primary.blue + "15",
+                            color: colors.primary.blue,
+                          },
                         }}
                       >
-                        Add Domain
-                      </Button>
+                        <Edit fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => handleDeleteAssessment(assessment, e)}
+                        sx={{
+                          bgcolor: colors.semantic.error + "15",
+                          "&:hover": {
+                            bgcolor: colors.semantic.error + "25",
+                          },
+                        }}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
                     </Box>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails sx={{ bgcolor: "#f9fafb" }}>
+                  <Box sx={{ mb: 2.5 }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<Add />}
+                      onClick={() => {
+                        setEditingDomain(null);
+                        setNewDomainName({ en: "", hi: "", gu: "" });
+                        setTranslationId(null);
+                        setShowAddDomain(true);
+                        setActiveAssessmentForDomainForm({
+                          assessmentId: assessment.assessmentId,
+                        });
+                      }}
+                    >
+                      Add Domain
+                    </Button>
+                  </Box>
 
-                    {/* Add Domain Form (inside accordion) */}
-                    {showAddDomain &&
-                      activeAssessmentForDomainForm?.assessmentId ===
-                        assessment.assessmentId && (
-                        <Fade in={showAddDomain}>
-                          <Card
-                            elevation={1}
-                            sx={{ p: 2.5, borderRadius: 2, mb: 2.5 }}
+                  {/* Add Domain Form (inside accordion) */}
+                  {showAddDomain &&
+                    activeAssessmentForDomainForm?.assessmentId ===
+                      assessment.assessmentId && (
+                      <Fade in={showAddDomain}>
+                        <Card
+                          elevation={1}
+                          sx={{ p: 2.5, borderRadius: 2, mb: 2.5 }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              mb: 2,
+                            }}
                           >
-                            <Box
-                              sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                mb: 2,
-                              }}
-                            >
-                              <Typography sx={{ fontWeight: 700 }}>
-                                {editingDomain ? "Edit Domain" : "Add Domain"}
-                              </Typography>
-                           
-                            </Box>
-                            <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
-                              <TextField
-                                label="Domain Name (Gujarati)"
-                                value={newDomainName.gu}
-                                onChange={(e) =>
-                                  setNewDomainName({
-                                    ...newDomainName,
-                                    gu: e.target.value,
-                                  })
-                                }
-                                variant="outlined"
-                                size="small"
-                              />
-                              <TextField
-                                label="Domain Name (English)"
-                                value={newDomainName.en}
-                                onChange={(e) =>
-                                  setNewDomainName({
-                                    ...newDomainName,
-                                    en: e.target.value,
-                                  })
-                                }
-                                variant="outlined"
-                                size="small"
-                              />
-                              <TextField
-                                label="Domain Name (Hindi)"
-                                value={newDomainName.hi}
-                                onChange={(e) =>
-                                  setNewDomainName({
-                                    ...newDomainName,
-                                    hi: e.target.value,
-                                  })
-                                }
-                                variant="outlined"
-                                size="small"
-                              />
-                            </Box>
-                            <Box sx={{ display: "flex", gap: 2 }}>
-                              <Button
-                                variant="contained"
-                                onClick={() => handleAddDomain(assessment)}
-                                disabled={upsertDomainMutation.isPending}
-                                sx={{
-                                  bgcolor: colors.primary.blue,
-                                  "&:hover": { bgcolor: colors.primary.dark },
-                                }}
-                              >
-                                Save Domain
-                              </Button>
-                              <Button
-                                variant="outlined"
-                                onClick={() => {
-                                  setShowAddDomain(false);
-                                  setNewDomainName({ en: "", hi: "", gu: "" });
-                                  setEditingDomain(null);
-                                  setTranslationId(null);
-                                  setActiveAssessmentForDomainForm(null);
-                                }}
-                              >
-                                Cancel
-                              </Button>
-                            </Box>
-                          </Card>
-                        </Fade>
-                      )}
-
-                    {/* Domains list for this assessment */}
-                    {isLoadingDomains ? (
-                      <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-                        <CircularProgress size={28} />
-                      </Box>
-                    ) : isErrorDomains ? (
-                      <Alert severity="error">
-                        {domainsError?.message || "Failed to load domains"}
-                      </Alert>
-                    ) : assessmentDomains.length > 0 ? (
-                      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                        {assessmentDomains.map((domain) => (
-                          <Card key={domain.domainId} sx={{ borderRadius: 2 }}>
-                            <Box
-                              onClick={() =>
-                                setExpandedDomain((prev) =>
-                                  prev === domain.domainId ? null : domain.domainId
-                                )
+                            <Typography sx={{ fontWeight: 700 }}>
+                              {editingDomain ? "Edit Domain" : "Add Domain"}
+                            </Typography>
+                          </Box>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              gap: 2,
+                              mb: 2,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <TextField
+                              label="Domain Name (Gujarati)"
+                              value={newDomainName.gu}
+                              onChange={(e) =>
+                                setNewDomainName({
+                                  ...newDomainName,
+                                  gu: e.target.value,
+                                })
                               }
+                              variant="outlined"
+                              size="small"
+                            />
+                            <TextField
+                              label="Domain Name (English)"
+                              value={newDomainName.en}
+                              onChange={(e) =>
+                                setNewDomainName({
+                                  ...newDomainName,
+                                  en: e.target.value,
+                                })
+                              }
+                              variant="outlined"
+                              size="small"
+                            />
+                            <TextField
+                              label="Domain Name (Hindi)"
+                              value={newDomainName.hi}
+                              onChange={(e) =>
+                                setNewDomainName({
+                                  ...newDomainName,
+                                  hi: e.target.value,
+                                })
+                              }
+                              variant="outlined"
+                              size="small"
+                            />
+                          </Box>
+                          <Box sx={{ display: "flex", gap: 2 }}>
+                            <Button
+                              variant="contained"
+                              onClick={() => handleAddDomain(assessment)}
+                              disabled={upsertDomainMutation.isPending}
                               sx={{
-                                p: 2,
-                                cursor: "pointer",
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                "&:hover": { bgcolor: "rgba(0,0,0,0.02)" },
+                                bgcolor: colors.primary.blue,
+                                "&:hover": { bgcolor: colors.primary.dark },
                               }}
                             >
-                              <Typography sx={{ fontWeight: 700 }}>
-                                {getDomainName(domain)}
-                              </Typography>
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <IconButton
-                                  size="small"
-                                  onClick={(e) => handleEditDomain(domain, assessment, e)}
-                                  sx={{ mr: 0.5 }}
-                                >
-                                  <Edit fontSize="small" />
-                                </IconButton>
-                                <IconButton size="small" color="error" onClick={(e) => handleDeleteDomain(domain, e)} sx={{ bgcolor: colors.semantic.error + "15", "&:hover": { bgcolor: colors.semantic.error + "25" } }}>
-                                  <Delete fontSize="small" />
-                                </IconButton>
-                                <IconButton size="small">
-                                  <ExpandMore
-                                    sx={{
-                                      transform:
-                                        expandedDomain === domain.domainId
-                                          ? "rotate(180deg)"
-                                          : "rotate(0deg)",
-                                      transition: "transform 0.2s ease",
-                                    }}
-                                  />
-                                </IconButton>
-                              </Box>
-                            </Box>
-                            {expandedDomain === domain.domainId && (
-                              <Box sx={{ px: 2, pb: 2 }}>
-                                <DomainSubdomainView
-                                  domain={domain}
-                                  languageCode={languageCode}
-                                  roleId={domain.roleId}
-                                  onNavigateToCriteria={(subdomain, viewOnly = false) => {
-                                    setSelectedSubdomain({
-                                      ...subdomain,
-                                      subDomainId: subdomain.subDomainId || subdomain.id,
-                                      roleId: domain.roleId,
-                                    });
-                                    setIsViewOnlyMode(viewOnly);
-                                    setCurrentView("questions");
-                                    setExpandedDomain(null);
-                                  }}
-                                  onSubdomainAdded={() => {
-                                    refetchDomains();
+                              Save Domain
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              onClick={() => {
+                                setShowAddDomain(false);
+                                setNewDomainName({ en: "", hi: "", gu: "" });
+                                setEditingDomain(null);
+                                setTranslationId(null);
+                                setActiveAssessmentForDomainForm(null);
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </Box>
+                        </Card>
+                      </Fade>
+                    )}
+
+                  {/* Domains list for this assessment */}
+                  {isLoadingDomains ? (
+                    <Box
+                      sx={{ display: "flex", justifyContent: "center", py: 4 }}
+                    >
+                      <CircularProgress size={28} />
+                    </Box>
+                  ) : isErrorDomains ? (
+                    <Alert severity="error">
+                      {domainsError?.message || "Failed to load domains"}
+                    </Alert>
+                  ) : assessmentDomains.length > 0 ? (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 1.5,
+                      }}
+                    >
+                      {assessmentDomains.map((domain) => (
+                        <Card key={domain.domainId} sx={{ borderRadius: 2 }}>
+                          <Box
+                            onClick={() =>
+                              setExpandedDomain((prev) =>
+                                prev === domain.domainId
+                                  ? null
+                                  : domain.domainId,
+                              )
+                            }
+                            sx={{
+                              p: 2,
+                              cursor: "pointer",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              "&:hover": { bgcolor: "rgba(0,0,0,0.02)" },
+                            }}
+                          >
+                            <Typography sx={{ fontWeight: 700 }}>
+                              {getDomainName(domain)}
+                            </Typography>
+                            <Box sx={{ display: "flex", alignItems: "center" }}>
+                              <IconButton
+                                size="small"
+                                onClick={(e) =>
+                                  handleEditDomain(domain, assessment, e)
+                                }
+                                sx={{ mr: 0.5 }}
+                              >
+                                <Edit fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={(e) => handleDeleteDomain(domain, e)}
+                                sx={{
+                                  bgcolor: colors.semantic.error + "15",
+                                  "&:hover": {
+                                    bgcolor: colors.semantic.error + "25",
+                                  },
+                                }}
+                              >
+                                <Delete fontSize="small" />
+                              </IconButton>
+                              <IconButton size="small">
+                                <ExpandMore
+                                  sx={{
+                                    transform:
+                                      expandedDomain === domain.domainId
+                                        ? "rotate(180deg)"
+                                        : "rotate(0deg)",
+                                    transition: "transform 0.2s ease",
                                   }}
                                 />
-                              </Box>
-                            )}
-                          </Card>
-                        ))}
-                      </Box>
-                    ) : (
-                      <Card sx={{ p: 3, borderRadius: 2 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          No domains available for this assessment.
-                        </Typography>
-                      </Card>
-                    )}
-                  </AccordionDetails>
-                </Accordion>
-              );
-            })
+                              </IconButton>
+                            </Box>
+                          </Box>
+                          {expandedDomain === domain.domainId && (
+                            <Box sx={{ px: 2, pb: 2 }}>
+                              <DomainSubdomainView
+                                domain={domain}
+                                languageCode={languageCode}
+                                roleId={domain.roleId}
+                                onNavigateToCriteria={(
+                                  subdomain,
+                                  viewOnly = false,
+                                ) => {
+                                  setSelectedSubdomain({
+                                    ...subdomain,
+                                    subDomainId:
+                                      subdomain.subDomainId || subdomain.id,
+                                    roleId: domain.roleId,
+                                  });
+                                  setIsViewOnlyMode(viewOnly);
+                                  setCurrentView("questions");
+                                  setExpandedDomain(null);
+                                }}
+                                onSubdomainAdded={() => {
+                                  refetchDomains();
+                                }}
+                              />
+                            </Box>
+                          )}
+                        </Card>
+                      ))}
+                    </Box>
+                  ) : (
+                    <Card sx={{ p: 3, borderRadius: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No domains available for this assessment.
+                      </Typography>
+                    </Card>
+                  )}
+                </AccordionDetails>
+              </Accordion>
+            );
+          })
         ) : (
-          <Card elevation={2} sx={{ p: 4, textAlign: "center", borderRadius: 3 }}>
+          <Card
+            elevation={2}
+            sx={{ p: 4, textAlign: "center", borderRadius: 3 }}
+          >
             <Typography variant="body1" color="text.secondary">
               No assessments available
             </Typography>
@@ -1105,14 +1201,16 @@ const AssessmentManagement = () => {
       >
         <DialogTitle sx={{ fontWeight: 700 }}>Edit Assessment Name</DialogTitle>
         <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
             <TextField
               label="Assessment Name (English)"
               value={tempAssessmentName.en}
-              onChange={(e) => setTempAssessmentName(prev => ({
-                ...prev,
-                en: e.target.value
-              }))}
+              onChange={(e) =>
+                setTempAssessmentName((prev) => ({
+                  ...prev,
+                  en: e.target.value,
+                }))
+              }
               variant="outlined"
               size="small"
               fullWidth
@@ -1120,10 +1218,12 @@ const AssessmentManagement = () => {
             <TextField
               label="Assessment Name (Hindi)"
               value={tempAssessmentName.hi}
-              onChange={(e) => setTempAssessmentName(prev => ({
-                ...prev,
-                hi: e.target.value
-              }))}
+              onChange={(e) =>
+                setTempAssessmentName((prev) => ({
+                  ...prev,
+                  hi: e.target.value,
+                }))
+              }
               variant="outlined"
               size="small"
               fullWidth
@@ -1131,10 +1231,12 @@ const AssessmentManagement = () => {
             <TextField
               label="Assessment Name (Gujarati)"
               value={tempAssessmentName.gu}
-              onChange={(e) => setTempAssessmentName(prev => ({
-                ...prev,
-                gu: e.target.value
-              }))}
+              onChange={(e) =>
+                setTempAssessmentName((prev) => ({
+                  ...prev,
+                  gu: e.target.value,
+                }))
+              }
               variant="outlined"
               size="small"
               fullWidth
@@ -1143,13 +1245,16 @@ const AssessmentManagement = () => {
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={cancelEditAssessment}>Cancel</Button>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             onClick={saveAssessmentName}
             disabled={updateAssessmentMutation.isPending}
-            sx={{ bgcolor: colors.primary.blue, '&:hover': { bgcolor: colors.primary.dark } }}
+            sx={{
+              bgcolor: colors.primary.blue,
+              "&:hover": { bgcolor: colors.primary.dark },
+            }}
           >
-            {updateAssessmentMutation.isPending ? 'Saving...' : 'Save Changes'}
+            {updateAssessmentMutation.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1172,7 +1277,7 @@ const AssessmentManagement = () => {
         fullWidth
       >
         <DialogTitle sx={{ fontWeight: 700 }}>
-          {editingAssessment ? 'Edit Assessment' : 'Add Assessment'}
+          {editingAssessment ? "Edit Assessment" : "Add Assessment"}
         </DialogTitle>
         <DialogContent sx={{ mt: 1.5 }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -1182,7 +1287,10 @@ const AssessmentManagement = () => {
                 value={newAssessment.schoolType}
                 label="School Type"
                 onChange={(e) =>
-                  setNewAssessment((prev) => ({ ...prev, schoolType: e.target.value }))
+                  setNewAssessment((prev) => ({
+                    ...prev,
+                    schoolType: e.target.value,
+                  }))
                 }
               >
                 <MenuItem value="1">Primary (Class 1 to 8)</MenuItem>
@@ -1194,7 +1302,10 @@ const AssessmentManagement = () => {
               label="Assessment Name (Gujarati)"
               value={newAssessment.assessmentGu}
               onChange={(e) =>
-                setNewAssessment((prev) => ({ ...prev, assessmentGu: e.target.value }))
+                setNewAssessment((prev) => ({
+                  ...prev,
+                  assessmentGu: e.target.value,
+                }))
               }
               required
               InputLabelProps={{
@@ -1206,7 +1317,10 @@ const AssessmentManagement = () => {
               label="Assessment Name (English)"
               value={newAssessment.assessmentEn}
               onChange={(e) =>
-                setNewAssessment((prev) => ({ ...prev, assessmentEn: e.target.value }))
+                setNewAssessment((prev) => ({
+                  ...prev,
+                  assessmentEn: e.target.value,
+                }))
               }
               required
               InputLabelProps={{
@@ -1218,33 +1332,49 @@ const AssessmentManagement = () => {
               label="Assessment Name (Hindi)"
               value={newAssessment.assessmentHi}
               onChange={(e) =>
-                setNewAssessment((prev) => ({ ...prev, assessmentHi: e.target.value }))
+                setNewAssessment((prev) => ({
+                  ...prev,
+                  assessmentHi: e.target.value,
+                }))
               }
             />
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => {
-            setAddAssessmentModalOpen(false);
-            // Reset form data when modal closes
-            setNewAssessment({
-              schoolType: "1",
-              assessmentEn: "",
-              assessmentHi: "",
-              assessmentGu: "",
-            });
-            setEditingAssessment(null);
-          }}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setAddAssessmentModalOpen(false);
+              // Reset form data when modal closes
+              setNewAssessment({
+                schoolType: "1",
+                assessmentEn: "",
+                assessmentHi: "",
+                assessmentGu: "",
+              });
+              setEditingAssessment(null);
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             variant="contained"
-            disabled={updateAssessmentMutation.isPending || !newAssessment.assessmentEn || !newAssessment.assessmentGu}
+            disabled={
+              updateAssessmentMutation.isPending ||
+              !newAssessment.assessmentEn ||
+              !newAssessment.assessmentGu
+            }
             onClick={() => {
               if (!newAssessment.assessmentEn || !newAssessment.assessmentGu) {
-                enqueueSnackbar("Please fill in Gujarati and English fields (required)", { variant: "warning" });
+                enqueueSnackbar(
+                  "Please fill in Gujarati and English fields (required)",
+                  { variant: "warning" },
+                );
                 return;
               }
               const payload = {
-                ...(editingAssessment && { assessmentId: editingAssessment.assessmentId }),
+                ...(editingAssessment && {
+                  assessmentId: editingAssessment.assessmentId,
+                }),
                 schoolType: parseInt(newAssessment.schoolType),
                 assessmentEn: newAssessment.assessmentEn,
                 assessmentHi: newAssessment.assessmentHi,
@@ -1256,9 +1386,9 @@ const AssessmentManagement = () => {
                   const isEdit = !!editingAssessment;
                   enqueueSnackbar(
                     isEdit
-                      ? (data?.message || "Assessment updated successfully")
-                      : (data?.message || "Assessment added successfully"),
-                    { variant: "success" }
+                      ? data?.message || "Assessment updated successfully"
+                      : data?.message || "Assessment added successfully",
+                    { variant: "success" },
                   );
                   setAddAssessmentModalOpen(false);
                   setNewAssessment({
@@ -1272,11 +1402,18 @@ const AssessmentManagement = () => {
                 },
               });
             }}
-            sx={{ bgcolor: colors.primary.blue, "&:hover": { bgcolor: colors.primary.dark } }}
+            sx={{
+              bgcolor: colors.primary.blue,
+              "&:hover": { bgcolor: colors.primary.dark },
+            }}
           >
-            {updateAssessmentMutation.isPending 
-              ? (editingAssessment ? "Updating..." : "Creating...") 
-              : (editingAssessment ? "Update" : "Create")}
+            {updateAssessmentMutation.isPending
+              ? editingAssessment
+                ? "Updating..."
+                : "Creating..."
+              : editingAssessment
+                ? "Update"
+                : "Create"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1306,8 +1443,12 @@ const AssessmentManagement = () => {
                   <TableCell sx={{ fontWeight: 700 }}>Assessment</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Start Date</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>End Date</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700 }}>Status</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700 }}>Actions</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>
+                    Status
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>
+                    Actions
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -1318,19 +1459,36 @@ const AssessmentManagement = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  [ { roleId: 2, name: 'School' }, { roleId: 3, name: 'School Verifier' }, { roleId: 4, name: 'CRC' } ].map((role) => (
+                  [
+                    { roleId: 2, name: "School" },
+                    { roleId: 3, name: "School Verifier" },
+                    { roleId: 4, name: "CRC" },
+                  ].map((role) => (
                     <TableRow key={role.roleId}>
                       <TableCell>{role.name}</TableCell>
                       <TableCell>
                         <FormControl size="small" fullWidth>
                           <Select
-                            value={roleAssignments[role.roleId]?.assessmentId || ''}
-                            onChange={(e) => handleRoleAssignmentChange(role.roleId, 'assessmentId', e.target.value)}
+                            value={
+                              roleAssignments[role.roleId]?.assessmentId || ""
+                            }
+                            onChange={(e) =>
+                              handleRoleAssignmentChange(
+                                role.roleId,
+                                "assessmentId",
+                                e.target.value,
+                              )
+                            }
                             disabled={roleAssignments[role.roleId]?.isPublished}
                           >
-                            <MenuItem value=""><em>None</em></MenuItem>
+                            <MenuItem value="">
+                              <em>None</em>
+                            </MenuItem>
                             {assessmentsData?.data?.map((assessment) => (
-                              <MenuItem key={assessment.assessmentId} value={assessment.assessmentId}>
+                              <MenuItem
+                                key={assessment.assessmentId}
+                                value={assessment.assessmentId}
+                              >
                                 {getAssessmentName(assessment)}
                               </MenuItem>
                             ))}
@@ -1341,8 +1499,18 @@ const AssessmentManagement = () => {
                         <TextField
                           size="small"
                           type="date"
-                          value={roleAssignments[role.roleId]?.startDate?.split('T')[0] || ''}
-                          onChange={(e) => handleRoleAssignmentChange(role.roleId, 'startDate', e.target.value)}
+                          value={
+                            roleAssignments[role.roleId]?.startDate?.split(
+                              "T",
+                            )[0] || ""
+                          }
+                          onChange={(e) =>
+                            handleRoleAssignmentChange(
+                              role.roleId,
+                              "startDate",
+                              e.target.value,
+                            )
+                          }
                           InputLabelProps={{ shrink: true }}
                         />
                       </TableCell>
@@ -1350,14 +1518,28 @@ const AssessmentManagement = () => {
                         <TextField
                           size="small"
                           type="date"
-                          value={roleAssignments[role.roleId]?.endDate?.split('T')[0] || ''}
-                          onChange={(e) => handleRoleAssignmentChange(role.roleId, 'endDate', e.target.value)}
+                          value={
+                            roleAssignments[role.roleId]?.endDate?.split(
+                              "T",
+                            )[0] || ""
+                          }
+                          onChange={(e) =>
+                            handleRoleAssignmentChange(
+                              role.roleId,
+                              "endDate",
+                              e.target.value,
+                            )
+                          }
                           InputLabelProps={{ shrink: true }}
                         />
                       </TableCell>
                       <TableCell align="center">
                         <Chip
-                          label={roleAssignments[role.roleId]?.isPublished ? "Published" : "Not Published"}
+                          label={
+                            roleAssignments[role.roleId]?.isPublished
+                              ? "Published"
+                              : "Not Published"
+                          }
                           size="small"
                           sx={{
                             bgcolor: roleAssignments[role.roleId]?.isPublished
@@ -1371,22 +1553,40 @@ const AssessmentManagement = () => {
                         />
                       </TableCell>
                       <TableCell align="center">
-                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            justifyContent: "center",
+                          }}
+                        >
                           <Button
                             variant="contained"
                             size="small"
-                            onClick={() => handleUpdateRoleAssignment(role.roleId)}
-                            sx={{ bgcolor: colors.primary.blue, "&:hover": { bgcolor: colors.primary.dark } }}
+                            onClick={() =>
+                              handleUpdateRoleAssignment(role.roleId)
+                            }
+                            sx={{
+                              bgcolor: colors.primary.blue,
+                              "&:hover": { bgcolor: colors.primary.dark },
+                            }}
                           >
                             Update
                           </Button>
                           <Button
                             variant="outlined"
                             size="small"
-                            onClick={() => handlePublishRoleAssignment(role.roleId)}
-                            disabled={!roleAssignments[role.roleId]?.assessmentId || publishAssessmentMutation.isPending}
+                            onClick={() =>
+                              handlePublishRoleAssignment(role.roleId)
+                            }
+                            disabled={
+                              !roleAssignments[role.roleId]?.assessmentId ||
+                              publishAssessmentMutation.isPending
+                            }
                           >
-                            {roleAssignments[role.roleId]?.isPublished === 1 ? "Unpublish" : "Publish"}
+                            {roleAssignments[role.roleId]?.isPublished === 1
+                              ? "Unpublish"
+                              : "Publish"}
                           </Button>
                         </Box>
                       </TableCell>
@@ -1402,13 +1602,12 @@ const AssessmentManagement = () => {
         </DialogActions>
       </Dialog>
 
-
       <ConfirmationModal
         open={deleteDomainModalOpen}
         onClose={() => setDeleteDomainModalOpen(false)}
         onConfirm={confirmDeleteDomain}
         title="Delete Domain"
-        message={`Are you sure you want to delete the domain "${domainToDelete ? getDomainName(domainToDelete) : ''}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete the domain "${domainToDelete ? getDomainName(domainToDelete) : ""}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="danger"
@@ -1420,7 +1619,7 @@ const AssessmentManagement = () => {
         onClose={() => setDeleteAssessmentModalOpen(false)}
         onConfirm={confirmDeleteAssessment}
         title="Delete Assessment"
-        message={`Are you sure you want to delete the assessment "${assessmentToDelete ? getAssessmentName(assessmentToDelete) : ''}"? This action cannot be undone and will delete all associated domains and questions.`}
+        message={`Are you sure you want to delete the assessment "${assessmentToDelete ? getAssessmentName(assessmentToDelete) : ""}"? This action cannot be undone and will delete all associated domains and questions.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="danger"
