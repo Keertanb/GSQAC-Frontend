@@ -715,7 +715,7 @@ const AssessmentManagement = () => {
           </ToggleButtonGroup>
         </Box>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
+          {/* <FormControl size="small" sx={{ minWidth: 150 }}>
             <InputLabel>{t("assessment.domain.selectRole")}</InputLabel>
             <Select
               value={selectedRole}
@@ -729,7 +729,7 @@ const AssessmentManagement = () => {
               <MenuItem value="inspector">School Verifier</MenuItem>
               <MenuItem value="crc">CRC</MenuItem>
             </Select>
-          </FormControl>
+          </FormControl> */}
           <Button
             variant="contained"
             startIcon={<Add />}
@@ -743,18 +743,21 @@ const AssessmentManagement = () => {
           >
             Add Assessment
           </Button>
-          {/* <Button
+          <Button
             variant="outlined"
             startIcon={<CameraAlt />}
             onClick={openCamera}
             sx={{
               borderColor: colors.primary.blue,
               color: colors.primary.blue,
-              "&:hover": { borderColor: colors.primary.dark, bgcolor: colors.primary.blue + "10" },
+              "&:hover": {
+                borderColor: colors.primary.dark,
+                bgcolor: colors.primary.blue + "10",
+              },
             }}
           >
             Capture
-          </Button> */}
+          </Button>
           <IconButton
             onClick={handleOpenSettingsModal}
             sx={{
@@ -1203,6 +1206,19 @@ const AssessmentManagement = () => {
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
             <TextField
+              label="Assessment Name (Gujarati)"
+              value={tempAssessmentName.gu}
+              onChange={(e) =>
+                setTempAssessmentName((prev) => ({
+                  ...prev,
+                  gu: e.target.value,
+                }))
+              }
+              variant="outlined"
+              size="small"
+              fullWidth
+            />
+            <TextField
               label="Assessment Name (English)"
               value={tempAssessmentName.en}
               onChange={(e) =>
@@ -1222,19 +1238,6 @@ const AssessmentManagement = () => {
                 setTempAssessmentName((prev) => ({
                   ...prev,
                   hi: e.target.value,
-                }))
-              }
-              variant="outlined"
-              size="small"
-              fullWidth
-            />
-            <TextField
-              label="Assessment Name (Gujarati)"
-              value={tempAssessmentName.gu}
-              onChange={(e) =>
-                setTempAssessmentName((prev) => ({
-                  ...prev,
-                  gu: e.target.value,
                 }))
               }
               variant="outlined"
@@ -1280,7 +1283,14 @@ const AssessmentManagement = () => {
           {editingAssessment ? "Edit Assessment" : "Add Assessment"}
         </DialogTitle>
         <DialogContent sx={{ mt: 1.5 }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+              marginTop: 2,
+            }}
+          >
             <FormControl fullWidth size="small">
               <InputLabel>School Type</InputLabel>
               <Select
@@ -1360,15 +1370,16 @@ const AssessmentManagement = () => {
             variant="contained"
             disabled={
               updateAssessmentMutation.isPending ||
-              !newAssessment.assessmentEn ||
-              !newAssessment.assessmentGu
+              !newAssessment.assessmentEn?.trim() ||
+              !newAssessment.assessmentGu?.trim()
             }
             onClick={() => {
-              if (!newAssessment.assessmentEn || !newAssessment.assessmentGu) {
-                enqueueSnackbar(
-                  "Please fill in Gujarati and English fields (required)",
-                  { variant: "warning" },
-                );
+              const nameEn = newAssessment.assessmentEn?.trim();
+              const nameGu = newAssessment.assessmentGu?.trim();
+              if (!nameEn || !nameGu) {
+                enqueueSnackbar("Add proper assessment name", {
+                  variant: "warning",
+                });
                 return;
               }
               const payload = {
@@ -1376,9 +1387,9 @@ const AssessmentManagement = () => {
                   assessmentId: editingAssessment.assessmentId,
                 }),
                 schoolType: parseInt(newAssessment.schoolType),
-                assessmentEn: newAssessment.assessmentEn,
-                assessmentHi: newAssessment.assessmentHi,
-                assessmentGu: newAssessment.assessmentGu,
+                assessmentEn: nameEn,
+                assessmentHi: newAssessment.assessmentHi?.trim() || "",
+                assessmentGu: nameGu,
               };
               updateAssessmentMutation.mutate(payload, {
                 onSuccess: (data) => {
@@ -1530,6 +1541,12 @@ const AssessmentManagement = () => {
                               e.target.value,
                             )
                           }
+                          inputProps={{
+                            min:
+                              roleAssignments[role.roleId]?.startDate?.split(
+                                "T",
+                              )[0] || undefined,
+                          }}
                           InputLabelProps={{ shrink: true }}
                         />
                       </TableCell>
