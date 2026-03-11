@@ -66,9 +66,9 @@ const ParentDashboard = () => {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
           }),
-          marginLeft: drawerOpen && !matchDownMD ? `${DRAWER_WIDTH.xs}px` : 0,
+          marginLeft: drawerOpen && !matchDownMD ? 5 : 0,
           [`@media (min-width:${theme.breakpoints.values.xl}px)`]: {
-            marginLeft: drawerOpen && !matchDownMD ? `${DRAWER_WIDTH.xl}px` : 0,
+            marginLeft: drawerOpen && !matchDownMD ? 5 : 0,
           },
         }}
       >

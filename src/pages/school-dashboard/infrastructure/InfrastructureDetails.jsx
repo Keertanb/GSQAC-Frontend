@@ -224,7 +224,9 @@ const InfrastructureDetails = () => {
                       />
                     }
                     label={
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
                         {isAvailable ? (
                           <>
                             <CheckCircle
@@ -307,10 +309,3 @@ const InfrastructureDetails = () => {
 };
 
 export default InfrastructureDetails;
-
-
-
-
-
-
-

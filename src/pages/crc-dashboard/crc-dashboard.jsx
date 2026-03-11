@@ -10,10 +10,7 @@ import {
   useTheme,
   useMediaQuery,
 } from "@mui/material";
-import {
-  Menu,
-  AccountTreeOutlined,
-} from "@mui/icons-material";
+import { Menu, AccountTreeOutlined } from "@mui/icons-material";
 import useAuthStore from "../../store/useAuthStore";
 import { useLogoutMutation } from "../../services/authService";
 import AppDrawer from "../../components/AppDrawer/AppDrawer";
@@ -58,13 +55,14 @@ const CRCDashboard = () => {
   const getCurrentView = () => {
     // Check if it's the assessment detail page (has schoolId param)
     const pathParts = location.pathname.split("/");
-    const hasSchoolId = pathParts.length > 3 && pathParts[3] !== "school-assessment";
-    
+    const hasSchoolId =
+      pathParts.length > 3 && pathParts[3] !== "school-assessment";
+
     if (hasSchoolId) {
       // This is the assessment detail page - render CRCAssessment component
       return "assessment-detail";
     }
-    
+
     if (location.pathname === CRC_SCHOOL_ASSESSMENT_URL) {
       return "school-assessment";
     }
@@ -88,7 +86,7 @@ const CRCDashboard = () => {
         sx={{
           flexGrow: 1,
           width: "100%",
-          marginLeft: drawerOpen && !matchDownMD ? `${DRAWER_WIDTH.xs}px` : 0,
+          marginLeft: drawerOpen && !matchDownMD ? 5 : 0,
           [`@media (min-width:${theme.breakpoints.values.xl}px)`]: {
             marginLeft: drawerOpen && !matchDownMD ? 5 : 0,
           },
@@ -303,4 +301,3 @@ const CRCDashboard = () => {
 };
 
 export default CRCDashboard;
-

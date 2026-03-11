@@ -91,9 +91,9 @@ const AdminDashboard = () => {
         sx={{
           flexGrow: 1,
           width: "100%",
-          marginLeft: drawerOpen && !matchDownMD ? `${DRAWER_WIDTH.xs}px` : 0,
+          marginLeft: drawerOpen && !matchDownMD ? 4 : 0,
           [`@media (min-width:${theme.breakpoints.values.xl}px)`]: {
-            marginLeft: drawerOpen && !matchDownMD ? 5 : 0,
+            marginLeft: drawerOpen && !matchDownMD ? 4 : 0,
           },
           transition: theme.transitions.create(["margin-left"], {
             easing: theme.transitions.easing.sharp,

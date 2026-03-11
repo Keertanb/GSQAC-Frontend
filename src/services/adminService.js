@@ -324,9 +324,6 @@ export const useUpsertQuestionMutation = (options = {}) => {
     mutationFn: (data) => upsertQuestion(data),
     mutationKey: queryKeys.admin.upsertQuestion(),
     onSuccess: (data) => {
-      enqueueSnackbar(data?.message || "Question saved successfully", {
-        variant: "success",
-      });
       if (options.onSuccess) {
         options.onSuccess(data);
       }

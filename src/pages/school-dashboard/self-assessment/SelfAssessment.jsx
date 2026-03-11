@@ -1503,7 +1503,7 @@ const SelfAssessment = () => {
         });
         return;
       }
-      
+
       // For subject observation questions, only validate subject if user has answered type 3 questions
       if (hasAnsweredSubjectQuestions && !selectedSubject) {
         enqueueSnackbar("Please select a subject before submitting.", {
@@ -1632,9 +1632,9 @@ const SelfAssessment = () => {
         sx={{
           flexGrow: 1,
           width: "100%",
-          marginLeft: drawerOpen && !matchDownMD ? 0 : 0,
+          marginLeft: drawerOpen && !matchDownMD ? 4 : 0,
           [`@media (min-width:${theme.breakpoints.values.xl}px)`]: {
-            marginLeft: drawerOpen && !matchDownMD ? `${30}px` : 0,
+            marginLeft: drawerOpen && !matchDownMD ? 4 : 0,
           },
           transition: theme.transitions.create(["margin-left"], {
             easing: theme.transitions.easing.sharp,
@@ -4573,37 +4573,47 @@ const SelfAssessment = () => {
                             if (submitSubdomainWiseAnswersMutation.isPending) {
                               return true;
                             }
-                            
+
                             // Check if there are any answers
                             const hasAnswers =
                               (answers && Object.keys(answers).length > 0) ||
-                              (textAnswers && Object.keys(textAnswers).length > 0);
-                            
+                              (textAnswers &&
+                                Object.keys(textAnswers).length > 0);
+
                             if (!hasAnswers) {
                               return true; // Disable if no answers
                             }
-                            
+
                             // Check if user has answered any class-based questions (type 2 or 3)
-                            const hasAnsweredClassBasedQuestions = classBasedQuestions.some(
-                              (q) => answers[q.questionId] || textAnswers[q.questionId]
-                            );
-                            
+                            const hasAnsweredClassBasedQuestions =
+                              classBasedQuestions.some(
+                                (q) =>
+                                  answers[q.questionId] ||
+                                  textAnswers[q.questionId],
+                              );
+
                             // Check if user has answered any subject observation questions (type 3)
-                            const hasAnsweredSubjectQuestions = subjectObservationQuestions.some(
-                              (q) => answers[q.questionId] || textAnswers[q.questionId]
-                            );
-                            
+                            const hasAnsweredSubjectQuestions =
+                              subjectObservationQuestions.some(
+                                (q) =>
+                                  answers[q.questionId] ||
+                                  textAnswers[q.questionId],
+                              );
+
                             // Only require class/section if user has answered class-based questions
                             if (hasAnsweredClassBasedQuestions) {
                               if (!selectedClass || !selectedSection) {
                                 return true; // Disable button
                               }
                               // If answered subject questions, also require subject selection
-                              if (hasAnsweredSubjectQuestions && !selectedSubject) {
+                              if (
+                                hasAnsweredSubjectQuestions &&
+                                !selectedSubject
+                              ) {
                                 return true; // Disable button
                               }
                             }
-                            
+
                             return false; // Enable button
                           })()}
                           sx={{

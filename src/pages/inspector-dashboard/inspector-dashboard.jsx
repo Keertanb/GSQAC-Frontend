@@ -93,7 +93,7 @@ const InspectorDashboard = () => {
         sx={{
           flexGrow: 1,
           width: "100%",
-          marginLeft: drawerOpen && !matchDownMD ? `${DRAWER_WIDTH.xs}px` : 0,
+          marginLeft: drawerOpen && !matchDownMD ? 5 : 0,
           [`@media (min-width:${theme.breakpoints.values.xl}px)`]: {
             marginLeft: drawerOpen && !matchDownMD ? 5 : 0,
           },
@@ -307,7 +307,8 @@ const InspectorDashboard = () => {
                   gutterBottom
                   sx={{ fontWeight: 700, mb: 3 }}
                 >
-                  Welcome{user?.name ? `, ${user.name}` : ""} to Inspector Dashboard
+                  Welcome{user?.name ? `, ${user.name}` : ""} to Inspector
+                  Dashboard
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
                   Please select a section from the sidebar menu.

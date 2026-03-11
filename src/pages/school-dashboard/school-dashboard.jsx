@@ -44,13 +44,11 @@ const SchoolDashboard = () => {
   const { logout, user, userName } = useAuthStore();
 
   // Fetch school data
-  const {
-    data: schoolDataResponse,
-    isLoading: isLoadingSchoolData,
-  } = useGetSchoolDataQuery({
-    schoolId: userName || undefined,
-    enabled: !!userName,
-  });
+  const { data: schoolDataResponse, isLoading: isLoadingSchoolData } =
+    useGetSchoolDataQuery({
+      schoolId: userName || undefined,
+      enabled: !!userName,
+    });
 
   const schoolData = schoolDataResponse?.data || {};
 
@@ -82,9 +80,9 @@ const SchoolDashboard = () => {
         sx={{
           flexGrow: 1,
           width: "100%",
-          marginLeft: drawerOpen && !matchDownMD ? 0 : 0,
+          marginLeft: drawerOpen && !matchDownMD ? 5 : 0,
           [`@media (min-width:${theme.breakpoints.values.xl}px)`]: {
-            marginLeft: drawerOpen && !matchDownMD ? `${30}px`  : 0,
+            marginLeft: drawerOpen && !matchDownMD ? 5 : 0,
           },
           transition: theme.transitions.create(["margin-left"], {
             easing: theme.transitions.easing.sharp,
@@ -251,7 +249,9 @@ const SchoolDashboard = () => {
           </Toolbar>
         </AppBar>
 
-        <Box sx={{ mt: 9, bgcolor: "#f8fafc", minHeight: "calc(100vh - 72px)" }}>
+        <Box
+          sx={{ mt: 9, bgcolor: "#f8fafc", minHeight: "calc(100vh - 72px)" }}
+        >
           <Box
             sx={{
               pl: drawerOpen && !matchDownMD ? 0 : { xs: 2, sm: 2, md: 3 },
@@ -262,7 +262,14 @@ const SchoolDashboard = () => {
             }}
           >
             {isLoadingSchoolData ? (
-              <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "400px" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  minHeight: "400px",
+                }}
+              >
                 <CircularProgress />
               </Box>
             ) : (
@@ -274,7 +281,8 @@ const SchoolDashboard = () => {
                     mb: 4,
                     p: 4,
                     borderRadius: 3,
-                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    background:
+                      "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                     position: "relative",
                     overflow: "hidden",
                     "&::before": {
@@ -290,7 +298,14 @@ const SchoolDashboard = () => {
                   }}
                 >
                   <Box sx={{ position: "relative", zIndex: 1 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mb: 2,
+                      }}
+                    >
                       <Box
                         sx={{
                           width: 64,
@@ -317,7 +332,9 @@ const SchoolDashboard = () => {
                         >
                           {schoolData.schoolName || "School Dashboard"}
                         </Typography>
-                        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
+                        <Box
+                          sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}
+                        >
                           <Chip
                             label={schoolData.districtName || "District"}
                             size="small"
@@ -370,18 +387,27 @@ const SchoolDashboard = () => {
                           left: 0,
                           right: 0,
                           height: "4px",
-                          background: "linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%)",
+                          background:
+                            "linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%)",
                         },
                       }}
                     >
                       <Box sx={{ p: 3 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2.5 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            mb: 2.5,
+                          }}
+                        >
                           <Box
                             sx={{
                               width: 48,
                               height: 48,
                               borderRadius: 2,
-                              background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                              background:
+                                "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -392,16 +418,59 @@ const SchoolDashboard = () => {
                           </Box>
                           <TrendingUp sx={{ fontSize: 20, color: "#10b981" }} />
                         </Box>
-                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 0.5 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#64748b",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            display: "block",
+                            mb: 0.5,
+                          }}
+                        >
                           Total sadsadd
                         </Typography>
-                        <Typography variant="h3" sx={{ fontWeight: 700, color: "#0f172a", fontSize: "2.25rem", lineHeight: 1.2 }}>
+                        <Typography
+                          variant="h3"
+                          sx={{
+                            fontWeight: 700,
+                            color: "#0f172a",
+                            fontSize: "2.25rem",
+                            lineHeight: 1.2,
+                          }}
+                        >
                           {schoolData.studentCount || "-"}
                         </Typography>
                       </Box>
-                      <Box sx={{ px: 3, py: 1.5, bgcolor: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
-                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.6875rem", display: "flex", alignItems: "center", gap: 0.5 }}>
-                          <Box component="span" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#10b981" }} />
+                      <Box
+                        sx={{
+                          px: 3,
+                          py: 1.5,
+                          bgcolor: "#f8fafc",
+                          borderTop: "1px solid #e2e8f0",
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#64748b",
+                            fontSize: "0.6875rem",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          <Box
+                            component="span"
+                            sx={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: "50%",
+                              bgcolor: "#10b981",
+                            }}
+                          />
                           Active Enrollment
                         </Typography>
                       </Box>
@@ -431,38 +500,92 @@ const SchoolDashboard = () => {
                           left: 0,
                           right: 0,
                           height: "4px",
-                          background: "linear-gradient(90deg, #10b981 0%, #34d399 100%)",
+                          background:
+                            "linear-gradient(90deg, #10b981 0%, #34d399 100%)",
                         },
                       }}
                     >
                       <Box sx={{ p: 3 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2.5 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            mb: 2.5,
+                          }}
+                        >
                           <Box
                             sx={{
                               width: 48,
                               height: 48,
                               borderRadius: 2,
-                              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                              background:
+                                "linear-gradient(135deg, #10b981 0%, #059669 100%)",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
                               boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
                             }}
                           >
-                            <PersonOutline sx={{ fontSize: 26, color: "white" }} />
+                            <PersonOutline
+                              sx={{ fontSize: 26, color: "white" }}
+                            />
                           </Box>
                           <TrendingUp sx={{ fontSize: 20, color: "#10b981" }} />
                         </Box>
-                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 0.5 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#64748b",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            display: "block",
+                            mb: 0.5,
+                          }}
+                        >
                           Total Teachers
                         </Typography>
-                        <Typography variant="h3" sx={{ fontWeight: 700, color: "#0f172a", fontSize: "2.25rem", lineHeight: 1.2 }}>
+                        <Typography
+                          variant="h3"
+                          sx={{
+                            fontWeight: 700,
+                            color: "#0f172a",
+                            fontSize: "2.25rem",
+                            lineHeight: 1.2,
+                          }}
+                        >
                           {schoolData.teacherCount || "-"}
                         </Typography>
                       </Box>
-                      <Box sx={{ px: 3, py: 1.5, bgcolor: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
-                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.6875rem", display: "flex", alignItems: "center", gap: 0.5 }}>
-                          <Box component="span" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#10b981" }} />
+                      <Box
+                        sx={{
+                          px: 3,
+                          py: 1.5,
+                          bgcolor: "#f8fafc",
+                          borderTop: "1px solid #e2e8f0",
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#64748b",
+                            fontSize: "0.6875rem",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          <Box
+                            component="span"
+                            sx={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: "50%",
+                              bgcolor: "#10b981",
+                            }}
+                          />
                           Teaching Staff
                         </Typography>
                       </Box>
@@ -492,38 +615,92 @@ const SchoolDashboard = () => {
                           left: 0,
                           right: 0,
                           height: "4px",
-                          background: "linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)",
+                          background:
+                            "linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)",
                         },
                       }}
                     >
                       <Box sx={{ p: 3 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2.5 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            mb: 2.5,
+                          }}
+                        >
                           <Box
                             sx={{
                               width: 48,
                               height: 48,
                               borderRadius: 2,
-                              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                              background:
+                                "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
                               boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
                             }}
                           >
-                            <Description sx={{ fontSize: 26, color: "white" }} />
+                            <Description
+                              sx={{ fontSize: 26, color: "white" }}
+                            />
                           </Box>
                           <Assessment sx={{ fontSize: 20, color: "#f59e0b" }} />
                         </Box>
-                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 0.5 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#64748b",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            display: "block",
+                            mb: 0.5,
+                          }}
+                        >
                           Class Range
                         </Typography>
-                        <Typography variant="h3" sx={{ fontWeight: 700, color: "#0f172a", fontSize: "2.25rem", lineHeight: 1.2 }}>
+                        <Typography
+                          variant="h3"
+                          sx={{
+                            fontWeight: 700,
+                            color: "#0f172a",
+                            fontSize: "2.25rem",
+                            lineHeight: 1.2,
+                          }}
+                        >
                           {`${schoolData.lowerClass || 1}-${schoolData.upperClass || 12}`}
                         </Typography>
                       </Box>
-                      <Box sx={{ px: 3, py: 1.5, bgcolor: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
-                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.6875rem", display: "flex", alignItems: "center", gap: 0.5 }}>
-                          <Box component="span" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#f59e0b" }} />
+                      <Box
+                        sx={{
+                          px: 3,
+                          py: 1.5,
+                          bgcolor: "#f8fafc",
+                          borderTop: "1px solid #e2e8f0",
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#64748b",
+                            fontSize: "0.6875rem",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          <Box
+                            component="span"
+                            sx={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: "50%",
+                              bgcolor: "#f59e0b",
+                            }}
+                          />
                           Grade Levels
                         </Typography>
                       </Box>
@@ -553,25 +730,36 @@ const SchoolDashboard = () => {
                           left: 0,
                           right: 0,
                           height: "4px",
-                          background: "linear-gradient(90deg, #6366f1 0%, #818cf8 100%)",
+                          background:
+                            "linear-gradient(90deg, #6366f1 0%, #818cf8 100%)",
                         },
                       }}
                     >
                       <Box sx={{ p: 3 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2.5 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            mb: 2.5,
+                          }}
+                        >
                           <Box
                             sx={{
                               width: 48,
                               height: 48,
                               borderRadius: 2,
-                              background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+                              background:
+                                "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
                               boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
                             }}
                           >
-                            <CheckCircle sx={{ fontSize: 26, color: "white" }} />
+                            <CheckCircle
+                              sx={{ fontSize: 26, color: "white" }}
+                            />
                           </Box>
                           <Box
                             sx={{
@@ -582,21 +770,71 @@ const SchoolDashboard = () => {
                               border: "1px solid #fde68a",
                             }}
                           >
-                            <Typography variant="caption" sx={{ color: "#f59e0b", fontSize: "0.625rem", fontWeight: 700 }}>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: "#f59e0b",
+                                fontSize: "0.625rem",
+                                fontWeight: 700,
+                              }}
+                            >
                               PENDING
                             </Typography>
                           </Box>
                         </Box>
-                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 0.5 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#64748b",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            display: "block",
+                            mb: 0.5,
+                          }}
+                        >
                           Assessment
                         </Typography>
-                        <Typography variant="h3" sx={{ fontWeight: 700, color: "#0f172a", fontSize: "2.25rem", lineHeight: 1.2 }}>
+                        <Typography
+                          variant="h3"
+                          sx={{
+                            fontWeight: 700,
+                            color: "#0f172a",
+                            fontSize: "2.25rem",
+                            lineHeight: 1.2,
+                          }}
+                        >
                           0%
                         </Typography>
                       </Box>
-                      <Box sx={{ px: 3, py: 1.5, bgcolor: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
-                        <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.6875rem", display: "flex", alignItems: "center", gap: 0.5 }}>
-                          <Box component="span" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#ef4444" }} />
+                      <Box
+                        sx={{
+                          px: 3,
+                          py: 1.5,
+                          bgcolor: "#f8fafc",
+                          borderTop: "1px solid #e2e8f0",
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#64748b",
+                            fontSize: "0.6875rem",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          <Box
+                            component="span"
+                            sx={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: "50%",
+                              bgcolor: "#ef4444",
+                            }}
+                          />
                           Not Started
                         </Typography>
                       </Box>
@@ -607,7 +845,15 @@ const SchoolDashboard = () => {
             )}
 
             {/* Action Cards */}
-            <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a", mb: 2.5, fontSize: "1.125rem" }}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                color: "#0f172a",
+                mb: 2.5,
+                fontSize: "1.125rem",
+              }}
+            >
               Quick Actions
             </Typography>
             <Grid container spacing={3}>
@@ -636,7 +882,14 @@ const SchoolDashboard = () => {
                   onClick={() => navigate("/school-dashboard/self-assessment")}
                 >
                   <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        mb: 2,
+                      }}
+                    >
                       <Box
                         sx={{
                           width: 56,
@@ -689,11 +942,23 @@ const SchoolDashboard = () => {
                         p: 1.5,
                       }}
                     >
-                      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                        <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 600 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          mb: 1,
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "#64748b", fontWeight: 600 }}
+                        >
                           Progress
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "#3b82f6", fontWeight: 700 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "#3b82f6", fontWeight: 700 }}
+                        >
                           0%
                         </Typography>
                       </Box>
@@ -740,7 +1005,14 @@ const SchoolDashboard = () => {
                   onClick={() => navigate("/school-dashboard/school-details")}
                 >
                   <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        mb: 2,
+                      }}
+                    >
                       <Box
                         sx={{
                           width: 56,
@@ -803,13 +1075,21 @@ const SchoolDashboard = () => {
                       >
                         <Typography
                           variant="h6"
-                          sx={{ fontWeight: 700, color: "#10b981", fontSize: "1.25rem" }}
+                          sx={{
+                            fontWeight: 700,
+                            color: "#10b981",
+                            fontSize: "1.25rem",
+                          }}
                         >
                           {schoolData.studentCount || "-"}
                         </Typography>
                         <Typography
                           variant="caption"
-                          sx={{ color: "#64748b", fontSize: "0.6875rem", fontWeight: 600 }}
+                          sx={{
+                            color: "#64748b",
+                            fontSize: "0.6875rem",
+                            fontWeight: 600,
+                          }}
                         >
                           Students
                         </Typography>
@@ -825,13 +1105,21 @@ const SchoolDashboard = () => {
                       >
                         <Typography
                           variant="h6"
-                          sx={{ fontWeight: 700, color: "#10b981", fontSize: "1.25rem" }}
+                          sx={{
+                            fontWeight: 700,
+                            color: "#10b981",
+                            fontSize: "1.25rem",
+                          }}
                         >
                           {schoolData.teacherCount || "-"}
                         </Typography>
                         <Typography
                           variant="caption"
-                          sx={{ color: "#64748b", fontSize: "0.6875rem", fontWeight: 600 }}
+                          sx={{
+                            color: "#64748b",
+                            fontSize: "0.6875rem",
+                            fontWeight: 600,
+                          }}
                         >
                           Teachers
                         </Typography>
@@ -865,7 +1153,14 @@ const SchoolDashboard = () => {
                   }}
                 >
                   <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        mb: 2,
+                      }}
+                    >
                       <Box
                         sx={{
                           width: 56,
@@ -932,7 +1227,11 @@ const SchoolDashboard = () => {
                         <Settings sx={{ fontSize: 24, color: "#8b5cf6" }} />
                         <Typography
                           variant="caption"
-                          sx={{ color: "#64748b", fontSize: "0.6875rem", fontWeight: 600 }}
+                          sx={{
+                            color: "#64748b",
+                            fontSize: "0.6875rem",
+                            fontWeight: 600,
+                          }}
                         >
                           Configure
                         </Typography>
@@ -952,7 +1251,11 @@ const SchoolDashboard = () => {
                         <People sx={{ fontSize: 24, color: "#8b5cf6" }} />
                         <Typography
                           variant="caption"
-                          sx={{ color: "#64748b", fontSize: "0.6875rem", fontWeight: 600 }}
+                          sx={{
+                            color: "#64748b",
+                            fontSize: "0.6875rem",
+                            fontWeight: 600,
+                          }}
                         >
                           Manage
                         </Typography>

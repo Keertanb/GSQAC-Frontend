@@ -15,7 +15,7 @@ const Verifier = () => {
   const [editingVerifier, setEditingVerifier] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [formData, setFormData] = useState({
     userId: null,
     userName: "",
@@ -51,8 +51,12 @@ const Verifier = () => {
       verifier.mobileNumber?.includes(searchQuery)
   );
 
-  // Use filtered count for client-side pagination
-  const totalCount = filteredVerifiers.length;
+  // Total count from API for server-side pagination; when searching, use filtered length for correct "X of Y" label
+  const totalCount = searchQuery
+    ? filteredVerifiers.length
+    : verifiersData?.data?.total ??
+      verifiersData?.total ??
+      verifiers.length;
 
   // Table columns definition
   const columns = [
@@ -566,8 +570,12 @@ const Verifier = () => {
           itemsPerPage={itemsPerPage}
           currentPage={currentPage + 1}
           onPageChange={(page) => setCurrentPage(page - 1)}
+          onItemsPerPageChange={(newSize) => {
+            setItemsPerPage(newSize);
+            setCurrentPage(0);
+          }}
           totalCount={totalCount}
-          serverSidePagination={false}
+          serverSidePagination={true}
           emptyTitle="No verifiers found"
           emptySubtitle={
             searchQuery
