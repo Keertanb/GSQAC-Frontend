@@ -34,6 +34,7 @@ import { useLogoutMutation } from "../../services/authService";
 import { useGetSchoolDataQuery } from "../../services/schoolService";
 import AppDrawer from "../../components/AppDrawer/AppDrawer";
 import { DRAWER_WIDTH } from "../../constants/menuItems";
+import ConfirmationModal from "../../components/ConfirmationModal/ConfirmationModal";
 import "./school-dashboard.css";
 
 const SchoolDashboard = () => {
@@ -41,6 +42,7 @@ const SchoolDashboard = () => {
   const theme = useTheme();
   const matchDownMD = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const { logout, user, userName } = useAuthStore();
 
   // Fetch school data
@@ -69,6 +71,11 @@ const SchoolDashboard = () => {
   };
 
   const handleLogout = () => {
+    setLogoutModalOpen(true);
+  };
+
+  const confirmLogout = () => {
+    setLogoutModalOpen(false);
     logoutMutation.mutate();
   };
 
@@ -1268,6 +1275,18 @@ const SchoolDashboard = () => {
           </Box>
         </Box>
       </Box>
+
+      <ConfirmationModal
+        open={logoutModalOpen}
+        onClose={() => setLogoutModalOpen(false)}
+        onConfirm={confirmLogout}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        confirmText="Yes"
+        cancelText="Cancel"
+        variant="warning"
+        isLoading={logoutMutation.isPending}
+      />
     </Box>
   );
 };

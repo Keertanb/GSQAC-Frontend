@@ -21,6 +21,7 @@ import {
   CRC_DASHBOARD_URL,
   CRC_SCHOOL_ASSESSMENT_URL,
 } from "../../routes/routeUrls";
+import ConfirmationModal from "../../components/ConfirmationModal/ConfirmationModal";
 import "./crc-dashboard.css";
 
 const CRCDashboard = () => {
@@ -29,6 +30,7 @@ const CRCDashboard = () => {
   const theme = useTheme();
   const matchDownMD = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const { logout, user } = useAuthStore();
 
   const logoutMutation = useLogoutMutation({
@@ -48,6 +50,11 @@ const CRCDashboard = () => {
   };
 
   const handleLogout = () => {
+    setLogoutModalOpen(true);
+  };
+
+  const confirmLogout = () => {
+    setLogoutModalOpen(false);
     logoutMutation.mutate();
   };
 
@@ -296,6 +303,18 @@ const CRCDashboard = () => {
           </Box>
         </Box>
       </Box>
+
+      <ConfirmationModal
+        open={logoutModalOpen}
+        onClose={() => setLogoutModalOpen(false)}
+        onConfirm={confirmLogout}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        confirmText="Yes"
+        cancelText="Cancel"
+        variant="warning"
+        isLoading={logoutMutation.isPending}
+      />
     </Box>
   );
 };

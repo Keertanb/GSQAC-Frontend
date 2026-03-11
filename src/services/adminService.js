@@ -112,8 +112,8 @@ export const upsertQuestion = async (payload) => {
 };
 
 /**
- * Upsert (add or edit) question option
- * @param {Object} payload - { optionId?: number, questionId: number, optionTextEn: string, optionTextHi: string, optionTextGu: string }
+ * Upsert (add or edit) question options in one request
+ * @param {Object} payload - { questionId: number, options: Array<{ optionId?: number | null, optionTextEn: string, optionTextHi: string, optionTextGu: string }> }
  * @returns {Promise} API response
  */
 export const upsertQuestionOption = async (payload) => {
@@ -978,7 +978,9 @@ export const updateAssessmentRoleAssignment = async (payload) => {
  * @returns {Promise} API response
  */
 export const deleteSubdomain = async (subDomainId) => {
-  const response = await axiosInstance.delete(`/questionnaire/sub-domain/${subDomainId}`);
+  const response = await axiosInstance.delete("/questionnaire/sub-domain", {
+    params: { subDomainId },
+  });
   return response.data;
 };
 

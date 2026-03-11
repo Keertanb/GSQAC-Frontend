@@ -111,9 +111,7 @@ const QuestionsView = ({
   const [optionTranslationIds, setOptionTranslationIds] = useState({}); // Store translation IDs for each option
   const [questionType, setQuestionType] = useState("single_choice"); // New state for question type
   const [flnAnswer, setFlnAnswer] = useState(""); // State for FLN text field answer
-  const [optionErrors, setOptionErrors] = useState(
-    {},
-  ); // State for option validation errors (per option: { [optionId]: { en, hi, gu } })
+  const [optionErrors, setOptionErrors] = useState({}); // State for option validation errors (per option: { [optionId]: { en, hi, gu } })
 
   // Map question type strings to numbers
   const questionTypeMap = {
@@ -147,7 +145,6 @@ const QuestionsView = ({
     enabled: !!subdomainData && !!subDomainId,
   });
 
-  // Support both { data: [] } and { data: { data: [] } } response shapes (API may return nested data when languageCode is sent)
   const questions = Array.isArray(questionsData?.data?.data)
     ? questionsData.data.data
     : Array.isArray(questionsData?.data)
@@ -267,7 +264,8 @@ const QuestionsView = ({
         if (val === "") return;
         if (seen[val] !== undefined) {
           // This option is a duplicate (second or later occurrence) – show error only here
-          errors[opt.id][lang] = `Duplicate ${langName} options are not allowed`;
+          errors[opt.id][lang] =
+            `Duplicate ${langName} options are not allowed`;
         } else {
           seen[val] = opt.id;
         }
@@ -295,7 +293,7 @@ const QuestionsView = ({
   const handleAddQuestion = async () => {
     if (!newQuestionText.en.trim()) {
       enqueueSnackbar(
-        "Please fill in the question text (English is required)",
+        "Please fill in the question text (Gujarati and English is required)",
         {
           variant: "warning",
         },
@@ -417,12 +415,7 @@ const QuestionsView = ({
       }, 100);
     } catch (error) {
       console.error("Error adding question:", error);
-      enqueueSnackbar(
-        error?.response?.data?.message || "Failed to save question",
-        {
-          variant: "error",
-        },
-      );
+      // Error toaster is shown by useUpsertQuestionMutation onError in adminService
     }
   };
 
@@ -439,8 +432,11 @@ const QuestionsView = ({
     const errors = validateOptions(newOptions);
     setOptionErrors(errors);
 
-    // Check if there are any validation errors
-    if (errors.en || errors.hi || errors.gu) {
+    // Check if there are any validation errors (per-option errors)
+    const hasDuplicateError = Object.values(errors).some(
+      (e) => e?.en || e?.hi || e?.gu,
+    );
+    if (hasDuplicateError) {
       enqueueSnackbar("Please fix duplicate options before saving", {
         variant: "error",
       });
@@ -457,25 +453,18 @@ const QuestionsView = ({
     }
 
     try {
-      // Add/Update options for the question
-      const optionPromises = validOptions.map(async (opt) => {
-        const optionPayload = {
-          questionId: currentQuestionId,
+      // Send all options in one API call, in sequence
+      const payload = {
+        questionId: currentQuestionId,
+        options: validOptions.map((opt) => ({
+          optionId: opt.optionId ?? null,
+          optionTextGu: opt.text.gu.trim(),
           optionTextEn: opt.text.en.trim(),
           optionTextHi: opt.text.hi.trim(),
-          optionTextGu: opt.text.gu.trim(),
-        };
+        })),
+      };
 
-        // If editing and option has optionId, include it
-        if (opt.optionId) {
-          optionPayload.optionId = opt.optionId;
-        }
-
-        return upsertQuestionOptionMutation.mutateAsync(optionPayload);
-      });
-
-      // Wait for all options to be added
-      await Promise.all(optionPromises);
+      await upsertQuestionOptionMutation.mutateAsync(payload);
 
       // Success - refresh and reset form
       enqueueSnackbar(
@@ -506,12 +495,7 @@ const QuestionsView = ({
       setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
     } catch (error) {
       console.error("Error adding options:", error);
-      enqueueSnackbar(
-        error?.response?.data?.message || "Failed to save options",
-        {
-          variant: "error",
-        },
-      );
+      // Error toaster is shown by useUpsertQuestionOptionMutation onError in adminService
     }
   };
 
@@ -1236,7 +1220,9 @@ const QuestionsView = ({
                           </Button>
                         </Box>
                         {/* Validation Errors Display */}
-                        {(Object.values(optionErrors).some((e) => e?.en || e?.hi || e?.gu)) && (
+                        {Object.values(optionErrors).some(
+                          (e) => e?.en || e?.hi || e?.gu,
+                        ) && (
                           <Alert
                             severity="error"
                             sx={{
@@ -1342,7 +1328,7 @@ const QuestionsView = ({
                                   required
                                   multiline
                                   rows={2}
-                                  error={!!(optionErrors[option.id]?.gu)}
+                                  error={!!optionErrors[option.id]?.gu}
                                   helperText={optionErrors[option.id]?.gu || ""}
                                 />
                                 <TextField
@@ -1363,7 +1349,7 @@ const QuestionsView = ({
                                   required
                                   multiline
                                   rows={2}
-                                  error={!!(optionErrors[option.id]?.en)}
+                                  error={!!optionErrors[option.id]?.en}
                                   helperText={optionErrors[option.id]?.en || ""}
                                 />
                                 <TextField
@@ -1383,7 +1369,7 @@ const QuestionsView = ({
                                   size="small"
                                   multiline
                                   rows={2}
-                                  error={!!(optionErrors[option.id]?.hi)}
+                                  error={!!optionErrors[option.id]?.hi}
                                   helperText={optionErrors[option.id]?.hi || ""}
                                 />
                               </Box>
@@ -1431,7 +1417,9 @@ const QuestionsView = ({
                             onClick={handleAddOptions}
                             disabled={
                               upsertQuestionOptionMutation.isPending ||
-                              Object.values(optionErrors).some((e) => e?.en || e?.hi || e?.gu)
+                              Object.values(optionErrors).some(
+                                (e) => e?.en || e?.hi || e?.gu,
+                              )
                             }
                             sx={{
                               bgcolor: colors.accent.green,
@@ -1946,7 +1934,9 @@ const QuestionsView = ({
                           </Button>
                         </Box>
                         {/* Validation Errors Display */}
-                        {(Object.values(optionErrors).some((e) => e?.en || e?.hi || e?.gu)) && (
+                        {Object.values(optionErrors).some(
+                          (e) => e?.en || e?.hi || e?.gu,
+                        ) && (
                           <Alert
                             severity="error"
                             sx={{
@@ -2060,7 +2050,7 @@ const QuestionsView = ({
                                 required
                                 multiline
                                 rows={2}
-                                error={!!(optionErrors[option.id]?.gu)}
+                                error={!!optionErrors[option.id]?.gu}
                                 helperText={optionErrors[option.id]?.gu || ""}
                               />
                               <TextField
@@ -2081,7 +2071,7 @@ const QuestionsView = ({
                                 required
                                 multiline
                                 rows={2}
-                                error={!!(optionErrors[option.id]?.en)}
+                                error={!!optionErrors[option.id]?.en}
                                 helperText={optionErrors[option.id]?.en || ""}
                               />
                               <TextField
@@ -2101,7 +2091,7 @@ const QuestionsView = ({
                                 size="small"
                                 multiline
                                 rows={2}
-                                error={!!(optionErrors[option.id]?.hi)}
+                                error={!!optionErrors[option.id]?.hi}
                                 helperText={optionErrors[option.id]?.hi || ""}
                               />
                             </Box>
@@ -2150,7 +2140,9 @@ const QuestionsView = ({
                         onClick={handleAddOptions}
                         disabled={
                           upsertQuestionOptionMutation.isPending ||
-                          Object.values(optionErrors).some((e) => e?.en || e?.hi || e?.gu)
+                          Object.values(optionErrors).some(
+                            (e) => e?.en || e?.hi || e?.gu,
+                          )
                         }
                         sx={{
                           bgcolor: colors.accent.green,
@@ -2500,7 +2492,9 @@ const QuestionsView = ({
                       </Button>
                     </Box>
                     {/* Validation Errors Display */}
-                    {(Object.values(optionErrors).some((e) => e?.en || e?.hi || e?.gu)) && (
+                    {Object.values(optionErrors).some(
+                      (e) => e?.en || e?.hi || e?.gu,
+                    ) && (
                       <Alert
                         severity="error"
                         sx={{
@@ -2600,7 +2594,7 @@ const QuestionsView = ({
                               required
                               multiline
                               rows={2}
-                              error={!!(optionErrors[option.id]?.gu)}
+                              error={!!optionErrors[option.id]?.gu}
                               helperText={optionErrors[option.id]?.gu || ""}
                             />
                             <TextField
@@ -2620,7 +2614,7 @@ const QuestionsView = ({
                               size="small"
                               multiline
                               rows={2}
-                              error={!!(optionErrors[option.id]?.en)}
+                              error={!!optionErrors[option.id]?.en}
                               helperText={optionErrors[option.id]?.en || ""}
                             />
                             <TextField
@@ -2640,7 +2634,7 @@ const QuestionsView = ({
                               size="small"
                               multiline
                               rows={2}
-                              error={!!(optionErrors[option.id]?.hi)}
+                              error={!!optionErrors[option.id]?.hi}
                               helperText={optionErrors[option.id]?.hi || ""}
                             />
                           </Box>
@@ -2685,7 +2679,9 @@ const QuestionsView = ({
                         onClick={handleAddOptions}
                         disabled={
                           upsertQuestionOptionMutation.isPending ||
-                          Object.values(optionErrors).some((e) => e?.en || e?.hi || e?.gu)
+                          Object.values(optionErrors).some(
+                            (e) => e?.en || e?.hi || e?.gu,
+                          )
                         }
                         sx={{
                           bgcolor: colors.accent.green,

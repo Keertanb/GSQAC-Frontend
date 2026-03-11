@@ -25,6 +25,7 @@ import useAuthStore from "../../store/useAuthStore";
 import { useLogoutMutation } from "../../services/authService";
 import AppDrawer from "../../components/AppDrawer/AppDrawer";
 import { DRAWER_WIDTH } from "../../constants/menuItems";
+import ConfirmationModal from "../../components/ConfirmationModal/ConfirmationModal";
 import "./parent-dashboard.css";
 
 const ParentDashboard = () => {
@@ -32,6 +33,7 @@ const ParentDashboard = () => {
   const theme = useTheme();
   const matchDownMD = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const { logout, user } = useAuthStore();
 
   const logoutMutation = useLogoutMutation({
@@ -51,6 +53,11 @@ const ParentDashboard = () => {
   };
 
   const handleLogout = () => {
+    setLogoutModalOpen(true);
+  };
+
+  const confirmLogout = () => {
+    setLogoutModalOpen(false);
     logoutMutation.mutate();
   };
 
@@ -195,6 +202,18 @@ const ParentDashboard = () => {
           </Container>
         </Box>
       </Box>
+
+      <ConfirmationModal
+        open={logoutModalOpen}
+        onClose={() => setLogoutModalOpen(false)}
+        onConfirm={confirmLogout}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        confirmText="Yes"
+        cancelText="Cancel"
+        variant="warning"
+        isLoading={logoutMutation.isPending}
+      />
     </Box>
   );
 };

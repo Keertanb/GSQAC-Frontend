@@ -66,6 +66,30 @@ import { getRoleId } from "../../../constants/roles";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
 import "./AssessmentManagement.css";
 
+// Format API date (YYYY-MM-DD or ISO) to DD/MM/YYYY for display
+const formatDateToDDMMYYYY = (dateStr) => {
+  if (!dateStr) return "";
+  const datePart = typeof dateStr === "string" ? dateStr.split("T")[0] : "";
+  if (!datePart || !/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return dateStr || "";
+  const [y, m, d] = datePart.split("-");
+  return `${d}/${m}/${y}`;
+};
+
+// Parse DD/MM/YYYY string to YYYY-MM-DD for API
+const parseDDMMYYYYToApi = (str) => {
+  if (!str || typeof str !== "string") return "";
+  const trimmed = str.trim().replace(/\s/g, "");
+  const match = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return "";
+  const [, d, m, y] = match;
+  const day = parseInt(d, 10);
+  const month = parseInt(m, 10);
+  const year = parseInt(y, 10);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${year}-${pad(month)}-${pad(day)}`;
+};
+
 const AssessmentManagement = () => {
   const { t, i18n } = useTranslation();
 
@@ -152,6 +176,9 @@ const AssessmentManagement = () => {
   const [deleteAssessmentModalOpen, setDeleteAssessmentModalOpen] =
     useState(false);
   const [assessmentToDelete, setAssessmentToDelete] = useState(null);
+  // Assessment Settings modal: date fields display as DD/MM/YYYY
+  const [editingDateKey, setEditingDateKey] = useState(null); // e.g. "2-startDate"
+  const [editingDateValue, setEditingDateValue] = useState("");
 
   // Assessment editing state
   const [showEditAssessment, setShowEditAssessment] = useState(false);
@@ -1509,43 +1536,73 @@ const AssessmentManagement = () => {
                       <TableCell>
                         <TextField
                           size="small"
-                          type="date"
+                          type="text"
+                          placeholder="DD/MM/YYYY"
                           value={
-                            roleAssignments[role.roleId]?.startDate?.split(
-                              "T",
-                            )[0] || ""
+                            editingDateKey === `${role.roleId}-startDate`
+                              ? editingDateValue
+                              : formatDateToDDMMYYYY(
+                                  roleAssignments[role.roleId]?.startDate,
+                                )
                           }
+                          onFocus={() => {
+                            setEditingDateKey(`${role.roleId}-startDate`);
+                            setEditingDateValue(
+                              formatDateToDDMMYYYY(
+                                roleAssignments[role.roleId]?.startDate,
+                              ),
+                            );
+                          }}
                           onChange={(e) =>
-                            handleRoleAssignmentChange(
-                              role.roleId,
-                              "startDate",
-                              e.target.value,
-                            )
+                            setEditingDateValue(e.target.value)
                           }
+                          onBlur={() => {
+                            const parsed = parseDDMMYYYYToApi(editingDateValue);
+                            if (editingDateKey === `${role.roleId}-startDate`) {
+                              handleRoleAssignmentChange(
+                                role.roleId,
+                                "startDate",
+                                parsed || "",
+                              );
+                              setEditingDateKey(null);
+                            }
+                          }}
                           InputLabelProps={{ shrink: true }}
                         />
                       </TableCell>
                       <TableCell>
                         <TextField
                           size="small"
-                          type="date"
+                          type="text"
+                          placeholder="DD/MM/YYYY"
                           value={
-                            roleAssignments[role.roleId]?.endDate?.split(
-                              "T",
-                            )[0] || ""
+                            editingDateKey === `${role.roleId}-endDate`
+                              ? editingDateValue
+                              : formatDateToDDMMYYYY(
+                                  roleAssignments[role.roleId]?.endDate,
+                                )
                           }
+                          onFocus={() => {
+                            setEditingDateKey(`${role.roleId}-endDate`);
+                            setEditingDateValue(
+                              formatDateToDDMMYYYY(
+                                roleAssignments[role.roleId]?.endDate,
+                              ),
+                            );
+                          }}
                           onChange={(e) =>
-                            handleRoleAssignmentChange(
-                              role.roleId,
-                              "endDate",
-                              e.target.value,
-                            )
+                            setEditingDateValue(e.target.value)
                           }
-                          inputProps={{
-                            min:
-                              roleAssignments[role.roleId]?.startDate?.split(
-                                "T",
-                              )[0] || undefined,
+                          onBlur={() => {
+                            const parsed = parseDDMMYYYYToApi(editingDateValue);
+                            if (editingDateKey === `${role.roleId}-endDate`) {
+                              handleRoleAssignmentChange(
+                                role.roleId,
+                                "endDate",
+                                parsed || "",
+                              );
+                              setEditingDateKey(null);
+                            }
                           }}
                           InputLabelProps={{ shrink: true }}
                         />

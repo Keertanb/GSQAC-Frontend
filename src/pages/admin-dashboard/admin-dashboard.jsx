@@ -28,6 +28,7 @@ import {
   ADMIN_ROLE_MANAGEMENT_URL,
   ADMIN_DISTRICT_NODAL_OFFICERS_URL,
 } from "../../routes/routeUrls";
+import ConfirmationModal from "../../components/ConfirmationModal/ConfirmationModal";
 import "./admin-dashboard.css";
 
 const AdminDashboard = () => {
@@ -36,6 +37,7 @@ const AdminDashboard = () => {
   const theme = useTheme();
   const matchDownMD = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const { logout, user } = useAuthStore();
 
   const logoutMutation = useLogoutMutation({
@@ -55,6 +57,11 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
+    setLogoutModalOpen(true);
+  };
+
+  const confirmLogout = () => {
+    setLogoutModalOpen(false);
     logoutMutation.mutate();
   };
 
@@ -378,6 +385,18 @@ const AdminDashboard = () => {
           </Box>
         </Box>
       </Box>
+
+      <ConfirmationModal
+        open={logoutModalOpen}
+        onClose={() => setLogoutModalOpen(false)}
+        onConfirm={confirmLogout}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        confirmText="Yes"
+        cancelText="Cancel"
+        variant="warning"
+        isLoading={logoutMutation.isPending}
+      />
     </Box>
   );
 };
