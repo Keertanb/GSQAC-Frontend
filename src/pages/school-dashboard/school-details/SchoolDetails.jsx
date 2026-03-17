@@ -501,7 +501,7 @@ const SchoolDetails = () => {
     if (isError) {
       enqueueSnackbar(
         error?.response?.data?.message || "Failed to load school data",
-        { variant: "error" }
+        { variant: "error" },
       );
     }
   }, [isError, error]);
@@ -529,16 +529,16 @@ const SchoolDetails = () => {
     const payload = {
       schoolId: schoolData.udiseCode || schoolId,
       drinkingWater: convertToNumber(
-        field === "drinkingWater" ? value : schoolData.drinkingWater
+        field === "drinkingWater" ? value : schoolData.drinkingWater,
       ),
       puccaBuilding: convertToNumber(
-        field === "puccaBuilding" ? value : schoolData.puccaBuilding
+        field === "puccaBuilding" ? value : schoolData.puccaBuilding,
       ),
       electricity: convertToNumber(
-        field === "electricity" ? value : schoolData.electricity
+        field === "electricity" ? value : schoolData.electricity,
       ),
       functionalToilets: convertToNumber(
-        field === "functionalToilets" ? value : schoolData.functionalToilets
+        field === "functionalToilets" ? value : schoolData.functionalToilets,
       ),
     };
 
@@ -1199,7 +1199,7 @@ const SchoolDetails = () => {
                           onChange={(value) =>
                             handleFacilityChange(
                               getFieldName("Drinking Water"),
-                              value
+                              value,
                             )
                           }
                         />
@@ -1219,7 +1219,7 @@ const SchoolDetails = () => {
                           onChange={(value) =>
                             handleFacilityChange(
                               getFieldName("Pucca Building"),
-                              value
+                              value,
                             )
                           }
                         />
@@ -1239,7 +1239,7 @@ const SchoolDetails = () => {
                           onChange={(value) =>
                             handleFacilityChange(
                               getFieldName("Electricity"),
-                              value
+                              value,
                             )
                           }
                         />
@@ -1259,7 +1259,7 @@ const SchoolDetails = () => {
                           onChange={(value) =>
                             handleFacilityChange(
                               getFieldName("Functional Toilets"),
-                              value
+                              value,
                             )
                           }
                         />

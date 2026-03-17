@@ -34,6 +34,7 @@ import {
   INSPECTOR_SCHOOL_VERIFICATION_URL,
   INSPECTOR_COMPLETED_URL,
 } from "../../routes/routeUrls";
+import ConfirmationModal from "../../components/ConfirmationModal/ConfirmationModal";
 import "./inspector-dashboard.css";
 
 const InspectorDashboard = () => {
@@ -42,6 +43,7 @@ const InspectorDashboard = () => {
   const theme = useTheme();
   const matchDownMD = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const { logout, user } = useAuthStore();
 
   const logoutMutation = useLogoutMutation({
@@ -61,6 +63,11 @@ const InspectorDashboard = () => {
   };
 
   const handleLogout = () => {
+    setLogoutModalOpen(true);
+  };
+
+  const confirmLogout = () => {
+    setLogoutModalOpen(false);
     logoutMutation.mutate();
   };
 
@@ -93,7 +100,7 @@ const InspectorDashboard = () => {
         sx={{
           flexGrow: 1,
           width: "100%",
-          marginLeft: drawerOpen && !matchDownMD ? `${DRAWER_WIDTH.xs}px` : 0,
+          marginLeft: drawerOpen && !matchDownMD ? 5 : 0,
           [`@media (min-width:${theme.breakpoints.values.xl}px)`]: {
             marginLeft: drawerOpen && !matchDownMD ? 5 : 0,
           },
@@ -307,7 +314,8 @@ const InspectorDashboard = () => {
                   gutterBottom
                   sx={{ fontWeight: 700, mb: 3 }}
                 >
-                  Welcome{user?.name ? `, ${user.name}` : ""} to Inspector Dashboard
+                  Welcome{user?.name ? `, ${user.name}` : ""} to Inspector
+                  Dashboard
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
                   Please select a section from the sidebar menu.
@@ -317,6 +325,18 @@ const InspectorDashboard = () => {
           </Box>
         </Box>
       </Box>
+
+      <ConfirmationModal
+        open={logoutModalOpen}
+        onClose={() => setLogoutModalOpen(false)}
+        onConfirm={confirmLogout}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        confirmText="Yes"
+        cancelText="Cancel"
+        variant="warning"
+        isLoading={logoutMutation.isPending}
+      />
     </Box>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -55,7 +55,7 @@ const QuestionsView = ({
   currentLanguage,
   isViewOnly = false,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   // eslint-disable-next-line no-unused-vars
   const { userId } = useAuthStore();
@@ -77,6 +77,13 @@ const QuestionsView = ({
   );
   const [hasLanguageChanged, setHasLanguageChanged] = useState(false); // Track if language has been changed by user
   const languageCode = languageCodeMap[selectedLanguage] || "EN";
+
+  // Sync i18n with selected language so buttons, titles, and all t() strings update when user changes language
+  useEffect(() => {
+    if (selectedLanguage && i18n.language !== selectedLanguage) {
+      i18n.changeLanguage(selectedLanguage);
+    }
+  }, [selectedLanguage, i18n]);
 
   const subDomainId = subdomainData?.subDomainId || subdomainData?.id;
 
@@ -103,12 +110,9 @@ const QuestionsView = ({
   const [translationId, setTranslationId] = useState(null); // Store translation ID for subsequent calls
   const [optionTranslationIds, setOptionTranslationIds] = useState({}); // Store translation IDs for each option
   const [questionType, setQuestionType] = useState("single_choice"); // New state for question type
+  const [allowImageUpload, setAllowImageUpload] = useState("no"); // For MCQ: allow image upload in school assessment
   const [flnAnswer, setFlnAnswer] = useState(""); // State for FLN text field answer
-  const [optionErrors, setOptionErrors] = useState({
-    en: "",
-    hi: "",
-    gu: "",
-  }); // State for option validation errors
+  const [optionErrors, setOptionErrors] = useState({}); // State for option validation errors (per option: { [optionId]: { en, hi, gu } })
 
   // Map question type strings to numbers
   const questionTypeMap = {
@@ -129,7 +133,7 @@ const QuestionsView = ({
     getRoleByRoleId(roleId),
   );
 
-  // Fetch questions - only send languageCode when user has changed the language
+  // Fetch questions - pass languageCode when user has changed language so API returns that language and query key triggers refetch
   const {
     data: questionsData,
     isLoading,
@@ -138,11 +142,15 @@ const QuestionsView = ({
   } = useGetSubdomainQuestionsQuery({
     subDomainId,
     roleId,
-    ...(hasLanguageChanged && { languageCode }), // Only include languageCode if language has been changed
+    ...(hasLanguageChanged && { languageCode }),
     enabled: !!subdomainData && !!subDomainId,
   });
 
-  const questions = questionsData?.data || [];
+  const questions = Array.isArray(questionsData?.data?.data)
+    ? questionsData.data.data
+    : Array.isArray(questionsData?.data)
+      ? questionsData.data
+      : [];
 
   const upsertQuestionMutation = useUpsertQuestionMutation();
   const upsertQuestionOptionMutation = useUpsertQuestionOptionMutation();
@@ -235,30 +243,34 @@ const QuestionsView = ({
 
   const handleDeleteOption = (optionId) => {
     if (newOptions.length > 2) {
-      setNewOptions(newOptions.filter((opt) => opt.id !== optionId));
+      const updatedOptions = newOptions.filter((opt) => opt.id !== optionId);
+      setNewOptions(updatedOptions);
+      setOptionErrors(validateOptions(updatedOptions));
     }
   };
 
-  // Validation function to check for duplicate options
+  // Validation function to check for duplicate options (error only on duplicate/second occurrence, like confirm password)
   const validateOptions = (options) => {
-    const errors = { en: "", hi: "", gu: "" };
+    const errors = {};
+    options.forEach((opt) => {
+      errors[opt.id] = { en: "", hi: "", gu: "" };
+    });
 
-    // Check for duplicates in each language
     ["en", "hi", "gu"].forEach((lang) => {
-      const values = options
-        .map((opt) => opt.text[lang]?.trim())
-        .filter((val) => val !== "");
-
-      // Check for duplicates
-      const duplicates = values.filter(
-        (val, index) => values.indexOf(val) !== index,
-      );
-
-      if (duplicates.length > 0) {
-        const langName =
-          lang === "en" ? "English" : lang === "hi" ? "Hindi" : "Gujarati";
-        errors[lang] = `Duplicate ${langName} options are not allowed`;
-      }
+      const langName =
+        lang === "en" ? "English" : lang === "hi" ? "Hindi" : "Gujarati";
+      const seen = {}; // value -> first optionId that had this value
+      options.forEach((opt) => {
+        const val = opt.text[lang]?.trim();
+        if (val === "") return;
+        if (seen[val] !== undefined) {
+          // This option is a duplicate (second or later occurrence) – show error only here
+          errors[opt.id][lang] =
+            `Duplicate ${langName} options are not allowed`;
+        } else {
+          seen[val] = opt.id;
+        }
+      });
     });
 
     return errors;
@@ -282,7 +294,7 @@ const QuestionsView = ({
   const handleAddQuestion = async () => {
     if (!newQuestionText.en.trim()) {
       enqueueSnackbar(
-        "Please fill in the question text (English is required)",
+        "Please fill in the question text (Gujarati and English is required)",
         {
           variant: "warning",
         },
@@ -298,6 +310,9 @@ const QuestionsView = ({
         questionTextHi: newQuestionText.hi.trim(),
         questionType: questionTypeMap[questionType] || 1,
       };
+      if (questionType === "single_choice") {
+        questionPayload.allowImageUpload = allowImageUpload === "yes" ? 1 : 0;
+      }
 
       // If editing, include questionId
       if (editingQuestion) {
@@ -404,12 +419,7 @@ const QuestionsView = ({
       }, 100);
     } catch (error) {
       console.error("Error adding question:", error);
-      enqueueSnackbar(
-        error?.response?.data?.message || "Failed to save question",
-        {
-          variant: "error",
-        },
-      );
+      // Error toaster is shown by useUpsertQuestionMutation onError in adminService
     }
   };
 
@@ -426,8 +436,11 @@ const QuestionsView = ({
     const errors = validateOptions(newOptions);
     setOptionErrors(errors);
 
-    // Check if there are any validation errors
-    if (errors.en || errors.hi || errors.gu) {
+    // Check if there are any validation errors (per-option errors)
+    const hasDuplicateError = Object.values(errors).some(
+      (e) => e?.en || e?.hi || e?.gu,
+    );
+    if (hasDuplicateError) {
       enqueueSnackbar("Please fix duplicate options before saving", {
         variant: "error",
       });
@@ -444,25 +457,18 @@ const QuestionsView = ({
     }
 
     try {
-      // Add/Update options for the question
-      const optionPromises = validOptions.map(async (opt) => {
-        const optionPayload = {
-          questionId: currentQuestionId,
+      // Send all options in one API call, in sequence
+      const payload = {
+        questionId: currentQuestionId,
+        options: validOptions.map((opt) => ({
+          optionId: opt.optionId ?? null,
+          optionTextGu: opt.text.gu.trim(),
           optionTextEn: opt.text.en.trim(),
           optionTextHi: opt.text.hi.trim(),
-          optionTextGu: opt.text.gu.trim(),
-        };
+        })),
+      };
 
-        // If editing and option has optionId, include it
-        if (opt.optionId) {
-          optionPayload.optionId = opt.optionId;
-        }
-
-        return upsertQuestionOptionMutation.mutateAsync(optionPayload);
-      });
-
-      // Wait for all options to be added
-      await Promise.all(optionPromises);
+      await upsertQuestionOptionMutation.mutateAsync(payload);
 
       // Success - refresh and reset form
       enqueueSnackbar(
@@ -493,12 +499,7 @@ const QuestionsView = ({
       setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
     } catch (error) {
       console.error("Error adding options:", error);
-      enqueueSnackbar(
-        error?.response?.data?.message || "Failed to save options",
-        {
-          variant: "error",
-        },
-      );
+      // Error toaster is shown by useUpsertQuestionOptionMutation onError in adminService
     }
   };
 
@@ -521,7 +522,11 @@ const QuestionsView = ({
       4: "fln",
     };
     setQuestionType(typeMapping[question.questionType] || "single_choice");
-
+    setAllowImageUpload(
+      question.allowImageUpload === 1 || question.allowImageUpload === "1" || question.allowImageUpload === "yes" || question.allowImageUpload === true
+        ? "yes"
+        : "no",
+    );
     // Set classroom observation fields
     setIsClassroomObservation(question.isClassroomObservation || 0);
 
@@ -658,7 +663,7 @@ const QuestionsView = ({
   };
 
   const getQuestionText = (question) => {
-    // Display question based on selected language
+    // Display question based on selected language; fallback to generic questionText when API returns single-language response
     switch (selectedLanguage) {
       case "en":
         return question.questionTextEn || question.questionText || "";
@@ -672,7 +677,7 @@ const QuestionsView = ({
   };
 
   const getOptionText = (option) => {
-    // Display option based on selected language
+    // Display option based on selected language; fallback to generic optionText when API returns single-language response
     switch (selectedLanguage) {
       case "en":
         return option.optionTextEn || option.optionText || "";
@@ -885,6 +890,7 @@ const QuestionsView = ({
                 ]);
                 setIsClassroomObservation(0);
                 setQuestionType("single_choice");
+                setAllowImageUpload("no");
                 setShowAddQuestion(!showAddQuestion);
 
                 // Scroll to add question section after state update
@@ -985,6 +991,7 @@ const QuestionsView = ({
                               value={questionType}
                               onChange={(e) => {
                                 setQuestionType(e.target.value);
+                                if (e.target.value !== "single_choice") setAllowImageUpload("no");
                                 // Reset related fields when question type changes
                                 if (e.target.value === "fln") {
                                   setFlnAnswer("");
@@ -1024,6 +1031,21 @@ const QuestionsView = ({
                               </MenuItem>
                             </Select>
                           </FormControl>
+                          {questionType === "single_choice" && (
+                            <FormControl component="fieldset" fullWidth size="small" sx={{ mt: 1 }}>
+                              <FormLabel component="legend" sx={{ fontSize: "0.875rem", fontWeight: 600, color: "text.primary", mb: 1 }}>
+                                Allow image upload
+                              </FormLabel>
+                              <RadioGroup
+                                row
+                                value={allowImageUpload}
+                                onChange={(e) => setAllowImageUpload(e.target.value)}
+                              >
+                                <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
+                                <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+                              </RadioGroup>
+                            </FormControl>
+                          )}
                           <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                             <TextField
                               fullWidth
@@ -1223,9 +1245,9 @@ const QuestionsView = ({
                           </Button>
                         </Box>
                         {/* Validation Errors Display */}
-                        {(optionErrors.en ||
-                          optionErrors.hi ||
-                          optionErrors.gu) && (
+                        {Object.values(optionErrors).some(
+                          (e) => e?.en || e?.hi || e?.gu,
+                        ) && (
                           <Alert
                             severity="error"
                             sx={{
@@ -1239,19 +1261,19 @@ const QuestionsView = ({
                             >
                               Validation Errors:
                             </Typography>
-                            {optionErrors.en && (
+                            {Object.values(optionErrors).some((e) => e?.en) && (
                               <Typography variant="body2" sx={{ mb: 0.5 }}>
-                                • {optionErrors.en}
+                                • Duplicate English options are not allowed
                               </Typography>
                             )}
-                            {optionErrors.hi && (
+                            {Object.values(optionErrors).some((e) => e?.hi) && (
                               <Typography variant="body2" sx={{ mb: 0.5 }}>
-                                • {optionErrors.hi}
+                                • Duplicate Hindi options are not allowed
                               </Typography>
                             )}
-                            {optionErrors.gu && (
+                            {Object.values(optionErrors).some((e) => e?.gu) && (
                               <Typography variant="body2">
-                                • {optionErrors.gu}
+                                • Duplicate Gujarati options are not allowed
                               </Typography>
                             )}
                           </Alert>
@@ -1331,8 +1353,8 @@ const QuestionsView = ({
                                   required
                                   multiline
                                   rows={2}
-                                  error={!!optionErrors.gu}
-                                  helperText={optionErrors.gu || ""}
+                                  error={!!optionErrors[option.id]?.gu}
+                                  helperText={optionErrors[option.id]?.gu || ""}
                                 />
                                 <TextField
                                   fullWidth
@@ -1352,8 +1374,8 @@ const QuestionsView = ({
                                   required
                                   multiline
                                   rows={2}
-                                  error={!!optionErrors.en}
-                                  helperText={optionErrors.en || ""}
+                                  error={!!optionErrors[option.id]?.en}
+                                  helperText={optionErrors[option.id]?.en || ""}
                                 />
                                 <TextField
                                   fullWidth
@@ -1372,8 +1394,8 @@ const QuestionsView = ({
                                   size="small"
                                   multiline
                                   rows={2}
-                                  error={!!optionErrors.hi}
-                                  helperText={optionErrors.hi || ""}
+                                  error={!!optionErrors[option.id]?.hi}
+                                  helperText={optionErrors[option.id]?.hi || ""}
                                 />
                               </Box>
                               {/* Translation Button for Option */}
@@ -1420,9 +1442,9 @@ const QuestionsView = ({
                             onClick={handleAddOptions}
                             disabled={
                               upsertQuestionOptionMutation.isPending ||
-                              !!optionErrors.en ||
-                              !!optionErrors.hi ||
-                              !!optionErrors.gu
+                              Object.values(optionErrors).some(
+                                (e) => e?.en || e?.hi || e?.gu,
+                              )
                             }
                             sx={{
                               bgcolor: colors.accent.green,
@@ -1677,6 +1699,7 @@ const QuestionsView = ({
                         value={questionType}
                         onChange={(e) => {
                           setQuestionType(e.target.value);
+                          if (e.target.value !== "single_choice") setAllowImageUpload("no");
                           if (e.target.value === "fln") {
                             setFlnAnswer("");
                           } else {
@@ -1712,6 +1735,21 @@ const QuestionsView = ({
                         <MenuItem value="fln">Input Type Question</MenuItem>
                       </Select>
                     </FormControl>
+                    {questionType === "single_choice" && (
+                      <FormControl component="fieldset" fullWidth size="small" sx={{ mt: 1 }}>
+                        <FormLabel component="legend" sx={{ fontSize: "0.875rem", fontWeight: 600, color: "text.primary", mb: 1 }}>
+                          Allow image upload
+                        </FormLabel>
+                        <RadioGroup
+                          row
+                          value={allowImageUpload}
+                          onChange={(e) => setAllowImageUpload(e.target.value)}
+                        >
+                          <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
+                          <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+                        </RadioGroup>
+                      </FormControl>
+                    )}
                     <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                       <TextField
                         fullWidth
@@ -1937,9 +1975,9 @@ const QuestionsView = ({
                           </Button>
                         </Box>
                         {/* Validation Errors Display */}
-                        {(optionErrors.en ||
-                          optionErrors.hi ||
-                          optionErrors.gu) && (
+                        {Object.values(optionErrors).some(
+                          (e) => e?.en || e?.hi || e?.gu,
+                        ) && (
                           <Alert
                             severity="error"
                             sx={{
@@ -1953,19 +1991,19 @@ const QuestionsView = ({
                             >
                               Validation Errors:
                             </Typography>
-                            {optionErrors.en && (
+                            {Object.values(optionErrors).some((e) => e?.en) && (
                               <Typography variant="body2" sx={{ mb: 0.5 }}>
-                                • {optionErrors.en}
+                                • Duplicate English options are not allowed
                               </Typography>
                             )}
-                            {optionErrors.hi && (
+                            {Object.values(optionErrors).some((e) => e?.hi) && (
                               <Typography variant="body2" sx={{ mb: 0.5 }}>
-                                • {optionErrors.hi}
+                                • Duplicate Hindi options are not allowed
                               </Typography>
                             )}
-                            {optionErrors.gu && (
+                            {Object.values(optionErrors).some((e) => e?.gu) && (
                               <Typography variant="body2">
-                                • {optionErrors.gu}
+                                • Duplicate Gujarati options are not allowed
                               </Typography>
                             )}
                           </Alert>
@@ -2053,8 +2091,8 @@ const QuestionsView = ({
                                 required
                                 multiline
                                 rows={2}
-                                error={!!optionErrors.gu}
-                                helperText={optionErrors.gu || ""}
+                                error={!!optionErrors[option.id]?.gu}
+                                helperText={optionErrors[option.id]?.gu || ""}
                               />
                               <TextField
                                 fullWidth
@@ -2074,8 +2112,8 @@ const QuestionsView = ({
                                 required
                                 multiline
                                 rows={2}
-                                error={!!optionErrors.en}
-                                helperText={optionErrors.en || ""}
+                                error={!!optionErrors[option.id]?.en}
+                                helperText={optionErrors[option.id]?.en || ""}
                               />
                               <TextField
                                 fullWidth
@@ -2094,8 +2132,8 @@ const QuestionsView = ({
                                 size="small"
                                 multiline
                                 rows={2}
-                                error={!!optionErrors.hi}
-                                helperText={optionErrors.hi || ""}
+                                error={!!optionErrors[option.id]?.hi}
+                                helperText={optionErrors[option.id]?.hi || ""}
                               />
                             </Box>
                             {/* Translation Button for Option */}
@@ -2143,9 +2181,9 @@ const QuestionsView = ({
                         onClick={handleAddOptions}
                         disabled={
                           upsertQuestionOptionMutation.isPending ||
-                          !!optionErrors.en ||
-                          !!optionErrors.hi ||
-                          !!optionErrors.gu
+                          Object.values(optionErrors).some(
+                            (e) => e?.en || e?.hi || e?.gu,
+                          )
                         }
                         sx={{
                           bgcolor: colors.accent.green,
@@ -2266,6 +2304,7 @@ const QuestionsView = ({
                         value={questionType}
                         onChange={(e) => {
                           setQuestionType(e.target.value);
+                          if (e.target.value !== "single_choice") setAllowImageUpload("no");
                           if (e.target.value === "fln") {
                             setFlnAnswer("");
                           } else {
@@ -2301,6 +2340,21 @@ const QuestionsView = ({
                         <MenuItem value="fln">Input Type Question</MenuItem>
                       </Select>
                     </FormControl>
+                    {questionType === "single_choice" && (
+                      <FormControl component="fieldset" fullWidth size="small" sx={{ mt: 1 }}>
+                        <FormLabel component="legend" sx={{ fontSize: "0.875rem", fontWeight: 600, color: "text.primary", mb: 1 }}>
+                          Allow image upload
+                        </FormLabel>
+                        <RadioGroup
+                          row
+                          value={allowImageUpload}
+                          onChange={(e) => setAllowImageUpload(e.target.value)}
+                        >
+                          <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
+                          <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+                        </RadioGroup>
+                      </FormControl>
+                    )}
                     <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                       <TextField
                         fullWidth
@@ -2495,9 +2549,9 @@ const QuestionsView = ({
                       </Button>
                     </Box>
                     {/* Validation Errors Display */}
-                    {(optionErrors.en ||
-                      optionErrors.hi ||
-                      optionErrors.gu) && (
+                    {Object.values(optionErrors).some(
+                      (e) => e?.en || e?.hi || e?.gu,
+                    ) && (
                       <Alert
                         severity="error"
                         sx={{
@@ -2511,19 +2565,19 @@ const QuestionsView = ({
                         >
                           Validation Errors:
                         </Typography>
-                        {optionErrors.en && (
+                        {Object.values(optionErrors).some((e) => e?.en) && (
                           <Typography variant="body2" sx={{ mb: 0.5 }}>
-                            • {optionErrors.en}
+                            • Duplicate English options are not allowed
                           </Typography>
                         )}
-                        {optionErrors.hi && (
+                        {Object.values(optionErrors).some((e) => e?.hi) && (
                           <Typography variant="body2" sx={{ mb: 0.5 }}>
-                            • {optionErrors.hi}
+                            • Duplicate Hindi options are not allowed
                           </Typography>
                         )}
-                        {optionErrors.gu && (
+                        {Object.values(optionErrors).some((e) => e?.gu) && (
                           <Typography variant="body2">
-                            • {optionErrors.gu}
+                            • Duplicate Gujarati options are not allowed
                           </Typography>
                         )}
                       </Alert>
@@ -2597,8 +2651,8 @@ const QuestionsView = ({
                               required
                               multiline
                               rows={2}
-                              error={!!optionErrors.gu}
-                              helperText={optionErrors.gu || ""}
+                              error={!!optionErrors[option.id]?.gu}
+                              helperText={optionErrors[option.id]?.gu || ""}
                             />
                             <TextField
                               fullWidth
@@ -2617,8 +2671,8 @@ const QuestionsView = ({
                               size="small"
                               multiline
                               rows={2}
-                              error={!!optionErrors.en}
-                              helperText={optionErrors.en || ""}
+                              error={!!optionErrors[option.id]?.en}
+                              helperText={optionErrors[option.id]?.en || ""}
                             />
                             <TextField
                               fullWidth
@@ -2637,8 +2691,8 @@ const QuestionsView = ({
                               size="small"
                               multiline
                               rows={2}
-                              error={!!optionErrors.hi}
-                              helperText={optionErrors.hi || ""}
+                              error={!!optionErrors[option.id]?.hi}
+                              helperText={optionErrors[option.id]?.hi || ""}
                             />
                           </Box>
                           {/* {option.text.gu.trim() && (
@@ -2682,9 +2736,9 @@ const QuestionsView = ({
                         onClick={handleAddOptions}
                         disabled={
                           upsertQuestionOptionMutation.isPending ||
-                          !!optionErrors.en ||
-                          !!optionErrors.hi ||
-                          !!optionErrors.gu
+                          Object.values(optionErrors).some(
+                            (e) => e?.en || e?.hi || e?.gu,
+                          )
                         }
                         sx={{
                           bgcolor: colors.accent.green,

@@ -112,8 +112,8 @@ export const upsertQuestion = async (payload) => {
 };
 
 /**
- * Upsert (add or edit) question option
- * @param {Object} payload - { optionId?: number, questionId: number, optionTextEn: string, optionTextHi: string, optionTextGu: string }
+ * Upsert (add or edit) question options in one request
+ * @param {Object} payload - { questionId: number, options: Array<{ optionId?: number | null, optionTextEn: string, optionTextHi: string, optionTextGu: string }> }
  * @returns {Promise} API response
  */
 export const upsertQuestionOption = async (payload) => {
@@ -324,9 +324,6 @@ export const useUpsertQuestionMutation = (options = {}) => {
     mutationFn: (data) => upsertQuestion(data),
     mutationKey: queryKeys.admin.upsertQuestion(),
     onSuccess: (data) => {
-      enqueueSnackbar(data?.message || "Question saved successfully", {
-        variant: "success",
-      });
       if (options.onSuccess) {
         options.onSuccess(data);
       }
@@ -511,6 +508,28 @@ export const useSubmitAnswerMutation = (options = {}) => {
 export const getVerifiers = async (params) => {
   const response = await axiosInstance.get("/admin/verifier", { params });
   return response.data;
+};
+
+/**
+ * Get verifier count (total, active, inactive)
+ * @returns {Promise} API response - { data: { TOTAL_VERIFIER, ACTIVE_VERIFIER, INACTIVE_VERIFIER } }
+ */
+export const getVerifierCount = async () => {
+  const response = await axiosInstance.get("/admin/verifire-count");
+  return response.data;
+};
+
+/**
+ * React Query hook for getting verifier count
+ * @returns {Object} Query object from React Query
+ */
+export const useGetVerifierCountQuery = (options = {}) => {
+  return useQuery({
+    queryKey: ["admin", "verifier-count"],
+    queryFn: getVerifierCount,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    ...options,
+  });
 };
 
 /**
@@ -981,7 +1000,9 @@ export const updateAssessmentRoleAssignment = async (payload) => {
  * @returns {Promise} API response
  */
 export const deleteSubdomain = async (subDomainId) => {
-  const response = await axiosInstance.delete(`/questionnaire/sub-domain/${subDomainId}`);
+  const response = await axiosInstance.delete("/questionnaire/sub-domain", {
+    params: { subDomainId },
+  });
   return response.data;
 };
 

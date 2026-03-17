@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -48,6 +48,8 @@ import {
   School as SchoolIcon,
   Language,
   Create,
+  PhotoCamera,
+  Close,
 } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import {
@@ -106,6 +108,10 @@ const SelfAssessment = () => {
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
   const [selectedQuestionTab, setSelectedQuestionTab] = useState(0);
   const [sessionId, setSessionId] = useState(null);
+  // MCQ image upload: { [questionId]: [base64OrNull, base64OrNull] }, max 2 per question
+  const [mcqQuestionImages, setMcqQuestionImages] = useState({});
+  const mcqImageInputRef = useRef(null);
+  const [pendingMcqImageSlot, setPendingMcqImageSlot] = useState(null);
 
   const logoutMutation = useLogoutMutation({
     onSuccess: () => {
@@ -321,12 +327,15 @@ const SelfAssessment = () => {
   const endDate = domainsData?.endDate || null;
   const isSubmitted = domainsData?.isSubmitted || false;
 
-  // Check if endDate has passed
+  // Check if endDate has passed (end date is inclusive - closed only after end of endDate day)
   const isEndDatePassed = useMemo(() => {
     if (!endDate) return false;
-    const endDateObj = new Date(endDate);
     const currentDate = new Date();
-    return currentDate > endDateObj;
+    const endDateObj = new Date(endDate);
+    // Compare date-only so that the full endDate day is still open
+    const toDateOnly = (d) =>
+      new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    return toDateOnly(currentDate) > toDateOnly(endDateObj);
   }, [endDate]);
 
   // Assessment is read-only if submitted or endDate has passed
@@ -925,9 +934,8 @@ const SelfAssessment = () => {
     if (selectedClass) {
       setSelectedSection(null);
       setSelectedSubject(null);
-      // Clear answers when class changes
+      // Clear MCQ/option answers only; keep textAnswers so FLN prefill persists
       setAnswers({});
-      setTextAnswers({});
     }
   }, [selectedClass]);
 
@@ -935,80 +943,72 @@ const SelfAssessment = () => {
   useEffect(() => {
     if (selectedSection) {
       setSelectedSubject(null);
-      // Clear answers when section changes
+      // Clear MCQ/option answers only; keep textAnswers so FLN prefill persists
       setAnswers({});
-      setTextAnswers({});
     }
   }, [selectedSection]);
 
-  // Effect to load API answers when questions are fetched (API answers take priority)
+  // Effect to load API answers when questions are fetched (same as SchoolVerification)
   useEffect(() => {
-    if (allQuestions && allQuestions.length > 0 && selectedSubdomain) {
+    const questionsForOptions = allQuestions && allQuestions.length > 0 ? allQuestions : [];
+    const questionsForFLN = allQuestionsForCount && allQuestionsForCount.length > 0 ? allQuestionsForCount : questionsForOptions;
+
+    if ((questionsForOptions.length > 0 || questionsForFLN.length > 0) && selectedSubdomain) {
       const apiAnswers = {};
       const apiTextAnswers = {};
-      const flnAnswersMap = {}; // To group FLN answers by questionId
+      const flnAnswersMap = {};
 
-      allQuestions.forEach((question) => {
+      // Build FLN prefill from unfiltered list so FLN rows (questionId, std, answerText) are always present
+      questionsForFLN.forEach((question) => {
         const questionType =
           question.questionType ||
           (question.isClassroomObservation === 1 ? 2 : 1);
 
-        // Check if required dropdowns are selected based on question type
-        let shouldLoadAnswer = false;
+        if (questionType !== 4 && questionType !== "4") return;
 
+        const marksValue = question.obtainedMarks ?? question.answerText;
+        const hasStd = question.std != null;
+        const hasMarks = marksValue != null && marksValue !== "";
+
+        if (hasStd && hasMarks) {
+          const qId = question.questionId;
+          if (!flnAnswersMap[qId]) flnAnswersMap[qId] = {};
+          const stdKey = Number(question.std);
+          flnAnswersMap[qId][stdKey] = {
+            obtainedMarks: String(marksValue),
+            answerId: question.answerId ?? null,
+          };
+        }
+      });
+
+      // Process non-FLN answers from the (possibly filtered) questions list
+      questionsForOptions.forEach((question) => {
+        const questionType =
+          question.questionType ||
+          (question.isClassroomObservation === 1 ? 2 : 1);
+
+        let shouldLoadAnswer = false;
         if (questionType === 1 || questionType === "1") {
-          // General questions - no dropdowns needed
           shouldLoadAnswer = true;
         } else if (questionType === 2 || questionType === "2") {
-          // Classroom observation - needs class and section
           shouldLoadAnswer = !!selectedClass && !!selectedSection;
         } else if (questionType === 3 || questionType === "3") {
-          // Subject observation - needs class, section, and subject
-          // Also check if the question's subjectId matches the selected subject
           shouldLoadAnswer =
             !!selectedClass &&
             !!selectedSection &&
             !!selectedSubject &&
             question.subjectId === Number(selectedSubject);
         } else if (questionType === 4 || questionType === "4") {
-          // FLN questions - no dropdowns needed
-          shouldLoadAnswer = true;
-        }
-
-        // Only load answers if required dropdowns are selected
-        if (!shouldLoadAnswer) {
           return;
         }
 
-        // For FLN questions (type 4), group by questionId and std
-        if (questionType === 4 || questionType === "4") {
-          const qId = question.questionId;
+        if (!shouldLoadAnswer || !question.selectedOptionId) return;
 
-          // Initialize map for this question if not exists
-          if (!flnAnswersMap[qId]) {
-            flnAnswersMap[qId] = {};
-          }
-
-          // Check if we have std (API format)
-          if (question.std) {
-            flnAnswersMap[qId][question.std] = {
-              obtainedMarks:
-                question.answerText !== null &&
-                question.answerText !== undefined
-                  ? String(question.answerText)
-                  : "",
-              answerId: question.answerId || null,
-            };
-          }
-        } else if (question.selectedOptionId) {
-          // For other questions, load selected option
-          apiAnswers[question.questionId] = String(question.selectedOptionId);
-        }
+        apiAnswers[question.questionId] = String(question.selectedOptionId);
       });
 
       // Convert flnAnswersMap to JSON strings for textAnswers state
       Object.keys(flnAnswersMap).forEach((questionId) => {
-        // Only add if there's actual data
         if (Object.keys(flnAnswersMap[questionId]).length > 0) {
           apiTextAnswers[questionId] = JSON.stringify(
             flnAnswersMap[questionId],
@@ -1016,12 +1016,8 @@ const SelfAssessment = () => {
         }
       });
 
-      // API answers take priority - they override any locally saved answers
-      // Only set if we have answers to set
       if (Object.keys(apiAnswers).length > 0) {
         setAnswers(apiAnswers);
-
-        // Also save to classWiseAnswers so it persists (if class is selected)
         if (selectedClass) {
           const subdomainId =
             selectedSubdomain.subDomainId || selectedSubdomain.id;
@@ -1033,14 +1029,29 @@ const SelfAssessment = () => {
           }));
         }
       } else {
-        // Clear answers if no API answers match current selections
         setAnswers({});
       }
 
+      // Merge FLN textAnswers per questionId so API data for one class doesn't wipe the other
       if (Object.keys(apiTextAnswers).length > 0) {
-        setTextAnswers(apiTextAnswers);
-
-        // Also save to classWiseTextAnswers (if class is selected)
+        setTextAnswers((prevTextAnswers) => {
+          const merged = { ...prevTextAnswers };
+          Object.keys(apiTextAnswers).forEach((qId) => {
+            try {
+              const apiData = JSON.parse(apiTextAnswers[qId]);
+              let prevData = {};
+              if (merged[qId]) {
+                try {
+                  prevData = JSON.parse(merged[qId]);
+                } catch (_) {}
+              }
+              merged[qId] = JSON.stringify({ ...prevData, ...apiData });
+            } catch (_) {
+              merged[qId] = apiTextAnswers[qId];
+            }
+          });
+          return merged;
+        });
         if (selectedClass) {
           const subdomainId =
             selectedSubdomain.subDomainId || selectedSubdomain.id;
@@ -1048,16 +1059,17 @@ const SelfAssessment = () => {
           const storageKey = `${subdomainId}_${classKey}`;
           setClassWiseTextAnswers((prev) => ({
             ...prev,
-            [storageKey]: apiTextAnswers,
+            [storageKey]: {
+              ...(prev[storageKey] || {}),
+              ...apiTextAnswers,
+            },
           }));
         }
-      } else {
-        // Clear text answers if no API answers match current selections
-        setTextAnswers({});
       }
     }
   }, [
     allQuestions,
+    allQuestionsForCount,
     selectedSubdomain,
     selectedClass,
     selectedSection,
@@ -1088,6 +1100,171 @@ const SelfAssessment = () => {
         [storageKey]: newAnswers,
       }));
     }
+  };
+
+  // MCQ image upload: show for all General/MCQ questions (type 1); optionally restrict by question.allowImageUpload when API sends it
+  const questionAllowsImageUpload = (question) => {
+    const qt = question?.questionType ?? (question?.isClassroomObservation === 1 ? 2 : 1);
+    if (qt !== 1 && qt !== "1") return false;
+    const allow = question?.allowImageUpload;
+    return allow === 1 || allow === "1" || allow === true || allow === "yes";
+  };
+
+  const getMcqImagesForQuestion = (questionId) => {
+    const arr = mcqQuestionImages[questionId];
+    if (!arr) return [null, null];
+    return [arr[0] ?? null, arr[1] ?? null];
+  };
+
+  /** Returns dataUrl for preview (img src). Handles both { dataUrl, file } and legacy base64. */
+  const getMcqImagePreviewSrc = (item) => {
+    if (!item) return null;
+    return typeof item === "string" ? item : item?.dataUrl ?? null;
+  };
+
+  /** Returns location for display: { latitude, longitude, address } or null. */
+  const getMcqImageLocation = (item) => {
+    if (!item || typeof item !== "object") return null;
+    if (item.latitude != null && item.longitude != null) {
+      return {
+        latitude: item.latitude,
+        longitude: item.longitude,
+        address: item.address || "",
+      };
+    }
+    return null;
+  };
+
+  /** Returns File[] for the given question for upload. */
+  const getMcqImageFilesForQuestion = (questionId) => {
+    const arr = mcqQuestionImages[questionId];
+    if (!arr) return [];
+    return arr.filter((item) => item && (typeof item === "object" ? item?.file : false)).map((item) => item.file);
+  };
+
+  /**
+   * Build attachedImages for submit payload: each image as { extension, contentType, fileName } only.
+   * Sent inside the answer object to sub-domain-wise-submit-answers.
+   */
+  const buildAttachedImagesForQuestion = (questionId) => {
+    const arr = mcqQuestionImages[questionId];
+    if (!arr) return [];
+    const out = [];
+    arr.forEach((item, index) => {
+      if (!item || typeof item !== "object" || !item.file || !item.dataUrl) return;
+      const file = item.file;
+      const extension = file.name?.split(".").pop()?.toLowerCase() || file.type?.split("/")[1] || "png";
+      const contentType = file.type || "image/png";
+      const fileName = file.name || `answer_${questionId}_${index}.${extension}`;
+      out.push({ extension, contentType, fileName });
+    });
+    return out;
+  };
+
+  /**
+   * After submit-answers returns uploadUrls, PUT each image file (blob) to its corresponding uploadURL.
+   * Response shape: data.uploadUrls = [ { questionId, images: [ { fileName, uploadURL } ] } ]
+   * Uses XMLHttpRequest so the PUT method is explicitly set and sent.
+   */
+  const uploadImagesToPresignedUrls = async (uploadUrls, imagesByQuestionId) => {
+    if (!uploadUrls?.length || !imagesByQuestionId) return;
+  
+    for (const entry of uploadUrls) {
+      const arr = imagesByQuestionId[entry.questionId];
+      if (!Array.isArray(arr)) continue;
+  
+      for (let i = 0; i < (entry.images?.length ?? 0); i++) {
+        const { uploadURL } = entry.images[i];
+        const item = arr[i];
+        const file = item?.file;
+  
+        if (!file || !uploadURL) continue;
+  
+        try {
+          const res = await fetch(uploadURL, {
+            method: "PUT",
+            headers: {
+              "Content-Type": file.type || "application/octet-stream",
+            },
+            body: file,
+          });
+  
+          if (!res.ok) {
+            throw new Error(`Upload failed ${res.status}`);
+          }
+        } catch (err) {
+          console.error("Failed to upload image:", err);
+        }
+      }
+    }
+  };
+  const handleMcqImageCaptureClick = (questionId, index) => {
+    setPendingMcqImageSlot({ questionId, index });
+    setTimeout(() => mcqImageInputRef.current?.click(), 0);
+  };
+
+  const getAddressFromCoords = async (lat, lon) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+        { headers: { "User-Agent": "GSQAC-SelfAssessment-Web" } },
+      );
+      const data = await res.json();
+      return data?.display_name || `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    } catch {
+      return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    }
+  };
+
+  const handleMcqImageFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !pendingMcqImageSlot) {
+      setPendingMcqImageSlot(null);
+      return;
+    }
+    let latitude = null;
+    let longitude = null;
+    let address = "";
+    if (navigator.geolocation) {
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          });
+        });
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+        address = await getAddressFromCoords(latitude, longitude);
+      } catch {
+        address = "Location unavailable";
+      }
+    } else {
+      address = "Location unavailable";
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      setMcqQuestionImages((prev) => {
+        const arr = [...(prev[pendingMcqImageSlot.questionId] || [null, null])];
+        arr[pendingMcqImageSlot.index] = { dataUrl, file, latitude, longitude, address };
+        return { ...prev, [pendingMcqImageSlot.questionId]: arr };
+      });
+      setPendingMcqImageSlot(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleMcqImageRemove = (questionId, index) => {
+    setMcqQuestionImages((prev) => {
+      const arr = [...(prev[questionId] || [null, null])];
+      arr[index] = null;
+      const next = { ...prev, [questionId]: arr };
+      if (arr.every((x) => x == null)) delete next[questionId];
+      return next;
+    });
   };
 
   // Handle text answer change for FLN questions
@@ -1134,7 +1311,12 @@ const SelfAssessment = () => {
 
   const submitSubdomainWiseAnswersMutation =
     useSubmitSubdomainWiseAnswersMutation({
-      onSuccess: (data) => {
+      onSuccess: async (data) => {
+        // If API returned presigned upload URLs, PUT each image file to its URL
+        const uploadUrls = data?.data?.uploadUrls;
+        if (uploadUrls?.length) {
+          await uploadImagesToPresignedUrls(uploadUrls, mcqQuestionImages);
+        }
         // Save current answers to subdomainAnswers before clearing
         if (selectedSubdomain) {
           const subdomainId =
@@ -1450,7 +1632,12 @@ const SelfAssessment = () => {
           : null,
       cls: classValue,
       section: sectionValue,
+      schoolId: userName || undefined,
     };
+    if (questionType === 1 || questionType === "1") {
+      const attachedImages = buildAttachedImagesForQuestion(question.questionId);
+      if (attachedImages.length > 0) payload.attachedImages = attachedImages;
+    }
 
     submitAnswerMutation.mutate(payload);
   };
@@ -1503,7 +1690,7 @@ const SelfAssessment = () => {
         });
         return;
       }
-      
+
       // For subject observation questions, only validate subject if user has answered type 3 questions
       if (hasAnsweredSubjectQuestions && !selectedSubject) {
         enqueueSnackbar("Please select a subject before submitting.", {
@@ -1524,10 +1711,10 @@ const SelfAssessment = () => {
     }
     // For General questions or FLN questions, clsValue and sectionValue remain null
 
-    // Format answers array from current answers state
+    // Format answers array from current answers state (with image data in attachedImages for MCQ)
     const answersArray = [];
 
-    allQuestions.forEach((question) => {
+    for (const question of allQuestions) {
       const questionType =
         question.questionType ||
         (question.isClassroomObservation === 1 ? 2 : 1);
@@ -1566,15 +1753,20 @@ const SelfAssessment = () => {
         const selectedOptionId = userSelectedAnswer || apiSelectedAnswer;
 
         if (selectedOptionId) {
-          answersArray.push({
+          const answerEntry = {
             answerId: question.answerId || null,
             questionId: question.questionId,
             optionId: Number(selectedOptionId),
             obtainedMarks: null,
-          });
+          };
+          if (questionType === 1 || questionType === "1") {
+            const attachedImages = buildAttachedImagesForQuestion(question.questionId);
+            if (attachedImages.length > 0) answerEntry.attachedImages = attachedImages;
+          }
+          answersArray.push(answerEntry);
         }
       }
-    });
+    }
 
     if (answersArray.length === 0) {
       enqueueSnackbar(
@@ -1599,6 +1791,7 @@ const SelfAssessment = () => {
       cls: clsValue,
       section: sectionValue,
       subjectId: selectedSubject ? Number(selectedSubject) : null,
+      schoolId: userName || undefined,
       answers: answersArray,
     };
 
@@ -1626,15 +1819,23 @@ const SelfAssessment = () => {
   );
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        ref={mcqImageInputRef}
+        onChange={handleMcqImageFileChange}
+        style={{ display: "none" }}
+      />
       <AppDrawer open={drawerOpen} handleDrawerToggle={handleDrawerToggle} />
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           width: "100%",
-          marginLeft: drawerOpen && !matchDownMD ? 0 : 0,
+          marginLeft: drawerOpen && !matchDownMD ? 4 : 0,
           [`@media (min-width:${theme.breakpoints.values.xl}px)`]: {
-            marginLeft: drawerOpen && !matchDownMD ? `${30}px` : 0,
+            marginLeft: drawerOpen && !matchDownMD ? 4 : 0,
           },
           transition: theme.transitions.create(["margin-left"], {
             easing: theme.transitions.easing.sharp,
@@ -2512,9 +2713,8 @@ const SelfAssessment = () => {
                               setSelectedClass(null);
                               setSelectedSection(null);
                               setSelectedSubject(null);
-                              // Clear answers when changing tabs
+                              // Clear MCQ/option answers only; keep textAnswers so FLN prefill persists when switching to FLN tab
                               setAnswers({});
-                              setTextAnswers({});
                               setSelectedQuestionTab(newValue);
                             }}
                             variant="scrollable"
@@ -3165,6 +3365,130 @@ const SelfAssessment = () => {
                                                     </RadioGroup>
                                                   </FormControl>
                                                 )}
+                                                {questionAllowsImageUpload(question) && (
+                                                  <Box
+                                                    sx={{
+                                                      mt: 2.5,
+                                                      pt: 2.5,
+                                                      borderTop: `1px solid ${colors.neutral.gray200}`,
+                                                    }}
+                                                  >
+                                                    <Box
+                                                      sx={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: 1,
+                                                        mb: 1.5,
+                                                      }}
+                                                    >
+                                                      <PhotoCamera sx={{ fontSize: 18, color: colors.primary.blue }} />
+                                                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                                                        Add photos (up to 2)
+                                                      </Typography>
+                                                    </Box>
+                                                    <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                                                      {[0, 1].map((idx) => {
+                                                        const imgs = getMcqImagesForQuestion(question.questionId);
+                                                        const item = imgs[idx];
+                                                        const src = getMcqImagePreviewSrc(item);
+                                                        const location = getMcqImageLocation(item);
+                                                        return (
+                                                          <Box
+                                                            key={idx}
+                                                            sx={{
+                                                              position: "relative",
+                                                              width: 160,
+                                                              borderRadius: 2,
+                                                              overflow: "hidden",
+                                                              border: "2px dashed",
+                                                              borderColor: src ? "transparent" : colors.neutral.gray300,
+                                                              bgcolor: src ? "transparent" : colors.background.secondary,
+                                                              display: "flex",
+                                                              flexDirection: "column",
+                                                              alignItems: "stretch",
+                                                              justifyContent: "center",
+                                                              transition: "border-color 0.2s, box-shadow 0.2s",
+                                                              "&:hover": src
+                                                                ? {}
+                                                                : { borderColor: colors.primary.light, bgcolor: colors.primary.lightest + "40" },
+                                                            }}
+                                                          >
+                                                            {src ? (
+                                                              <>
+                                                                <Box sx={{ position: "relative", width: "100%", height: 110 }}>
+                                                                  <Box
+                                                                    component="img"
+                                                                    src={src}
+                                                                    alt={`Capture ${idx + 1}`}
+                                                                    sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                                                  />
+                                                                  <IconButton
+                                                                    size="small"
+                                                                    sx={{
+                                                                      position: "absolute",
+                                                                      top: 6,
+                                                                      right: 6,
+                                                                      bgcolor: "rgba(0,0,0,0.55)",
+                                                                      color: "white",
+                                                                      "&:hover": { bgcolor: "rgba(0,0,0,0.75)" },
+                                                                      width: 28,
+                                                                      height: 28,
+                                                                    }}
+                                                                    onClick={() => handleMcqImageRemove(question.questionId, idx)}
+                                                                  >
+                                                                    <Close sx={{ fontSize: 16 }} />
+                                                                  </IconButton>
+                                                                </Box>
+                                                                {location && (
+                                                                  <Box
+                                                                    sx={{
+                                                                      px: 1,
+                                                                      py: 0.75,
+                                                                      bgcolor: "rgba(0,0,0,0.65)",
+                                                                      color: "white",
+                                                                      fontSize: "0.7rem",
+                                                                      lineHeight: 1.3,
+                                                                      borderTop: "1px solid rgba(255,255,255,0.15)",
+                                                                    }}
+                                                                  >
+                                                                    {location.latitude != null && location.longitude != null && (
+                                                                      <Box component="span" sx={{ opacity: 0.95 }}>
+                                                                        {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+                                                                      </Box>
+                                                                    )}
+                                                                    {location.address && (
+                                                                      <Box sx={{ mt: 0.25 }} component="div">
+                                                                        {location.address.length > 48 ? location.address.slice(0, 48) + "…" : location.address}
+                                                                      </Box>
+                                                                    )}
+                                                                  </Box>
+                                                                )}
+                                                              </>
+                                                            ) : (
+                                                              <Button
+                                                                fullWidth
+                                                                disableRipple
+                                                                startIcon={<PhotoCamera sx={{ fontSize: 22, color: colors.neutral.gray500 }} />}
+                                                                onClick={() => handleMcqImageCaptureClick(question.questionId, idx)}
+                                                                disabled={!isPublished || isReadOnly}
+                                                                sx={{
+                                                                  height: 120,
+                                                                  flexDirection: "column",
+                                                                  textTransform: "none",
+                                                                  color: colors.neutral.gray600,
+                                                                  fontSize: "0.8rem",
+                                                                  "& .MuiButton-startIcon": { margin: 0, mb: 0.5 },
+                                                                }}
+                                                              >
+                                                                Capture image
+                                                              </Button>
+                                                            )}
+                                                          </Box>
+                                                        );
+                                                      })}
+                                                    </Box>
+                                                  </Box>
+                                                )}
                                             </CardContent>
                                           )}
                                         </Card>
@@ -3527,9 +3851,8 @@ const SelfAssessment = () => {
                                     <Select
                                       value={selectedSubject || ""}
                                       onChange={(e) => {
-                                        // Clear answers before changing subject so they can be reloaded from API
+                                        // Clear MCQ/option answers only; keep textAnswers so FLN prefill persists
                                         setAnswers({});
-                                        setTextAnswers({});
                                         setSelectedSubject(e.target.value);
                                         // Refetch questions when subject changes
                                         if (refetchQuestions) {
@@ -3820,6 +4143,130 @@ const SelfAssessment = () => {
                                                       )}
                                                     </RadioGroup>
                                                   </FormControl>
+                                                )}
+                                                {questionAllowsImageUpload(question) && (
+                                                  <Box
+                                                    sx={{
+                                                      mt: 2.5,
+                                                      pt: 2.5,
+                                                      borderTop: `1px solid ${colors.neutral.gray200}`,
+                                                    }}
+                                                  >
+                                                    <Box
+                                                      sx={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: 1,
+                                                        mb: 1.5,
+                                                      }}
+                                                    >
+                                                      <PhotoCamera sx={{ fontSize: 18, color: colors.primary.blue }} />
+                                                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                                                        Add photos (up to 2)
+                                                      </Typography>
+                                                    </Box>
+                                                    <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                                                      {[0, 1].map((idx) => {
+                                                        const imgs = getMcqImagesForQuestion(question.questionId);
+                                                        const item = imgs[idx];
+                                                        const src = getMcqImagePreviewSrc(item);
+                                                        const location = getMcqImageLocation(item);
+                                                        return (
+                                                          <Box
+                                                            key={idx}
+                                                            sx={{
+                                                              position: "relative",
+                                                              width: 160,
+                                                              borderRadius: 2,
+                                                              overflow: "hidden",
+                                                              border: "2px dashed",
+                                                              borderColor: src ? "transparent" : colors.neutral.gray300,
+                                                              bgcolor: src ? "transparent" : colors.background.secondary,
+                                                              display: "flex",
+                                                              flexDirection: "column",
+                                                              alignItems: "stretch",
+                                                              justifyContent: "center",
+                                                              transition: "border-color 0.2s, box-shadow 0.2s",
+                                                              "&:hover": src
+                                                                ? {}
+                                                                : { borderColor: colors.primary.light, bgcolor: colors.primary.lightest + "40" },
+                                                            }}
+                                                          >
+                                                            {src ? (
+                                                              <>
+                                                                <Box sx={{ position: "relative", width: "100%", height: 110 }}>
+                                                                  <Box
+                                                                    component="img"
+                                                                    src={src}
+                                                                    alt={`Capture ${idx + 1}`}
+                                                                    sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                                                  />
+                                                                  <IconButton
+                                                                    size="small"
+                                                                    sx={{
+                                                                      position: "absolute",
+                                                                      top: 6,
+                                                                      right: 6,
+                                                                      bgcolor: "rgba(0,0,0,0.55)",
+                                                                      color: "white",
+                                                                      "&:hover": { bgcolor: "rgba(0,0,0,0.75)" },
+                                                                      width: 28,
+                                                                      height: 28,
+                                                                    }}
+                                                                    onClick={() => handleMcqImageRemove(question.questionId, idx)}
+                                                                  >
+                                                                    <Close sx={{ fontSize: 16 }} />
+                                                                  </IconButton>
+                                                                </Box>
+                                                                {location && (
+                                                                  <Box
+                                                                    sx={{
+                                                                      px: 1,
+                                                                      py: 0.75,
+                                                                      bgcolor: "rgba(0,0,0,0.65)",
+                                                                      color: "white",
+                                                                      fontSize: "0.7rem",
+                                                                      lineHeight: 1.3,
+                                                                      borderTop: "1px solid rgba(255,255,255,0.15)",
+                                                                    }}
+                                                                  >
+                                                                    {location.latitude != null && location.longitude != null && (
+                                                                      <Box component="span" sx={{ opacity: 0.95 }}>
+                                                                        {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+                                                                      </Box>
+                                                                    )}
+                                                                    {location.address && (
+                                                                      <Box sx={{ mt: 0.25 }} component="div">
+                                                                        {location.address.length > 48 ? location.address.slice(0, 48) + "…" : location.address}
+                                                                      </Box>
+                                                                    )}
+                                                                  </Box>
+                                                                )}
+                                                              </>
+                                                            ) : (
+                                                              <Button
+                                                                fullWidth
+                                                                disableRipple
+                                                                startIcon={<PhotoCamera sx={{ fontSize: 22, color: colors.neutral.gray500 }} />}
+                                                                onClick={() => handleMcqImageCaptureClick(question.questionId, idx)}
+                                                                disabled={!isPublished || isReadOnly}
+                                                                sx={{
+                                                                  height: 120,
+                                                                  flexDirection: "column",
+                                                                  textTransform: "none",
+                                                                  color: colors.neutral.gray600,
+                                                                  fontSize: "0.8rem",
+                                                                  "& .MuiButton-startIcon": { margin: 0, mb: 0.5 },
+                                                                }}
+                                                              >
+                                                                Capture image
+                                                              </Button>
+                                                            )}
+                                                          </Box>
+                                                        );
+                                                      })}
+                                                    </Box>
+                                                  </Box>
                                                 )}
                                             </CardContent>
                                           )}
@@ -4526,6 +4973,130 @@ const SelfAssessment = () => {
                                                     </RadioGroup>
                                                   </FormControl>
                                                 )}
+                                                {questionAllowsImageUpload(question) && (
+                                                  <Box
+                                                    sx={{
+                                                      mt: 2.5,
+                                                      pt: 2.5,
+                                                      borderTop: `1px solid ${colors.neutral.gray200}`,
+                                                    }}
+                                                  >
+                                                    <Box
+                                                      sx={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: 1,
+                                                        mb: 1.5,
+                                                      }}
+                                                    >
+                                                      <PhotoCamera sx={{ fontSize: 18, color: colors.primary.blue }} />
+                                                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: colors.text.primary }}>
+                                                        Add photos (up to 2)
+                                                      </Typography>
+                                                    </Box>
+                                                    <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                                                      {[0, 1].map((idx) => {
+                                                        const imgs = getMcqImagesForQuestion(question.questionId);
+                                                        const item = imgs[idx];
+                                                        const src = getMcqImagePreviewSrc(item);
+                                                        const location = getMcqImageLocation(item);
+                                                        return (
+                                                          <Box
+                                                            key={idx}
+                                                            sx={{
+                                                              position: "relative",
+                                                              width: 160,
+                                                              borderRadius: 2,
+                                                              overflow: "hidden",
+                                                              border: "2px dashed",
+                                                              borderColor: src ? "transparent" : colors.neutral.gray300,
+                                                              bgcolor: src ? "transparent" : colors.background.secondary,
+                                                              display: "flex",
+                                                              flexDirection: "column",
+                                                              alignItems: "stretch",
+                                                              justifyContent: "center",
+                                                              transition: "border-color 0.2s, box-shadow 0.2s",
+                                                              "&:hover": src
+                                                                ? {}
+                                                                : { borderColor: colors.primary.light, bgcolor: colors.primary.lightest + "40" },
+                                                            }}
+                                                          >
+                                                            {src ? (
+                                                              <>
+                                                                <Box sx={{ position: "relative", width: "100%", height: 110 }}>
+                                                                  <Box
+                                                                    component="img"
+                                                                    src={src}
+                                                                    alt={`Capture ${idx + 1}`}
+                                                                    sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                                                  />
+                                                                  <IconButton
+                                                                    size="small"
+                                                                    sx={{
+                                                                      position: "absolute",
+                                                                      top: 6,
+                                                                      right: 6,
+                                                                      bgcolor: "rgba(0,0,0,0.55)",
+                                                                      color: "white",
+                                                                      "&:hover": { bgcolor: "rgba(0,0,0,0.75)" },
+                                                                      width: 28,
+                                                                      height: 28,
+                                                                    }}
+                                                                    onClick={() => handleMcqImageRemove(question.questionId, idx)}
+                                                                  >
+                                                                    <Close sx={{ fontSize: 16 }} />
+                                                                  </IconButton>
+                                                                </Box>
+                                                                {location && (
+                                                                  <Box
+                                                                    sx={{
+                                                                      px: 1,
+                                                                      py: 0.75,
+                                                                      bgcolor: "rgba(0,0,0,0.65)",
+                                                                      color: "white",
+                                                                      fontSize: "0.7rem",
+                                                                      lineHeight: 1.3,
+                                                                      borderTop: "1px solid rgba(255,255,255,0.15)",
+                                                                    }}
+                                                                  >
+                                                                    {location.latitude != null && location.longitude != null && (
+                                                                      <Box component="span" sx={{ opacity: 0.95 }}>
+                                                                        {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+                                                                      </Box>
+                                                                    )}
+                                                                    {location.address && (
+                                                                      <Box sx={{ mt: 0.25 }} component="div">
+                                                                        {location.address.length > 48 ? location.address.slice(0, 48) + "…" : location.address}
+                                                                      </Box>
+                                                                    )}
+                                                                  </Box>
+                                                                )}
+                                                              </>
+                                                            ) : (
+                                                              <Button
+                                                                fullWidth
+                                                                disableRipple
+                                                                startIcon={<PhotoCamera sx={{ fontSize: 22, color: colors.neutral.gray500 }} />}
+                                                                onClick={() => handleMcqImageCaptureClick(question.questionId, idx)}
+                                                                disabled={!isPublished || isSubmitted}
+                                                                sx={{
+                                                                  height: 120,
+                                                                  flexDirection: "column",
+                                                                  textTransform: "none",
+                                                                  color: colors.neutral.gray600,
+                                                                  fontSize: "0.8rem",
+                                                                  "& .MuiButton-startIcon": { margin: 0, mb: 0.5 },
+                                                                }}
+                                                              >
+                                                                Capture image
+                                                              </Button>
+                                                            )}
+                                                          </Box>
+                                                        );
+                                                      })}
+                                                    </Box>
+                                                  </Box>
+                                                )}
                                             </CardContent>
                                           )}
                                         </Card>
@@ -4573,37 +5144,47 @@ const SelfAssessment = () => {
                             if (submitSubdomainWiseAnswersMutation.isPending) {
                               return true;
                             }
-                            
+
                             // Check if there are any answers
                             const hasAnswers =
                               (answers && Object.keys(answers).length > 0) ||
-                              (textAnswers && Object.keys(textAnswers).length > 0);
-                            
+                              (textAnswers &&
+                                Object.keys(textAnswers).length > 0);
+
                             if (!hasAnswers) {
                               return true; // Disable if no answers
                             }
-                            
+
                             // Check if user has answered any class-based questions (type 2 or 3)
-                            const hasAnsweredClassBasedQuestions = classBasedQuestions.some(
-                              (q) => answers[q.questionId] || textAnswers[q.questionId]
-                            );
-                            
+                            const hasAnsweredClassBasedQuestions =
+                              classBasedQuestions.some(
+                                (q) =>
+                                  answers[q.questionId] ||
+                                  textAnswers[q.questionId],
+                              );
+
                             // Check if user has answered any subject observation questions (type 3)
-                            const hasAnsweredSubjectQuestions = subjectObservationQuestions.some(
-                              (q) => answers[q.questionId] || textAnswers[q.questionId]
-                            );
-                            
+                            const hasAnsweredSubjectQuestions =
+                              subjectObservationQuestions.some(
+                                (q) =>
+                                  answers[q.questionId] ||
+                                  textAnswers[q.questionId],
+                              );
+
                             // Only require class/section if user has answered class-based questions
                             if (hasAnsweredClassBasedQuestions) {
                               if (!selectedClass || !selectedSection) {
                                 return true; // Disable button
                               }
                               // If answered subject questions, also require subject selection
-                              if (hasAnsweredSubjectQuestions && !selectedSubject) {
+                              if (
+                                hasAnsweredSubjectQuestions &&
+                                !selectedSubject
+                              ) {
                                 return true; // Disable button
                               }
                             }
-                            
+
                             return false; // Enable button
                           })()}
                           sx={{

@@ -697,7 +697,6 @@ const CRCAssessment = () => {
           setSelectedSection(null);
           setSelectedSubject(null);
           setAnswers({});
-          setTextAnswers({});
         }
       }
     }
@@ -988,9 +987,8 @@ const CRCAssessment = () => {
     if (selectedClass) {
       setSelectedSection(null);
       setSelectedSubject(null);
-      // Clear answers when class changes
+      // Clear MCQ/option answers only; keep textAnswers so FLN prefill persists
       setAnswers({});
-      setTextAnswers({});
     }
   }, [selectedClass]);
 
@@ -998,93 +996,72 @@ const CRCAssessment = () => {
   useEffect(() => {
     if (selectedSection) {
       setSelectedSubject(null);
-      // Clear answers when section changes
+      // Clear MCQ/option answers only; keep textAnswers so FLN prefill persists
       setAnswers({});
-      setTextAnswers({});
     }
   }, [selectedSection]);
 
-  // Effect to load API answers when questions are fetched (API answers take priority)
+  // Effect to load API answers when questions are fetched (same as SchoolVerification)
   useEffect(() => {
-    if (allQuestions && allQuestions.length > 0 && selectedSubdomain) {
+    const questionsForOptions = allQuestions && allQuestions.length > 0 ? allQuestions : [];
+    const questionsForFLN = allQuestionsForCount && allQuestionsForCount.length > 0 ? allQuestionsForCount : questionsForOptions;
+
+    if ((questionsForOptions.length > 0 || questionsForFLN.length > 0) && selectedSubdomain) {
       const apiAnswers = {};
       const apiTextAnswers = {};
-      const flnAnswersMap = {}; // To group FLN answers by questionId
+      const flnAnswersMap = {};
 
-      allQuestions.forEach((question) => {
+      // Build FLN prefill from unfiltered list so FLN rows (questionId, std, answerText) are always present
+      questionsForFLN.forEach((question) => {
         const questionType =
           question.questionType ||
           (question.isClassroomObservation === 1 ? 2 : 1);
 
-        // Check if required dropdowns are selected based on question type
-        let shouldLoadAnswer = false;
+        if (questionType !== 4 && questionType !== "4") return;
 
+        const marksValue = question.obtainedMarks ?? question.answerText;
+        const hasStd = question.std != null;
+        const hasMarks = marksValue != null && marksValue !== "";
+
+        if (hasStd && hasMarks) {
+          const qId = question.questionId;
+          if (!flnAnswersMap[qId]) flnAnswersMap[qId] = {};
+          const stdKey = Number(question.std);
+          flnAnswersMap[qId][stdKey] = {
+            obtainedMarks: String(marksValue),
+            answerId: question.answerId ?? null,
+          };
+        }
+      });
+
+      // Process non-FLN answers from the (possibly filtered) questions list
+      questionsForOptions.forEach((question) => {
+        const questionType =
+          question.questionType ||
+          (question.isClassroomObservation === 1 ? 2 : 1);
+
+        let shouldLoadAnswer = false;
         if (questionType === 1 || questionType === "1") {
-          // General questions - no dropdowns needed
           shouldLoadAnswer = true;
         } else if (questionType === 2 || questionType === "2") {
-          // Classroom observation - needs class and section
           shouldLoadAnswer = !!selectedClass && !!selectedSection;
         } else if (questionType === 3 || questionType === "3") {
-          // Subject observation - needs class, section, and subject
-          // Also check if the question's subjectId matches the selected subject
           shouldLoadAnswer =
             !!selectedClass &&
             !!selectedSection &&
             !!selectedSubject &&
             question.subjectId === Number(selectedSubject);
         } else if (questionType === 4 || questionType === "4") {
-          // FLN questions - no dropdowns needed
-          shouldLoadAnswer = true;
+          return;
         }
 
-        // For FLN questions (type 4), group by questionId and std
-        if (questionType === 4 || questionType === "4") {
-          // FLN questions don't need dropdowns, so always process them
-          const qId = question.questionId;
+        if (!shouldLoadAnswer || !question.selectedOptionId) return;
 
-          // Initialize map for this question if not exists
-          if (!flnAnswersMap[qId]) {
-            flnAnswersMap[qId] = {};
-          }
-
-          // Check if we have std and answerText (API format)
-          // Convert std to number to ensure consistent key type
-          // Note: answerText can be 0, which is a valid value, so only check for null/undefined
-          // Don't check for empty string as 0 is a valid answer
-          if (question.std !== null && question.std !== undefined && 
-              question.answerText !== null && question.answerText !== undefined) {
-            const stdKey = Number(question.std);
-            flnAnswersMap[qId][stdKey] = {
-              obtainedMarks: String(question.answerText),
-              answerId: question.answerId || null,
-            };
-            // Debug log for FLN answer processing
-            console.log("FLN Answer Processed:", {
-              questionId: qId,
-              std: question.std,
-              stdKey,
-              answerText: question.answerText,
-              answerId: question.answerId,
-              flnAnswersMapEntry: flnAnswersMap[qId],
-            });
-          }
-        } else {
-          // For other question types, only load answers if required dropdowns are selected
-          if (!shouldLoadAnswer) {
-            return;
-          }
-          
-          // Load selected option if present
-          if (question.selectedOptionId) {
-            apiAnswers[question.questionId] = String(question.selectedOptionId);
-          }
-        }
+        apiAnswers[question.questionId] = String(question.selectedOptionId);
       });
 
       // Convert flnAnswersMap to JSON strings for textAnswers state
       Object.keys(flnAnswersMap).forEach((questionId) => {
-        // Only add if there's actual data
         if (Object.keys(flnAnswersMap[questionId]).length > 0) {
           apiTextAnswers[questionId] = JSON.stringify(
             flnAnswersMap[questionId],
@@ -1092,21 +1069,8 @@ const CRCAssessment = () => {
         }
       });
 
-      // Debug: Log FLN answers processing
-      if (Object.keys(flnAnswersMap).length > 0) {
-        console.log("FLN Answers Debug:", {
-          flnAnswersMap,
-          apiTextAnswers,
-          allQuestionsFLN: allQuestions.filter(q => (q.questionType === 4 || q.questionType === "4")),
-        });
-      }
-
-      // API answers take priority - they override any locally saved answers
-      // Only set if we have answers to set
       if (Object.keys(apiAnswers).length > 0) {
         setAnswers(apiAnswers);
-
-        // Also save to classWiseAnswers so it persists (if class is selected)
         if (selectedClass) {
           const subdomainId =
             selectedSubdomain.subDomainId || selectedSubdomain.id;
@@ -1118,34 +1082,29 @@ const CRCAssessment = () => {
           }));
         }
       } else {
-        // Only clear answers if we're not dealing with FLN questions
-        // FLN questions don't use apiAnswers, so don't clear if we have FLN answers
-        if (Object.keys(apiTextAnswers).length === 0) {
-          setAnswers({});
-        }
+        setAnswers({});
       }
 
-      // Always set textAnswers if we have FLN answers, even if apiAnswers is empty
-      // Merge with existing textAnswers to preserve any user-entered data that's not in API
+      // Merge FLN textAnswers per questionId so API data for one class doesn't wipe the other
       if (Object.keys(apiTextAnswers).length > 0) {
-        // Debug log before setting textAnswers
-        console.log("Setting textAnswers from API:", {
-          apiTextAnswers,
-          currentTextAnswers: textAnswers,
-          willMerge: true,
-        });
-        
-        // Merge API answers with existing textAnswers (API takes priority)
         setTextAnswers((prevTextAnswers) => {
-          const merged = {
-            ...prevTextAnswers,
-            ...apiTextAnswers,
-          };
-          console.log("Merged textAnswers:", merged);
+          const merged = { ...prevTextAnswers };
+          Object.keys(apiTextAnswers).forEach((qId) => {
+            try {
+              const apiData = JSON.parse(apiTextAnswers[qId]);
+              let prevData = {};
+              if (merged[qId]) {
+                try {
+                  prevData = JSON.parse(merged[qId]);
+                } catch (_) {}
+              }
+              merged[qId] = JSON.stringify({ ...prevData, ...apiData });
+            } catch (_) {
+              merged[qId] = apiTextAnswers[qId];
+            }
+          });
           return merged;
         });
-
-        // Also save to classWiseTextAnswers (if class is selected)
         if (selectedClass) {
           const subdomainId =
             selectedSubdomain.subDomainId || selectedSubdomain.id;
@@ -1159,17 +1118,11 @@ const CRCAssessment = () => {
             },
           }));
         }
-      } else {
-        // Only clear text answers if we're not dealing with FLN questions
-        // and if we don't have any other answers
-        if (Object.keys(apiAnswers).length === 0) {
-          // Don't clear if we have existing textAnswers that might be user-entered
-          // Only clear if we're sure there are no answers at all
-        }
       }
     }
   }, [
     allQuestions,
+    allQuestionsForCount,
     selectedSubdomain,
     selectedClass,
     selectedSection,
@@ -2635,9 +2588,8 @@ const CRCAssessment = () => {
                               setSelectedClass(null);
                               setSelectedSection(null);
                               setSelectedSubject(null);
-                              // Clear answers when changing tabs
+                              // Clear MCQ/option answers only; keep textAnswers so FLN prefill persists when switching to FLN tab
                               setAnswers({});
-                              setTextAnswers({});
                               setSelectedQuestionTab(newValue);
                             }}
                             variant="scrollable"
@@ -2791,9 +2743,8 @@ const CRCAssessment = () => {
                               <Select
                                 value={selectedClassGroup || ""}
                                 onChange={(e) => {
-                                  // Clear all answers and selections when class group changes
+                                  // Clear MCQ/option answers only; keep textAnswers so FLN prefill persists
                                   setAnswers({});
-                                  setTextAnswers({});
                                   setSelectedClass(null);
                                   setSelectedSection(null);
                                   setSelectedSubject(null);
@@ -2889,9 +2840,8 @@ const CRCAssessment = () => {
                                       [storageKey]: { ...textAnswers },
                                     }));
                                   }
-                                  // Clear answers, section, and subject immediately
+                                  // Clear MCQ/option answers only; keep textAnswers so FLN prefill persists
                                   setAnswers({});
-                                  setTextAnswers({});
                                   setSelectedSection(null);
                                   setSelectedSubject(null);
                                   setSelectedClass(e.target.value);
@@ -2955,9 +2905,8 @@ const CRCAssessment = () => {
                               <Select
                                 value={selectedSection || ""}
                                 onChange={(e) => {
-                                  // Clear answers and subject before changing section
+                                  // Clear MCQ/option answers only; keep textAnswers so FLN prefill persists
                                   setAnswers({});
-                                  setTextAnswers({});
                                   setSelectedSubject(null);
                                   setSelectedSection(e.target.value);
                                 }}
@@ -3335,9 +3284,8 @@ const CRCAssessment = () => {
                               <Select
                                 value={selectedClassGroup || ""}
                                 onChange={(e) => {
-                                  // Clear all answers and selections when class group changes
+                                  // Clear MCQ/option answers only; keep textAnswers so FLN prefill persists
                                   setAnswers({});
-                                  setTextAnswers({});
                                   setSelectedClass(null);
                                   setSelectedSection(null);
                                   setSelectedSubject(null);
@@ -3433,9 +3381,8 @@ const CRCAssessment = () => {
                                       [storageKey]: { ...textAnswers },
                                     }));
                                   }
-                                  // Clear answers, section, and subject immediately
+                                  // Clear MCQ/option answers only; keep textAnswers so FLN prefill persists
                                   setAnswers({});
-                                  setTextAnswers({});
                                   setSelectedSection(null);
                                   setSelectedSubject(null);
                                   setSelectedClass(e.target.value);
@@ -3499,9 +3446,8 @@ const CRCAssessment = () => {
                               <Select
                                 value={selectedSection || ""}
                                 onChange={(e) => {
-                                  // Clear answers and subject before changing section
+                                  // Clear MCQ/option answers only; keep textAnswers so FLN prefill persists
                                   setAnswers({});
-                                  setTextAnswers({});
                                   setSelectedSubject(null);
                                   setSelectedSection(e.target.value);
                                 }}
@@ -3571,9 +3517,8 @@ const CRCAssessment = () => {
                               <Select
                                 value={selectedSubject || ""}
                                 onChange={(e) => {
-                                  // Clear answers before changing subject
+                                  // Clear MCQ/option answers only; keep textAnswers so FLN prefill persists
                                   setAnswers({});
-                                  setTextAnswers({});
                                   setSelectedSubject(e.target.value);
                                   // React Query will automatically refetch when selectedSubject changes
                                 }}

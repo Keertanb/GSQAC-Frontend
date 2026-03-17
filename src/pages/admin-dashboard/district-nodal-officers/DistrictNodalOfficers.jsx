@@ -18,7 +18,7 @@ const DistrictNodalOfficers = () => {
   const [editingOfficer, setEditingOfficer] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const queryClient = useQueryClient();
   const {
@@ -113,7 +113,7 @@ const DistrictNodalOfficers = () => {
 
   // Get total count from API response for server-side pagination
   const totalCount =
-    officersData?.data?.total || officersData?.total || officers.length;
+    officersData?.data?.total ?? officersData?.total ?? officers.length;
 
   // Since API handles search, we use officers directly (no client-side filtering)
   // If API doesn't support search, we can add client-side filtering back
@@ -622,6 +622,10 @@ const DistrictNodalOfficers = () => {
           itemsPerPage={itemsPerPage}
           currentPage={currentPage + 1}
           onPageChange={(page) => setCurrentPage(page - 1)}
+          onItemsPerPageChange={(newSize) => {
+            setItemsPerPage(newSize);
+            setCurrentPage(0);
+          }}
           totalCount={totalCount}
           serverSidePagination={true}
           emptyTitle="No district nodal officers found"

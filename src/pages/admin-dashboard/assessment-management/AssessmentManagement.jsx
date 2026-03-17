@@ -66,6 +66,40 @@ import { getRoleId } from "../../../constants/roles";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
 import "./AssessmentManagement.css";
 
+// Format API date (YYYY-MM-DD or ISO) to DD/MM/YYYY for display
+const formatDateToDDMMYYYY = (dateStr) => {
+  if (!dateStr) return "";
+  const datePart = typeof dateStr === "string" ? dateStr.split("T")[0] : "";
+  if (!datePart || !/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return dateStr || "";
+  const [y, m, d] = datePart.split("-");
+  return `${d}/${m}/${y}`;
+};
+
+// Parse DD/MM/YYYY string to YYYY-MM-DD for API
+const parseDDMMYYYYToApi = (str) => {
+  if (!str || typeof str !== "string") return "";
+  const trimmed = str.trim().replace(/\s/g, "");
+  const match = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return "";
+  const [, d, m, y] = match;
+  const day = parseInt(d, 10);
+  const month = parseInt(m, 10);
+  const year = parseInt(y, 10);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${year}-${pad(month)}-${pad(day)}`;
+};
+
+// Parse API date (YYYY-MM-DD or ISO) to YYYY-MM-DD for date input
+const toDateInputValue = (dateStr) => {
+  if (!dateStr) return "";
+  const s = typeof dateStr === "string" ? dateStr.trim() : String(dateStr);
+  const datePart = s.split("T")[0];
+  if (datePart && /^\d{4}-\d{2}-\d{2}$/.test(datePart)) return datePart;
+  const parsed = parseDDMMYYYYToApi(s.replace(/[-/]/g, "/"));
+  return parsed || "";
+};
+
 const AssessmentManagement = () => {
   const { t, i18n } = useTranslation();
 
@@ -164,8 +198,15 @@ const AssessmentManagement = () => {
   // View Only Mode
   const [isViewOnlyMode, setIsViewOnlyMode] = useState(false);
 
-  // Capture image from React Native WebView camera
+  // Capture image from React Native WebView camera (or web: file/camera + location)
   const [capturedImage, setCapturedImage] = useState(null);
+  const [capturedImageMeta, setCapturedImageMeta] = useState(null); // { latitude, longitude, address }
+  const [captureModalOpen, setCaptureModalOpen] = useState(false);
+  const [captureMode, setCaptureMode] = useState(null); // 'camera' | 'file'
+  const [captureLoading, setCaptureLoading] = useState(false);
+  const captureVideoRef = React.useRef(null);
+  const captureCanvasRef = React.useRef(null);
+  const fileInputRef = React.useRef(null);
 
   // Listen for messages from React Native WebView (IMAGE_CAPTURED with base64 payload)
   useEffect(() => {
@@ -190,7 +231,111 @@ const AssessmentManagement = () => {
         JSON.stringify({ type: "OPEN_CAMERA" }),
       );
     } else {
-      enqueueSnackbar("Not inside React Native WebView", { variant: "info" });
+      // Web: open capture modal (camera or file) and attach location + address
+      setCaptureModalOpen(true);
+      setCaptureMode(null);
+    }
+  };
+
+  // Get address from lat/long using OpenStreetMap Nominatim (reverse geocoding)
+  const getAddressFromCoords = async (lat, lon) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+        { headers: { "User-Agent": "GSQAC-Assessment-Web" } },
+      );
+      const data = await res.json();
+      return data?.display_name || `${lat}, ${lon}`;
+    } catch {
+      return `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+    }
+  };
+
+  const handleWebCaptureImage = async (imageDataUrl) => {
+    setCaptureLoading(true);
+    try {
+      let latitude = null;
+      let longitude = null;
+      let address = "";
+
+      if (navigator.geolocation) {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          });
+        });
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+        address = await getAddressFromCoords(latitude, longitude);
+      } else {
+        address = "Location not available";
+      }
+
+      setCapturedImage(imageDataUrl);
+      setCapturedImageMeta({ latitude, longitude, address });
+      setCaptureModalOpen(false);
+      setCaptureMode(null);
+      if (captureVideoRef.current?.srcObject) {
+        captureVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+      }
+      enqueueSnackbar("Image captured with location", { variant: "success" });
+    } catch (err) {
+      console.error(err);
+      enqueueSnackbar(
+        err?.message || "Could not get location or capture image",
+        { variant: "error" },
+      );
+    } finally {
+      setCaptureLoading(false);
+    }
+  };
+
+  const startWebCamera = async () => {
+    setCaptureMode("camera");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      if (captureVideoRef.current) {
+        captureVideoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error(err);
+      enqueueSnackbar("Camera access denied or not available", {
+        variant: "error",
+      });
+      setCaptureMode("file");
+    }
+  };
+
+  const captureFromVideo = () => {
+    const video = captureVideoRef.current;
+    const canvas = captureCanvasRef.current;
+    if (!video || !canvas || !video.srcObject) return;
+    const ctx = canvas.getContext("2d");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+    handleWebCaptureImage(dataUrl);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = () => handleWebCaptureImage(reader.result);
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const closeCaptureModal = () => {
+    setCaptureModalOpen(false);
+    setCaptureMode(null);
+    if (captureVideoRef.current?.srcObject) {
+      captureVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
     }
   };
 
@@ -590,7 +735,7 @@ const AssessmentManagement = () => {
       });
     } catch (error) {
       console.error("Error updating assessment:", error);
-      enqueueSnackbar("Failed to update assessment", { variant: "error" });
+      // Error toaster is shown by useUpdateAssessmentMutation onError (single message)
     }
   };
 
@@ -770,7 +915,7 @@ const AssessmentManagement = () => {
         </Box>
       </Box>
 
-      {/* Captured image preview (when opened in React Native WebView) */}
+      {/* Captured image preview (when opened in React Native WebView or web capture) */}
       {capturedImage && (
         <Box
           sx={{
@@ -804,17 +949,125 @@ const AssessmentManagement = () => {
                 border: `1px solid ${colors.neutral.gray300}`,
               }}
             />
+            {capturedImageMeta && (
+              <Box sx={{ flex: 1, minWidth: 200 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                  <strong>Latitude:</strong>{" "}
+                  {capturedImageMeta.latitude != null
+                    ? capturedImageMeta.latitude.toFixed(6)
+                    : "—"}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                  <strong>Longitude:</strong>{" "}
+                  {capturedImageMeta.longitude != null
+                    ? capturedImageMeta.longitude.toFixed(6)
+                    : "—"}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                  <strong>Address:</strong> {capturedImageMeta.address || "—"}
+                </Typography>
+              </Box>
+            )}
             <Button
               variant="outlined"
               size="small"
               color="error"
-              onClick={() => setCapturedImage(null)}
+              onClick={() => {
+                setCapturedImage(null);
+                setCapturedImageMeta(null);
+              }}
             >
               Remove
             </Button>
           </Box>
         </Box>
       )}
+
+      {/* Web capture modal: camera or file + location */}
+      <Dialog
+        open={captureModalOpen}
+        onClose={closeCaptureModal}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 2 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          Capture Image (with location)
+        </DialogTitle>
+        <DialogContent>
+          <canvas
+            ref={captureCanvasRef}
+            style={{ display: "none" }}
+            aria-hidden
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            style={{ display: "none" }}
+            aria-hidden
+          />
+          {captureMode === null && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Choose how to capture the image. Latitude, longitude and address will be attached automatically.
+              </Typography>
+              <Button
+                variant="outlined"
+                startIcon={<CameraAlt />}
+                onClick={startWebCamera}
+                fullWidth
+                sx={{
+                  borderColor: colors.primary.blue,
+                  color: colors.primary.blue,
+                  "&:hover": { borderColor: colors.primary.dark, bgcolor: colors.primary.blue + "10" },
+                }}
+              >
+                Use camera
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => fileInputRef.current?.click()}
+                fullWidth
+              >
+                Choose image file
+              </Button>
+            </Box>
+          )}
+          {captureMode === "camera" && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Box
+                component="video"
+                ref={captureVideoRef}
+                autoPlay
+                playsInline
+                muted
+                sx={{
+                  width: "100%",
+                  maxHeight: 360,
+                  bgcolor: "#000",
+                  borderRadius: 2,
+                  objectFit: "contain",
+                }}
+              />
+              <Button
+                variant="contained"
+                startIcon={<CameraAlt />}
+                onClick={captureFromVideo}
+                disabled={captureLoading}
+                fullWidth
+                sx={{ bgcolor: colors.primary.blue, "&:hover": { bgcolor: colors.primary.dark } }}
+              >
+                {captureLoading ? "Getting location…" : "Capture"}
+              </Button>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={closeCaptureModal}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Assessments as Accordions */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -1510,44 +1763,40 @@ const AssessmentManagement = () => {
                         <TextField
                           size="small"
                           type="date"
-                          value={
-                            roleAssignments[role.roleId]?.startDate?.split(
-                              "T",
-                            )[0] || ""
-                          }
+                          label="Start Date"
+                          value={toDateInputValue(
+                            roleAssignments[role.roleId]?.startDate,
+                          )}
                           onChange={(e) =>
                             handleRoleAssignmentChange(
                               role.roleId,
                               "startDate",
-                              e.target.value,
+                              e.target.value || "",
                             )
                           }
                           InputLabelProps={{ shrink: true }}
+                          inputProps={{ max: "9999-12-31" }}
+                          fullWidth
                         />
                       </TableCell>
                       <TableCell>
                         <TextField
                           size="small"
                           type="date"
-                          value={
-                            roleAssignments[role.roleId]?.endDate?.split(
-                              "T",
-                            )[0] || ""
-                          }
+                          label="End Date"
+                          value={toDateInputValue(
+                            roleAssignments[role.roleId]?.endDate,
+                          )}
                           onChange={(e) =>
                             handleRoleAssignmentChange(
                               role.roleId,
                               "endDate",
-                              e.target.value,
+                              e.target.value || "",
                             )
                           }
-                          inputProps={{
-                            min:
-                              roleAssignments[role.roleId]?.startDate?.split(
-                                "T",
-                              )[0] || undefined,
-                          }}
                           InputLabelProps={{ shrink: true }}
+                          inputProps={{ max: "9999-12-31" }}
+                          fullWidth
                         />
                       </TableCell>
                       <TableCell align="center">
