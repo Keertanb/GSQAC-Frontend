@@ -798,16 +798,15 @@ const SchoolVerification = () => {
       setSelectedSection(null);
       setSelectedSubject(null);
       setAnswers({});
-      setTextAnswers({});
+      // Do not clear textAnswers here so FLN prefilled data from API is preserved
       return;
     }
 
     // Reset subject when class changes (since it's class-specific)
     setSelectedSubject(null);
 
-    // Reset answers - they will be loaded from API if they exist
+    // Reset MCQ/option answers only; keep textAnswers (FLN input) so prefilled data persists
     setAnswers({});
-    setTextAnswers({});
   }, [selectedClass, selectedSubdomain]);
 
   // Effect to handle section changes - reset subject and answers
@@ -818,133 +817,101 @@ const SchoolVerification = () => {
     if (!selectedSection) {
       setSelectedSubject(null);
       setAnswers({});
-      setTextAnswers({});
+      // Do not clear textAnswers so FLN prefilled data persists when switching tabs
       return;
     }
 
     // Reset subject when section changes
     setSelectedSubject(null);
 
-    // Reset answers - they will be loaded from API if they exist
+    // Reset MCQ/option answers only; keep textAnswers (FLN input) so prefilled data persists
     setAnswers({});
-    setTextAnswers({});
   }, [selectedSection, selectedSubdomain]);
 
   // Effect to handle subject changes - reset answers
   useEffect(() => {
     if (!selectedSubdomain) return;
 
-    // If subject is cleared, clear answers
+    // If subject is cleared, clear option answers only; keep textAnswers for FLN
     if (!selectedSubject) {
       setAnswers({});
-      setTextAnswers({});
       return;
     }
 
-    // Reset answers when subject changes - they will be loaded from API if they exist
+    // Reset MCQ/option answers only; keep textAnswers (FLN input) so prefilled data persists
     setAnswers({});
-    setTextAnswers({});
   }, [selectedSubject, selectedSubdomain]);
 
   // Effect to load API answers when questions are fetched (API answers take priority)
   useEffect(() => {
-    if (allQuestions && allQuestions.length > 0 && selectedSubdomain) {
+    const questionsForOptions = allQuestions && allQuestions.length > 0 ? allQuestions : [];
+    // Use unfiltered list for FLN so we always have type-4 answers (API returns one row per questionId+std)
+    const questionsForFLN = allQuestionsForCount && allQuestionsForCount.length > 0 ? allQuestionsForCount : questionsForOptions;
+
+    if ((questionsForOptions.length > 0 || questionsForFLN.length > 0) && selectedSubdomain) {
       const apiAnswers = {};
       const apiTextAnswers = {};
       const flnAnswersMap = {}; // To group FLN answers by questionId
 
-      allQuestions.forEach((question) => {
+      // Build FLN prefill from unfiltered list so FLN rows (questionId, std, answerText) are always present
+      questionsForFLN.forEach((question) => {
         const questionType =
           question.questionType ||
           (question.isClassroomObservation === 1 ? 2 : 1);
 
-        // Check if required dropdowns are selected based on question type
-        let shouldLoadAnswer = false;
+        if (questionType !== 4 && questionType !== "4") return;
 
+        // FLN/input type: API sends answerText (and optionally obtainedMarks)
+        const marksValue = question.obtainedMarks ?? question.answerText;
+        const hasStd = question.std != null;
+        const hasMarks = marksValue != null && marksValue !== "";
+
+        if (hasStd && hasMarks) {
+          const qId = question.questionId;
+          if (!flnAnswersMap[qId]) flnAnswersMap[qId] = {};
+          const stdKey = Number(question.std);
+          flnAnswersMap[qId][stdKey] = {
+            obtainedMarks: String(marksValue),
+            answerId: question.answerId ?? null,
+          };
+        }
+      });
+
+      // Process non-FLN answers from the (possibly filtered) questions list
+      questionsForOptions.forEach((question) => {
+        const questionType =
+          question.questionType ||
+          (question.isClassroomObservation === 1 ? 2 : 1);
+
+        let shouldLoadAnswer = false;
         if (questionType === 1 || questionType === "1") {
-          // General questions - no dropdowns needed
           shouldLoadAnswer = true;
         } else if (questionType === 2 || questionType === "2") {
-          // Classroom observation - needs class and section
           shouldLoadAnswer = !!selectedClass && !!selectedSection;
         } else if (questionType === 3 || questionType === "3") {
-          // Subject observation - needs class, section, and subject
           shouldLoadAnswer =
             !!selectedClass && !!selectedSection && !!selectedSubject;
         } else if (questionType === 4 || questionType === "4") {
-          // FLN questions - no dropdowns needed
-          shouldLoadAnswer = true;
+          return; // FLN already handled above
         }
 
-        // For FLN questions (type 4), process separately (they don't have selectedOptionId)
-        if (questionType === 4 || questionType === "4") {
-          // FLN questions don't need dropdowns, so always process if we have answerText and std
-          // Note: answerText can be 0, which is a valid value, so check for null/undefined only
-          if (question.std !== null && question.std !== undefined && 
-              question.answerText !== null && question.answerText !== undefined) {
-            const qId = question.questionId;
+        if (!shouldLoadAnswer || !question.selectedOptionId) return;
 
-            // Initialize map for this question if not exists
-            if (!flnAnswersMap[qId]) {
-              flnAnswersMap[qId] = {};
-            }
-
-            // Convert std to number to ensure consistent key type
-            const stdKey = Number(question.std);
-            flnAnswersMap[qId][stdKey] = {
-              obtainedMarks: String(question.answerText),
-              answerId: question.answerId || null,
-            };
-            
-            // Debug log for FLN answer processing
-            console.log("FLN Answer Processed:", {
-              questionId: qId,
-              std: question.std,
-              stdKey,
-              answerText: question.answerText,
-              answerId: question.answerId,
-              flnAnswersMap: flnAnswersMap[qId],
-            });
-          }
-          // Continue to next question (don't process as regular question)
-          return;
-        }
-
-        // For other question types, check if required dropdowns are selected
-        // AND if the question has a selectedOptionId (meaning it has an answer from API)
-        if (!shouldLoadAnswer || !question.selectedOptionId) {
-          return;
-        }
-
-        // Process non-FLN questions
-        if (question.selectedOptionId) {
-          // For other questions, load selected option only if it matches current selections
-          // For subject questions, verify the question's subjectId matches selectedSubject
-          if (questionType === 3 || questionType === "3") {
-            // For subject questions, only load if question's subjectId matches selectedSubject
-            if (question.subjectId && Number(question.subjectId) === Number(selectedSubject)) {
-              apiAnswers[question.questionId] = String(question.selectedOptionId);
-            }
-          } else {
-            // For other question types, load the answer
+        if (questionType === 3 || questionType === "3") {
+          if (question.subjectId && Number(question.subjectId) === Number(selectedSubject)) {
             apiAnswers[question.questionId] = String(question.selectedOptionId);
           }
+        } else {
+          apiAnswers[question.questionId] = String(question.selectedOptionId);
         }
       });
 
       // Convert flnAnswersMap to JSON strings for textAnswers state
       Object.keys(flnAnswersMap).forEach((questionId) => {
-        // Only add if there's actual data
         if (Object.keys(flnAnswersMap[questionId]).length > 0) {
           apiTextAnswers[questionId] = JSON.stringify(
             flnAnswersMap[questionId]
           );
-          // Debug log for FLN text answer conversion
-          console.log("FLN Text Answer Converted:", {
-            questionId,
-            flnData: flnAnswersMap[questionId],
-            jsonString: apiTextAnswers[questionId],
-          });
         }
       });
 
@@ -971,21 +938,24 @@ const SchoolVerification = () => {
       }
 
       // Always set textAnswers if we have FLN answers, even if apiAnswers is empty
-      // Merge with existing textAnswers to preserve any user-entered data that's not in API
+      // Merge per questionId so API data for one class (std) doesn't wipe the other's prefill
       if (Object.keys(apiTextAnswers).length > 0) {
-        // Debug log before setting textAnswers
-        console.log("Setting FLN textAnswers:", {
-          apiTextAnswers,
-          questionIds: Object.keys(apiTextAnswers),
-        });
-        
-        // Merge API answers with existing textAnswers (API takes priority)
         setTextAnswers((prevTextAnswers) => {
-          const merged = {
-            ...prevTextAnswers,
-            ...apiTextAnswers,
-          };
-          console.log("Merged textAnswers:", merged);
+          const merged = { ...prevTextAnswers };
+          Object.keys(apiTextAnswers).forEach((qId) => {
+            try {
+              const apiData = JSON.parse(apiTextAnswers[qId]);
+              let prevData = {};
+              if (merged[qId]) {
+                try {
+                  prevData = JSON.parse(merged[qId]);
+                } catch (_) {}
+              }
+              merged[qId] = JSON.stringify({ ...prevData, ...apiData });
+            } catch (_) {
+              merged[qId] = apiTextAnswers[qId];
+            }
+          });
           return merged;
         });
 
@@ -1003,14 +973,13 @@ const SchoolVerification = () => {
             },
           }));
         }
-      } else {
-        console.log("No FLN textAnswers to set. apiTextAnswers:", apiTextAnswers);
       }
       // Note: We don't clear textAnswers here to preserve user-entered FLN answers
       // when switching between question types or dropdowns
     }
   }, [
     allQuestions,
+    allQuestionsForCount,
     selectedSubdomain,
     selectedClass,
     selectedSection,
@@ -2357,9 +2326,8 @@ const SchoolVerification = () => {
                           setSelectedClass(null);
                           setSelectedSection(null);
                           setSelectedSubject(null);
-                          // Clear answers when changing tabs
+                          // Clear MCQ/option answers only; keep textAnswers so FLN prefilled data persists when switching to FLN tab
                           setAnswers({});
-                          setTextAnswers({});
                           setSelectedQuestionTab(newValue);
                         }}
                         variant="scrollable"
@@ -2828,7 +2796,7 @@ const SchoolVerification = () => {
                                           label={`Q ${questionNumber}`}
                                           size="small"
                                           sx={{
-                                            bgcolor: colors.primary.blue,
+                                            bgcolor: colors.neutral.gray800,
                                             color: "white",
                                             fontWeight: 700,
                                             minWidth: "100px",
@@ -3461,7 +3429,7 @@ const SchoolVerification = () => {
                                           label={`Q ${questionNumber}`}
                                           size="small"
                                           sx={{
-                                            bgcolor: colors.accent.purple,
+                                            bgcolor: colors.neutral.gray800,
                                             color: "white",
                                             fontWeight: 700,
                                             minWidth: "100px",
@@ -3673,18 +3641,10 @@ const SchoolVerification = () => {
                             >
                               {flnQuestions.map((question, index) => {
                                 const textAnswer =
-                                  textAnswers[question.questionId] || "";
-                                
-                                // Debug log for FLN question rendering
-                                if (index === 0) {
-                                  console.log("FLN Question Render Debug:", {
-                                    questionId: question.questionId,
-                                    textAnswer,
-                                    textAnswers,
-                                    allTextAnswerKeys: Object.keys(textAnswers),
-                                  });
-                                }
-                                
+                                  textAnswers[question.questionId] ||
+                                  textAnswers[String(question.questionId)] ||
+                                  "";
+
                                 const isExpanded =
                                   expandedQuestions[question.questionId] ??
                                   true;
@@ -3734,7 +3694,7 @@ const SchoolVerification = () => {
                                         label={`Q ${questionNumber}`}
                                         size="small"
                                         sx={{
-                                          bgcolor: colors.semantic.warning,
+                                          bgcolor: colors.neutral.gray800,
                                           color: "white",
                                           fontWeight: 700,
                                           minWidth: "100px",
@@ -3787,18 +3747,6 @@ const SchoolVerification = () => {
                                               flnData = textAnswer
                                                 ? JSON.parse(textAnswer)
                                                 : {};
-                                              
-                                              // Debug log for first class of first question
-                                              if (classNum === 2 && index === 0) {
-                                                console.log("FLN Data Parsed:", {
-                                                  questionId: question.questionId,
-                                                  textAnswer,
-                                                  flnData,
-                                                  classNum,
-                                                  classData: flnData[classNum],
-                                                  allKeys: Object.keys(flnData),
-                                                });
-                                              }
                                             } catch (e) {
                                               console.error("Error parsing FLN textAnswer:", e, {
                                                 questionId: question.questionId,
@@ -3813,16 +3761,6 @@ const SchoolVerification = () => {
                                               obtainedMarks: "",
                                               answerId: null,
                                             };
-                                            
-                                            // Debug log for classData access
-                                            if (classNum === 2 && index === 0) {
-                                              console.log("Class Data Retrieved:", {
-                                                questionId: question.questionId,
-                                                classNum,
-                                                classData,
-                                                obtainedMarks: classData.obtainedMarks,
-                                              });
-                                            }
 
                                             // Get total students count from API
                                             const totalStudents =
@@ -4131,7 +4069,7 @@ const SchoolVerification = () => {
                                         label={`Q ${questionNumber}`}
                                         size="small"
                                         sx={{
-                                          bgcolor: colors.accent.green,
+                                          bgcolor: colors.neutral.gray800,
                                           color: "white",
                                           fontWeight: 700,
                                           minWidth: "80px",

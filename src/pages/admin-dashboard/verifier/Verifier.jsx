@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   useGetVerifiersQuery,
+  useGetVerifierCountQuery,
   useUpsertVerifierMutation,
   useGetAllDistrictsQuery,
 } from "../../../services/adminService";
@@ -39,9 +40,13 @@ const Verifier = () => {
   const upsertMutation = useUpsertVerifierMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "verifiers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "verifier-count"] });
       handleCloseModal();
     },
   });
+
+  const { data: verifierCountData } = useGetVerifierCountQuery();
+  const countData = verifierCountData?.data ?? null;
 
   const verifiers = verifiersData?.data?.data || verifiersData?.data || [];
 
@@ -224,6 +229,14 @@ const Verifier = () => {
   const inactiveCount = verifiers.filter(
     (v) => v.isActive === false || v.isActive === 0
   ).length;
+
+  // Card counts from API; fallback to list-derived counts when API not yet loaded
+  const totalVerifierCount =
+    countData?.TOTAL_VERIFIER ?? countData?.totalVerifier ?? verifiers.length;
+  const activeVerifierCount =
+    countData?.ACTIVE_VERIFIER ?? countData?.activeVerifier ?? activeCount;
+  const inactiveVerifierCount =
+    countData?.INACTIVE_VERIFIER ?? countData?.inactiveVerifier ?? inactiveCount;
 
   // Handle Excel export
   const handleExportToExcel = () => {
@@ -443,7 +456,7 @@ const Verifier = () => {
                 Total Verifiers
               </p>
               <p className="verifier-stat-value verifier-stat-value-blue">
-                {verifiers.length}
+                {totalVerifierCount}
               </p>
             </div>
             <div className="verifier-stat-icon verifier-stat-icon-blue">
@@ -464,7 +477,7 @@ const Verifier = () => {
                 Active Verifiers
               </p>
               <p className="verifier-stat-value verifier-stat-value-green">
-                {activeCount}
+                {activeVerifierCount}
               </p>
             </div>
             <div className="verifier-stat-icon verifier-stat-icon-green">
@@ -485,7 +498,7 @@ const Verifier = () => {
                 Inactive Verifiers
               </p>
               <p className="verifier-stat-value verifier-stat-value-orange">
-                {inactiveCount}
+                {inactiveVerifierCount}
               </p>
             </div>
             <div className="verifier-stat-icon verifier-stat-icon-orange">

@@ -511,6 +511,28 @@ export const getVerifiers = async (params) => {
 };
 
 /**
+ * Get verifier count (total, active, inactive)
+ * @returns {Promise} API response - { data: { TOTAL_VERIFIER, ACTIVE_VERIFIER, INACTIVE_VERIFIER } }
+ */
+export const getVerifierCount = async () => {
+  const response = await axiosInstance.get("/admin/verifire-count");
+  return response.data;
+};
+
+/**
+ * React Query hook for getting verifier count
+ * @returns {Object} Query object from React Query
+ */
+export const useGetVerifierCountQuery = (options = {}) => {
+  return useQuery({
+    queryKey: ["admin", "verifier-count"],
+    queryFn: getVerifierCount,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    ...options,
+  });
+};
+
+/**
  * Upsert (add or edit) verifier
  * @param {Object} payload - { userId?: number, userName: string, mobileNumber: string, isActive: number }
  * @returns {Promise} API response

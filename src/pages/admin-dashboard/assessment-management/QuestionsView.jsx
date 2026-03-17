@@ -110,6 +110,7 @@ const QuestionsView = ({
   const [translationId, setTranslationId] = useState(null); // Store translation ID for subsequent calls
   const [optionTranslationIds, setOptionTranslationIds] = useState({}); // Store translation IDs for each option
   const [questionType, setQuestionType] = useState("single_choice"); // New state for question type
+  const [allowImageUpload, setAllowImageUpload] = useState("no"); // For MCQ: allow image upload in school assessment
   const [flnAnswer, setFlnAnswer] = useState(""); // State for FLN text field answer
   const [optionErrors, setOptionErrors] = useState({}); // State for option validation errors (per option: { [optionId]: { en, hi, gu } })
 
@@ -309,6 +310,9 @@ const QuestionsView = ({
         questionTextHi: newQuestionText.hi.trim(),
         questionType: questionTypeMap[questionType] || 1,
       };
+      if (questionType === "single_choice") {
+        questionPayload.allowImageUpload = allowImageUpload === "yes" ? 1 : 0;
+      }
 
       // If editing, include questionId
       if (editingQuestion) {
@@ -518,7 +522,11 @@ const QuestionsView = ({
       4: "fln",
     };
     setQuestionType(typeMapping[question.questionType] || "single_choice");
-
+    setAllowImageUpload(
+      question.allowImageUpload === 1 || question.allowImageUpload === "1" || question.allowImageUpload === "yes" || question.allowImageUpload === true
+        ? "yes"
+        : "no",
+    );
     // Set classroom observation fields
     setIsClassroomObservation(question.isClassroomObservation || 0);
 
@@ -882,6 +890,7 @@ const QuestionsView = ({
                 ]);
                 setIsClassroomObservation(0);
                 setQuestionType("single_choice");
+                setAllowImageUpload("no");
                 setShowAddQuestion(!showAddQuestion);
 
                 // Scroll to add question section after state update
@@ -982,6 +991,7 @@ const QuestionsView = ({
                               value={questionType}
                               onChange={(e) => {
                                 setQuestionType(e.target.value);
+                                if (e.target.value !== "single_choice") setAllowImageUpload("no");
                                 // Reset related fields when question type changes
                                 if (e.target.value === "fln") {
                                   setFlnAnswer("");
@@ -1021,6 +1031,21 @@ const QuestionsView = ({
                               </MenuItem>
                             </Select>
                           </FormControl>
+                          {questionType === "single_choice" && (
+                            <FormControl component="fieldset" fullWidth size="small" sx={{ mt: 1 }}>
+                              <FormLabel component="legend" sx={{ fontSize: "0.875rem", fontWeight: 600, color: "text.primary", mb: 1 }}>
+                                Allow image upload
+                              </FormLabel>
+                              <RadioGroup
+                                row
+                                value={allowImageUpload}
+                                onChange={(e) => setAllowImageUpload(e.target.value)}
+                              >
+                                <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
+                                <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+                              </RadioGroup>
+                            </FormControl>
+                          )}
                           <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                             <TextField
                               fullWidth
@@ -1674,6 +1699,7 @@ const QuestionsView = ({
                         value={questionType}
                         onChange={(e) => {
                           setQuestionType(e.target.value);
+                          if (e.target.value !== "single_choice") setAllowImageUpload("no");
                           if (e.target.value === "fln") {
                             setFlnAnswer("");
                           } else {
@@ -1709,6 +1735,21 @@ const QuestionsView = ({
                         <MenuItem value="fln">Input Type Question</MenuItem>
                       </Select>
                     </FormControl>
+                    {questionType === "single_choice" && (
+                      <FormControl component="fieldset" fullWidth size="small" sx={{ mt: 1 }}>
+                        <FormLabel component="legend" sx={{ fontSize: "0.875rem", fontWeight: 600, color: "text.primary", mb: 1 }}>
+                          Allow image upload
+                        </FormLabel>
+                        <RadioGroup
+                          row
+                          value={allowImageUpload}
+                          onChange={(e) => setAllowImageUpload(e.target.value)}
+                        >
+                          <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
+                          <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+                        </RadioGroup>
+                      </FormControl>
+                    )}
                     <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                       <TextField
                         fullWidth
@@ -2263,6 +2304,7 @@ const QuestionsView = ({
                         value={questionType}
                         onChange={(e) => {
                           setQuestionType(e.target.value);
+                          if (e.target.value !== "single_choice") setAllowImageUpload("no");
                           if (e.target.value === "fln") {
                             setFlnAnswer("");
                           } else {
@@ -2298,6 +2340,21 @@ const QuestionsView = ({
                         <MenuItem value="fln">Input Type Question</MenuItem>
                       </Select>
                     </FormControl>
+                    {questionType === "single_choice" && (
+                      <FormControl component="fieldset" fullWidth size="small" sx={{ mt: 1 }}>
+                        <FormLabel component="legend" sx={{ fontSize: "0.875rem", fontWeight: 600, color: "text.primary", mb: 1 }}>
+                          Allow image upload
+                        </FormLabel>
+                        <RadioGroup
+                          row
+                          value={allowImageUpload}
+                          onChange={(e) => setAllowImageUpload(e.target.value)}
+                        >
+                          <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
+                          <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+                        </RadioGroup>
+                      </FormControl>
+                    )}
                     <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                       <TextField
                         fullWidth
