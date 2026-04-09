@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@mui/material";
-import { Lock as LockIcon } from "@mui/icons-material";
+import { Button, IconButton } from "@mui/material";
+import { Lock as LockIcon, Menu as MenuIcon, Close as CloseIcon } from "@mui/icons-material";
 import useAuthStore from "../../store/useAuthStore";
 import FeatureCard from "../../components/FeatureCard/FeatureCard";
 import DomainPill from "../../components/DomainPill/DomainPill";
@@ -12,6 +12,7 @@ import "./dashboard.css";
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, token, role } = useAuthStore();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Redirect authenticated users to their role-specific dashboard
   useEffect(() => {
@@ -31,6 +32,18 @@ const Dashboard = () => {
       }
     }
   }, [user, token, role, navigate]);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
 
   // Ensure CSS styles are applied after component mounts and on navigation
   useEffect(() => {
@@ -87,6 +100,19 @@ const Dashboard = () => {
           </div>
 
           <div className="header-right">
+            <IconButton
+              className="header-mobile-toggle"
+              aria-label="Open menu"
+              onClick={() => setMobileMenuOpen(true)}
+              sx={{
+                display: { xs: "flex", md: "none" },
+                color: "#111827",
+                border: "1px solid #e5e7eb",
+                "&:hover": { backgroundColor: "#f3f4f6" },
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
             <nav className="header-nav">
               <a href="#" className="nav-link">
                 Home
@@ -103,6 +129,7 @@ const Dashboard = () => {
             </nav>
 
             <Button
+              className="header-login-btn"
               variant="outlined"
               startIcon={<LockIcon />}
               onClick={() => navigate("/login")}
@@ -123,6 +150,61 @@ const Dashboard = () => {
           </div>
         </div>
       </header>
+
+      {/* Mobile menu overlay */}
+      <div
+        className={`mobile-nav-overlay ${mobileMenuOpen ? "mobile-nav-open" : ""}`}
+        onClick={() => setMobileMenuOpen(false)}
+        onKeyDown={(e) => e.key === "Escape" && setMobileMenuOpen(false)}
+        role="button"
+        tabIndex={0}
+        aria-label="Close menu"
+      />
+      <div className={`mobile-nav-drawer ${mobileMenuOpen ? "mobile-nav-open" : ""}`}>
+        <div className="mobile-nav-header">
+          <span className="mobile-nav-title">Menu</span>
+          <IconButton
+            aria-label="Close menu"
+            onClick={() => setMobileMenuOpen(false)}
+            sx={{ color: "#374151" }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </div>
+        <nav className="mobile-nav">
+          <a href="#" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+            Home
+          </a>
+          <a href="#" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+            Schools
+          </a>
+          <a href="#" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+            About
+          </a>
+          <a href="#" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+            Grievance
+          </a>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<LockIcon />}
+            onClick={() => {
+              setMobileMenuOpen(false);
+              navigate("/login");
+            }}
+            sx={{
+              mt: 2,
+              borderColor: "#d1d5db",
+              color: "#111827",
+              textTransform: "none",
+              fontWeight: 600,
+              py: 1.5,
+            }}
+          >
+            Login
+          </Button>
+        </nav>
+      </div>
 
       {/* Hero Section */}
       <section className="hero-section">

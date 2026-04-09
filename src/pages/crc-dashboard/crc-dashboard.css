@@ -1,5 +1,15 @@
 .crc-dashboard-container {
   padding: 24px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .crc-dashboard-container {
+    padding: 16px;
+  }
 }
 
 

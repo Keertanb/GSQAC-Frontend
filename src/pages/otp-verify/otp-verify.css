@@ -4,8 +4,10 @@
   display: flex;
   min-height: 100vh;
   width: 100%;
+  max-width: 100vw;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background-color: #ffffff;
 }
 
@@ -291,6 +293,10 @@
 }
 
 @media (max-width: 600px) {
+  .otp-page-container {
+    min-height: 100vh;
+  }
+
   .otp-visual-panel {
     min-height: 35vh;
     padding: 1.5rem;
@@ -309,9 +315,14 @@
     margin-bottom: 2rem;
   }
 
+  .otp-form-panel {
+    padding: 1.5rem 1rem;
+  }
+
   .otp-card {
-    padding: 1.5rem;
+    padding: 1.5rem 1rem;
     border-radius: 20px;
+    max-width: 100%;
   }
 
   .otp-input-container {
@@ -321,5 +332,16 @@
   .otp-input-box {
     width: 45px;
     height: 55px;
+  }
+}
+
+@media (max-width: 400px) {
+  .otp-input-box {
+    width: 40px;
+    height: 50px;
+  }
+
+  .otp-card {
+    padding: 1.25rem 0.75rem;
   }
 }

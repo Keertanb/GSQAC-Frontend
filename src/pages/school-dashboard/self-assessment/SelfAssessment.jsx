@@ -84,6 +84,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import "./SelfAssessment.css";
 
 const SelfAssessment = () => {
   const navigate = useNavigate();
@@ -2002,24 +2003,28 @@ const SelfAssessment = () => {
           </Toolbar>
         </AppBar>
 
-        <Box sx={{ mt: 8 }}>
+        <Box sx={{ mt: 8 }} className="self-assessment-page-content">
           <Box
             sx={{
-              pl: drawerOpen && !matchDownMD ? 0 : { xs: 2, sm: 2, md: 3 },
-              pr: { xs: 2, sm: 2, md: 3 },
-              py: 3,
-              height: "calc(100vh - 64px)",
+              pl: drawerOpen && !matchDownMD ? 0 : { xs: 1.5, sm: 2, md: 3 },
+              pr: { xs: 1.5, sm: 2, md: 3 },
+              py: { xs: 2, md: 3 },
+              height: { xs: "auto", md: "calc(100vh - 64px)" },
+              minHeight: { xs: "calc(100vh - 64px)", md: "calc(100vh - 64px)" },
               display: "flex",
               flexDirection: "column",
+              overflow: { xs: "visible", md: "hidden" },
             }}
           >
             {/* Header */}
             <Box
               sx={{
                 display: "flex",
-                alignItems: "center",
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: { xs: "stretch", sm: "center" },
                 justifyContent: "space-between",
-                mb: 3,
+                mb: { xs: 2, md: 3 },
+                gap: 2,
               }}
             >
               <Box sx={{ flex: 1 }}>
@@ -2114,29 +2119,33 @@ const SelfAssessment = () => {
             <Box
               sx={{
                 display: "flex",
+                flexDirection: { xs: "column", md: "row" },
                 gap: { xs: 2, md: 3 },
                 flex: 1,
-                overflow: "hidden",
+                minHeight: 0,
+                overflow: { xs: "visible", md: "hidden" },
               }}
             >
               {/* Left Panel - Domains and Subdomains */}
               <Paper
                 sx={{
                   width: { xs: "100%", md: "380px" },
-                  minWidth: { md: "380px" },
+                  minWidth: { xs: 0, md: "380px" },
+                  flexShrink: { md: 0 },
                   borderRadius: 3,
                   bgcolor: "white",
                   display: "flex",
                   flexDirection: "column",
                   overflow: "hidden",
-                  maxHeight: "calc(100vh - 200px)",
+                  maxHeight: { xs: "none", md: "calc(100vh - 200px)" },
+                  minHeight: { xs: "240px", md: "auto" },
                   boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
                 }}
               >
                 {/* Left Panel Header */}
                 <Box
                   sx={{
-                    p: 3,
+                    p: { xs: 2, md: 3 },
                     borderBottom: `2px solid ${colors.neutral.gray200}`,
                     bgcolor: colors.background.secondary,
                   }}
@@ -2586,12 +2595,13 @@ const SelfAssessment = () => {
                 <Paper
                   sx={{
                     flex: 1,
+                    minHeight: { xs: "400px", md: 0 },
                     borderRadius: 3,
                     bgcolor: "white",
                     display: "flex",
                     flexDirection: "column",
                     overflow: "hidden",
-                    maxHeight: "calc(100vh - 200px)",
+                    maxHeight: { xs: "none", md: "calc(100vh - 200px)" },
                     minWidth: 0,
                     boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
                   }}
@@ -2599,7 +2609,7 @@ const SelfAssessment = () => {
                   {/* Right Panel Header */}
                   <Box
                     sx={{
-                      p: 3,
+                      p: { xs: 2, md: 3 },
                       borderBottom: `2px solid ${colors.neutral.gray200}`,
                       bgcolor: colors.background.secondary,
                     }}
@@ -2651,7 +2661,9 @@ const SelfAssessment = () => {
                     sx={{
                       flex: 1,
                       overflowY: "auto",
-                      p: { xs: 2.5, md: 3.5 },
+                      overflowX: "hidden",
+                      p: { xs: 1.5, sm: 2, md: 3.5 },
+                      WebkitOverflowScrolling: "touch",
                     }}
                   >
                     {/* Loading State */}

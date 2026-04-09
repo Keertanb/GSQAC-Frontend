@@ -84,6 +84,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import "./CRCAssessment.css";
 
 const CRCAssessment = () => {
   const navigate = useNavigate();
@@ -1723,6 +1724,7 @@ const CRCAssessment = () => {
   console.log(isPublished, endDate, "answersanswersanswers");
   return (
     <Box
+      className="crc-assessment-page-content"
       sx={{
         width: "100%",
         display: "flex",
@@ -1892,9 +1894,11 @@ const CRCAssessment = () => {
             <Box
               sx={{
                 display: "flex",
-                alignItems: "center",
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: { xs: "stretch", sm: "center" },
                 justifyContent: "space-between",
-                mb: 3,
+                mb: { xs: 2, md: 3 },
+                gap: 2,
               }}
             >
               <Box sx={{ flex: 1 }}>
@@ -1990,29 +1994,33 @@ const CRCAssessment = () => {
             <Box
               sx={{
                 display: "flex",
+                flexDirection: { xs: "column", md: "row" },
                 gap: { xs: 2, md: 3 },
                 flex: 1,
-                overflow: "hidden",
+                minHeight: 0,
+                overflow: { xs: "visible", md: "hidden" },
               }}
             >
               {/* Left Panel - Domains and Subdomains */}
               <Paper
                 sx={{
                   width: { xs: "100%", md: "380px" },
-                  minWidth: { md: "380px" },
+                  minWidth: { xs: 0, md: "380px" },
+                  flexShrink: { md: 0 },
                   borderRadius: 3,
                   bgcolor: "white",
                   display: "flex",
                   flexDirection: "column",
                   overflow: "hidden",
-                  maxHeight: "calc(100vh - 200px)",
+                  maxHeight: { xs: "none", md: "calc(100vh - 200px)" },
+                  minHeight: { xs: "240px", md: "auto" },
                   boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
                 }}
               >
                 {/* Left Panel Header */}
                 <Box
                   sx={{
-                    p: 3,
+                    p: { xs: 2, md: 3 },
                     borderBottom: `2px solid ${colors.neutral.gray200}`,
                     bgcolor: colors.background.secondary,
                   }}
@@ -2461,12 +2469,13 @@ const CRCAssessment = () => {
                 <Paper
                   sx={{
                     flex: 1,
+                    minHeight: { xs: "400px", md: 0 },
                     borderRadius: 3,
                     bgcolor: "white",
                     display: "flex",
                     flexDirection: "column",
                     overflow: "hidden",
-                    maxHeight: "calc(100vh - 200px)",
+                    maxHeight: { xs: "none", md: "calc(100vh - 200px)" },
                     minWidth: 0,
                     boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
                   }}
@@ -2474,7 +2483,7 @@ const CRCAssessment = () => {
                   {/* Right Panel Header */}
                   <Box
                     sx={{
-                      p: 3,
+                      p: { xs: 2, md: 3 },
                       borderBottom: `2px solid ${colors.neutral.gray200}`,
                       bgcolor: colors.background.secondary,
                     }}
@@ -2526,7 +2535,9 @@ const CRCAssessment = () => {
                     sx={{
                       flex: 1,
                       overflowY: "auto",
-                      p: { xs: 2.5, md: 3.5 },
+                      overflowX: "hidden",
+                      p: { xs: 1.5, sm: 2, md: 3.5 },
+                      WebkitOverflowScrolling: "touch",
                     }}
                   >
                     {/* Loading State */}

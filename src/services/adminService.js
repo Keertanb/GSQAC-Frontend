@@ -966,6 +966,16 @@ export const updateAssessment = async (payload) => {
 };
 
 /**
+ * Clone an assessment
+ * @param {Object} payload - { assessmentId, newAssessmentGu, newAssessmentEn, newAssessmentHi, schoolType }
+ * @returns {Promise} API response
+ */
+export const cloneAssessment = async (payload) => {
+  const response = await axiosInstance.post("/admin/clone-assessment", payload);
+  return response.data;
+};
+
+/**
  * Publish/Unpublish assessment
  * @param {Object} payload - { roleId: number, isPublished: number }
  * @returns {Promise} API response
@@ -1055,6 +1065,34 @@ export const useUpdateAssessmentMutation = (options = {}) => {
         {
           variant: "error",
         }
+      );
+      if (options.onError) {
+        options.onError(error);
+      }
+    },
+    ...options,
+  });
+};
+
+/**
+ * React Query hook to clone assessment
+ */
+export const useCloneAssessmentMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => cloneAssessment(data),
+    mutationKey: ["admin", "clone-assessment"],
+    onSuccess: (data) => {
+      enqueueSnackbar(data?.message || "Assessment cloned successfully", {
+        variant: "success",
+      });
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to clone assessment",
+        { variant: "error" }
       );
       if (options.onError) {
         options.onError(error);

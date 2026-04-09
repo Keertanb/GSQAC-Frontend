@@ -46,6 +46,7 @@ import {
   Check,
   Close,
   CameraAlt,
+  ContentCopy,
 } from "@mui/icons-material";
 import { colors } from "../../../constants/colors";
 import DomainSubdomainView from "./DomainSubdomainView";
@@ -57,6 +58,7 @@ import {
   usePublishAssessmentMutation,
   useGetAssessmentsQuery,
   useUpdateAssessmentMutation,
+  useCloneAssessmentMutation,
   useDeleteDomainMutation,
   useGetAssessmentRoleAssignmentsQuery,
   useUpdateAssessmentRoleAssignmentMutation,
@@ -120,9 +122,10 @@ const AssessmentManagement = () => {
   const [activeAssessmentForDomainForm, setActiveAssessmentForDomainForm] =
     useState(null); // { assessmentId, roleId } | null
 
-  // Add/Edit Assessment Modal
+  // Add/Edit Assessment Modal (and Duplicate mode)
   const [addAssessmentModalOpen, setAddAssessmentModalOpen] = useState(false);
   const [editingAssessment, setEditingAssessment] = useState(null);
+  const [duplicateSourceAssessment, setDuplicateSourceAssessment] = useState(null);
   const [newAssessment, setNewAssessment] = useState({
     schoolType: "1", // Default to Primary (1-8)
     assessmentEn: "",
@@ -132,6 +135,7 @@ const AssessmentManagement = () => {
 
   const handleAddAssessment = () => {
     setEditingAssessment(null);
+    setDuplicateSourceAssessment(null);
     setNewAssessment({
       schoolType: "1",
       assessmentEn: "",
@@ -141,7 +145,20 @@ const AssessmentManagement = () => {
     setAddAssessmentModalOpen(true);
   };
 
+  const handleDuplicateAssessment = (assessment) => {
+    setEditingAssessment(null);
+    setDuplicateSourceAssessment(assessment);
+    setNewAssessment({
+      schoolType: assessment.schoolType?.toString() || "1",
+      assessmentEn: assessment.assessmentEn || "",
+      assessmentHi: assessment.assessmentHi || "",
+      assessmentGu: assessment.assessmentGu || "",
+    });
+    setAddAssessmentModalOpen(true);
+  };
+
   const handleEditAssessment = (assessment) => {
+    setDuplicateSourceAssessment(null);
     setEditingAssessment(assessment);
     setNewAssessment({
       schoolType: assessment.schoolType?.toString() || "1",
@@ -471,6 +488,13 @@ const AssessmentManagement = () => {
       // Only show generic message here if not called from add/edit modal
       // The add/edit modal will show its own specific message
       refetchAssessments();
+    },
+  });
+
+  const cloneAssessmentMutation = useCloneAssessmentMutation({
+    onSuccess: () => {
+      refetchAssessments();
+      refetchDomains();
     },
   });
 
@@ -1177,6 +1201,23 @@ const AssessmentManagement = () => {
                         size="small"
                         onClick={(e) => {
                           e.stopPropagation();
+                          handleDuplicateAssessment(assessment);
+                        }}
+                        title="Duplicate assessment"
+                        sx={{
+                          color: "text.secondary",
+                          "&:hover": {
+                            bgcolor: colors.primary.blue + "15",
+                            color: colors.primary.blue,
+                          },
+                        }}
+                      >
+                        <ContentCopy fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
                           startEditingAssessment(assessment, e);
                         }}
                         sx={{
@@ -1515,12 +1556,11 @@ const AssessmentManagement = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Add/Edit Assessment Modal */}
+      {/* Add/Edit/Duplicate Assessment Modal */}
       <Dialog
         open={addAssessmentModalOpen}
         onClose={() => {
           setAddAssessmentModalOpen(false);
-          // Reset form data when modal closes
           setNewAssessment({
             schoolType: "1",
             assessmentEn: "",
@@ -1528,12 +1568,17 @@ const AssessmentManagement = () => {
             assessmentGu: "",
           });
           setEditingAssessment(null);
+          setDuplicateSourceAssessment(null);
         }}
         maxWidth="sm"
         fullWidth
       >
         <DialogTitle sx={{ fontWeight: 700 }}>
-          {editingAssessment ? "Edit Assessment" : "Add Assessment"}
+          {duplicateSourceAssessment
+            ? "Duplicate Assessment"
+            : editingAssessment
+              ? "Edit Assessment"
+              : "Add Assessment"}
         </DialogTitle>
         <DialogContent sx={{ mt: 1.5 }}>
           <Box
@@ -1544,6 +1589,15 @@ const AssessmentManagement = () => {
               marginTop: 2,
             }}
           >
+            {duplicateSourceAssessment && (
+              <TextField
+                size="small"
+                label="Duplicate from"
+                value={getAssessmentName(duplicateSourceAssessment)}
+                InputProps={{ readOnly: true }}
+                fullWidth
+              />
+            )}
             <FormControl fullWidth size="small">
               <InputLabel>School Type</InputLabel>
               <Select
@@ -1607,7 +1661,6 @@ const AssessmentManagement = () => {
           <Button
             onClick={() => {
               setAddAssessmentModalOpen(false);
-              // Reset form data when modal closes
               setNewAssessment({
                 schoolType: "1",
                 assessmentEn: "",
@@ -1615,6 +1668,7 @@ const AssessmentManagement = () => {
                 assessmentGu: "",
               });
               setEditingAssessment(null);
+              setDuplicateSourceAssessment(null);
             }}
           >
             Cancel
@@ -1622,31 +1676,59 @@ const AssessmentManagement = () => {
           <Button
             variant="contained"
             disabled={
-              updateAssessmentMutation.isPending ||
+              (duplicateSourceAssessment
+                ? cloneAssessmentMutation.isPending
+                : updateAssessmentMutation.isPending) ||
               !newAssessment.assessmentEn?.trim() ||
               !newAssessment.assessmentGu?.trim()
             }
             onClick={() => {
               const nameEn = newAssessment.assessmentEn?.trim();
               const nameGu = newAssessment.assessmentGu?.trim();
+              const nameHi = newAssessment.assessmentHi?.trim() || "";
               if (!nameEn || !nameGu) {
                 enqueueSnackbar("Add proper assessment name", {
                   variant: "warning",
                 });
                 return;
               }
+              if (duplicateSourceAssessment) {
+                cloneAssessmentMutation.mutate(
+                  {
+                    assessmentId: duplicateSourceAssessment.assessmentId,
+                    newAssessmentGu: nameGu,
+                    newAssessmentEn: nameEn,
+                    newAssessmentHi: nameHi,
+                    schoolType: parseInt(newAssessment.schoolType, 10),
+                  },
+                  {
+                    onSuccess: () => {
+                      setAddAssessmentModalOpen(false);
+                      setNewAssessment({
+                        schoolType: "1",
+                        assessmentEn: "",
+                        assessmentHi: "",
+                        assessmentGu: "",
+                      });
+                      setDuplicateSourceAssessment(null);
+                      refetchAssessments();
+                      refetchDomains();
+                    },
+                  }
+                );
+                return;
+              }
               const payload = {
                 ...(editingAssessment && {
                   assessmentId: editingAssessment.assessmentId,
                 }),
-                schoolType: parseInt(newAssessment.schoolType),
+                schoolType: parseInt(newAssessment.schoolType, 10),
                 assessmentEn: nameEn,
-                assessmentHi: newAssessment.assessmentHi?.trim() || "",
+                assessmentHi: nameHi,
                 assessmentGu: nameGu,
               };
               updateAssessmentMutation.mutate(payload, {
                 onSuccess: (data) => {
-                  // Show success message - check if it's an edit by checking if assessmentId exists
                   const isEdit = !!editingAssessment;
                   enqueueSnackbar(
                     isEdit
@@ -1671,13 +1753,17 @@ const AssessmentManagement = () => {
               "&:hover": { bgcolor: colors.primary.dark },
             }}
           >
-            {updateAssessmentMutation.isPending
-              ? editingAssessment
-                ? "Updating..."
-                : "Creating..."
-              : editingAssessment
-                ? "Update"
-                : "Create"}
+            {duplicateSourceAssessment
+              ? cloneAssessmentMutation.isPending
+                ? "Cloning..."
+                : "Duplicate"
+              : updateAssessmentMutation.isPending
+                ? editingAssessment
+                  ? "Updating..."
+                  : "Creating..."
+                : editingAssessment
+                  ? "Update"
+                  : "Create"}
           </Button>
         </DialogActions>
       </Dialog>
