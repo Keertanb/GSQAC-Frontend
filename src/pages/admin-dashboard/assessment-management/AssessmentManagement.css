@@ -1,5 +1,7 @@
 .assessment-management-container {
   width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Smooth transitions */
@@ -15,5 +17,36 @@
 .MuiCard-root:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Responsive: tables and accordions on small screens */
+@media (max-width: 960px) {
+  .assessment-management-container .MuiAccordion-root {
+    margin-bottom: 8px;
+  }
+
+  .assessment-management-container .MuiTableContainer-root {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .assessment-management-container .MuiPaper-root {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  .assessment-management-container .MuiPaper-root {
+    padding: 8px;
+  }
+
+  .assessment-management-container .MuiAccordionSummary-content {
+    flex-wrap: wrap;
+  }
+
+  .assessment-management-container .MuiDialog-paper {
+    margin: 8px;
+    max-width: calc(100vw - 16px) !important;
+  }
 }
 

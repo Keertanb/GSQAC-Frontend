@@ -1,0 +1,74 @@
+/* CRC Assessment - Mobile responsive (same as Self Assessment) */
+
+.crc-assessment-page-content {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+@media (max-width: 960px) {
+  .crc-assessment-page-content .MuiFormControlLabel-root {
+    min-height: 48px;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .crc-assessment-page-content .MuiRadio-root {
+    padding: 10px;
+    margin-top: 2px;
+  }
+
+  .crc-assessment-page-content .MuiFormControlLabel-label {
+    margin-left: 8px;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  .crc-assessment-page-content .MuiTextField-root input,
+  .crc-assessment-page-content .MuiOutlinedInput-input {
+    min-height: 48px;
+    padding: 14px 16px;
+    font-size: 16px;
+  }
+
+  .crc-assessment-page-content .MuiSelect-select {
+    min-height: 48px;
+    padding: 14px 16px;
+    font-size: 16px;
+  }
+
+  .crc-assessment-page-content .MuiButton-root {
+    min-height: 48px;
+    padding: 12px 20px;
+  }
+
+  .crc-assessment-page-content .MuiTabs-scroller {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .crc-assessment-page-content .MuiTab-root {
+    min-height: 48px;
+    min-width: 100px;
+    padding: 12px 16px;
+  }
+
+  .crc-assessment-page-content .MuiCardContent-root {
+    padding: 16px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .crc-assessment-page-content .MuiFormControlLabel-root {
+    padding: 14px 12px;
+  }
+
+  .crc-assessment-page-content .MuiPaper-root {
+    border-radius: 12px;
+  }
+}

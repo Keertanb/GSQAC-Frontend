@@ -410,7 +410,7 @@ const Verifier = () => {
               Manage verifiers and their assignments
             </p>
           </div>
-          <div style={{ display: "flex", gap: "0.75rem" }}>
+          <div className="verifier-header-actions">
             <AppButton
               variant="plain"
               size="icon"

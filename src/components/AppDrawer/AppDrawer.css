@@ -71,3 +71,20 @@
 .item-icon .icon {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Mobile: ensure drawer doesn't overflow and touch targets are adequate */
+@media (max-width: 600px) {
+  .MuiDrawer-paper {
+    max-width: 85vw !important;
+  }
+
+  .MuiListItemButton-root {
+    min-height: 48px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .MuiListItemIcon-root {
+    min-width: 44px !important;
+  }
+}
