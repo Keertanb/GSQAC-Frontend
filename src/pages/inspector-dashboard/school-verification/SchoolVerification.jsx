@@ -80,6 +80,7 @@ const SchoolVerification = () => {
   const [selectedSubdomain, setSelectedSubdomain] = useState(null);
   const [answers, setAnswers] = useState({});
   const [subdomainAnswers, setSubdomainAnswers] = useState({});
+  const [subdomainTextAnswers, setSubdomainTextAnswers] = useState({});
   const [classWiseAnswers, setClassWiseAnswers] = useState({});
   const [classWiseTextAnswers, setClassWiseTextAnswers] = useState({});
   const [selectedClassGroup, setSelectedClassGroup] = useState(null);
@@ -805,6 +806,7 @@ const SchoolVerification = () => {
 
   const handleSubdomainSelect = (subdomain) => {
     const subdomainId = subdomain.subDomainId || subdomain.id;
+    const activeClassKey = selectedClass ? String(selectedClass) : "general";
 
     if (selectedSubdomain) {
       const currentSubdomainId =
@@ -815,31 +817,37 @@ const SchoolVerification = () => {
         ...prev,
         [currentSubdomainId]: { ...answers },
       }));
+      setSubdomainTextAnswers((prev) => ({
+        ...prev,
+        [currentSubdomainId]: { ...textAnswers },
+      }));
 
-      // Save current answers to classWiseAnswers before switching
-      if (selectedClass) {
-        const classKey = String(selectedClass);
-        const storageKey = `${currentSubdomainId}_${classKey}`;
-        setClassWiseAnswers((prev) => ({
-          ...prev,
-          [storageKey]: { ...answers },
-        }));
-        setClassWiseTextAnswers((prev) => ({
-          ...prev,
-          [storageKey]: { ...textAnswers },
-        }));
-      }
+      // Save current answers to class-wise storage (also supports "general")
+      const storageKey = `${currentSubdomainId}_${activeClassKey}`;
+      setClassWiseAnswers((prev) => ({
+        ...prev,
+        [storageKey]: { ...answers },
+      }));
+      setClassWiseTextAnswers((prev) => ({
+        ...prev,
+        [storageKey]: { ...textAnswers },
+      }));
     }
 
     const savedAnswers = subdomainAnswers[subdomainId] || {};
+    const nextStorageKey = `${subdomainId}_${activeClassKey}`;
+    const savedTextAnswers =
+      subdomainTextAnswers[subdomainId] ||
+      classWiseTextAnswers[nextStorageKey] ||
+      {};
     setSelectedSubdomain(subdomain);
     setAnswers(savedAnswers);
+    setTextAnswers(savedTextAnswers);
     // Reset class group, class, section, and subject when switching subdomains
     setSelectedClassGroup(null);
     setSelectedClass(null);
     setSelectedSection(null);
     setSelectedSubject(null);
-    setTextAnswers({});
   };
 
   const handleAssessmentSelect = (assessment) => {
@@ -848,6 +856,7 @@ const SchoolVerification = () => {
     setSelectedSubdomain(null);
     setAnswers({});
     setTextAnswers({});
+    setSubdomainTextAnswers({});
     setSelectedClassGroup(null);
     setSelectedClass(null);
     setSelectedSection(null);
@@ -1024,6 +1033,30 @@ const SchoolVerification = () => {
           });
           return merged;
         });
+        const currentSubdomainId =
+          selectedSubdomain.subDomainId || selectedSubdomain.id;
+        setSubdomainTextAnswers((prev) => {
+          const existing = prev[currentSubdomainId] || {};
+          const merged = { ...existing };
+          Object.keys(apiTextAnswers).forEach((qId) => {
+            try {
+              const apiData = JSON.parse(apiTextAnswers[qId]);
+              let existingData = {};
+              if (merged[qId]) {
+                try {
+                  existingData = JSON.parse(merged[qId]);
+                } catch (_) {}
+              }
+              merged[qId] = JSON.stringify({ ...existingData, ...apiData });
+            } catch (_) {
+              merged[qId] = apiTextAnswers[qId];
+            }
+          });
+          return {
+            ...prev,
+            [currentSubdomainId]: merged,
+          };
+        });
 
         // Also save to classWiseTextAnswers (if class is selected)
         if (selectedClass) {
@@ -1089,6 +1122,10 @@ const SchoolVerification = () => {
     // Save to classWiseTextAnswers
     if (selectedSubdomain) {
       const subdomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
+      setSubdomainTextAnswers((prev) => ({
+        ...prev,
+        [subdomainId]: newTextAnswers,
+      }));
       const classKey = selectedClass ? String(selectedClass) : "general";
       const storageKey = `${subdomainId}_${classKey}`;
       setClassWiseTextAnswers((prev) => ({
@@ -1229,6 +1266,7 @@ const SchoolVerification = () => {
 
     const payload = {
       sessionId: sessionId || null,
+      assessmentId: selectedAssessment?.assessmentId ?? null,
       userId: Number(userId),
       roleId: Number(roleId),
       schoolId: schoolId || undefined,
@@ -1248,6 +1286,16 @@ const SchoolVerification = () => {
 
   // Handle submit - Submit all answers for the current subdomain
   const handleSubmit = () => {
+    const questionTypeByTabId = {
+      general: 1,
+      classroom: 2,
+      subject: 3,
+      fln: 4,
+    };
+    const payloadQuestionType = currentTab?.id
+      ? questionTypeByTabId[currentTab.id] || null
+      : null;
+
     if (!selectedSubdomain) {
       enqueueSnackbar("Please select a subdomain first.", {
         variant: "warning",
@@ -1396,6 +1444,7 @@ const SchoolVerification = () => {
 
     const payload = {
       isAns: 1,
+      questionType: payloadQuestionType,
       userId: Number(userId),
       schoolId: schoolId || undefined,
       cls: clsValue,
@@ -1410,6 +1459,7 @@ const SchoolVerification = () => {
     if (sessionId === null || sessionId === undefined) {
       const firstSubmitPayload = {
         sessionId: null,
+        assessmentId: selectedAssessment?.assessmentId ?? null,
         userId: Number(userId),
         roleId: Number(roleId),
         schoolId: schoolId || undefined,

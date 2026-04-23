@@ -100,6 +100,7 @@ const CRCAssessment = () => {
   const [selectedSubdomain, setSelectedSubdomain] = useState(null);
   const [answers, setAnswers] = useState({});
   const [subdomainAnswers, setSubdomainAnswers] = useState({});
+  const [subdomainTextAnswers, setSubdomainTextAnswers] = useState({});
   const [classWiseAnswers, setClassWiseAnswers] = useState({});
   const [classWiseTextAnswers, setClassWiseTextAnswers] = useState({}); // Store text answers per class
   const [selectedClassGroup, setSelectedClassGroup] = useState(null);
@@ -515,6 +516,7 @@ const CRCAssessment = () => {
       if (pendingFinalSubmit && newSessionId) {
         const finalPayload = {
           sessionId: newSessionId,
+          assessmentId: selectedAssessment?.assessmentId ?? null,
           userId: Number(userId),
           roleId: Number(roleId),
           schoolId: schoolId,
@@ -1007,6 +1009,7 @@ const CRCAssessment = () => {
 
   const handleSubdomainSelect = (subdomain) => {
     const subdomainId = subdomain.subDomainId || subdomain.id;
+    const activeClassKey = selectedClass ? String(selectedClass) : "general";
 
     if (selectedSubdomain) {
       const currentSubdomainId =
@@ -1017,31 +1020,37 @@ const CRCAssessment = () => {
         ...prev,
         [currentSubdomainId]: { ...answers },
       }));
+      setSubdomainTextAnswers((prev) => ({
+        ...prev,
+        [currentSubdomainId]: { ...textAnswers },
+      }));
 
-      // Save current answers to classWiseAnswers before switching
-      if (selectedClass) {
-        const classKey = String(selectedClass);
-        const storageKey = `${currentSubdomainId}_${classKey}`;
-        setClassWiseAnswers((prev) => ({
-          ...prev,
-          [storageKey]: { ...answers },
-        }));
-        setClassWiseTextAnswers((prev) => ({
-          ...prev,
-          [storageKey]: { ...textAnswers },
-        }));
-      }
+      // Save current answers to class-wise storage (also supports "general")
+      const storageKey = `${currentSubdomainId}_${activeClassKey}`;
+      setClassWiseAnswers((prev) => ({
+        ...prev,
+        [storageKey]: { ...answers },
+      }));
+      setClassWiseTextAnswers((prev) => ({
+        ...prev,
+        [storageKey]: { ...textAnswers },
+      }));
     }
 
     const savedAnswers = subdomainAnswers[subdomainId] || {};
+    const nextStorageKey = `${subdomainId}_${activeClassKey}`;
+    const savedTextAnswers =
+      subdomainTextAnswers[subdomainId] ||
+      classWiseTextAnswers[nextStorageKey] ||
+      {};
     setSelectedSubdomain(subdomain);
     setAnswers(savedAnswers);
+    setTextAnswers(savedTextAnswers);
     // Reset class group, class, section, and subject when switching subdomains
     setSelectedClassGroup(null);
     setSelectedClass(null);
     setSelectedSection(null);
     setSelectedSubject(null);
-    setTextAnswers({});
   };
 
   const handleAssessmentSelect = (assessment) => {
@@ -1050,6 +1059,7 @@ const CRCAssessment = () => {
     setSelectedSubdomain(null);
     setAnswers({});
     setTextAnswers({});
+    setSubdomainTextAnswers({});
     setSelectedClassGroup(null);
     setSelectedClass(null);
     setSelectedSection(null);
@@ -1188,6 +1198,30 @@ const CRCAssessment = () => {
           });
           return merged;
         });
+        const currentSubdomainId =
+          selectedSubdomain.subDomainId || selectedSubdomain.id;
+        setSubdomainTextAnswers((prev) => {
+          const existing = prev[currentSubdomainId] || {};
+          const merged = { ...existing };
+          Object.keys(apiTextAnswers).forEach((qId) => {
+            try {
+              const apiData = JSON.parse(apiTextAnswers[qId]);
+              let existingData = {};
+              if (merged[qId]) {
+                try {
+                  existingData = JSON.parse(merged[qId]);
+                } catch (_) {}
+              }
+              merged[qId] = JSON.stringify({ ...existingData, ...apiData });
+            } catch (_) {
+              merged[qId] = apiTextAnswers[qId];
+            }
+          });
+          return {
+            ...prev,
+            [currentSubdomainId]: merged,
+          };
+        });
         if (selectedClass) {
           const subdomainId =
             selectedSubdomain.subDomainId || selectedSubdomain.id;
@@ -1246,9 +1280,15 @@ const CRCAssessment = () => {
     };
     setTextAnswers(newTextAnswers);
 
-    // Save to classWiseTextAnswers
+    // Save to subdomain-level cache so switching subdomains never wipes FLN entries
     if (selectedSubdomain) {
       const subdomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
+      setSubdomainTextAnswers((prev) => ({
+        ...prev,
+        [subdomainId]: newTextAnswers,
+      }));
+
+      // Save to classWiseTextAnswers
       const classKey = selectedClass ? String(selectedClass) : "general";
       const storageKey = `${subdomainId}_${classKey}`;
       setClassWiseTextAnswers((prev) => ({
@@ -1297,6 +1337,7 @@ const CRCAssessment = () => {
         if (sessionId === null) {
           const sessionPayload = {
             sessionId: null,
+            assessmentId: selectedAssessment?.assessmentId ?? null,
             userId: Number(userId),
             roleId: Number(roleId),
             schoolId: schoolId,
@@ -1407,6 +1448,7 @@ const CRCAssessment = () => {
       // First create session with isSubmitted: 0
       const sessionPayload = {
         sessionId: null,
+        assessmentId: selectedAssessment?.assessmentId ?? null,
         userId: Number(userId),
         roleId: Number(roleId),
         schoolId: schoolId,
@@ -1419,6 +1461,7 @@ const CRCAssessment = () => {
       // Session already exists, submit final
       const payload = {
         sessionId: sessionId,
+        assessmentId: selectedAssessment?.assessmentId ?? null,
         userId: Number(userId),
         roleId: Number(roleId),
         schoolId: schoolId,

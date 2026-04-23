@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   useGetDistrictNodalOfficersQuery,
   useUpsertDistrictNodalOfficerMutation,
@@ -112,16 +112,30 @@ const DistrictNodalOfficers = () => {
   const districts = districtsData?.data || [];
 
   // Get total count from API response for server-side pagination
-  const totalCount =
+  const totalCountFromApi =
     officersData?.data?.total ??
     officersData?.total ??
     officersData?.data?.count ??
     officersData?.count ??
-    officers.length;
+    officersData?.data?.totalCount ??
+    officersData?.totalCount ??
+    officersData?.data?.totalRecords ??
+    officersData?.totalRecords ??
+    officersData?.data?.pagination?.total ??
+    officersData?.pagination?.total;
+  const totalCount = totalCountFromApi ?? officers.length;
 
   // Since API handles search, we use officers directly (no client-side filtering)
   // If API doesn't support search, we can add client-side filtering back
   const filteredOfficers = officers;
+
+  // Keep page index in range when total count changes.
+  useEffect(() => {
+    const maxPage = Math.max(0, Math.ceil(totalCount / itemsPerPage) - 1);
+    if (currentPage > maxPage) {
+      setCurrentPage(maxPage);
+    }
+  }, [totalCount, itemsPerPage, currentPage]);
 
   // Helper function to parse districtIds
   const parseDistrictIds = (officer) => {
