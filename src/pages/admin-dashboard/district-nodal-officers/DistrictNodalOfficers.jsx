@@ -113,7 +113,11 @@ const DistrictNodalOfficers = () => {
 
   // Get total count from API response for server-side pagination
   const totalCount =
-    officersData?.data?.total ?? officersData?.total ?? officers.length;
+    officersData?.data?.total ??
+    officersData?.total ??
+    officersData?.data?.count ??
+    officersData?.count ??
+    officers.length;
 
   // Since API handles search, we use officers directly (no client-side filtering)
   // If API doesn't support search, we can add client-side filtering back

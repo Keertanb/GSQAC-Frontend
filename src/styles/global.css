@@ -60,3 +60,11 @@ body {
   color: #1e3a8a;
 }
 
+/* Ensure snackbars always appear above custom modal overlays */
+.SnackbarContainer-root,
+.notistack-SnackbarContainer,
+[class*="SnackbarContainer-root"],
+.MuiSnackbar-root {
+  z-index: 2147483647 !important;
+}
+

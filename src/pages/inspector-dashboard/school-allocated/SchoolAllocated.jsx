@@ -103,12 +103,11 @@ const SchoolAllocated = () => {
   })();
 
   // Fetch dashboard counts using verifier API
-  // Note: The hook requires districtId to be truthy, so we only call it when districtId is not null
-  // For "All" (null), we'll skip the dashboard API call
+  // When "All" is selected, districtId is null and API is called without district param.
   const { data: dashboardData, refetch: refetchDashboard } =
     useGetVerifierDashboardQuery({
       districtId: districtIdForAPI,
-      enabled: districtIdForAPI !== null && districtIdForAPI !== undefined, // Enable only when districtId is not null
+      enabled: true,
     });
 
   // Fetch allocated schools using verifier API
@@ -160,13 +159,11 @@ const SchoolAllocated = () => {
         exact: false, // Refetch all matching queries
       });
 
-      // Refetch dashboard if districtId is not null
-      if (newDistrictIdForAPI !== null && newDistrictIdForAPI !== undefined) {
-        queryClient.refetchQueries({
-          queryKey: queryKeys.verifier.dashboard(newDistrictIdForAPI),
-          exact: false,
-        });
-      }
+      // Refetch dashboard for selected district (or All with null districtId)
+      queryClient.refetchQueries({
+        queryKey: queryKeys.verifier.dashboard(newDistrictIdForAPI),
+        exact: false,
+      });
     }, 0);
   };
 

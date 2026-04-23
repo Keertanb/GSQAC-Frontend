@@ -33,6 +33,7 @@ const Verifier = () => {
   } = useGetVerifiersQuery({
     page: currentPage,
     limit: itemsPerPage,
+    search: searchQuery || undefined,
   });
 
   const { data: districtsData } = useGetAllDistrictsQuery();
@@ -50,18 +51,16 @@ const Verifier = () => {
 
   const verifiers = verifiersData?.data?.data || verifiersData?.data || [];
 
-  const filteredVerifiers = verifiers.filter(
-    (verifier) =>
-      verifier.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      verifier.mobileNumber?.includes(searchQuery)
-  );
+  // Search is handled by API; table should use server response directly.
+  const filteredVerifiers = verifiers;
 
-  // Total count from API for server-side pagination; when searching, use filtered length for correct "X of Y" label
-  const totalCount = searchQuery
-    ? filteredVerifiers.length
-    : verifiersData?.data?.total ??
-      verifiersData?.total ??
-      verifiers.length;
+  // Total count from API for server-side pagination
+  const totalCount =
+    verifiersData?.data?.total ??
+    verifiersData?.total ??
+    (searchQuery
+      ? verifiers.length
+      : countData?.TOTAL_VERIFIER ?? countData?.totalVerifier ?? verifiers.length);
 
   // Table columns definition
   const columns = [

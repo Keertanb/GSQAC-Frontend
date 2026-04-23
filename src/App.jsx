@@ -10,6 +10,7 @@ function App() {
         vertical: "top",
         horizontal: "right",
       }}
+      style={{ zIndex: 200000 }}
     >
       <BrowserRouter>
         <Router />

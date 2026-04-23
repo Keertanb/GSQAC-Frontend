@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../../config/queryClient";
 import {
@@ -69,6 +70,7 @@ import {
 } from "recharts";
 
 const SchoolVerification = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { userId, userName } = useAuthStore();
@@ -88,6 +90,9 @@ const SchoolVerification = () => {
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
   const [selectedQuestionTab, setSelectedQuestionTab] = useState(0);
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
+  const [chartDrilldownAssessmentId, setChartDrilldownAssessmentId] =
+    useState(null);
 
   // Get school info from location state
   const schoolFromState = location.state?.school;
@@ -289,11 +294,59 @@ const SchoolVerification = () => {
     return [];
   }, [subjectsData]);
 
-  const domains = domainsData?.data || [];
-  const isPublished = domainsData?.isPublished || false;
-  const endDate = domainsData?.endDate || null;
-  const isSubmitted = domainsData?.isSubmitted || false;
-  const sessionId = domainsData?.sessionId || null;
+  const assessments = useMemo(() => {
+    if (Array.isArray(domainsData?.data)) {
+      if (domainsData.data.length > 0 && domainsData.data[0]?.domains) {
+        return domainsData.data;
+      }
+      return [
+        {
+          assessmentId: null,
+          assessmentName: "Assessment",
+          domains: domainsData.data,
+          isPublished: domainsData?.isPublished,
+          startDate: domainsData?.startDate,
+          endDate: domainsData?.endDate,
+          isSubmitted: domainsData?.isSubmitted,
+          sessionId: domainsData?.sessionId,
+        },
+      ];
+    }
+    return [];
+  }, [domainsData]);
+
+  useEffect(() => {
+    if (!assessments.length) {
+      setSelectedAssessmentId(null);
+      return;
+    }
+
+    const stillExists = assessments.some(
+      (a) => Number(a.assessmentId) === Number(selectedAssessmentId)
+    );
+    if (!selectedAssessmentId || !stillExists) {
+      setSelectedAssessmentId(assessments[0].assessmentId);
+    }
+  }, [assessments, selectedAssessmentId]);
+
+  const selectedAssessment = useMemo(() => {
+    if (!assessments.length) return null;
+    return (
+      assessments.find(
+        (a) => Number(a.assessmentId) === Number(selectedAssessmentId)
+      ) ||
+      assessments[0]
+    );
+  }, [assessments, selectedAssessmentId]);
+
+  const domains = selectedAssessment?.domains || [];
+  const isPublished =
+    selectedAssessment?.isPublished ?? domainsData?.isPublished ?? false;
+  const endDate = selectedAssessment?.endDate ?? domainsData?.endDate ?? null;
+  const isSubmitted =
+    selectedAssessment?.isSubmitted ?? domainsData?.isSubmitted ?? false;
+  const sessionId =
+    selectedAssessment?.sessionId ?? domainsData?.sessionId ?? null;
 
   // Helper function to map dropdown group range to API group range format
   const mapGroupRangeToApiFormat = (groupRange) => {
@@ -787,6 +840,19 @@ const SchoolVerification = () => {
     setSelectedSection(null);
     setSelectedSubject(null);
     setTextAnswers({});
+  };
+
+  const handleAssessmentSelect = (assessment) => {
+    setSelectedAssessmentId(assessment.assessmentId);
+    setSelectedDomain(null);
+    setSelectedSubdomain(null);
+    setAnswers({});
+    setTextAnswers({});
+    setSelectedClassGroup(null);
+    setSelectedClass(null);
+    setSelectedSection(null);
+    setSelectedSubject(null);
+    setChartDrilldownAssessmentId(null);
   };
 
   // Effect to handle class changes - reset section and subject
@@ -1354,7 +1420,7 @@ const SchoolVerification = () => {
   };
 
   // Prepare chart data for bar graph
-  const chartData = useMemo(() => {
+  const domainChartData = useMemo(() => {
     if (!domains || domains.length === 0) return [];
     return domains.map((domain, index) => {
       const progress = getDomainProgress(domain);
@@ -1367,6 +1433,62 @@ const SchoolVerification = () => {
       };
     });
   }, [domains]);
+
+  const assessmentChartData = useMemo(() => {
+    if (!assessments || assessments.length === 0) return [];
+    return assessments.map((assessment, index) => {
+      const assessmentDomains = assessment.domains || [];
+      const progress =
+        assessmentDomains.length > 0
+          ? assessmentDomains.reduce(
+              (sum, domain) => sum + getDomainProgress(domain),
+              0
+            ) / assessmentDomains.length
+          : 0;
+      const roundedProgress = Math.round(progress);
+
+      return {
+        name: `${index + 1}. ${
+          assessment.assessmentName ||
+          t("selfAssessment.assessmentNameFallback", {
+            id: assessment.assessmentId,
+          })
+        }`,
+        progress: roundedProgress,
+        assessmentId: assessment.assessmentId,
+        color: getProgressColor(progress),
+      };
+    });
+  }, [assessments, currentLanguage]);
+
+  const currentChartData = useMemo(() => {
+    if (assessments.length > 1 && !chartDrilldownAssessmentId) {
+      return assessmentChartData;
+    }
+
+    if (chartDrilldownAssessmentId) {
+      const drillAssessment = assessments.find(
+        (a) => a.assessmentId === chartDrilldownAssessmentId
+      );
+      const drillDomains = drillAssessment?.domains || [];
+      return drillDomains.map((domain, index) => {
+        const progress = getDomainProgress(domain);
+        return {
+          name: `${index + 1}. ${getDomainName(domain)}`,
+          progress: Math.round(progress),
+          domainId: domain.domainId,
+          color: getProgressColor(progress),
+        };
+      });
+    }
+
+    return domainChartData;
+  }, [
+    assessments,
+    chartDrilldownAssessmentId,
+    assessmentChartData,
+    domainChartData,
+  ]);
 
   // Get domain and subdomain indices for numbering
   const { domainNumber, subdomainNumber } = useMemo(() => {
@@ -1396,7 +1518,7 @@ const SchoolVerification = () => {
     if (generalQuestions.length > 0 || generalQuestionsTotalCount > 0) {
       tabs.push({
         id: "general",
-        label: "General Questions",
+        label: t("selfAssessment.tabs.generalQuestions"),
         icon: <Assignment sx={{ fontSize: 20 }} />,
         color: colors.accent.green,
         questions: generalQuestions,
@@ -1408,7 +1530,7 @@ const SchoolVerification = () => {
     if (classroomObservationQuestions.length > 0 || classroomObservationQuestionsTotalCount > 0) {
       tabs.push({
         id: "classroom",
-        label: "Classroom Observation",
+        label: t("selfAssessment.tabs.classroomObservation"),
         icon: <Class sx={{ fontSize: 20 }} />,
         color: colors.primary.blue,
         questions: classroomObservationQuestions,
@@ -1420,7 +1542,7 @@ const SchoolVerification = () => {
     if (subjectObservationQuestions.length > 0 || subjectObservationQuestionsTotalCount > 0) {
       tabs.push({
         id: "subject",
-        label: "Subject-Wise Observation",
+        label: t("selfAssessment.tabs.subjectWiseObservation"),
         icon: <MenuBook sx={{ fontSize: 20 }} />,
         color: colors.accent.purple,
         questions: subjectObservationQuestions,
@@ -1432,7 +1554,7 @@ const SchoolVerification = () => {
     if (flnQuestions.length > 0 || flnQuestionsTotalCount > 0) {
       tabs.push({
         id: "fln",
-        label: "Input Type Questions",
+        label: t("selfAssessment.tabs.inputTypeQuestions"),
         icon: <Create sx={{ fontSize: 20 }} />,
         color: colors.semantic.warning,
         questions: flnQuestions,
@@ -1455,6 +1577,7 @@ const SchoolVerification = () => {
     classroomObservationQuestionsTotalCount,
     subjectObservationQuestionsTotalCount,
     flnQuestionsTotalCount,
+    currentLanguage,
   ]);
 
   // Reset tab to first when questions change
@@ -1596,7 +1719,7 @@ const SchoolVerification = () => {
                 fontSize: { xs: "1.75rem", md: "2.125rem" },
               }}
             >
-              School Verification
+              {t("schoolVerification.title")}
             </Typography>
             {isPublished && endDate && (
               <Typography
@@ -1607,17 +1730,16 @@ const SchoolVerification = () => {
                   fontSize: { xs: "0.75rem", sm: "0.875rem" },
                 }}
               >
-                Complete your assessment before {endDate}. After that date,
-                submissions will not be accepted.
+                {t("selfAssessment.endDateWarning", { date: endDate })}
               </Typography>
             )}
           </Box>
           <Typography variant="body1" color="text.secondary">
-            Verify and assess school quality standards
+            {t("schoolVerification.subtitle")}
           </Typography>
           {isErrorDomains && (
             <Alert severity="error" sx={{ mt: 2 }}>
-              Failed to load domains. Please check your connection.
+              {t("schoolVerification.failedToLoadDomains")}
             </Alert>
           )}
         </Box>
@@ -1628,6 +1750,7 @@ const SchoolVerification = () => {
             onChange={(e, newLanguage) => {
               if (newLanguage !== null) {
                 setCurrentLanguage(newLanguage);
+                i18n.changeLanguage(newLanguage);
               }
             }}
             size="small"
@@ -1697,7 +1820,7 @@ const SchoolVerification = () => {
               >
                 {schoolFromState?.schoolName ||
                   schoolData?.schoolName ||
-                  "School Name"}
+                  t("schoolVerification.schoolNameFallback")}
               </Typography>
               <Box
                 sx={{
@@ -1716,8 +1839,8 @@ const SchoolVerification = () => {
                     gap: 0.5,
                   }}
                 >
-                  <strong>School ID:</strong>{" "}
-                  {schoolId || schoolFromState?.schoolId || "N/A"}
+                  <strong>{t("schoolVerification.schoolId")}:</strong>{" "}
+                  {schoolId || schoolFromState?.schoolId || t("common.na")}
                 </Typography>
                 {schoolFromState?.schoolCode && (
                   <Typography
@@ -1729,7 +1852,8 @@ const SchoolVerification = () => {
                       gap: 0.5,
                     }}
                   >
-                    <strong>School Code:</strong> {schoolFromState.schoolCode}
+                    <strong>{t("schoolVerification.schoolCode")}:</strong>{" "}
+                    {schoolFromState.schoolCode}
                   </Typography>
                 )}
                 {schoolData?.districtName && (
@@ -1742,7 +1866,8 @@ const SchoolVerification = () => {
                       gap: 0.5,
                     }}
                   >
-                    <strong>District:</strong> {schoolData.districtName}
+                    <strong>{t("schoolVerification.district")}:</strong>{" "}
+                    {schoolData.districtName}
                   </Typography>
                 )}
                 {schoolData?.blockName && (
@@ -1755,7 +1880,8 @@ const SchoolVerification = () => {
                       gap: 0.5,
                     }}
                   >
-                    <strong>Block:</strong> {schoolData.blockName}
+                    <strong>{t("schoolVerification.block")}:</strong>{" "}
+                    {schoolData.blockName}
                   </Typography>
                 )}
               </Box>
@@ -1803,15 +1929,51 @@ const SchoolVerification = () => {
                 mb: 0.5,
               }}
             >
-              Assessment Domains
+              {t("selfAssessment.assessmentDomains")}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ fontSize: "0.8125rem" }}
             >
-              Navigate through domains and sub-domains
+              {t("selfAssessment.navigateSubtitle")}
             </Typography>
+            {assessments.length > 1 && (
+              <Box sx={{ mt: 2 }}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: colors.text.secondary, fontWeight: 600 }}
+                >
+                  {t("selfAssessment.selectAssessment")}
+                </Typography>
+                <FormControl size="small" fullWidth sx={{ mt: 0.75 }}>
+                  <Select
+                    value={selectedAssessment?.assessmentId ?? ""}
+                    onChange={(e) => {
+                      const selectedId = Number(e.target.value);
+                      const assessment = assessments.find(
+                        (a) => Number(a.assessmentId) === selectedId
+                      );
+                      if (assessment) {
+                        handleAssessmentSelect(assessment);
+                      }
+                    }}
+                  >
+                    {assessments.map((assessment) => (
+                      <MenuItem
+                        key={assessment.assessmentId}
+                        value={assessment.assessmentId}
+                      >
+                        {assessment.assessmentName ||
+                          t("selfAssessment.assessmentNameFallback", {
+                            id: assessment.assessmentId,
+                          })}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
           </Box>
 
           {/* Domains/Subdomains List */}
@@ -2424,7 +2586,7 @@ const SchoolVerification = () => {
                                   color: colors.text.primary,
                                 }}
                               >
-                                Classroom Observation Questions
+                                {t("selfAssessment.sections.classroomTitle")}
                               </Typography>
                             </Box>
                             <Typography
@@ -2434,8 +2596,7 @@ const SchoolVerification = () => {
                                 fontSize: "0.875rem",
                               }}
                             >
-                              These questions require classroom observation and
-                              class selection
+                              {t("selfAssessment.sections.classroomDescription")}
                             </Typography>
                           </Box>
 
@@ -2722,7 +2883,7 @@ const SchoolVerification = () => {
                           ) : isErrorQuestions ? (
                             <Alert severity="error">
                               {isErrorQuestions?.message ||
-                                "Failed to load questions"}
+                                t("selfAssessment.failedToLoadQuestions")}
                             </Alert>
                           ) : (
                             <Box
@@ -2984,7 +3145,7 @@ const SchoolVerification = () => {
                                   color: colors.text.primary,
                                 }}
                               >
-                                Subject-Wise Observation Questions
+                                {t("selfAssessment.sections.subjectTitle")}
                               </Typography>
                             </Box>
                             <Typography
@@ -2994,9 +3155,7 @@ const SchoolVerification = () => {
                                 fontSize: "0.875rem",
                               }}
                             >
-                              These questions require subject-specific
-                              observation and class, section, and subject
-                              selection
+                              {t("selfAssessment.sections.subjectDescription")}
                             </Typography>
                           </Box>
 
@@ -3355,7 +3514,7 @@ const SchoolVerification = () => {
                           ) : isErrorQuestions ? (
                             <Alert severity="error">
                               {isErrorQuestions?.message ||
-                                "Failed to load questions"}
+                                t("selfAssessment.failedToLoadQuestions")}
                             </Alert>
                           ) : (
                             <Box
@@ -3599,7 +3758,7 @@ const SchoolVerification = () => {
                                   color: colors.text.primary,
                                 }}
                               >
-                                Input Type Questions
+                                {t("selfAssessment.sections.flnTitle")}
                               </Typography>
                             </Box>
                             <Typography
@@ -3609,8 +3768,7 @@ const SchoolVerification = () => {
                                 fontSize: "0.875rem",
                               }}
                             >
-                              Foundational Literacy and Numeracy questions that
-                              require text responses
+                              {t("selfAssessment.sections.flnDescription")}
                             </Typography>
                           </Box>
 
@@ -3629,7 +3787,7 @@ const SchoolVerification = () => {
                           ) : isErrorQuestions ? (
                             <Alert severity="error">
                               {isErrorQuestions?.message ||
-                                "Failed to load questions"}
+                                t("selfAssessment.failedToLoadQuestions")}
                             </Alert>
                           ) : (
                             <Box
@@ -3970,7 +4128,7 @@ const SchoolVerification = () => {
                                   color: colors.text.primary,
                                 }}
                               >
-                                General Questions
+                                {t("selfAssessment.sections.generalTitle")}
                               </Typography>
                             </Box>
                             <Typography
@@ -3980,8 +4138,7 @@ const SchoolVerification = () => {
                                 fontSize: "0.875rem",
                               }}
                             >
-                              General assessment questions that don't require
-                              classroom observation
+                              {t("selfAssessment.sections.generalDescription")}
                             </Typography>
                           </Box>
 
@@ -4000,7 +4157,7 @@ const SchoolVerification = () => {
                           ) : isErrorQuestions ? (
                             <Alert severity="error">
                               {isErrorQuestions?.message ||
-                                "Failed to load questions"}
+                                t("selfAssessment.failedToLoadQuestions")}
                             </Alert>
                           ) : (
                             <Box
@@ -4583,14 +4740,16 @@ const SchoolVerification = () => {
                   mb: 0.5,
                 }}
               >
-                Assessment Overview
+                {t("selfAssessment.assessmentOverview")}
               </Typography>
               <Typography
                 variant="body2"
                 color="text.secondary"
                 sx={{ fontSize: "0.875rem" }}
               >
-                Review progress across all domains
+                {assessments.length > 1
+                  ? "Review progress across assessments and domains"
+                  : "Review progress across all domains"}
               </Typography>
             </Box>
 
@@ -4604,7 +4763,7 @@ const SchoolVerification = () => {
                 flexDirection: "column",
               }}
             >
-              {domains.length > 0 ? (
+              {currentChartData.length > 0 ? (
                 <Box
                   sx={{
                     display: "flex",
@@ -4621,8 +4780,20 @@ const SchoolVerification = () => {
                       mb: 1,
                     }}
                   >
-                    Domain Progress Overview
+                    {assessments.length > 1 && !chartDrilldownAssessmentId
+                      ? "Assessment Progress Overview"
+                      : "Domain Progress Overview"}
                   </Typography>
+                  {assessments.length > 1 && chartDrilldownAssessmentId && (
+                    <Button
+                      size="small"
+                      variant="text"
+                      onClick={() => setChartDrilldownAssessmentId(null)}
+                      sx={{ alignSelf: "flex-start", textTransform: "none" }}
+                    >
+                      Back to Assessments
+                    </Button>
+                  )}
                   <Box
                     sx={{
                       flex: 1,
@@ -4632,7 +4803,7 @@ const SchoolVerification = () => {
                   >
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
-                        data={chartData}
+                        data={currentChartData}
                         layout="vertical"
                         margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                       >
@@ -4667,7 +4838,26 @@ const SchoolVerification = () => {
                           dataKey="progress"
                           radius={[0, 8, 8, 0]}
                           onClick={(data) => {
-                            const domain = domains.find(
+                            if (assessments.length > 1 && !chartDrilldownAssessmentId) {
+                              const assessment = assessments.find(
+                                (a) => a.assessmentId === data.assessmentId
+                              );
+                              if (assessment) {
+                                handleAssessmentSelect(assessment);
+                                setChartDrilldownAssessmentId(
+                                  assessment.assessmentId
+                                );
+                              }
+                              return;
+                            }
+
+                            const sourceDomains = chartDrilldownAssessmentId
+                              ? assessments.find(
+                                  (a) =>
+                                    a.assessmentId === chartDrilldownAssessmentId
+                                )?.domains || []
+                              : domains;
+                            const domain = sourceDomains.find(
                               (d) => d.domainId === data.domainId
                             );
                             if (domain) {
@@ -4676,7 +4866,7 @@ const SchoolVerification = () => {
                           }}
                           cursor="pointer"
                         >
-                          {chartData.map((entry, index) => (
+                          {currentChartData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Bar>
