@@ -150,16 +150,22 @@ export const deleteQuestion = async (questionId) => {
 
 /**
  * Delete question option
- * @param {number} questionId - Question ID (or optionId) to delete
+ * Supports:
+ * - number: questionId (legacy delete-by-question behavior)
+ * - { optionIds: number[] }: bulk delete specific option ids
  * @returns {Promise} API response
  */
-export const deleteQuestionOption = async (questionId) => {
-  const response = await axiosInstance.delete(
-    "/questionnaire/question-option",
-    {
-      params: { questionId },
-    }
-  );
+export const deleteQuestionOption = async (payload) => {
+  const isBulkDeleteByOptionIds =
+    payload &&
+    typeof payload === "object" &&
+    Array.isArray(payload.optionIds);
+
+  const response = await axiosInstance.delete("/questionnaire/question-option", {
+    ...(isBulkDeleteByOptionIds
+      ? { data: { optionIds: payload.optionIds } }
+      : { params: { questionId: payload } }),
+  });
   return response.data;
 };
 
@@ -549,7 +555,7 @@ export const upsertVerifier = async (payload) => {
  */
 export const useGetVerifiersQuery = (params = { page: 1, limit: 10 }) => {
   return useQuery({
-    queryKey: ["admin", "verifiers", params.page, params.limit],
+    queryKey: ["admin", "verifiers", params.page, params.limit, params.search],
     queryFn: () => getVerifiers(params),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -1005,6 +1011,18 @@ export const updateAssessmentRoleAssignment = async (payload) => {
 };
 
 /**
+ * Delete assessment-role assignment
+ * @param {Object} payload - { assessmentId, roleId }
+ * @returns {Promise} API response
+ */
+export const deleteAssessmentRoleAssignment = async (payload) => {
+  const response = await axiosInstance.delete("/admin/assessment-role-assignment", {
+    data: payload,
+  });
+  return response.data;
+};
+
+/**
  * Delete a subdomain
  * @param {string} subDomainId - ID of the subdomain to delete
  * @returns {Promise} API response
@@ -1162,6 +1180,40 @@ export const useUpdateAssessmentRoleAssignmentMutation = (options = {}) => {
     onError: (error) => {
       enqueueSnackbar(
         error?.response?.data?.message || "Failed to update assignment",
+        {
+          variant: "error",
+        }
+      );
+      if (options.onError) {
+        options.onError(error);
+      }
+    },
+    ...options,
+  });
+};
+
+/**
+ * React Query hook to delete assessment-role assignment
+ */
+export const useDeleteAssessmentRoleAssignmentMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => deleteAssessmentRoleAssignment(data),
+    mutationKey: ["admin", "delete-assessment-role-assignment"],
+    onSuccess: (data) => {
+      enqueueSnackbar(
+        data?.message || "Assessment role assignment deleted successfully",
+        {
+          variant: "success",
+        }
+      );
+      if (options.onSuccess) {
+        options.onSuccess(data);
+      }
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message ||
+          "Failed to delete assessment role assignment",
         {
           variant: "error",
         }

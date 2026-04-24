@@ -12,14 +12,8 @@ import {
   styled,
   useMediaQuery,
   Typography,
-  IconButton,
 } from "@mui/material";
-import {
-  ExpandLess,
-  ExpandMore,
-  ChevronLeft,
-  ChevronRight,
-} from "@mui/icons-material";
+import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import useAuthStore from "../../store/useAuthStore";
 import {
   schoolMenuItems,
@@ -139,63 +133,45 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
       <Box
         className="drawer-header relative flex-shrink-0 flex items-center"
         sx={{
-          height: "72px",
-          minHeight: "72px",
-          maxHeight: "72px",
-          background: "rgba(255, 255, 255, 0.8)",
-          backdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(0,0,0,0.06)",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          height: "84px",
+          minHeight: "84px",
+          maxHeight: "84px",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,250,252,0.92) 100%)",
+          backdropFilter: "blur(14px)",
+          borderBottom: "1px solid rgba(15, 23, 42, 0.08)",
+          boxShadow: "0 4px 14px rgba(15,23,42,0.06)",
           position: "relative",
           zIndex: 1301,
-          px: 3,
+          px: open ? 2.5 : 1.5,
+          py: 1.25,
         }}
       >
-        {!matchDownMD && (
-          <IconButton
-            onClick={handleDrawerToggle}
-            className="absolute top-1/2 right-2 transform -translate-y-1/2"
-            size="small"
-            sx={{
-              color: "#64748b",
-              borderRadius: "10px",
-              width: "36px",
-              height: "36px",
-              backgroundColor: "rgba(255,255,255,0.9)",
-              border: "1px solid rgba(0,0,0,0.05)",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
-              "&:hover": {
-                backgroundColor: "#ffffff",
-                color: primaryColor,
-                transform: "translateY(-50%) scale(1.08)",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                borderColor: "rgba(59, 130, 246, 0.2)",
-              },
-              transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-            }}
-          >
-            {open ? <ChevronLeft /> : <ChevronRight />}
-          </IconButton>
-        )}
-
-        <Box className="flex items-center gap-3 flex-1">
+        <Box className="flex items-center gap-3 flex-1" sx={{ minWidth: 0 }}>
           {open && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                width: "100%",
+                p: 1,
+                borderRadius: "14px",
+                border: "1px solid rgba(148, 163, 184, 0.22)",
+                background:
+                  "linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(241,245,249,0.88) 100%)",
+              }}
+            >
               <Box
                 sx={{
-                  width: "44px",
-                  height: "44px",
+                  width: "40px",
+                  height: "40px",
                   borderRadius: "12px",
                   background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}dd 100%)`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: `0 4px 12px ${primaryColor}30`,
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    transform: "scale(1.05) rotate(5deg)",
-                    boxShadow: `0 6px 16px ${primaryColor}40`,
-                  },
+                  boxShadow: `0 6px 14px ${primaryColor}35`,
                 }}
               >
                 <Typography
@@ -212,10 +188,10 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
               <Box>
                 <Typography
                   sx={{
-                    fontSize: "1.125rem",
-                    fontWeight: 700,
+                    fontSize: "1rem",
+                    fontWeight: 800,
                     color: "#0f172a",
-                    letterSpacing: "-0.02em",
+                    letterSpacing: "-0.01em",
                     lineHeight: 1.2,
                     fontFamily:
                       "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
@@ -230,16 +206,22 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
                 <Typography
                   variant="caption"
                   sx={{
-                    fontSize: "0.6875rem",
-                    color: "#64748b",
-                    fontWeight: 600,
-                    letterSpacing: "0.05em",
+                    fontSize: "0.625rem",
+                    color: primaryColor,
+                    fontWeight: 700,
+                    letterSpacing: "0.06em",
                     textTransform: "uppercase",
                     fontFamily:
                       "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
                     lineHeight: 1.4,
-                    mt: 0.25,
-                    display: "block",
+                    mt: 0.4,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    px: 0.75,
+                    py: 0.2,
+                    borderRadius: "999px",
+                    backgroundColor: `${primaryColor}14`,
+                    border: `1px solid ${primaryColor}2a`,
                   }}
                 >
                   {roleData?.label || "Dashboard"}

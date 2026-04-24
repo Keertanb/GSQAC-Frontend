@@ -812,7 +812,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100000;
+  z-index: 1300;
   padding: 1rem;
   animation: fadeIn 0.2s ease-out;
 }
@@ -1343,5 +1343,10 @@
 .text-muted {
   color: #6b7280;
   font-size: 0.875rem;
+}
+
+/* Keep notistack messages above the verifier modal overlay */
+.SnackbarContainer-root {
+  z-index: 1400 !important;
 }
 

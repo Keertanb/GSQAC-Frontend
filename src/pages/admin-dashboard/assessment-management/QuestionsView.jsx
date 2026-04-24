@@ -72,9 +72,7 @@ const QuestionsView = ({
   };
 
   // Local language state for QuestionsView (independent of parent)
-  const [selectedLanguage, setSelectedLanguage] = useState(
-    currentLanguage || "en",
-  );
+  const [selectedLanguage, setSelectedLanguage] = useState("gu");
   const [hasLanguageChanged, setHasLanguageChanged] = useState(false); // Track if language has been changed by user
   const languageCode = languageCodeMap[selectedLanguage] || "EN";
 
@@ -113,6 +111,7 @@ const QuestionsView = ({
   const [allowImageUpload, setAllowImageUpload] = useState("no"); // For MCQ: allow image upload in school assessment
   const [flnAnswer, setFlnAnswer] = useState(""); // State for FLN text field answer
   const [optionErrors, setOptionErrors] = useState({}); // State for option validation errors (per option: { [optionId]: { en, hi, gu } })
+  const [deletedOptionIds, setDeletedOptionIds] = useState([]);
 
   // Map question type strings to numbers
   const questionTypeMap = {
@@ -243,6 +242,10 @@ const QuestionsView = ({
 
   const handleDeleteOption = (optionId) => {
     if (newOptions.length > 2) {
+      const optionToDelete = newOptions.find((opt) => opt.id === optionId);
+      if (optionToDelete?.optionId) {
+        setDeletedOptionIds((prev) => [...prev, optionToDelete.optionId]);
+      }
       const updatedOptions = newOptions.filter((opt) => opt.id !== optionId);
       setNewOptions(updatedOptions);
       setOptionErrors(validateOptions(updatedOptions));
@@ -254,6 +257,12 @@ const QuestionsView = ({
     const errors = {};
     options.forEach((opt) => {
       errors[opt.id] = { en: "", hi: "", gu: "" };
+      if (!opt.text.en?.trim()) {
+        errors[opt.id].en = "English text is required";
+      }
+      if (!opt.text.gu?.trim()) {
+        errors[opt.id].gu = "Gujarati text is required";
+      }
     });
 
     ["en", "hi", "gu"].forEach((lang) => {
@@ -265,8 +274,10 @@ const QuestionsView = ({
         if (val === "") return;
         if (seen[val] !== undefined) {
           // This option is a duplicate (second or later occurrence) – show error only here
-          errors[opt.id][lang] =
-            `Duplicate ${langName} options are not allowed`;
+          if (!errors[opt.id][lang]) {
+            errors[opt.id][lang] =
+              `Duplicate ${langName} options are not allowed`;
+          }
         } else {
           seen[val] = opt.id;
         }
@@ -387,6 +398,7 @@ const QuestionsView = ({
             },
           }));
           setNewOptions(formattedOptions);
+          setDeletedOptionIds([]);
         }
       } else {
         // Reset options for new question
@@ -394,6 +406,7 @@ const QuestionsView = ({
           { id: 1, text: { en: "", hi: "", gu: "" } },
           { id: 2, text: { en: "", hi: "", gu: "" } },
         ]);
+        setDeletedOptionIds([]);
       }
 
       // Use React's state batching - set both states together
@@ -436,31 +449,48 @@ const QuestionsView = ({
     const errors = validateOptions(newOptions);
     setOptionErrors(errors);
 
-    // Check if there are any validation errors (per-option errors)
-    const hasDuplicateError = Object.values(errors).some(
+    // Check if there are any validation errors (required or duplicate)
+    const hasValidationError = Object.values(errors).some(
       (e) => e?.en || e?.hi || e?.gu,
     );
-    if (hasDuplicateError) {
-      enqueueSnackbar("Please fix duplicate options before saving", {
-        variant: "error",
-      });
+    if (hasValidationError) {
+      enqueueSnackbar(
+        "Please fix option validation errors. English and Gujarati are required for each option.",
+        {
+          variant: "error",
+        },
+      );
       return;
     }
 
-    // Validate that at least 2 options have English text
-    const validOptions = newOptions.filter((opt) => opt.text.en.trim());
-    if (validOptions.length < 2) {
-      enqueueSnackbar("Please add at least 2 options with English text", {
-        variant: "warning",
-      });
+    // At least 2 options are mandatory with both Gujarati and English.
+    const completeOptions = newOptions.filter(
+      (opt) => opt.text.en.trim() && opt.text.gu.trim(),
+    );
+    if (completeOptions.length < 2) {
+      enqueueSnackbar(
+        "Please add at least 2 options with both English and Gujarati text",
+        {
+          variant: "warning",
+        },
+      );
       return;
     }
 
     try {
-      // Send all options in one API call, in sequence
+      const uniqueDeletedOptionIds = [...new Set(deletedOptionIds)].filter(
+        (id) => id !== null && id !== undefined,
+      );
+      if (uniqueDeletedOptionIds.length > 0) {
+        await deleteQuestionOptionMutation.mutateAsync({
+          optionIds: uniqueDeletedOptionIds,
+        });
+      }
+
+      // Send all validated options in one API call
       const payload = {
         questionId: currentQuestionId,
-        options: validOptions.map((opt) => ({
+        options: completeOptions.map((opt) => ({
           optionId: opt.optionId ?? null,
           optionTextGu: opt.text.gu.trim(),
           optionTextEn: opt.text.en.trim(),
@@ -496,6 +526,7 @@ const QuestionsView = ({
       setShowOptionsForm(false);
       setEditingQuestion(null);
       setCurrentQuestionId(null);
+      setDeletedOptionIds([]);
       setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
     } catch (error) {
       console.error("Error adding options:", error);
@@ -523,7 +554,10 @@ const QuestionsView = ({
     };
     setQuestionType(typeMapping[question.questionType] || "single_choice");
     setAllowImageUpload(
-      question.allowImageUpload === 1 || question.allowImageUpload === "1" || question.allowImageUpload === "yes" || question.allowImageUpload === true
+      question.allowImageUpload === 1 ||
+        question.allowImageUpload === "1" ||
+        question.allowImageUpload === "yes" ||
+        question.allowImageUpload === true
         ? "yes"
         : "no",
     );
@@ -690,6 +724,40 @@ const QuestionsView = ({
     }
   };
 
+  const getSubdomainTitle = () => {
+    if (!subdomainData) return "Subdomain";
+
+    switch (selectedLanguage) {
+      case "gu":
+        return (
+          subdomainData?.subDomainNameGu ||
+          subdomainData?.name?.gu ||
+          subdomainData?.subDomainName ||
+          subdomainData?.subDomainNameEn ||
+          subdomainData?.name?.en ||
+          "Subdomain"
+        );
+      case "hi":
+        return (
+          subdomainData?.subDomainNameHi ||
+          subdomainData?.name?.hi ||
+          subdomainData?.subDomainName ||
+          subdomainData?.subDomainNameEn ||
+          subdomainData?.name?.en ||
+          "Subdomain"
+        );
+      case "en":
+      default:
+        return (
+          subdomainData?.subDomainNameEn ||
+          subdomainData?.name?.en ||
+          subdomainData?.subDomainName ||
+          subdomainData?.name?.gu ||
+          "Subdomain"
+        );
+    }
+  };
+
   const getQuestionTypeLabel = (questionType) => {
     switch (questionType) {
       case 1:
@@ -802,11 +870,7 @@ const QuestionsView = ({
           }}
         >
           <Typography variant="h5" sx={{ fontWeight: 700 }}>
-            {subdomainData?.subDomainNameEn ||
-              subdomainData?.subDomainName ||
-              subdomainData?.name?.[currentLanguage] ||
-              subdomainData?.name?.en ||
-              "Subdomain"}
+            {getSubdomainTitle()}
           </Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -991,7 +1055,8 @@ const QuestionsView = ({
                               value={questionType}
                               onChange={(e) => {
                                 setQuestionType(e.target.value);
-                                if (e.target.value !== "single_choice") setAllowImageUpload("no");
+                                if (e.target.value !== "single_choice")
+                                  setAllowImageUpload("no");
                                 // Reset related fields when question type changes
                                 if (e.target.value === "fln") {
                                   setFlnAnswer("");
@@ -1032,17 +1097,40 @@ const QuestionsView = ({
                             </Select>
                           </FormControl>
                           {questionType === "single_choice" && (
-                            <FormControl component="fieldset" fullWidth size="small" sx={{ mt: 1 }}>
-                              <FormLabel component="legend" sx={{ fontSize: "0.875rem", fontWeight: 600, color: "text.primary", mb: 1 }}>
+                            <FormControl
+                              component="fieldset"
+                              fullWidth
+                              size="small"
+                              sx={{ mt: 1 }}
+                            >
+                              <FormLabel
+                                component="legend"
+                                sx={{
+                                  fontSize: "0.875rem",
+                                  fontWeight: 600,
+                                  color: "text.primary",
+                                  mb: 1,
+                                }}
+                              >
                                 Allow image upload
                               </FormLabel>
                               <RadioGroup
                                 row
                                 value={allowImageUpload}
-                                onChange={(e) => setAllowImageUpload(e.target.value)}
+                                onChange={(e) =>
+                                  setAllowImageUpload(e.target.value)
+                                }
                               >
-                                <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
-                                <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+                                <FormControlLabel
+                                  value="yes"
+                                  control={<Radio size="small" />}
+                                  label="Yes"
+                                />
+                                <FormControlLabel
+                                  value="no"
+                                  control={<Radio size="small" />}
+                                  label="No"
+                                />
                               </RadioGroup>
                             </FormControl>
                           )}
@@ -1261,21 +1349,21 @@ const QuestionsView = ({
                             >
                               Validation Errors:
                             </Typography>
-                            {Object.values(optionErrors).some((e) => e?.en) && (
-                              <Typography variant="body2" sx={{ mb: 0.5 }}>
-                                • Duplicate English options are not allowed
+                            {[
+                              ...new Set(
+                                Object.values(optionErrors)
+                                  .flatMap((err) => [err?.en, err?.hi, err?.gu])
+                                  .filter(Boolean),
+                              ),
+                            ].map((message) => (
+                              <Typography
+                                key={message}
+                                variant="body2"
+                                sx={{ mb: 0.5 }}
+                              >
+                                • {message}
                               </Typography>
-                            )}
-                            {Object.values(optionErrors).some((e) => e?.hi) && (
-                              <Typography variant="body2" sx={{ mb: 0.5 }}>
-                                • Duplicate Hindi options are not allowed
-                              </Typography>
-                            )}
-                            {Object.values(optionErrors).some((e) => e?.gu) && (
-                              <Typography variant="body2">
-                                • Duplicate Gujarati options are not allowed
-                              </Typography>
-                            )}
+                            ))}
                           </Alert>
                         )}
 
@@ -1699,7 +1787,8 @@ const QuestionsView = ({
                         value={questionType}
                         onChange={(e) => {
                           setQuestionType(e.target.value);
-                          if (e.target.value !== "single_choice") setAllowImageUpload("no");
+                          if (e.target.value !== "single_choice")
+                            setAllowImageUpload("no");
                           if (e.target.value === "fln") {
                             setFlnAnswer("");
                           } else {
@@ -1736,8 +1825,21 @@ const QuestionsView = ({
                       </Select>
                     </FormControl>
                     {questionType === "single_choice" && (
-                      <FormControl component="fieldset" fullWidth size="small" sx={{ mt: 1 }}>
-                        <FormLabel component="legend" sx={{ fontSize: "0.875rem", fontWeight: 600, color: "text.primary", mb: 1 }}>
+                      <FormControl
+                        component="fieldset"
+                        fullWidth
+                        size="small"
+                        sx={{ mt: 1 }}
+                      >
+                        <FormLabel
+                          component="legend"
+                          sx={{
+                            fontSize: "0.875rem",
+                            fontWeight: 600,
+                            color: "text.primary",
+                            mb: 1,
+                          }}
+                        >
                           Allow image upload
                         </FormLabel>
                         <RadioGroup
@@ -1745,8 +1847,16 @@ const QuestionsView = ({
                           value={allowImageUpload}
                           onChange={(e) => setAllowImageUpload(e.target.value)}
                         >
-                          <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
-                          <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+                          <FormControlLabel
+                            value="yes"
+                            control={<Radio size="small" />}
+                            label="Yes"
+                          />
+                          <FormControlLabel
+                            value="no"
+                            control={<Radio size="small" />}
+                            label="No"
+                          />
                         </RadioGroup>
                       </FormControl>
                     )}
@@ -2202,7 +2312,7 @@ const QuestionsView = ({
                           // Show warning toaster when user cancels adding options after adding a question
                           if (currentQuestionId && !editingQuestion) {
                             enqueueSnackbar(
-                              "You discarded the options. The question was saved but has no options. Please edit the question to add options.",
+                              "You discarded the options, Please edit and click submit to add the options.",
                               { variant: "warning" },
                             );
                           }
@@ -2304,7 +2414,8 @@ const QuestionsView = ({
                         value={questionType}
                         onChange={(e) => {
                           setQuestionType(e.target.value);
-                          if (e.target.value !== "single_choice") setAllowImageUpload("no");
+                          if (e.target.value !== "single_choice")
+                            setAllowImageUpload("no");
                           if (e.target.value === "fln") {
                             setFlnAnswer("");
                           } else {
@@ -2341,8 +2452,21 @@ const QuestionsView = ({
                       </Select>
                     </FormControl>
                     {questionType === "single_choice" && (
-                      <FormControl component="fieldset" fullWidth size="small" sx={{ mt: 1 }}>
-                        <FormLabel component="legend" sx={{ fontSize: "0.875rem", fontWeight: 600, color: "text.primary", mb: 1 }}>
+                      <FormControl
+                        component="fieldset"
+                        fullWidth
+                        size="small"
+                        sx={{ mt: 1 }}
+                      >
+                        <FormLabel
+                          component="legend"
+                          sx={{
+                            fontSize: "0.875rem",
+                            fontWeight: 600,
+                            color: "text.primary",
+                            mb: 1,
+                          }}
+                        >
                           Allow image upload
                         </FormLabel>
                         <RadioGroup
@@ -2350,8 +2474,16 @@ const QuestionsView = ({
                           value={allowImageUpload}
                           onChange={(e) => setAllowImageUpload(e.target.value)}
                         >
-                          <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
-                          <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+                          <FormControlLabel
+                            value="yes"
+                            control={<Radio size="small" />}
+                            label="Yes"
+                          />
+                          <FormControlLabel
+                            value="no"
+                            control={<Radio size="small" />}
+                            label="No"
+                          />
                         </RadioGroup>
                       </FormControl>
                     )}

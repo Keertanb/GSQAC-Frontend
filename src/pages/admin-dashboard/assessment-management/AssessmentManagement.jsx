@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { enqueueSnackbar } from "notistack";
 import {
   Box,
-  Paper,
   Typography,
   Accordion,
   AccordionSummary,
@@ -26,12 +25,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Switch,
   FormControlLabel,
 } from "@mui/material";
@@ -62,6 +55,7 @@ import {
   useDeleteDomainMutation,
   useGetAssessmentRoleAssignmentsQuery,
   useUpdateAssessmentRoleAssignmentMutation,
+  useDeleteAssessmentRoleAssignmentMutation,
   useDeleteAssessmentMutation,
 } from "../../../services/adminService";
 import { getRoleId } from "../../../constants/roles";
@@ -125,7 +119,8 @@ const AssessmentManagement = () => {
   // Add/Edit Assessment Modal (and Duplicate mode)
   const [addAssessmentModalOpen, setAddAssessmentModalOpen] = useState(false);
   const [editingAssessment, setEditingAssessment] = useState(null);
-  const [duplicateSourceAssessment, setDuplicateSourceAssessment] = useState(null);
+  const [duplicateSourceAssessment, setDuplicateSourceAssessment] =
+    useState(null);
   const [newAssessment, setNewAssessment] = useState({
     schoolType: "1", // Default to Primary (1-8)
     assessmentEn: "",
@@ -178,10 +173,10 @@ const AssessmentManagement = () => {
         5: "verifier",
       },
       display: {
-        2: "School",
-        3: "School Verifier",
-        4: "CRC",
-        5: "Verifier",
+        2: t("assessment.management.roles.school"),
+        3: t("assessment.management.roles.schoolVerifier"),
+        4: t("assessment.management.roles.crc"),
+        5: t("assessment.management.roles.verifier"),
       },
     };
 
@@ -192,10 +187,11 @@ const AssessmentManagement = () => {
   // Settings Modal
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [roleAssignments, setRoleAssignments] = useState({
-    2: {},
-    3: {},
-    4: {},
+    2: [],
+    3: [],
+    4: [],
   });
+  const [expandedSettingsRole, setExpandedSettingsRole] = useState(2);
 
   const [deleteDomainModalOpen, setDeleteDomainModalOpen] = useState(false);
   const [domainToDelete, setDomainToDelete] = useState(null);
@@ -400,22 +396,41 @@ const AssessmentManagement = () => {
   } = useGetAssessmentRoleAssignmentsQuery();
 
   const initialRoleAssignments = useMemo(() => {
-    if (assessmentRoleAssignmentsData?.data) {
-      return assessmentRoleAssignmentsData.data.reduce(
-        (acc, assignment) => {
-          acc[assignment.roleId] = {
-            id: assignment.id,
-            assessmentId: assignment.assessmentId,
-            startDate: assignment.startDate,
-            endDate: assignment.endDate,
-            isPublished: assignment.isPublished,
-          };
-          return acc;
-        },
-        { 2: {}, 3: {}, 4: {} },
-      );
+    const emptyAssignments = { 2: [], 3: [], 4: [] };
+
+    if (!assessmentRoleAssignmentsData?.data) {
+      return emptyAssignments;
     }
-    return { 2: {}, 3: {}, 4: {} };
+
+    return assessmentRoleAssignmentsData.data.reduce((acc, roleEntry) => {
+      const roleId = Number(roleEntry?.roleId);
+      if (![2, 3, 4].includes(roleId)) return acc;
+
+      const assessments = Array.isArray(roleEntry?.assessments)
+        ? roleEntry.assessments
+        : [];
+
+      // Ignore backend placeholder/blank rows (no assessmentId).
+      acc[roleId] = assessments
+        .filter(
+          (assignment) =>
+            assignment &&
+            assignment.assessmentId !== null &&
+            assignment.assessmentId !== undefined &&
+            assignment.assessmentId !== ""
+        )
+        .map((assignment, index) => ({
+          id: assignment?.id ?? null,
+          assessmentId: assignment?.assessmentId ?? "",
+          startDate: assignment?.startDate ?? "",
+          endDate: assignment?.endDate ?? "",
+          isPublished: assignment?.isPublished ?? 0,
+          isNew: false,
+          localKey: `${roleId}-${assignment?.assessmentId ?? "na"}-${index}`,
+        }));
+
+      return acc;
+    }, emptyAssignments);
   }, [assessmentRoleAssignmentsData]);
 
   useEffect(() => {
@@ -488,6 +503,7 @@ const AssessmentManagement = () => {
       // Only show generic message here if not called from add/edit modal
       // The add/edit modal will show its own specific message
       refetchAssessments();
+      refetchAssessmentRoleAssignments();
     },
   });
 
@@ -495,6 +511,7 @@ const AssessmentManagement = () => {
     onSuccess: () => {
       refetchAssessments();
       refetchDomains();
+      refetchAssessmentRoleAssignments();
     },
   });
 
@@ -518,16 +535,43 @@ const AssessmentManagement = () => {
     setSettingsModalOpen(false);
     // Reset roleAssignments to initial values
     setRoleAssignments(initialRoleAssignments);
+    setExpandedSettingsRole(2);
     refetchAssessmentRoleAssignments(); // Refetch to discard any unsaved changes
   };
 
-  const handleRoleAssignmentChange = (roleId, field, value) => {
+  const handleRoleAssignmentChange = (roleId, index, field, value) => {
     setRoleAssignments((prev) => ({
       ...prev,
-      [roleId]: {
-        ...prev[roleId],
-        [field]: value,
-      },
+      [roleId]: (prev[roleId] || []).map((assignment, rowIndex) =>
+        rowIndex === index ? { ...assignment, [field]: value } : assignment,
+      ),
+    }));
+  };
+
+  const handleAddRoleAssignmentRow = (roleId) => {
+    setRoleAssignments((prev) => ({
+      ...prev,
+      [roleId]: [
+        ...(prev[roleId] || []),
+        {
+          id: null,
+          assessmentId: "",
+          startDate: "",
+          endDate: "",
+          isPublished: 0,
+          isNew: true,
+          localKey: `new-${roleId}-${Date.now()}`,
+        },
+      ],
+    }));
+  };
+
+  const handleRemoveRoleAssignmentRow = (roleId, index) => {
+    setRoleAssignments((prev) => ({
+      ...prev,
+      [roleId]: (prev[roleId] || []).filter(
+        (_, rowIndex) => rowIndex !== index,
+      ),
     }));
   };
 
@@ -544,8 +588,15 @@ const AssessmentManagement = () => {
       },
     });
 
-  const handleUpdateRoleAssignment = (roleId) => {
-    const assignment = roleAssignments[roleId];
+  const deleteAssessmentRoleAssignmentMutation =
+    useDeleteAssessmentRoleAssignmentMutation({
+      onSuccess: () => {
+        refetchAssessmentRoleAssignments();
+      },
+    });
+
+  const handleUpdateRoleAssignment = (roleId, index) => {
+    const assignment = roleAssignments[roleId]?.[index];
     if (!assignment || !assignment.assessmentId) {
       enqueueSnackbar("Please select an assessment for this role.", {
         variant: "warning",
@@ -554,7 +605,6 @@ const AssessmentManagement = () => {
     }
 
     const payload = {
-      id: assignment.id || null,
       roleId: roleId,
       assessmentId: assignment.assessmentId,
       startDate: assignment.startDate,
@@ -578,8 +628,8 @@ const AssessmentManagement = () => {
     });
   };
 
-  const handlePublishRoleAssignment = (roleId) => {
-    const assignment = roleAssignments[roleId];
+  const handlePublishRoleAssignment = (roleId, index) => {
+    const assignment = roleAssignments[roleId]?.[index];
     if (!assignment || !assignment.assessmentId) {
       enqueueSnackbar(
         "Please select an assessment for this role before publishing.",
@@ -598,6 +648,26 @@ const AssessmentManagement = () => {
       isPublished: newIsPublished,
     };
     publishAssessmentMutation.mutate(payload);
+  };
+
+  const handleDeleteRoleAssignment = (roleId, index) => {
+    const assignment = roleAssignments[roleId]?.[index];
+    if (!assignment?.assessmentId) return;
+
+    if (assignment.isPublished === 1) {
+      enqueueSnackbar(
+        "Unpublish this assessment-role assignment before deleting it.",
+        {
+          variant: "warning",
+        },
+      );
+      return;
+    }
+
+    deleteAssessmentRoleAssignmentMutation.mutate({
+      assessmentId: assignment.assessmentId,
+      roleId,
+    });
   };
 
   const handleDeleteDomain = (domain, event) => {
@@ -725,6 +795,30 @@ const AssessmentManagement = () => {
           : assessment.assessmentGu;
     return name || `Assessment ${assessment.assessmentId}`;
   };
+
+  const getAssessmentRoleIds = (assessment) => {
+    if (!assessment) return [];
+
+    if (Array.isArray(assessment.roles)) {
+      return assessment.roles
+        .map((role) =>
+          typeof role === "object" ? Number(role?.roleId) : Number(role),
+        )
+        .filter((roleId) => [2, 3, 4].includes(roleId));
+    }
+
+    if (assessment.roleId) {
+      const singleRoleId = Number(assessment.roleId);
+      return [2, 3, 4].includes(singleRoleId) ? [singleRoleId] : [];
+    }
+
+    return [];
+  };
+
+  const todayDate = useMemo(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  }, []);
 
   const startEditingAssessment = (assessment, e) => {
     if (e) e.stopPropagation();
@@ -910,7 +1004,7 @@ const AssessmentManagement = () => {
               "&:hover": { bgcolor: colors.primary.dark },
             }}
           >
-            Add Assessment
+            {t("assessment.management.addAssessment")}
           </Button>
           <Button
             variant="outlined"
@@ -925,7 +1019,7 @@ const AssessmentManagement = () => {
               },
             }}
           >
-            Capture
+            {t("assessment.management.capture")}
           </Button>
           <IconButton
             onClick={handleOpenSettingsModal}
@@ -951,7 +1045,7 @@ const AssessmentManagement = () => {
           }}
         >
           <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-            Captured Image
+            {t("assessment.management.capturedImage")}
           </Typography>
           <Box
             sx={{
@@ -975,20 +1069,33 @@ const AssessmentManagement = () => {
             />
             {capturedImageMeta && (
               <Box sx={{ flex: 1, minWidth: 200 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
-                  <strong>Latitude:</strong>{" "}
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mb: 0.5 }}
+                >
+                  <strong>{t("assessment.management.latitude")}:</strong>{" "}
                   {capturedImageMeta.latitude != null
                     ? capturedImageMeta.latitude.toFixed(6)
                     : "—"}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
-                  <strong>Longitude:</strong>{" "}
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mb: 0.5 }}
+                >
+                  <strong>{t("assessment.management.longitude")}:</strong>{" "}
                   {capturedImageMeta.longitude != null
                     ? capturedImageMeta.longitude.toFixed(6)
                     : "—"}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                  <strong>Address:</strong> {capturedImageMeta.address || "—"}
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block" }}
+                >
+                  <strong>{t("assessment.management.address")}:</strong>{" "}
+                  {capturedImageMeta.address || "—"}
                 </Typography>
               </Box>
             )}
@@ -1001,7 +1108,7 @@ const AssessmentManagement = () => {
                 setCapturedImageMeta(null);
               }}
             >
-              Remove
+              {t("assessment.management.remove")}
             </Button>
           </Box>
         </Box>
@@ -1016,7 +1123,7 @@ const AssessmentManagement = () => {
         PaperProps={{ sx: { borderRadius: 2 } }}
       >
         <DialogTitle sx={{ fontWeight: 700 }}>
-          Capture Image (with location)
+          {t("assessment.management.captureImageWithLocation")}
         </DialogTitle>
         <DialogContent>
           <canvas
@@ -1033,9 +1140,11 @@ const AssessmentManagement = () => {
             aria-hidden
           />
           {captureMode === null && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
+            <Box
+              sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}
+            >
               <Typography variant="body2" color="text.secondary">
-                Choose how to capture the image. Latitude, longitude and address will be attached automatically.
+                {t("assessment.management.captureImageHelp")}
               </Typography>
               <Button
                 variant="outlined"
@@ -1045,17 +1154,20 @@ const AssessmentManagement = () => {
                 sx={{
                   borderColor: colors.primary.blue,
                   color: colors.primary.blue,
-                  "&:hover": { borderColor: colors.primary.dark, bgcolor: colors.primary.blue + "10" },
+                  "&:hover": {
+                    borderColor: colors.primary.dark,
+                    bgcolor: colors.primary.blue + "10",
+                  },
                 }}
               >
-                Use camera
+                {t("assessment.management.useCamera")}
               </Button>
               <Button
                 variant="outlined"
                 onClick={() => fileInputRef.current?.click()}
                 fullWidth
               >
-                Choose image file
+                {t("assessment.management.chooseImageFile")}
               </Button>
             </Box>
           )}
@@ -1081,15 +1193,20 @@ const AssessmentManagement = () => {
                 onClick={captureFromVideo}
                 disabled={captureLoading}
                 fullWidth
-                sx={{ bgcolor: colors.primary.blue, "&:hover": { bgcolor: colors.primary.dark } }}
+                sx={{
+                  bgcolor: colors.primary.blue,
+                  "&:hover": { bgcolor: colors.primary.dark },
+                }}
               >
-                {captureLoading ? "Getting location…" : "Capture"}
+                {captureLoading
+                  ? t("assessment.management.gettingLocation")
+                  : t("assessment.management.capture")}
               </Button>
             </Box>
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={closeCaptureModal}>Cancel</Button>
+          <Button onClick={closeCaptureModal}>{t("common.cancel")}</Button>
         </DialogActions>
       </Dialog>
 
@@ -1145,8 +1262,8 @@ const AssessmentManagement = () => {
                           label={
                             assessment.schoolType === 1 ||
                             assessment.schoolType === "1"
-                              ? "Primary"
-                              : "Secondary"
+                              ? t("assessment.management.schoolTypes.primaryShort")
+                              : t("assessment.management.schoolTypes.secondaryShort")
                           }
                           sx={{
                             bgcolor: colors.accent.purple + "15",
@@ -1155,17 +1272,18 @@ const AssessmentManagement = () => {
                           }}
                         />
                       )}
-                      {assessment.roleId && (
+                      {getAssessmentRoleIds(assessment).map((roleId) => (
                         <Chip
+                          key={`${assessment.assessmentId}-${roleId}`}
                           size="small"
-                          label={getRoleName(assessment.roleId)}
+                          label={getRoleName(roleId)}
                           sx={{
                             bgcolor: colors.primary.blue + "15",
                             color: colors.primary.blue,
                             fontWeight: 600,
                           }}
                         />
-                      )}
+                      ))}
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Typography
@@ -1173,7 +1291,9 @@ const AssessmentManagement = () => {
                         color="text.secondary"
                         sx={{ mr: 1 }}
                       >
-                        {assessmentDomains.length} domain(s)
+                        {t("assessment.management.domainCount", {
+                          count: assessmentDomains.length,
+                        })}
                       </Typography>
                       <FormControlLabel
                         control={
@@ -1192,7 +1312,11 @@ const AssessmentManagement = () => {
                             }}
                           />
                         }
-                        label={assessment.isActive ? "Active" : "Inactive"}
+                        label={
+                          assessment.isActive
+                            ? t("assessment.management.active")
+                            : t("assessment.management.inactive")
+                        }
                         labelPlacement="end"
                         sx={{ m: 0 }}
                         onClick={(e) => e.stopPropagation()}
@@ -1203,7 +1327,7 @@ const AssessmentManagement = () => {
                           e.stopPropagation();
                           handleDuplicateAssessment(assessment);
                         }}
-                        title="Duplicate assessment"
+                        title={t("assessment.management.duplicateAssessment")}
                         sx={{
                           color: "text.secondary",
                           "&:hover": {
@@ -1261,7 +1385,7 @@ const AssessmentManagement = () => {
                         });
                       }}
                     >
-                      Add Domain
+                      {t("assessment.domain.addDomain")}
                     </Button>
                   </Box>
 
@@ -1283,7 +1407,9 @@ const AssessmentManagement = () => {
                             }}
                           >
                             <Typography sx={{ fontWeight: 700 }}>
-                              {editingDomain ? "Edit Domain" : "Add Domain"}
+                              {editingDomain
+                                ? t("assessment.domain.editDomain")
+                                : t("assessment.domain.addDomain")}
                             </Typography>
                           </Box>
                           <Box
@@ -1295,7 +1421,7 @@ const AssessmentManagement = () => {
                             }}
                           >
                             <TextField
-                              label="Domain Name (Gujarati)"
+                              label={t("assessment.management.domainNameGujarati")}
                               value={newDomainName.gu}
                               onChange={(e) =>
                                 setNewDomainName({
@@ -1307,7 +1433,7 @@ const AssessmentManagement = () => {
                               size="small"
                             />
                             <TextField
-                              label="Domain Name (English)"
+                              label={t("assessment.management.domainNameEnglish")}
                               value={newDomainName.en}
                               onChange={(e) =>
                                 setNewDomainName({
@@ -1319,7 +1445,7 @@ const AssessmentManagement = () => {
                               size="small"
                             />
                             <TextField
-                              label="Domain Name (Hindi)"
+                              label={t("assessment.management.domainNameHindi")}
                               value={newDomainName.hi}
                               onChange={(e) =>
                                 setNewDomainName({
@@ -1341,7 +1467,7 @@ const AssessmentManagement = () => {
                                 "&:hover": { bgcolor: colors.primary.dark },
                               }}
                             >
-                              Save Domain
+                              {t("assessment.management.saveDomain")}
                             </Button>
                             <Button
                               variant="outlined"
@@ -1353,7 +1479,7 @@ const AssessmentManagement = () => {
                                 setActiveAssessmentForDomainForm(null);
                               }}
                             >
-                              Cancel
+                              {t("common.cancel")}
                             </Button>
                           </Box>
                         </Card>
@@ -1369,7 +1495,8 @@ const AssessmentManagement = () => {
                     </Box>
                   ) : isErrorDomains ? (
                     <Alert severity="error">
-                      {domainsError?.message || "Failed to load domains"}
+                      {domainsError?.message ||
+                        t("assessment.management.failedToLoadDomains")}
                     </Alert>
                   ) : assessmentDomains.length > 0 ? (
                     <Box
@@ -1469,7 +1596,7 @@ const AssessmentManagement = () => {
                   ) : (
                     <Card sx={{ p: 3, borderRadius: 2 }}>
                       <Typography variant="body2" color="text.secondary">
-                        No domains available for this assessment.
+                        {t("assessment.management.noDomainsForAssessment")}
                       </Typography>
                     </Card>
                   )}
@@ -1483,7 +1610,7 @@ const AssessmentManagement = () => {
             sx={{ p: 4, textAlign: "center", borderRadius: 3 }}
           >
             <Typography variant="body1" color="text.secondary">
-              No assessments available
+              {t("assessment.management.noAssessmentsAvailable")}
             </Typography>
           </Card>
         )}
@@ -1496,11 +1623,13 @@ const AssessmentManagement = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle sx={{ fontWeight: 700 }}>Edit Assessment Name</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          {t("assessment.management.editAssessmentName")}
+        </DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
             <TextField
-              label="Assessment Name (Gujarati)"
+              label={t("assessment.management.assessmentNameGujarati")}
               value={tempAssessmentName.gu}
               onChange={(e) =>
                 setTempAssessmentName((prev) => ({
@@ -1513,7 +1642,7 @@ const AssessmentManagement = () => {
               fullWidth
             />
             <TextField
-              label="Assessment Name (English)"
+              label={t("assessment.management.assessmentNameEnglish")}
               value={tempAssessmentName.en}
               onChange={(e) =>
                 setTempAssessmentName((prev) => ({
@@ -1526,7 +1655,7 @@ const AssessmentManagement = () => {
               fullWidth
             />
             <TextField
-              label="Assessment Name (Hindi)"
+              label={t("assessment.management.assessmentNameHindi")}
               value={tempAssessmentName.hi}
               onChange={(e) =>
                 setTempAssessmentName((prev) => ({
@@ -1541,7 +1670,7 @@ const AssessmentManagement = () => {
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={cancelEditAssessment}>Cancel</Button>
+          <Button onClick={cancelEditAssessment}>{t("common.cancel")}</Button>
           <Button
             variant="contained"
             onClick={saveAssessmentName}
@@ -1551,7 +1680,9 @@ const AssessmentManagement = () => {
               "&:hover": { bgcolor: colors.primary.dark },
             }}
           >
-            {updateAssessmentMutation.isPending ? "Saving..." : "Save Changes"}
+            {updateAssessmentMutation.isPending
+              ? t("assessment.management.saving")
+              : t("assessment.management.saveChanges")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1575,10 +1706,10 @@ const AssessmentManagement = () => {
       >
         <DialogTitle sx={{ fontWeight: 700 }}>
           {duplicateSourceAssessment
-            ? "Duplicate Assessment"
+            ? t("assessment.management.duplicateAssessment")
             : editingAssessment
-              ? "Edit Assessment"
-              : "Add Assessment"}
+              ? t("assessment.management.editAssessment")
+              : t("assessment.management.addAssessment")}
         </DialogTitle>
         <DialogContent sx={{ mt: 1.5 }}>
           <Box
@@ -1592,17 +1723,17 @@ const AssessmentManagement = () => {
             {duplicateSourceAssessment && (
               <TextField
                 size="small"
-                label="Duplicate from"
+                label={t("assessment.management.duplicateFrom")}
                 value={getAssessmentName(duplicateSourceAssessment)}
                 InputProps={{ readOnly: true }}
                 fullWidth
               />
             )}
             <FormControl fullWidth size="small">
-              <InputLabel>School Type</InputLabel>
+              <InputLabel>{t("assessment.management.schoolType")}</InputLabel>
               <Select
                 value={newAssessment.schoolType}
-                label="School Type"
+                label={t("assessment.management.schoolType")}
                 onChange={(e) =>
                   setNewAssessment((prev) => ({
                     ...prev,
@@ -1610,13 +1741,17 @@ const AssessmentManagement = () => {
                   }))
                 }
               >
-                <MenuItem value="1">Primary (Class 1 to 8)</MenuItem>
-                <MenuItem value="2">Secondary (Class 9 to 12)</MenuItem>
+                <MenuItem value="1">
+                  {t("assessment.management.schoolTypes.primary")}
+                </MenuItem>
+                <MenuItem value="2">
+                  {t("assessment.management.schoolTypes.secondary")}
+                </MenuItem>
               </Select>
             </FormControl>
             <TextField
               size="small"
-              label="Assessment Name (Gujarati)"
+              label={t("assessment.management.assessmentNameGujarati")}
               value={newAssessment.assessmentGu}
               onChange={(e) =>
                 setNewAssessment((prev) => ({
@@ -1631,7 +1766,7 @@ const AssessmentManagement = () => {
             />
             <TextField
               size="small"
-              label="Assessment Name (English)"
+              label={t("assessment.management.assessmentNameEnglish")}
               value={newAssessment.assessmentEn}
               onChange={(e) =>
                 setNewAssessment((prev) => ({
@@ -1646,7 +1781,7 @@ const AssessmentManagement = () => {
             />
             <TextField
               size="small"
-              label="Assessment Name (Hindi)"
+              label={t("assessment.management.assessmentNameHindi")}
               value={newAssessment.assessmentHi}
               onChange={(e) =>
                 setNewAssessment((prev) => ({
@@ -1671,7 +1806,7 @@ const AssessmentManagement = () => {
               setDuplicateSourceAssessment(null);
             }}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="contained"
@@ -1687,7 +1822,7 @@ const AssessmentManagement = () => {
               const nameGu = newAssessment.assessmentGu?.trim();
               const nameHi = newAssessment.assessmentHi?.trim() || "";
               if (!nameEn || !nameGu) {
-                enqueueSnackbar("Add proper assessment name", {
+                enqueueSnackbar(t("assessment.management.addProperAssessmentName"), {
                   variant: "warning",
                 });
                 return;
@@ -1713,8 +1848,9 @@ const AssessmentManagement = () => {
                       setDuplicateSourceAssessment(null);
                       refetchAssessments();
                       refetchDomains();
+                      refetchAssessmentRoleAssignments();
                     },
-                  }
+                  },
                 );
                 return;
               }
@@ -1745,6 +1881,7 @@ const AssessmentManagement = () => {
                   });
                   setEditingAssessment(null);
                   refetchAssessments();
+                  refetchAssessmentRoleAssignments();
                 },
               });
             }}
@@ -1755,15 +1892,15 @@ const AssessmentManagement = () => {
           >
             {duplicateSourceAssessment
               ? cloneAssessmentMutation.isPending
-                ? "Cloning..."
-                : "Duplicate"
+                ? t("assessment.management.cloning")
+                : t("assessment.management.duplicate")
               : updateAssessmentMutation.isPending
                 ? editingAssessment
-                  ? "Updating..."
-                  : "Creating..."
+                  ? t("assessment.management.updating")
+                  : t("assessment.management.creating")
                 : editingAssessment
-                  ? "Update"
-                  : "Create"}
+                  ? t("assessment.management.update")
+                  : t("assessment.management.create")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1782,175 +1919,413 @@ const AssessmentManagement = () => {
             color: colors.primary.blue,
           }}
         >
-          Assessment Settings
+          {t("assessment.management.assessmentSettings")}
         </DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
-          <TableContainer component={Paper} elevation={0} sx={{ mt: 2 }}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: colors.neutral.gray100 }}>
-                  <TableCell sx={{ fontWeight: 700 }}>Role</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Assessment</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Start Date</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>End Date</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700 }}>
-                    Status
-                  </TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700 }}>
-                    Actions
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {isLoadingAssessmentRoleAssignments || isLoadingAssessments ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center">
-                      <CircularProgress size={30} />
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  [
-                    { roleId: 2, name: "School" },
-                    { roleId: 3, name: "School Verifier" },
-                    { roleId: 4, name: "CRC" },
-                  ].map((role) => (
-                    <TableRow key={role.roleId}>
-                      <TableCell>{role.name}</TableCell>
-                      <TableCell>
-                        <FormControl size="small" fullWidth>
-                          <Select
-                            value={
-                              roleAssignments[role.roleId]?.assessmentId || ""
-                            }
-                            onChange={(e) =>
-                              handleRoleAssignmentChange(
-                                role.roleId,
-                                "assessmentId",
-                                e.target.value,
-                              )
-                            }
-                            disabled={roleAssignments[role.roleId]?.isPublished}
-                          >
-                            <MenuItem value="">
-                              <em>None</em>
-                            </MenuItem>
-                            {assessmentsData?.data?.map((assessment) => (
-                              <MenuItem
-                                key={assessment.assessmentId}
-                                value={assessment.assessmentId}
-                              >
-                                {getAssessmentName(assessment)}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </TableCell>
-                      <TableCell>
-                        <TextField
+          {isLoadingAssessmentRoleAssignments || isLoadingAssessments ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+              <CircularProgress size={30} />
+            </Box>
+          ) : (
+            <Box
+              sx={{ display: "flex", flexDirection: "column", gap: 1.5, mt: 1 }}
+            >
+              {[
+                { roleId: 2, name: t("assessment.management.roles.school") },
+                {
+                  roleId: 3,
+                  name: t("assessment.management.roles.schoolVerifier"),
+                },
+                { roleId: 4, name: t("assessment.management.roles.crc") },
+              ].map((role) => {
+                const assignmentsForRole = roleAssignments[role.roleId] || [];
+
+                return (
+                  <Accordion
+                    key={role.roleId}
+                    expanded={expandedSettingsRole === role.roleId}
+                    onChange={() =>
+                      setExpandedSettingsRole((prev) =>
+                        prev === role.roleId ? null : role.roleId,
+                      )
+                    }
+                    disableGutters
+                    sx={{
+                      border: `1px solid ${colors.neutral.gray200}`,
+                      borderRadius: "12px !important",
+                      overflow: "hidden",
+                      boxShadow: "none",
+                    }}
+                  >
+                    <AccordionSummary
+                      expandIcon={<ExpandMore />}
+                      sx={{
+                        bgcolor: colors.neutral.gray100,
+                        minHeight: 64,
+                        "& .MuiAccordionSummary-content": {
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 2,
+                        },
+                      }}
+                    >
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {role.name}
+                      </Typography>
+                      <Chip
+                        size="small"
+                        label={t("assessment.management.assignmentCount", {
+                          count: assignmentsForRole.length,
+                        })}
+                        sx={{
+                          bgcolor: colors.primary.blue + "15",
+                          color: colors.primary.blue,
+                          fontWeight: 600,
+                        }}
+                      />
+                    </AccordionSummary>
+
+                    <AccordionDetails sx={{ bgcolor: "#fff" }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          mb: 2,
+                        }}
+                      >
+                        <Button
+                          variant="outlined"
                           size="small"
-                          type="date"
-                          label="Start Date"
-                          value={toDateInputValue(
-                            roleAssignments[role.roleId]?.startDate,
-                          )}
-                          onChange={(e) =>
-                            handleRoleAssignmentChange(
-                              role.roleId,
-                              "startDate",
-                              e.target.value || "",
-                            )
+                          startIcon={<Add />}
+                          onClick={() =>
+                            handleAddRoleAssignmentRow(role.roleId)
                           }
-                          InputLabelProps={{ shrink: true }}
-                          inputProps={{ max: "9999-12-31" }}
-                          fullWidth
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <TextField
-                          size="small"
-                          type="date"
-                          label="End Date"
-                          value={toDateInputValue(
-                            roleAssignments[role.roleId]?.endDate,
-                          )}
-                          onChange={(e) =>
-                            handleRoleAssignmentChange(
-                              role.roleId,
-                              "endDate",
-                              e.target.value || "",
-                            )
-                          }
-                          InputLabelProps={{ shrink: true }}
-                          inputProps={{ max: "9999-12-31" }}
-                          fullWidth
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          label={
-                            roleAssignments[role.roleId]?.isPublished
-                              ? "Published"
-                              : "Not Published"
-                          }
-                          size="small"
+                        >
+                          {t("assessment.management.addAssessment")}
+                        </Button>
+                      </Box>
+
+                      {assignmentsForRole.length === 0 ? (
+                        <Card
+                          elevation={0}
                           sx={{
-                            bgcolor: roleAssignments[role.roleId]?.isPublished
-                              ? colors.accent.green + "15"
-                              : colors.semantic.warning + "15",
-                            color: roleAssignments[role.roleId]?.isPublished
-                              ? colors.accent.green
-                              : colors.semantic.warning,
-                            fontWeight: 600,
+                            p: 2,
+                            border: `1px dashed ${colors.neutral.gray300}`,
+                            borderRadius: 2,
                           }}
-                        />
-                      </TableCell>
-                      <TableCell align="center">
+                        >
+                          <Typography variant="body2" color="text.secondary">
+                            {t("assessment.management.noAssessmentsAssignedYet")}
+                          </Typography>
+                        </Card>
+                      ) : (
                         <Box
                           sx={{
                             display: "flex",
-                            gap: 1,
-                            justifyContent: "center",
+                            flexDirection: "column",
+                            gap: 1.5,
                           }}
                         >
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() =>
-                              handleUpdateRoleAssignment(role.roleId)
-                            }
-                            sx={{
-                              bgcolor: colors.primary.blue,
-                              "&:hover": { bgcolor: colors.primary.dark },
-                            }}
-                          >
-                            Update
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={() =>
-                              handlePublishRoleAssignment(role.roleId)
-                            }
-                            disabled={
-                              !roleAssignments[role.roleId]?.assessmentId ||
-                              publishAssessmentMutation.isPending
-                            }
-                          >
-                            {roleAssignments[role.roleId]?.isPublished === 1
-                              ? "Unpublish"
-                              : "Publish"}
-                          </Button>
+                          {assignmentsForRole.map((assignment, index) => (
+                            <Card
+                              key={
+                                assignment.localKey || `${role.roleId}-${index}`
+                              }
+                              elevation={0}
+                              sx={{
+                                p: 2,
+                                borderRadius: 2,
+                                border: `2px solid ${colors.neutral.gray200}`,
+                                // bgcolor: assignment.isPublished === 1 ? "#f8fffb" : "#fff",
+                              }}
+                            >
+                              {(() => {
+                                const startDateValue = toDateInputValue(
+                                  assignment.startDate
+                                );
+                                const endDateMin =
+                                  startDateValue && startDateValue > todayDate
+                                    ? startDateValue
+                                    : todayDate;
+
+                                return (
+                              <Box
+                                sx={{
+                                  display: "grid",
+                                  gridTemplateColumns: {
+                                    xs: "1fr",
+                                    md: "2fr 1fr 1fr auto",
+                                  },
+                                  gap: 1.5,
+                                  alignItems: "center",
+                                }}
+                              >
+                                <FormControl size="small" fullWidth>
+                                  <InputLabel>
+                                    {t("assessment.management.assessment")}
+                                  </InputLabel>
+                                  <Select
+                                    value={assignment.assessmentId || ""}
+                                    label={t("assessment.management.assessment")}
+                                    onChange={(e) =>
+                                      handleRoleAssignmentChange(
+                                        role.roleId,
+                                        index,
+                                        "assessmentId",
+                                        e.target.value,
+                                      )
+                                    }
+                                    disabled={
+                                      assignment.isPublished === 1 &&
+                                      !assignment.isNew
+                                    }
+                                  >
+                                    <MenuItem value="">
+                                      <em>{t("assessment.management.none")}</em>
+                                    </MenuItem>
+                                    {(assessmentsData?.data || [])
+                                      .filter((assessmentOption) => {
+                                        const optionId = Number(
+                                          assessmentOption.assessmentId
+                                        );
+                                        const currentSelectedId = Number(
+                                          assignment.assessmentId
+                                        );
+
+                                        // Keep currently selected option visible in this row.
+                                        if (optionId === currentSelectedId) {
+                                          return true;
+                                        }
+
+                                        // Hide assessments already assigned in other rows of same role.
+                                        return !assignmentsForRole.some(
+                                          (assignedRow, rowIndex) =>
+                                            rowIndex !== index &&
+                                            Number(assignedRow.assessmentId) === optionId
+                                        );
+                                      })
+                                      .map((assessment) => (
+                                        <MenuItem
+                                          key={assessment.assessmentId}
+                                          value={assessment.assessmentId}
+                                        >
+                                          {getAssessmentName(assessment)}
+                                        </MenuItem>
+                                      ))}
+                                  </Select>
+                                </FormControl>
+
+                                <TextField
+                                  size="small"
+                                  type="date"
+                                  label={t("assessment.management.startDate")}
+                                  value={toDateInputValue(assignment.startDate)}
+                                  onChange={(e) =>
+                                    handleRoleAssignmentChange(
+                                      role.roleId,
+                                      index,
+                                      "startDate",
+                                      e.target.value || "",
+                                    )
+                                  }
+                                  InputLabelProps={{ shrink: true }}
+                                  inputProps={{ min: todayDate, max: "9999-12-31" }}
+                                  sx={{
+                                    "& .MuiOutlinedInput-root": {
+                                      borderRadius: 2,
+                                      bgcolor: "#f8fafc",
+                                      "& fieldset": {
+                                        borderColor: colors.neutral.gray300,
+                                      },
+                                      "&:hover fieldset": {
+                                        borderColor: colors.primary.blue,
+                                      },
+                                      "&.Mui-focused fieldset": {
+                                        borderWidth: "1.5px",
+                                        borderColor: colors.primary.blue,
+                                      },
+                                    },
+                                  }}
+                                  fullWidth
+                                />
+
+                                <TextField
+                                  size="small"
+                                  type="date"
+                                  label={t("assessment.management.endDate")}
+                                  value={toDateInputValue(assignment.endDate)}
+                                  onChange={(e) =>
+                                    handleRoleAssignmentChange(
+                                      role.roleId,
+                                      index,
+                                      "endDate",
+                                      e.target.value || "",
+                                    )
+                                  }
+                                  InputLabelProps={{ shrink: true }}
+                                  inputProps={{ min: endDateMin, max: "9999-12-31" }}
+                                  sx={{
+                                    "& .MuiOutlinedInput-root": {
+                                      borderRadius: 2,
+                                      bgcolor: "#f8fafc",
+                                      "& fieldset": {
+                                        borderColor: colors.neutral.gray300,
+                                      },
+                                      "&:hover fieldset": {
+                                        borderColor: colors.primary.blue,
+                                      },
+                                      "&.Mui-focused fieldset": {
+                                        borderWidth: "1.5px",
+                                        borderColor: colors.primary.blue,
+                                      },
+                                    },
+                                  }}
+                                  fullWidth
+                                />
+
+                                <Chip
+                                  size="small"
+                                  label={
+                                    assignment.isPublished === 1
+                                      ? t("assessment.management.published")
+                                      : t("assessment.management.draft")
+                                  }
+                                  sx={{
+                                    justifySelf: {
+                                      xs: "flex-start",
+                                      md: "center",
+                                    },
+                                    bgcolor:
+                                      assignment.isPublished === 1
+                                        ? colors.accent.green + "15"
+                                        : colors.semantic.warning + "15",
+                                    color:
+                                      assignment.isPublished === 1
+                                        ? colors.accent.green
+                                        : colors.semantic.warning,
+                                    fontWeight: 600,
+                                  }}
+                                />
+                              </Box>
+                                );
+                              })()}
+
+                              <Box
+                                sx={{
+                                  mt: 1.5,
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  gap: 1,
+                                  flexWrap: "wrap",
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1,
+                                  }}
+                                >
+                                  {assignment.isNew && (
+                                    <Button
+                                      variant="text"
+                                      color="error"
+                                      size="small"
+                                      startIcon={<Close />}
+                                      onClick={() =>
+                                        handleRemoveRoleAssignmentRow(
+                                          role.roleId,
+                                          index,
+                                        )
+                                      }
+                                    >
+                                      {t("assessment.management.remove")}
+                                    </Button>
+                                  )}
+                                </Box>
+
+                                <Box sx={{ display: "flex", gap: 1 }}>
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    title={
+                                      assignment.isPublished === 1
+                                        ? t(
+                                            "assessment.management.unpublishBeforeDeleting",
+                                          )
+                                        : t(
+                                            "assessment.management.deleteAssignment",
+                                          )
+                                    }
+                                    onClick={() =>
+                                      handleDeleteRoleAssignment(role.roleId, index)
+                                    }
+                                    disabled={
+                                      assignment.isPublished === 1 ||
+                                      deleteAssessmentRoleAssignmentMutation.isPending
+                                    }
+                                  >
+                                    <Delete fontSize="small" />
+                                  </IconButton>
+                                  <Button
+                                    variant="contained"
+                                    size="small"
+                                    onClick={() =>
+                                      handleUpdateRoleAssignment(
+                                        role.roleId,
+                                        index,
+                                      )
+                                    }
+                                    disabled={
+                                      updateAssessmentRoleAssignmentMutation.isPending
+                                    }
+                                    sx={{
+                                      bgcolor: colors.primary.blue,
+                                      "&:hover": {
+                                        bgcolor: colors.primary.dark,
+                                      },
+                                    }}
+                                  >
+                                    {assignment.isNew
+                                      ? t("common.add")
+                                      : t("assessment.management.update")}
+                                  </Button>
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() =>
+                                      handlePublishRoleAssignment(
+                                        role.roleId,
+                                        index,
+                                      )
+                                    }
+                                    disabled={
+                                      !assignment.assessmentId ||
+                                      publishAssessmentMutation.isPending
+                                    }
+                                  >
+                                    {assignment.isPublished === 1
+                                      ? t("assessment.management.unpublish")
+                                      : t("assessment.management.publish")}
+                                  </Button>
+                                </Box>
+                              </Box>
+                            </Card>
+                          ))}
                         </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                      )}
+                    </AccordionDetails>
+                  </Accordion>
+                );
+              })}
+            </Box>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleCloseSettingsModal}>Close</Button>
+          <Button onClick={handleCloseSettingsModal}>
+            {t("assessment.management.close")}
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -1958,10 +2333,12 @@ const AssessmentManagement = () => {
         open={deleteDomainModalOpen}
         onClose={() => setDeleteDomainModalOpen(false)}
         onConfirm={confirmDeleteDomain}
-        title="Delete Domain"
-        message={`Are you sure you want to delete the domain "${domainToDelete ? getDomainName(domainToDelete) : ""}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t("assessment.management.deleteDomain")}
+        message={t("assessment.management.deleteDomainConfirm", {
+          domainName: domainToDelete ? getDomainName(domainToDelete) : "",
+        })}
+        confirmText={t("common.delete")}
+        cancelText={t("common.cancel")}
         variant="danger"
         isLoading={deleteDomainMutation.isPending}
       />
@@ -1970,10 +2347,14 @@ const AssessmentManagement = () => {
         open={deleteAssessmentModalOpen}
         onClose={() => setDeleteAssessmentModalOpen(false)}
         onConfirm={confirmDeleteAssessment}
-        title="Delete Assessment"
-        message={`Are you sure you want to delete the assessment "${assessmentToDelete ? getAssessmentName(assessmentToDelete) : ""}"? This action cannot be undone and will delete all associated domains and questions.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t("assessment.management.deleteAssessment")}
+        message={t("assessment.management.deleteAssessmentConfirm", {
+          assessmentName: assessmentToDelete
+            ? getAssessmentName(assessmentToDelete)
+            : "",
+        })}
+        confirmText={t("common.delete")}
+        cancelText={t("common.cancel")}
         variant="danger"
         isLoading={deleteAssessmentMutation.isPending}
       />

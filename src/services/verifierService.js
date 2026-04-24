@@ -517,9 +517,14 @@ export const useGetDistrictsByVerifierQuery = ({ enabled = true } = {}) => {
 export const getVerifierDashboard = async (params) => {
   const { districtId, ...otherParams } = params;
   const config = {
-    params: { districtId, ...otherParams },
+    params: { ...otherParams },
     headers: {},
   };
+
+  // Send districtId only when a specific district is selected.
+  if (districtId !== null && districtId !== undefined && districtId !== "") {
+    config.params.districtId = districtId;
+  }
 
   const response = await axiosInstance.get(
     "/verifier/get-verifier-dashboard",
@@ -543,7 +548,7 @@ export const useGetVerifierDashboardQuery = ({
   return useQuery({
     queryKey: queryKeys.verifier.dashboard(districtId),
     queryFn: () => getVerifierDashboard({ districtId }),
-    enabled: enabled && !!districtId,
+    enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnMount: true,
     refetchOnWindowFocus: false,

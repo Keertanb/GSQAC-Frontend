@@ -98,6 +98,7 @@ const SelfAssessment = () => {
   const [selectedSubdomain, setSelectedSubdomain] = useState(null);
   const [answers, setAnswers] = useState({});
   const [subdomainAnswers, setSubdomainAnswers] = useState({});
+  const [subdomainTextAnswers, setSubdomainTextAnswers] = useState({});
   const [classWiseAnswers, setClassWiseAnswers] = useState({});
   const [classWiseTextAnswers, setClassWiseTextAnswers] = useState({}); // Store text answers per class
   const [selectedClassGroup, setSelectedClassGroup] = useState(null);
@@ -109,6 +110,9 @@ const SelfAssessment = () => {
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
   const [selectedQuestionTab, setSelectedQuestionTab] = useState(0);
   const [sessionId, setSessionId] = useState(null);
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
+  const [chartDrilldownAssessmentId, setChartDrilldownAssessmentId] =
+    useState(null);
   // MCQ image upload: { [questionId]: [base64OrNull, base64OrNull] }, max 2 per question
   const [mcqQuestionImages, setMcqQuestionImages] = useState({});
   const mcqImageInputRef = useRef(null);
@@ -323,10 +327,55 @@ const SelfAssessment = () => {
 
   // Note: Removed auto-selection of subject to allow manual selection only
 
-  const domains = domainsData?.data || [];
-  const isPublished = domainsData?.isPublished || false;
-  const endDate = domainsData?.endDate || null;
-  const isSubmitted = domainsData?.isSubmitted || false;
+  const assessments = useMemo(() => {
+    if (Array.isArray(domainsData?.data)) {
+      if (domainsData.data.length > 0 && domainsData.data[0]?.domains) {
+        return domainsData.data;
+      }
+      return [
+        {
+          assessmentId: null,
+          assessmentName: "Assessment",
+          domains: domainsData.data,
+          isPublished: domainsData?.isPublished,
+          startDate: domainsData?.startDate,
+          endDate: domainsData?.endDate,
+          isSubmitted: domainsData?.isSubmitted,
+          sessionId: domainsData?.sessionId,
+        },
+      ];
+    }
+    return [];
+  }, [domainsData]);
+
+  useEffect(() => {
+    if (!assessments.length) {
+      setSelectedAssessmentId(null);
+      return;
+    }
+    const stillExists = assessments.some(
+      (a) => Number(a.assessmentId) === Number(selectedAssessmentId)
+    );
+    if (!selectedAssessmentId || !stillExists) {
+      setSelectedAssessmentId(assessments[0].assessmentId);
+    }
+  }, [assessments, selectedAssessmentId]);
+
+  const selectedAssessment = useMemo(() => {
+    if (!assessments.length) return null;
+    return (
+      assessments.find(
+        (a) => Number(a.assessmentId) === Number(selectedAssessmentId)
+      ) || assessments[0]
+    );
+  }, [assessments, selectedAssessmentId]);
+
+  const domains = selectedAssessment?.domains || [];
+  const isPublished =
+    selectedAssessment?.isPublished ?? domainsData?.isPublished ?? false;
+  const endDate = selectedAssessment?.endDate ?? domainsData?.endDate ?? null;
+  const isSubmitted =
+    selectedAssessment?.isSubmitted ?? domainsData?.isSubmitted ?? false;
 
   // Check if endDate has passed (end date is inclusive - closed only after end of endDate day)
   const isEndDatePassed = useMemo(() => {
@@ -344,10 +393,8 @@ const SelfAssessment = () => {
 
   // Extract and store sessionId from domains API response
   useEffect(() => {
-    if (domainsData?.sessionId !== undefined) {
-      setSessionId(domainsData.sessionId);
-    }
-  }, [domainsData?.sessionId]);
+    setSessionId(selectedAssessment?.sessionId ?? null);
+  }, [selectedAssessment?.sessionId]);
 
   // Helper function to map dropdown group range to API group range format
   const mapGroupRangeToApiFormat = (groupRange) => {
@@ -586,7 +633,7 @@ const SelfAssessment = () => {
     if (generalQuestions.length > 0) {
       tabs.push({
         id: "general",
-        label: "General Questions",
+        label: t("selfAssessment.tabs.generalQuestions"),
         icon: <Assignment sx={{ fontSize: 20 }} />,
         color: colors.accent.green,
         questions: generalQuestions,
@@ -599,7 +646,7 @@ const SelfAssessment = () => {
     if (classroomObservationQuestions.length > 0) {
       tabs.push({
         id: "classroom",
-        label: "Classroom Observation",
+        label: t("selfAssessment.tabs.classroomObservation"),
         icon: <Class sx={{ fontSize: 20 }} />,
         color: colors.primary.blue,
         questions: classroomObservationQuestions,
@@ -612,7 +659,7 @@ const SelfAssessment = () => {
     if (subjectObservationQuestions.length > 0) {
       tabs.push({
         id: "subject",
-        label: "Subject-Wise Observation",
+        label: t("selfAssessment.tabs.subjectWiseObservation"),
         icon: <MenuBook sx={{ fontSize: 20 }} />,
         color: colors.accent.purple,
         questions: subjectObservationQuestions,
@@ -625,7 +672,7 @@ const SelfAssessment = () => {
     if (flnQuestions.length > 0) {
       tabs.push({
         id: "fln",
-        label: "Input Type Questions",
+        label: t("selfAssessment.tabs.inputTypeQuestions"),
         icon: <Create sx={{ fontSize: 20 }} />,
         color: colors.semantic.warning,
         questions: flnQuestions,
@@ -648,6 +695,7 @@ const SelfAssessment = () => {
     classroomObservationQuestionsTotalCount,
     subjectObservationQuestionsTotalCount,
     flnQuestionsTotalCount,
+    currentLanguage,
   ]);
 
   // Reset tab to first when questions change
@@ -891,6 +939,7 @@ const SelfAssessment = () => {
 
   const handleSubdomainSelect = (subdomain) => {
     const subdomainId = subdomain.subDomainId || subdomain.id;
+    const activeClassKey = selectedClass ? String(selectedClass) : "general";
 
     if (selectedSubdomain) {
       const currentSubdomainId =
@@ -901,33 +950,54 @@ const SelfAssessment = () => {
         ...prev,
         [currentSubdomainId]: { ...answers },
       }));
+      setSubdomainTextAnswers((prev) => ({
+        ...prev,
+        [currentSubdomainId]: { ...textAnswers },
+      }));
 
-      // Save current answers to classWiseAnswers before switching
-      if (selectedClass) {
-        const classKey = String(selectedClass);
-        const storageKey = `${currentSubdomainId}_${classKey}`;
-        setClassWiseAnswers((prev) => ({
-          ...prev,
-          [storageKey]: { ...answers },
-        }));
-        setClassWiseTextAnswers((prev) => ({
-          ...prev,
-          [storageKey]: { ...textAnswers },
-        }));
-      }
+      // Save current answers to class-wise storage (also supports "general")
+      const storageKey = `${currentSubdomainId}_${activeClassKey}`;
+      setClassWiseAnswers((prev) => ({
+        ...prev,
+        [storageKey]: { ...answers },
+      }));
+      setClassWiseTextAnswers((prev) => ({
+        ...prev,
+        [storageKey]: { ...textAnswers },
+      }));
     }
 
     const savedAnswers = subdomainAnswers[subdomainId] || {};
+    const nextStorageKey = `${subdomainId}_${activeClassKey}`;
+    const savedTextAnswers =
+      subdomainTextAnswers[subdomainId] ||
+      classWiseTextAnswers[nextStorageKey] ||
+      {};
     setSelectedSubdomain(subdomain);
     setAnswers(savedAnswers);
+    setTextAnswers(savedTextAnswers);
     // Reset class group, class, section, and subject when switching subdomains
     setSelectedClassGroup(null);
     setSelectedClass(null);
     setSelectedSection(null);
     setSelectedSubject(null);
-    setTextAnswers({});
     // Reset question tab to first
     setSelectedQuestionTab(0);
+  };
+
+  const handleAssessmentSelect = (assessment) => {
+    setSelectedAssessmentId(assessment.assessmentId);
+    setSelectedDomain(null);
+    setSelectedSubdomain(null);
+    setAnswers({});
+    setTextAnswers({});
+    setSubdomainTextAnswers({});
+    setSelectedClassGroup(null);
+    setSelectedClass(null);
+    setSelectedSection(null);
+    setSelectedSubject(null);
+    setSelectedQuestionTab(0);
+    setChartDrilldownAssessmentId(null);
   };
 
   // Reset section and subject when class changes
@@ -951,10 +1021,17 @@ const SelfAssessment = () => {
 
   // Effect to load API answers when questions are fetched (same as SchoolVerification)
   useEffect(() => {
-    const questionsForOptions = allQuestions && allQuestions.length > 0 ? allQuestions : [];
-    const questionsForFLN = allQuestionsForCount && allQuestionsForCount.length > 0 ? allQuestionsForCount : questionsForOptions;
+    const questionsForOptions =
+      allQuestions && allQuestions.length > 0 ? allQuestions : [];
+    const questionsForFLN =
+      allQuestionsForCount && allQuestionsForCount.length > 0
+        ? allQuestionsForCount
+        : questionsForOptions;
 
-    if ((questionsForOptions.length > 0 || questionsForFLN.length > 0) && selectedSubdomain) {
+    if (
+      (questionsForOptions.length > 0 || questionsForFLN.length > 0) &&
+      selectedSubdomain
+    ) {
       const apiAnswers = {};
       const apiTextAnswers = {};
       const flnAnswersMap = {};
@@ -1053,6 +1130,30 @@ const SelfAssessment = () => {
           });
           return merged;
         });
+        const currentSubdomainId =
+          selectedSubdomain.subDomainId || selectedSubdomain.id;
+        setSubdomainTextAnswers((prev) => {
+          const existing = prev[currentSubdomainId] || {};
+          const merged = { ...existing };
+          Object.keys(apiTextAnswers).forEach((qId) => {
+            try {
+              const apiData = JSON.parse(apiTextAnswers[qId]);
+              let existingData = {};
+              if (merged[qId]) {
+                try {
+                  existingData = JSON.parse(merged[qId]);
+                } catch (_) {}
+              }
+              merged[qId] = JSON.stringify({ ...existingData, ...apiData });
+            } catch (_) {
+              merged[qId] = apiTextAnswers[qId];
+            }
+          });
+          return {
+            ...prev,
+            [currentSubdomainId]: merged,
+          };
+        });
         if (selectedClass) {
           const subdomainId =
             selectedSubdomain.subDomainId || selectedSubdomain.id;
@@ -1105,7 +1206,9 @@ const SelfAssessment = () => {
 
   // MCQ image upload: show for all General/MCQ questions (type 1); optionally restrict by question.allowImageUpload when API sends it
   const questionAllowsImageUpload = (question) => {
-    const qt = question?.questionType ?? (question?.isClassroomObservation === 1 ? 2 : 1);
+    const qt =
+      question?.questionType ??
+      (question?.isClassroomObservation === 1 ? 2 : 1);
     if (qt !== 1 && qt !== "1") return false;
     const allow = question?.allowImageUpload;
     return allow === 1 || allow === "1" || allow === true || allow === "yes";
@@ -1120,7 +1223,7 @@ const SelfAssessment = () => {
   /** Returns dataUrl for preview (img src). Handles both { dataUrl, file } and legacy base64. */
   const getMcqImagePreviewSrc = (item) => {
     if (!item) return null;
-    return typeof item === "string" ? item : item?.dataUrl ?? null;
+    return typeof item === "string" ? item : (item?.dataUrl ?? null);
   };
 
   /** Returns location for display: { latitude, longitude, address } or null. */
@@ -1140,7 +1243,9 @@ const SelfAssessment = () => {
   const getMcqImageFilesForQuestion = (questionId) => {
     const arr = mcqQuestionImages[questionId];
     if (!arr) return [];
-    return arr.filter((item) => item && (typeof item === "object" ? item?.file : false)).map((item) => item.file);
+    return arr
+      .filter((item) => item && (typeof item === "object" ? item?.file : false))
+      .map((item) => item.file);
   };
 
   /**
@@ -1152,11 +1257,16 @@ const SelfAssessment = () => {
     if (!arr) return [];
     const out = [];
     arr.forEach((item, index) => {
-      if (!item || typeof item !== "object" || !item.file || !item.dataUrl) return;
+      if (!item || typeof item !== "object" || !item.file || !item.dataUrl)
+        return;
       const file = item.file;
-      const extension = file.name?.split(".").pop()?.toLowerCase() || file.type?.split("/")[1] || "png";
+      const extension =
+        file.name?.split(".").pop()?.toLowerCase() ||
+        file.type?.split("/")[1] ||
+        "png";
       const contentType = file.type || "image/png";
-      const fileName = file.name || `answer_${questionId}_${index}.${extension}`;
+      const fileName =
+        file.name || `answer_${questionId}_${index}.${extension}`;
       out.push({ extension, contentType, fileName });
     });
     return out;
@@ -1167,20 +1277,23 @@ const SelfAssessment = () => {
    * Response shape: data.uploadUrls = [ { questionId, images: [ { fileName, uploadURL } ] } ]
    * Uses XMLHttpRequest so the PUT method is explicitly set and sent.
    */
-  const uploadImagesToPresignedUrls = async (uploadUrls, imagesByQuestionId) => {
+  const uploadImagesToPresignedUrls = async (
+    uploadUrls,
+    imagesByQuestionId,
+  ) => {
     if (!uploadUrls?.length || !imagesByQuestionId) return;
-  
+
     for (const entry of uploadUrls) {
       const arr = imagesByQuestionId[entry.questionId];
       if (!Array.isArray(arr)) continue;
-  
+
       for (let i = 0; i < (entry.images?.length ?? 0); i++) {
         const { uploadURL } = entry.images[i];
         const item = arr[i];
         const file = item?.file;
-  
+
         if (!file || !uploadURL) continue;
-  
+
         try {
           const res = await fetch(uploadURL, {
             method: "PUT",
@@ -1189,7 +1302,7 @@ const SelfAssessment = () => {
             },
             body: file,
           });
-  
+
           if (!res.ok) {
             throw new Error(`Upload failed ${res.status}`);
           }
@@ -1250,7 +1363,13 @@ const SelfAssessment = () => {
       const dataUrl = reader.result;
       setMcqQuestionImages((prev) => {
         const arr = [...(prev[pendingMcqImageSlot.questionId] || [null, null])];
-        arr[pendingMcqImageSlot.index] = { dataUrl, file, latitude, longitude, address };
+        arr[pendingMcqImageSlot.index] = {
+          dataUrl,
+          file,
+          latitude,
+          longitude,
+          address,
+        };
         return { ...prev, [pendingMcqImageSlot.questionId]: arr };
       });
       setPendingMcqImageSlot(null);
@@ -1276,9 +1395,15 @@ const SelfAssessment = () => {
     };
     setTextAnswers(newTextAnswers);
 
-    // Save to classWiseTextAnswers
+    // Save to subdomain-level cache so switching subdomains never wipes FLN entries
     if (selectedSubdomain) {
       const subdomainId = selectedSubdomain.subDomainId || selectedSubdomain.id;
+      setSubdomainTextAnswers((prev) => ({
+        ...prev,
+        [subdomainId]: newTextAnswers,
+      }));
+
+      // Save to classWiseTextAnswers
       const classKey = selectedClass ? String(selectedClass) : "general";
       const storageKey = `${subdomainId}_${classKey}`;
       setClassWiseTextAnswers((prev) => ({
@@ -1368,9 +1493,9 @@ const SelfAssessment = () => {
       if (variables.isSubmitted === 0) {
         // Session creation - refetch domains to get the sessionId
         refetchDomains();
-        enqueueSnackbar("Session created successfully!", {
-          variant: "success",
-        });
+        // enqueueSnackbar("Session created successfully!", {
+        //   variant: "success",
+        // });
       } else {
         // Final submission - close the confirmation modal
         setShowSubmitConfirmation(false);
@@ -1435,6 +1560,7 @@ const SelfAssessment = () => {
   const handleConfirmSubmit = () => {
     const payload = {
       sessionId: sessionId || null,
+      assessmentId: selectedAssessment?.assessmentId ?? null,
       userId: Number(userId),
       roleId: Number(roleId),
       schoolId: userName || undefined,
@@ -1452,7 +1578,7 @@ const SelfAssessment = () => {
   }, [domains, getDomainProgress]);
 
   // Prepare chart data for bar graph
-  const chartData = useMemo(() => {
+  const domainChartData = useMemo(() => {
     if (!domains || domains.length === 0) return [];
     return domains.map((domain, index) => {
       const progress = getDomainProgress(domain);
@@ -1465,6 +1591,58 @@ const SelfAssessment = () => {
       };
     });
   }, [domains]);
+
+  const assessmentChartData = useMemo(() => {
+    if (!assessments || assessments.length === 0) return [];
+    return assessments.map((assessment, index) => {
+      const assessmentDomains = assessment.domains || [];
+      const progress =
+        assessmentDomains.length > 0
+          ? assessmentDomains.reduce(
+              (sum, domain) => sum + getDomainProgress(domain),
+              0
+            ) / assessmentDomains.length
+          : 0;
+      return {
+        name: `${index + 1}. ${
+          assessment.assessmentName ||
+          t("selfAssessment.assessmentNameFallback", {
+            id: assessment.assessmentId,
+          })
+        }`,
+        progress: Math.round(progress),
+        assessmentId: assessment.assessmentId,
+        color: getProgressColor(progress),
+      };
+    });
+  }, [assessments]);
+
+  const currentChartData = useMemo(() => {
+    if (assessments.length > 1 && !chartDrilldownAssessmentId) {
+      return assessmentChartData;
+    }
+    if (chartDrilldownAssessmentId) {
+      const drillAssessment = assessments.find(
+        (a) => a.assessmentId === chartDrilldownAssessmentId
+      );
+      const drillDomains = drillAssessment?.domains || [];
+      return drillDomains.map((domain, index) => {
+        const progress = getDomainProgress(domain);
+        return {
+          name: `${index + 1}. ${getDomainName(domain)}`,
+          progress: Math.round(progress),
+          domainId: domain.domainId,
+          color: getProgressColor(progress),
+        };
+      });
+    }
+    return domainChartData;
+  }, [
+    assessments,
+    chartDrilldownAssessmentId,
+    assessmentChartData,
+    domainChartData,
+  ]);
 
   // Calculate total answered and total questions
   const { totalAnswered, totalQuestions } = useMemo(() => {
@@ -1636,7 +1814,9 @@ const SelfAssessment = () => {
       schoolId: userName || undefined,
     };
     if (questionType === 1 || questionType === "1") {
-      const attachedImages = buildAttachedImagesForQuestion(question.questionId);
+      const attachedImages = buildAttachedImagesForQuestion(
+        question.questionId,
+      );
       if (attachedImages.length > 0) payload.attachedImages = attachedImages;
     }
 
@@ -1712,6 +1892,17 @@ const SelfAssessment = () => {
     }
     // For General questions or FLN questions, clsValue and sectionValue remain null
 
+    // Determine questionType for current submission (tab-based)
+    const questionTypeByTabId = {
+      general: 1,
+      classroom: 2,
+      subject: 3,
+      fln: 4,
+    };
+    const payloadQuestionType = currentTab?.id
+      ? questionTypeByTabId[currentTab.id] || null
+      : null;
+
     // Format answers array from current answers state (with image data in attachedImages for MCQ)
     const answersArray = [];
 
@@ -1761,8 +1952,11 @@ const SelfAssessment = () => {
             obtainedMarks: null,
           };
           if (questionType === 1 || questionType === "1") {
-            const attachedImages = buildAttachedImagesForQuestion(question.questionId);
-            if (attachedImages.length > 0) answerEntry.attachedImages = attachedImages;
+            const attachedImages = buildAttachedImagesForQuestion(
+              question.questionId,
+            );
+            if (attachedImages.length > 0)
+              answerEntry.attachedImages = attachedImages;
           }
           answersArray.push(answerEntry);
         }
@@ -1788,6 +1982,7 @@ const SelfAssessment = () => {
 
     const payload = {
       isAns: 1,
+      questionType: payloadQuestionType,
       userId: Number(userId),
       cls: clsValue,
       section: sectionValue,
@@ -2052,8 +2247,10 @@ const SelfAssessment = () => {
                       }}
                     >
                       {isReadOnly
-                        ? `The assessment submission time is ended and closed on ${endDate}`
-                        : `Submit all questions before ${endDate}`}
+                        ? t("selfAssessment.submissionClosedOn", {
+                            date: endDate,
+                          })
+                        : t("selfAssessment.submitBefore", { date: endDate })}
                     </Typography>
                   )}
                 </Box>
@@ -2069,8 +2266,7 @@ const SelfAssessment = () => {
                       },
                     }}
                   >
-                    Failed to load assessment. Please check your connection or
-                    contact administrator.
+                    {t("selfAssessment.failedToLoadAssessment")}
                   </Alert>
                 )}
               </Box>
@@ -2167,6 +2363,42 @@ const SelfAssessment = () => {
                   >
                     {t("selfAssessment.navigateSubtitle")}
                   </Typography>
+                  {assessments.length > 1 && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: colors.text.secondary, fontWeight: 600 }}
+                      >
+                        {t("selfAssessment.selectAssessment")}
+                      </Typography>
+                      <FormControl size="small" fullWidth sx={{ mt: 0.75 }}>
+                        <Select
+                          value={selectedAssessment?.assessmentId ?? ""}
+                          onChange={(e) => {
+                            const selectedId = Number(e.target.value);
+                            const assessment = assessments.find(
+                              (a) => Number(a.assessmentId) === selectedId
+                            );
+                            if (assessment) {
+                              handleAssessmentSelect(assessment);
+                            }
+                          }}
+                        >
+                          {assessments.map((assessment) => (
+                            <MenuItem
+                              key={assessment.assessmentId}
+                              value={assessment.assessmentId}
+                            >
+                              {assessment.assessmentName ||
+                                t("selfAssessment.assessmentNameFallback", {
+                                  id: assessment.assessmentId,
+                                })}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Box>
+                  )}
                 </Box>
 
                 {/* Domains/Subdomains List */}
@@ -2824,7 +3056,9 @@ const SelfAssessment = () => {
                                       color: colors.text.primary,
                                     }}
                                   >
-                                    Classroom Observation Questions
+                                    {t(
+                                      "selfAssessment.sections.classroomTitle",
+                                    )}
                                   </Typography>
                                 </Box>
                                 <Typography
@@ -2834,8 +3068,9 @@ const SelfAssessment = () => {
                                     fontSize: "0.875rem",
                                   }}
                                 >
-                                  These questions require classroom observation
-                                  and class selection
+                                  {t(
+                                    "selfAssessment.sections.classroomDescription",
+                                  )}
                                 </Typography>
                               </Box>
 
@@ -3031,7 +3266,7 @@ const SelfAssessment = () => {
                                     >
                                       {isLoadingSchoolData ? (
                                         <MenuItem disabled>
-                                          Loading classes...
+                                          {t("selfAssessment.loadingClasses")}
                                         </MenuItem>
                                       ) : filteredClassOptions.length === 0 ? (
                                         <MenuItem disabled>
@@ -3140,7 +3375,7 @@ const SelfAssessment = () => {
                               ) : isErrorQuestions ? (
                                 <Alert severity="error">
                                   {isErrorQuestions?.message ||
-                                    "Failed to load questions"}
+                                    t("selfAssessment.failedToLoadQuestions")}
                                 </Alert>
                               ) : (
                                 <Box
@@ -3377,130 +3612,273 @@ const SelfAssessment = () => {
                                                     </RadioGroup>
                                                   </FormControl>
                                                 )}
-                                                {questionAllowsImageUpload(question) && (
+                                              {questionAllowsImageUpload(
+                                                question,
+                                              ) && (
+                                                <Box
+                                                  sx={{
+                                                    mt: 2.5,
+                                                    pt: 2.5,
+                                                    borderTop: `1px solid ${colors.neutral.gray200}`,
+                                                  }}
+                                                >
                                                   <Box
                                                     sx={{
-                                                      mt: 2.5,
-                                                      pt: 2.5,
-                                                      borderTop: `1px solid ${colors.neutral.gray200}`,
+                                                      display: "flex",
+                                                      alignItems: "center",
+                                                      gap: 1,
+                                                      mb: 1.5,
                                                     }}
                                                   >
-                                                    <Box
+                                                    <PhotoCamera
                                                       sx={{
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        gap: 1,
-                                                        mb: 1.5,
+                                                        fontSize: 18,
+                                                        color:
+                                                          colors.primary.blue,
+                                                      }}
+                                                    />
+                                                    <Typography
+                                                      variant="subtitle2"
+                                                      sx={{
+                                                        fontWeight: 600,
+                                                        color:
+                                                          colors.text.primary,
                                                       }}
                                                     >
-                                                      <PhotoCamera sx={{ fontSize: 18, color: colors.primary.blue }} />
-                                                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: colors.text.primary }}>
-                                                        Add photos (up to 2)
-                                                      </Typography>
-                                                    </Box>
-                                                    <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-                                                      {[0, 1].map((idx) => {
-                                                        const imgs = getMcqImagesForQuestion(question.questionId);
-                                                        const item = imgs[idx];
-                                                        const src = getMcqImagePreviewSrc(item);
-                                                        const location = getMcqImageLocation(item);
-                                                        return (
-                                                          <Box
-                                                            key={idx}
-                                                            sx={{
-                                                              position: "relative",
-                                                              width: 160,
-                                                              borderRadius: 2,
-                                                              overflow: "hidden",
-                                                              border: "2px dashed",
-                                                              borderColor: src ? "transparent" : colors.neutral.gray300,
-                                                              bgcolor: src ? "transparent" : colors.background.secondary,
-                                                              display: "flex",
-                                                              flexDirection: "column",
-                                                              alignItems: "stretch",
-                                                              justifyContent: "center",
-                                                              transition: "border-color 0.2s, box-shadow 0.2s",
-                                                              "&:hover": src
-                                                                ? {}
-                                                                : { borderColor: colors.primary.light, bgcolor: colors.primary.lightest + "40" },
-                                                            }}
-                                                          >
-                                                            {src ? (
-                                                              <>
-                                                                <Box sx={{ position: "relative", width: "100%", height: 110 }}>
-                                                                  <Box
-                                                                    component="img"
-                                                                    src={src}
-                                                                    alt={`Capture ${idx + 1}`}
-                                                                    sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                                                                  />
-                                                                  <IconButton
-                                                                    size="small"
-                                                                    sx={{
-                                                                      position: "absolute",
-                                                                      top: 6,
-                                                                      right: 6,
-                                                                      bgcolor: "rgba(0,0,0,0.55)",
-                                                                      color: "white",
-                                                                      "&:hover": { bgcolor: "rgba(0,0,0,0.75)" },
-                                                                      width: 28,
-                                                                      height: 28,
-                                                                    }}
-                                                                    onClick={() => handleMcqImageRemove(question.questionId, idx)}
-                                                                  >
-                                                                    <Close sx={{ fontSize: 16 }} />
-                                                                  </IconButton>
-                                                                </Box>
-                                                                {location && (
-                                                                  <Box
-                                                                    sx={{
-                                                                      px: 1,
-                                                                      py: 0.75,
-                                                                      bgcolor: "rgba(0,0,0,0.65)",
-                                                                      color: "white",
-                                                                      fontSize: "0.7rem",
-                                                                      lineHeight: 1.3,
-                                                                      borderTop: "1px solid rgba(255,255,255,0.15)",
-                                                                    }}
-                                                                  >
-                                                                    {location.latitude != null && location.longitude != null && (
-                                                                      <Box component="span" sx={{ opacity: 0.95 }}>
-                                                                        {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
-                                                                      </Box>
-                                                                    )}
-                                                                    {location.address && (
-                                                                      <Box sx={{ mt: 0.25 }} component="div">
-                                                                        {location.address.length > 48 ? location.address.slice(0, 48) + "…" : location.address}
-                                                                      </Box>
-                                                                    )}
-                                                                  </Box>
-                                                                )}
-                                                              </>
-                                                            ) : (
-                                                              <Button
-                                                                fullWidth
-                                                                disableRipple
-                                                                startIcon={<PhotoCamera sx={{ fontSize: 22, color: colors.neutral.gray500 }} />}
-                                                                onClick={() => handleMcqImageCaptureClick(question.questionId, idx)}
-                                                                disabled={!isPublished || isReadOnly}
+                                                      Add photos (up to 2)
+                                                    </Typography>
+                                                  </Box>
+                                                  <Box
+                                                    sx={{
+                                                      display: "flex",
+                                                      gap: 2,
+                                                      flexWrap: "wrap",
+                                                    }}
+                                                  >
+                                                    {[0, 1].map((idx) => {
+                                                      const imgs =
+                                                        getMcqImagesForQuestion(
+                                                          question.questionId,
+                                                        );
+                                                      const item = imgs[idx];
+                                                      const src =
+                                                        getMcqImagePreviewSrc(
+                                                          item,
+                                                        );
+                                                      const location =
+                                                        getMcqImageLocation(
+                                                          item,
+                                                        );
+                                                      return (
+                                                        <Box
+                                                          key={idx}
+                                                          sx={{
+                                                            position:
+                                                              "relative",
+                                                            width: 160,
+                                                            borderRadius: 2,
+                                                            overflow: "hidden",
+                                                            border:
+                                                              "2px dashed",
+                                                            borderColor: src
+                                                              ? "transparent"
+                                                              : colors.neutral
+                                                                  .gray300,
+                                                            bgcolor: src
+                                                              ? "transparent"
+                                                              : colors
+                                                                  .background
+                                                                  .secondary,
+                                                            display: "flex",
+                                                            flexDirection:
+                                                              "column",
+                                                            alignItems:
+                                                              "stretch",
+                                                            justifyContent:
+                                                              "center",
+                                                            transition:
+                                                              "border-color 0.2s, box-shadow 0.2s",
+                                                            "&:hover": src
+                                                              ? {}
+                                                              : {
+                                                                  borderColor:
+                                                                    colors
+                                                                      .primary
+                                                                      .light,
+                                                                  bgcolor:
+                                                                    colors
+                                                                      .primary
+                                                                      .lightest +
+                                                                    "40",
+                                                                },
+                                                          }}
+                                                        >
+                                                          {src ? (
+                                                            <>
+                                                              <Box
                                                                 sx={{
-                                                                  height: 120,
-                                                                  flexDirection: "column",
-                                                                  textTransform: "none",
-                                                                  color: colors.neutral.gray600,
-                                                                  fontSize: "0.8rem",
-                                                                  "& .MuiButton-startIcon": { margin: 0, mb: 0.5 },
+                                                                  position:
+                                                                    "relative",
+                                                                  width: "100%",
+                                                                  height: 110,
                                                                 }}
                                                               >
-                                                                Capture image
-                                                              </Button>
-                                                            )}
-                                                          </Box>
-                                                        );
-                                                      })}
-                                                    </Box>
+                                                                <Box
+                                                                  component="img"
+                                                                  src={src}
+                                                                  alt={`Capture ${idx + 1}`}
+                                                                  sx={{
+                                                                    width:
+                                                                      "100%",
+                                                                    height:
+                                                                      "100%",
+                                                                    objectFit:
+                                                                      "cover",
+                                                                    display:
+                                                                      "block",
+                                                                  }}
+                                                                />
+                                                                <IconButton
+                                                                  size="small"
+                                                                  sx={{
+                                                                    position:
+                                                                      "absolute",
+                                                                    top: 6,
+                                                                    right: 6,
+                                                                    bgcolor:
+                                                                      "rgba(0,0,0,0.55)",
+                                                                    color:
+                                                                      "white",
+                                                                    "&:hover": {
+                                                                      bgcolor:
+                                                                        "rgba(0,0,0,0.75)",
+                                                                    },
+                                                                    width: 28,
+                                                                    height: 28,
+                                                                  }}
+                                                                  onClick={() =>
+                                                                    handleMcqImageRemove(
+                                                                      question.questionId,
+                                                                      idx,
+                                                                    )
+                                                                  }
+                                                                >
+                                                                  <Close
+                                                                    sx={{
+                                                                      fontSize: 16,
+                                                                    }}
+                                                                  />
+                                                                </IconButton>
+                                                              </Box>
+                                                              {location && (
+                                                                <Box
+                                                                  sx={{
+                                                                    px: 1,
+                                                                    py: 0.75,
+                                                                    bgcolor:
+                                                                      "rgba(0,0,0,0.65)",
+                                                                    color:
+                                                                      "white",
+                                                                    fontSize:
+                                                                      "0.7rem",
+                                                                    lineHeight: 1.3,
+                                                                    borderTop:
+                                                                      "1px solid rgba(255,255,255,0.15)",
+                                                                  }}
+                                                                >
+                                                                  {location.latitude !=
+                                                                    null &&
+                                                                    location.longitude !=
+                                                                      null && (
+                                                                      <Box
+                                                                        component="span"
+                                                                        sx={{
+                                                                          opacity: 0.95,
+                                                                        }}
+                                                                      >
+                                                                        {location.latitude.toFixed(
+                                                                          5,
+                                                                        )}
+                                                                        ,{" "}
+                                                                        {location.longitude.toFixed(
+                                                                          5,
+                                                                        )}
+                                                                      </Box>
+                                                                    )}
+                                                                  {location.address && (
+                                                                    <Box
+                                                                      sx={{
+                                                                        mt: 0.25,
+                                                                      }}
+                                                                      component="div"
+                                                                    >
+                                                                      {location
+                                                                        .address
+                                                                        .length >
+                                                                      48
+                                                                        ? location.address.slice(
+                                                                            0,
+                                                                            48,
+                                                                          ) +
+                                                                          "…"
+                                                                        : location.address}
+                                                                    </Box>
+                                                                  )}
+                                                                </Box>
+                                                              )}
+                                                            </>
+                                                          ) : (
+                                                            <Button
+                                                              fullWidth
+                                                              disableRipple
+                                                              startIcon={
+                                                                <PhotoCamera
+                                                                  sx={{
+                                                                    fontSize: 22,
+                                                                    color:
+                                                                      colors
+                                                                        .neutral
+                                                                        .gray500,
+                                                                  }}
+                                                                />
+                                                              }
+                                                              onClick={() =>
+                                                                handleMcqImageCaptureClick(
+                                                                  question.questionId,
+                                                                  idx,
+                                                                )
+                                                              }
+                                                              disabled={
+                                                                !isPublished ||
+                                                                isReadOnly
+                                                              }
+                                                              sx={{
+                                                                height: 120,
+                                                                flexDirection:
+                                                                  "column",
+                                                                textTransform:
+                                                                  "none",
+                                                                color:
+                                                                  colors.neutral
+                                                                    .gray600,
+                                                                fontSize:
+                                                                  "0.8rem",
+                                                                "& .MuiButton-startIcon":
+                                                                  {
+                                                                    margin: 0,
+                                                                    mb: 0.5,
+                                                                  },
+                                                              }}
+                                                            >
+                                                              Capture image
+                                                            </Button>
+                                                          )}
+                                                        </Box>
+                                                      );
+                                                    })}
                                                   </Box>
-                                                )}
+                                                </Box>
+                                              )}
                                             </CardContent>
                                           )}
                                         </Card>
@@ -3544,7 +3922,7 @@ const SelfAssessment = () => {
                                       color: colors.text.primary,
                                     }}
                                   >
-                                    Subject-Wise Observation Questions
+                                    {t("selfAssessment.sections.subjectTitle")}
                                   </Typography>
                                 </Box>
                                 <Typography
@@ -3554,9 +3932,9 @@ const SelfAssessment = () => {
                                     fontSize: "0.875rem",
                                   }}
                                 >
-                                  These questions require subject-specific
-                                  observation and class, section, and subject
-                                  selection
+                                  {t(
+                                    "selfAssessment.sections.subjectDescription",
+                                  )}
                                 </Typography>
                               </Box>
 
@@ -3753,7 +4131,7 @@ const SelfAssessment = () => {
                                     >
                                       {isLoadingSchoolData ? (
                                         <MenuItem disabled>
-                                          Loading classes...
+                                          {t("selfAssessment.loadingClasses")}
                                         </MenuItem>
                                       ) : filteredClassOptions.length === 0 ? (
                                         <MenuItem disabled>
@@ -3937,7 +4315,7 @@ const SelfAssessment = () => {
                               ) : isErrorQuestions ? (
                                 <Alert severity="error">
                                   {isErrorQuestions?.message ||
-                                    "Failed to load questions"}
+                                    t("selfAssessment.failedToLoadQuestions")}
                                 </Alert>
                               ) : (
                                 <Box
@@ -4156,130 +4534,273 @@ const SelfAssessment = () => {
                                                     </RadioGroup>
                                                   </FormControl>
                                                 )}
-                                                {questionAllowsImageUpload(question) && (
+                                              {questionAllowsImageUpload(
+                                                question,
+                                              ) && (
+                                                <Box
+                                                  sx={{
+                                                    mt: 2.5,
+                                                    pt: 2.5,
+                                                    borderTop: `1px solid ${colors.neutral.gray200}`,
+                                                  }}
+                                                >
                                                   <Box
                                                     sx={{
-                                                      mt: 2.5,
-                                                      pt: 2.5,
-                                                      borderTop: `1px solid ${colors.neutral.gray200}`,
+                                                      display: "flex",
+                                                      alignItems: "center",
+                                                      gap: 1,
+                                                      mb: 1.5,
                                                     }}
                                                   >
-                                                    <Box
+                                                    <PhotoCamera
                                                       sx={{
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        gap: 1,
-                                                        mb: 1.5,
+                                                        fontSize: 18,
+                                                        color:
+                                                          colors.primary.blue,
+                                                      }}
+                                                    />
+                                                    <Typography
+                                                      variant="subtitle2"
+                                                      sx={{
+                                                        fontWeight: 600,
+                                                        color:
+                                                          colors.text.primary,
                                                       }}
                                                     >
-                                                      <PhotoCamera sx={{ fontSize: 18, color: colors.primary.blue }} />
-                                                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: colors.text.primary }}>
-                                                        Add photos (up to 2)
-                                                      </Typography>
-                                                    </Box>
-                                                    <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-                                                      {[0, 1].map((idx) => {
-                                                        const imgs = getMcqImagesForQuestion(question.questionId);
-                                                        const item = imgs[idx];
-                                                        const src = getMcqImagePreviewSrc(item);
-                                                        const location = getMcqImageLocation(item);
-                                                        return (
-                                                          <Box
-                                                            key={idx}
-                                                            sx={{
-                                                              position: "relative",
-                                                              width: 160,
-                                                              borderRadius: 2,
-                                                              overflow: "hidden",
-                                                              border: "2px dashed",
-                                                              borderColor: src ? "transparent" : colors.neutral.gray300,
-                                                              bgcolor: src ? "transparent" : colors.background.secondary,
-                                                              display: "flex",
-                                                              flexDirection: "column",
-                                                              alignItems: "stretch",
-                                                              justifyContent: "center",
-                                                              transition: "border-color 0.2s, box-shadow 0.2s",
-                                                              "&:hover": src
-                                                                ? {}
-                                                                : { borderColor: colors.primary.light, bgcolor: colors.primary.lightest + "40" },
-                                                            }}
-                                                          >
-                                                            {src ? (
-                                                              <>
-                                                                <Box sx={{ position: "relative", width: "100%", height: 110 }}>
-                                                                  <Box
-                                                                    component="img"
-                                                                    src={src}
-                                                                    alt={`Capture ${idx + 1}`}
-                                                                    sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                                                                  />
-                                                                  <IconButton
-                                                                    size="small"
-                                                                    sx={{
-                                                                      position: "absolute",
-                                                                      top: 6,
-                                                                      right: 6,
-                                                                      bgcolor: "rgba(0,0,0,0.55)",
-                                                                      color: "white",
-                                                                      "&:hover": { bgcolor: "rgba(0,0,0,0.75)" },
-                                                                      width: 28,
-                                                                      height: 28,
-                                                                    }}
-                                                                    onClick={() => handleMcqImageRemove(question.questionId, idx)}
-                                                                  >
-                                                                    <Close sx={{ fontSize: 16 }} />
-                                                                  </IconButton>
-                                                                </Box>
-                                                                {location && (
-                                                                  <Box
-                                                                    sx={{
-                                                                      px: 1,
-                                                                      py: 0.75,
-                                                                      bgcolor: "rgba(0,0,0,0.65)",
-                                                                      color: "white",
-                                                                      fontSize: "0.7rem",
-                                                                      lineHeight: 1.3,
-                                                                      borderTop: "1px solid rgba(255,255,255,0.15)",
-                                                                    }}
-                                                                  >
-                                                                    {location.latitude != null && location.longitude != null && (
-                                                                      <Box component="span" sx={{ opacity: 0.95 }}>
-                                                                        {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
-                                                                      </Box>
-                                                                    )}
-                                                                    {location.address && (
-                                                                      <Box sx={{ mt: 0.25 }} component="div">
-                                                                        {location.address.length > 48 ? location.address.slice(0, 48) + "…" : location.address}
-                                                                      </Box>
-                                                                    )}
-                                                                  </Box>
-                                                                )}
-                                                              </>
-                                                            ) : (
-                                                              <Button
-                                                                fullWidth
-                                                                disableRipple
-                                                                startIcon={<PhotoCamera sx={{ fontSize: 22, color: colors.neutral.gray500 }} />}
-                                                                onClick={() => handleMcqImageCaptureClick(question.questionId, idx)}
-                                                                disabled={!isPublished || isReadOnly}
+                                                      Add photos (up to 2)
+                                                    </Typography>
+                                                  </Box>
+                                                  <Box
+                                                    sx={{
+                                                      display: "flex",
+                                                      gap: 2,
+                                                      flexWrap: "wrap",
+                                                    }}
+                                                  >
+                                                    {[0, 1].map((idx) => {
+                                                      const imgs =
+                                                        getMcqImagesForQuestion(
+                                                          question.questionId,
+                                                        );
+                                                      const item = imgs[idx];
+                                                      const src =
+                                                        getMcqImagePreviewSrc(
+                                                          item,
+                                                        );
+                                                      const location =
+                                                        getMcqImageLocation(
+                                                          item,
+                                                        );
+                                                      return (
+                                                        <Box
+                                                          key={idx}
+                                                          sx={{
+                                                            position:
+                                                              "relative",
+                                                            width: 160,
+                                                            borderRadius: 2,
+                                                            overflow: "hidden",
+                                                            border:
+                                                              "2px dashed",
+                                                            borderColor: src
+                                                              ? "transparent"
+                                                              : colors.neutral
+                                                                  .gray300,
+                                                            bgcolor: src
+                                                              ? "transparent"
+                                                              : colors
+                                                                  .background
+                                                                  .secondary,
+                                                            display: "flex",
+                                                            flexDirection:
+                                                              "column",
+                                                            alignItems:
+                                                              "stretch",
+                                                            justifyContent:
+                                                              "center",
+                                                            transition:
+                                                              "border-color 0.2s, box-shadow 0.2s",
+                                                            "&:hover": src
+                                                              ? {}
+                                                              : {
+                                                                  borderColor:
+                                                                    colors
+                                                                      .primary
+                                                                      .light,
+                                                                  bgcolor:
+                                                                    colors
+                                                                      .primary
+                                                                      .lightest +
+                                                                    "40",
+                                                                },
+                                                          }}
+                                                        >
+                                                          {src ? (
+                                                            <>
+                                                              <Box
                                                                 sx={{
-                                                                  height: 120,
-                                                                  flexDirection: "column",
-                                                                  textTransform: "none",
-                                                                  color: colors.neutral.gray600,
-                                                                  fontSize: "0.8rem",
-                                                                  "& .MuiButton-startIcon": { margin: 0, mb: 0.5 },
+                                                                  position:
+                                                                    "relative",
+                                                                  width: "100%",
+                                                                  height: 110,
                                                                 }}
                                                               >
-                                                                Capture image
-                                                              </Button>
-                                                            )}
-                                                          </Box>
-                                                        );
-                                                      })}
-                                                    </Box>
+                                                                <Box
+                                                                  component="img"
+                                                                  src={src}
+                                                                  alt={`Capture ${idx + 1}`}
+                                                                  sx={{
+                                                                    width:
+                                                                      "100%",
+                                                                    height:
+                                                                      "100%",
+                                                                    objectFit:
+                                                                      "cover",
+                                                                    display:
+                                                                      "block",
+                                                                  }}
+                                                                />
+                                                                <IconButton
+                                                                  size="small"
+                                                                  sx={{
+                                                                    position:
+                                                                      "absolute",
+                                                                    top: 6,
+                                                                    right: 6,
+                                                                    bgcolor:
+                                                                      "rgba(0,0,0,0.55)",
+                                                                    color:
+                                                                      "white",
+                                                                    "&:hover": {
+                                                                      bgcolor:
+                                                                        "rgba(0,0,0,0.75)",
+                                                                    },
+                                                                    width: 28,
+                                                                    height: 28,
+                                                                  }}
+                                                                  onClick={() =>
+                                                                    handleMcqImageRemove(
+                                                                      question.questionId,
+                                                                      idx,
+                                                                    )
+                                                                  }
+                                                                >
+                                                                  <Close
+                                                                    sx={{
+                                                                      fontSize: 16,
+                                                                    }}
+                                                                  />
+                                                                </IconButton>
+                                                              </Box>
+                                                              {location && (
+                                                                <Box
+                                                                  sx={{
+                                                                    px: 1,
+                                                                    py: 0.75,
+                                                                    bgcolor:
+                                                                      "rgba(0,0,0,0.65)",
+                                                                    color:
+                                                                      "white",
+                                                                    fontSize:
+                                                                      "0.7rem",
+                                                                    lineHeight: 1.3,
+                                                                    borderTop:
+                                                                      "1px solid rgba(255,255,255,0.15)",
+                                                                  }}
+                                                                >
+                                                                  {location.latitude !=
+                                                                    null &&
+                                                                    location.longitude !=
+                                                                      null && (
+                                                                      <Box
+                                                                        component="span"
+                                                                        sx={{
+                                                                          opacity: 0.95,
+                                                                        }}
+                                                                      >
+                                                                        {location.latitude.toFixed(
+                                                                          5,
+                                                                        )}
+                                                                        ,{" "}
+                                                                        {location.longitude.toFixed(
+                                                                          5,
+                                                                        )}
+                                                                      </Box>
+                                                                    )}
+                                                                  {location.address && (
+                                                                    <Box
+                                                                      sx={{
+                                                                        mt: 0.25,
+                                                                      }}
+                                                                      component="div"
+                                                                    >
+                                                                      {location
+                                                                        .address
+                                                                        .length >
+                                                                      48
+                                                                        ? location.address.slice(
+                                                                            0,
+                                                                            48,
+                                                                          ) +
+                                                                          "…"
+                                                                        : location.address}
+                                                                    </Box>
+                                                                  )}
+                                                                </Box>
+                                                              )}
+                                                            </>
+                                                          ) : (
+                                                            <Button
+                                                              fullWidth
+                                                              disableRipple
+                                                              startIcon={
+                                                                <PhotoCamera
+                                                                  sx={{
+                                                                    fontSize: 22,
+                                                                    color:
+                                                                      colors
+                                                                        .neutral
+                                                                        .gray500,
+                                                                  }}
+                                                                />
+                                                              }
+                                                              onClick={() =>
+                                                                handleMcqImageCaptureClick(
+                                                                  question.questionId,
+                                                                  idx,
+                                                                )
+                                                              }
+                                                              disabled={
+                                                                !isPublished ||
+                                                                isReadOnly
+                                                              }
+                                                              sx={{
+                                                                height: 120,
+                                                                flexDirection:
+                                                                  "column",
+                                                                textTransform:
+                                                                  "none",
+                                                                color:
+                                                                  colors.neutral
+                                                                    .gray600,
+                                                                fontSize:
+                                                                  "0.8rem",
+                                                                "& .MuiButton-startIcon":
+                                                                  {
+                                                                    margin: 0,
+                                                                    mb: 0.5,
+                                                                  },
+                                                              }}
+                                                            >
+                                                              Capture image
+                                                            </Button>
+                                                          )}
+                                                        </Box>
+                                                      );
+                                                    })}
                                                   </Box>
-                                                )}
+                                                </Box>
+                                              )}
                                             </CardContent>
                                           )}
                                         </Card>
@@ -4323,7 +4844,7 @@ const SelfAssessment = () => {
                                       color: colors.text.primary,
                                     }}
                                   >
-                                    Input Type Questions
+                                    {t("selfAssessment.sections.flnTitle")}
                                   </Typography>
                                 </Box>
                                 <Typography
@@ -4333,8 +4854,7 @@ const SelfAssessment = () => {
                                     fontSize: "0.875rem",
                                   }}
                                 >
-                                  Foundational Literacy and Numeracy questions
-                                  that require text responses
+                                  {t("selfAssessment.sections.flnDescription")}
                                 </Typography>
                               </Box>
 
@@ -4353,7 +4873,7 @@ const SelfAssessment = () => {
                               ) : isErrorQuestions ? (
                                 <Alert severity="error">
                                   {isErrorQuestions?.message ||
-                                    "Failed to load questions"}
+                                    t("selfAssessment.failedToLoadQuestions")}
                                 </Alert>
                               ) : (
                                 <Box
@@ -4729,7 +5249,7 @@ const SelfAssessment = () => {
                                       color: colors.text.primary,
                                     }}
                                   >
-                                    General Questions
+                                    {t("selfAssessment.sections.generalTitle")}
                                   </Typography>
                                 </Box>
                                 <Typography
@@ -4739,8 +5259,7 @@ const SelfAssessment = () => {
                                     fontSize: "0.875rem",
                                   }}
                                 >
-                                  General assessment questions that don't
-                                  require classroom observation
+                                  {t("selfAssessment.sections.generalDescription")}
                                 </Typography>
                               </Box>
 
@@ -4759,7 +5278,7 @@ const SelfAssessment = () => {
                               ) : isErrorQuestions ? (
                                 <Alert severity="error">
                                   {isErrorQuestions?.message ||
-                                    "Failed to load questions"}
+                                    t("selfAssessment.failedToLoadQuestions")}
                                 </Alert>
                               ) : (
                                 <Box
@@ -4985,130 +5504,273 @@ const SelfAssessment = () => {
                                                     </RadioGroup>
                                                   </FormControl>
                                                 )}
-                                                {questionAllowsImageUpload(question) && (
+                                              {questionAllowsImageUpload(
+                                                question,
+                                              ) && (
+                                                <Box
+                                                  sx={{
+                                                    mt: 2.5,
+                                                    pt: 2.5,
+                                                    borderTop: `1px solid ${colors.neutral.gray200}`,
+                                                  }}
+                                                >
                                                   <Box
                                                     sx={{
-                                                      mt: 2.5,
-                                                      pt: 2.5,
-                                                      borderTop: `1px solid ${colors.neutral.gray200}`,
+                                                      display: "flex",
+                                                      alignItems: "center",
+                                                      gap: 1,
+                                                      mb: 1.5,
                                                     }}
                                                   >
-                                                    <Box
+                                                    <PhotoCamera
                                                       sx={{
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        gap: 1,
-                                                        mb: 1.5,
+                                                        fontSize: 18,
+                                                        color:
+                                                          colors.primary.blue,
+                                                      }}
+                                                    />
+                                                    <Typography
+                                                      variant="subtitle2"
+                                                      sx={{
+                                                        fontWeight: 600,
+                                                        color:
+                                                          colors.text.primary,
                                                       }}
                                                     >
-                                                      <PhotoCamera sx={{ fontSize: 18, color: colors.primary.blue }} />
-                                                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: colors.text.primary }}>
-                                                        Add photos (up to 2)
-                                                      </Typography>
-                                                    </Box>
-                                                    <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-                                                      {[0, 1].map((idx) => {
-                                                        const imgs = getMcqImagesForQuestion(question.questionId);
-                                                        const item = imgs[idx];
-                                                        const src = getMcqImagePreviewSrc(item);
-                                                        const location = getMcqImageLocation(item);
-                                                        return (
-                                                          <Box
-                                                            key={idx}
-                                                            sx={{
-                                                              position: "relative",
-                                                              width: 160,
-                                                              borderRadius: 2,
-                                                              overflow: "hidden",
-                                                              border: "2px dashed",
-                                                              borderColor: src ? "transparent" : colors.neutral.gray300,
-                                                              bgcolor: src ? "transparent" : colors.background.secondary,
-                                                              display: "flex",
-                                                              flexDirection: "column",
-                                                              alignItems: "stretch",
-                                                              justifyContent: "center",
-                                                              transition: "border-color 0.2s, box-shadow 0.2s",
-                                                              "&:hover": src
-                                                                ? {}
-                                                                : { borderColor: colors.primary.light, bgcolor: colors.primary.lightest + "40" },
-                                                            }}
-                                                          >
-                                                            {src ? (
-                                                              <>
-                                                                <Box sx={{ position: "relative", width: "100%", height: 110 }}>
-                                                                  <Box
-                                                                    component="img"
-                                                                    src={src}
-                                                                    alt={`Capture ${idx + 1}`}
-                                                                    sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                                                                  />
-                                                                  <IconButton
-                                                                    size="small"
-                                                                    sx={{
-                                                                      position: "absolute",
-                                                                      top: 6,
-                                                                      right: 6,
-                                                                      bgcolor: "rgba(0,0,0,0.55)",
-                                                                      color: "white",
-                                                                      "&:hover": { bgcolor: "rgba(0,0,0,0.75)" },
-                                                                      width: 28,
-                                                                      height: 28,
-                                                                    }}
-                                                                    onClick={() => handleMcqImageRemove(question.questionId, idx)}
-                                                                  >
-                                                                    <Close sx={{ fontSize: 16 }} />
-                                                                  </IconButton>
-                                                                </Box>
-                                                                {location && (
-                                                                  <Box
-                                                                    sx={{
-                                                                      px: 1,
-                                                                      py: 0.75,
-                                                                      bgcolor: "rgba(0,0,0,0.65)",
-                                                                      color: "white",
-                                                                      fontSize: "0.7rem",
-                                                                      lineHeight: 1.3,
-                                                                      borderTop: "1px solid rgba(255,255,255,0.15)",
-                                                                    }}
-                                                                  >
-                                                                    {location.latitude != null && location.longitude != null && (
-                                                                      <Box component="span" sx={{ opacity: 0.95 }}>
-                                                                        {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
-                                                                      </Box>
-                                                                    )}
-                                                                    {location.address && (
-                                                                      <Box sx={{ mt: 0.25 }} component="div">
-                                                                        {location.address.length > 48 ? location.address.slice(0, 48) + "…" : location.address}
-                                                                      </Box>
-                                                                    )}
-                                                                  </Box>
-                                                                )}
-                                                              </>
-                                                            ) : (
-                                                              <Button
-                                                                fullWidth
-                                                                disableRipple
-                                                                startIcon={<PhotoCamera sx={{ fontSize: 22, color: colors.neutral.gray500 }} />}
-                                                                onClick={() => handleMcqImageCaptureClick(question.questionId, idx)}
-                                                                disabled={!isPublished || isSubmitted}
+                                                      Add photos (up to 2)
+                                                    </Typography>
+                                                  </Box>
+                                                  <Box
+                                                    sx={{
+                                                      display: "flex",
+                                                      gap: 2,
+                                                      flexWrap: "wrap",
+                                                    }}
+                                                  >
+                                                    {[0, 1].map((idx) => {
+                                                      const imgs =
+                                                        getMcqImagesForQuestion(
+                                                          question.questionId,
+                                                        );
+                                                      const item = imgs[idx];
+                                                      const src =
+                                                        getMcqImagePreviewSrc(
+                                                          item,
+                                                        );
+                                                      const location =
+                                                        getMcqImageLocation(
+                                                          item,
+                                                        );
+                                                      return (
+                                                        <Box
+                                                          key={idx}
+                                                          sx={{
+                                                            position:
+                                                              "relative",
+                                                            width: 160,
+                                                            borderRadius: 2,
+                                                            overflow: "hidden",
+                                                            border:
+                                                              "2px dashed",
+                                                            borderColor: src
+                                                              ? "transparent"
+                                                              : colors.neutral
+                                                                  .gray300,
+                                                            bgcolor: src
+                                                              ? "transparent"
+                                                              : colors
+                                                                  .background
+                                                                  .secondary,
+                                                            display: "flex",
+                                                            flexDirection:
+                                                              "column",
+                                                            alignItems:
+                                                              "stretch",
+                                                            justifyContent:
+                                                              "center",
+                                                            transition:
+                                                              "border-color 0.2s, box-shadow 0.2s",
+                                                            "&:hover": src
+                                                              ? {}
+                                                              : {
+                                                                  borderColor:
+                                                                    colors
+                                                                      .primary
+                                                                      .light,
+                                                                  bgcolor:
+                                                                    colors
+                                                                      .primary
+                                                                      .lightest +
+                                                                    "40",
+                                                                },
+                                                          }}
+                                                        >
+                                                          {src ? (
+                                                            <>
+                                                              <Box
                                                                 sx={{
-                                                                  height: 120,
-                                                                  flexDirection: "column",
-                                                                  textTransform: "none",
-                                                                  color: colors.neutral.gray600,
-                                                                  fontSize: "0.8rem",
-                                                                  "& .MuiButton-startIcon": { margin: 0, mb: 0.5 },
+                                                                  position:
+                                                                    "relative",
+                                                                  width: "100%",
+                                                                  height: 110,
                                                                 }}
                                                               >
-                                                                Capture image
-                                                              </Button>
-                                                            )}
-                                                          </Box>
-                                                        );
-                                                      })}
-                                                    </Box>
+                                                                <Box
+                                                                  component="img"
+                                                                  src={src}
+                                                                  alt={`Capture ${idx + 1}`}
+                                                                  sx={{
+                                                                    width:
+                                                                      "100%",
+                                                                    height:
+                                                                      "100%",
+                                                                    objectFit:
+                                                                      "cover",
+                                                                    display:
+                                                                      "block",
+                                                                  }}
+                                                                />
+                                                                <IconButton
+                                                                  size="small"
+                                                                  sx={{
+                                                                    position:
+                                                                      "absolute",
+                                                                    top: 6,
+                                                                    right: 6,
+                                                                    bgcolor:
+                                                                      "rgba(0,0,0,0.55)",
+                                                                    color:
+                                                                      "white",
+                                                                    "&:hover": {
+                                                                      bgcolor:
+                                                                        "rgba(0,0,0,0.75)",
+                                                                    },
+                                                                    width: 28,
+                                                                    height: 28,
+                                                                  }}
+                                                                  onClick={() =>
+                                                                    handleMcqImageRemove(
+                                                                      question.questionId,
+                                                                      idx,
+                                                                    )
+                                                                  }
+                                                                >
+                                                                  <Close
+                                                                    sx={{
+                                                                      fontSize: 16,
+                                                                    }}
+                                                                  />
+                                                                </IconButton>
+                                                              </Box>
+                                                              {location && (
+                                                                <Box
+                                                                  sx={{
+                                                                    px: 1,
+                                                                    py: 0.75,
+                                                                    bgcolor:
+                                                                      "rgba(0,0,0,0.65)",
+                                                                    color:
+                                                                      "white",
+                                                                    fontSize:
+                                                                      "0.7rem",
+                                                                    lineHeight: 1.3,
+                                                                    borderTop:
+                                                                      "1px solid rgba(255,255,255,0.15)",
+                                                                  }}
+                                                                >
+                                                                  {location.latitude !=
+                                                                    null &&
+                                                                    location.longitude !=
+                                                                      null && (
+                                                                      <Box
+                                                                        component="span"
+                                                                        sx={{
+                                                                          opacity: 0.95,
+                                                                        }}
+                                                                      >
+                                                                        {location.latitude.toFixed(
+                                                                          5,
+                                                                        )}
+                                                                        ,{" "}
+                                                                        {location.longitude.toFixed(
+                                                                          5,
+                                                                        )}
+                                                                      </Box>
+                                                                    )}
+                                                                  {location.address && (
+                                                                    <Box
+                                                                      sx={{
+                                                                        mt: 0.25,
+                                                                      }}
+                                                                      component="div"
+                                                                    >
+                                                                      {location
+                                                                        .address
+                                                                        .length >
+                                                                      48
+                                                                        ? location.address.slice(
+                                                                            0,
+                                                                            48,
+                                                                          ) +
+                                                                          "…"
+                                                                        : location.address}
+                                                                    </Box>
+                                                                  )}
+                                                                </Box>
+                                                              )}
+                                                            </>
+                                                          ) : (
+                                                            <Button
+                                                              fullWidth
+                                                              disableRipple
+                                                              startIcon={
+                                                                <PhotoCamera
+                                                                  sx={{
+                                                                    fontSize: 22,
+                                                                    color:
+                                                                      colors
+                                                                        .neutral
+                                                                        .gray500,
+                                                                  }}
+                                                                />
+                                                              }
+                                                              onClick={() =>
+                                                                handleMcqImageCaptureClick(
+                                                                  question.questionId,
+                                                                  idx,
+                                                                )
+                                                              }
+                                                              disabled={
+                                                                !isPublished ||
+                                                                isSubmitted
+                                                              }
+                                                              sx={{
+                                                                height: 120,
+                                                                flexDirection:
+                                                                  "column",
+                                                                textTransform:
+                                                                  "none",
+                                                                color:
+                                                                  colors.neutral
+                                                                    .gray600,
+                                                                fontSize:
+                                                                  "0.8rem",
+                                                                "& .MuiButton-startIcon":
+                                                                  {
+                                                                    margin: 0,
+                                                                    mb: 0.5,
+                                                                  },
+                                                              }}
+                                                            >
+                                                              Capture image
+                                                            </Button>
+                                                          )}
+                                                        </Box>
+                                                      );
+                                                    })}
                                                   </Box>
-                                                )}
+                                                </Box>
+                                              )}
                                             </CardContent>
                                           )}
                                         </Card>
@@ -5567,7 +6229,7 @@ const SelfAssessment = () => {
                       flexDirection: "column",
                     }}
                   >
-                    {domains.length > 0 ? (
+                    {currentChartData.length > 0 ? (
                       <Box
                         sx={{
                           display: "flex",
@@ -5584,8 +6246,20 @@ const SelfAssessment = () => {
                             mb: 1,
                           }}
                         >
-                          Domain Progress Overview
+                          {assessments.length > 1 && !chartDrilldownAssessmentId
+                            ? "Assessment Progress Overview"
+                            : "Domain Progress Overview"}
                         </Typography>
+                        {assessments.length > 1 && chartDrilldownAssessmentId && (
+                          <Button
+                            size="small"
+                            variant="text"
+                            onClick={() => setChartDrilldownAssessmentId(null)}
+                            sx={{ alignSelf: "flex-start", textTransform: "none" }}
+                          >
+                            Back to Assessments
+                          </Button>
+                        )}
                         <Box
                           sx={{
                             flex: 1,
@@ -5595,7 +6269,7 @@ const SelfAssessment = () => {
                         >
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart
-                              data={chartData}
+                              data={currentChartData}
                               layout="vertical"
                               margin={{
                                 top: 20,
@@ -5641,7 +6315,31 @@ const SelfAssessment = () => {
                                 dataKey="progress"
                                 radius={[0, 8, 8, 0]}
                                 onClick={(data) => {
-                                  const domain = domains.find(
+                                  if (
+                                    assessments.length > 1 &&
+                                    !chartDrilldownAssessmentId
+                                  ) {
+                                    const assessment = assessments.find(
+                                      (a) => a.assessmentId === data.assessmentId
+                                    );
+                                    if (assessment) {
+                                      handleAssessmentSelect(assessment);
+                                      setChartDrilldownAssessmentId(
+                                        assessment.assessmentId
+                                      );
+                                    }
+                                    return;
+                                  }
+
+                                  const sourceDomains = chartDrilldownAssessmentId
+                                    ? assessments.find(
+                                        (a) =>
+                                          a.assessmentId ===
+                                          chartDrilldownAssessmentId
+                                      )?.domains || []
+                                    : domains;
+
+                                  const domain = sourceDomains.find(
                                     (d) => d.domainId === data.domainId,
                                   );
                                   if (domain) {
@@ -5650,7 +6348,7 @@ const SelfAssessment = () => {
                                 }}
                                 cursor="pointer"
                               >
-                                {chartData.map((entry, index) => (
+                                {currentChartData.map((entry, index) => (
                                   <Cell
                                     key={`cell-${index}`}
                                     fill={entry.color}

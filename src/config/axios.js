@@ -1,4 +1,5 @@
 import axios from "axios";
+import { enqueueSnackbar } from "notistack";
 import useAuthStore from "../store/useAuthStore";
 
 // Base URL for API
@@ -7,12 +8,23 @@ const BASE_URL =
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
-  timeout: 30000,
+  // Keep timeout shorter so requests fail and UI can show errors promptly.
+  timeout: 15000,
   headers: {
     "Content-Type": "application/json",
     "ngrok-skip-browser-warning": "true",
   },
 });
+
+let lastNetworkErrorToastAt = 0;
+const NETWORK_ERROR_TOAST_COOLDOWN_MS = 3000;
+
+const showNetworkErrorToast = (message) => {
+  const now = Date.now();
+  if (now - lastNetworkErrorToastAt < NETWORK_ERROR_TOAST_COOLDOWN_MS) return;
+  lastNetworkErrorToastAt = now;
+  enqueueSnackbar(message, { variant: "error" });
+};
 
 axiosInstance.interceptors.request.use(
   (config) => {
@@ -55,6 +67,21 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   async (error) => {
+    // Normalize network/timeout errors so screens can show user-friendly messages.
+    if (error.code === "ECONNABORTED") {
+      error.message =
+        "Request timed out. Please check your network connection and try again.";
+      showNetworkErrorToast(error.message);
+      return Promise.reject(error);
+    }
+
+    if (!error.response) {
+      error.message =
+        "Network error. Please check your internet connection and try again.";
+      showNetworkErrorToast(error.message);
+      return Promise.reject(error);
+    }
+
     const errorMessage = error.response?.data?.message;
     
     // Check for "Invalid token" message in error responses
