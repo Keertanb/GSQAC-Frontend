@@ -50,6 +50,7 @@ import {
   useTranslateTextMutation,
   usePublishAssessmentMutation,
   useGetAssessmentsQuery,
+  useGetSchoolManagementQuery,
   useUpdateAssessmentMutation,
   useCloneAssessmentMutation,
   useDeleteDomainMutation,
@@ -123,6 +124,7 @@ const AssessmentManagement = () => {
     useState(null);
   const [newAssessment, setNewAssessment] = useState({
     schoolType: "1", // Default to Primary (1-8)
+    management: "",
     assessmentEn: "",
     assessmentHi: "",
     assessmentGu: "",
@@ -133,6 +135,7 @@ const AssessmentManagement = () => {
     setDuplicateSourceAssessment(null);
     setNewAssessment({
       schoolType: "1",
+      management: "",
       assessmentEn: "",
       assessmentHi: "",
       assessmentGu: "",
@@ -145,6 +148,12 @@ const AssessmentManagement = () => {
     setDuplicateSourceAssessment(assessment);
     setNewAssessment({
       schoolType: assessment.schoolType?.toString() || "1",
+      management: (
+        assessment.management ??
+        assessment.smId ??
+        assessment.managementId ??
+        ""
+      )?.toString(),
       assessmentEn: assessment.assessmentEn || "",
       assessmentHi: assessment.assessmentHi || "",
       assessmentGu: assessment.assessmentGu || "",
@@ -157,6 +166,12 @@ const AssessmentManagement = () => {
     setEditingAssessment(assessment);
     setNewAssessment({
       schoolType: assessment.schoolType?.toString() || "1",
+      management: (
+        assessment.management ??
+        assessment.smId ??
+        assessment.managementId ??
+        ""
+      )?.toString(),
       assessmentEn: assessment.assessmentEn || "",
       assessmentHi: assessment.assessmentHi || "",
       assessmentGu: assessment.assessmentGu || "",
@@ -388,6 +403,9 @@ const AssessmentManagement = () => {
     error: assessmentsError,
     refetch: refetchAssessments,
   } = useGetAssessmentsQuery();
+
+  const { data: schoolManagementData } = useGetSchoolManagementQuery();
+  const schoolManagementOptions = schoolManagementData?.data || [];
 
   const {
     data: assessmentRoleAssignmentsData,
@@ -839,6 +857,11 @@ const AssessmentManagement = () => {
         assessmentId: editingAssessment.assessmentId,
         isActive: editingAssessment.isActive,
         schoolType: editingAssessment.schoolType,
+        management:
+          editingAssessment.management ??
+          editingAssessment.smId ??
+          editingAssessment.managementId ??
+          null,
         assessmentEn: tempAssessmentName.en,
         assessmentHi: tempAssessmentName.hi,
         assessmentGu: tempAssessmentName.gu,
@@ -874,6 +897,11 @@ const AssessmentManagement = () => {
         assessmentHi: assessment.assessmentHi || "",
         assessmentGu: assessment.assessmentGu || "",
         schoolType: assessment.schoolType,
+        management:
+          assessment.management ??
+          assessment.smId ??
+          assessment.managementId ??
+          null,
         isActive: newIsActive,
       };
 
@@ -1694,6 +1722,7 @@ const AssessmentManagement = () => {
           setAddAssessmentModalOpen(false);
           setNewAssessment({
             schoolType: "1",
+            management: "",
             assessmentEn: "",
             assessmentHi: "",
             assessmentGu: "",
@@ -1747,6 +1776,30 @@ const AssessmentManagement = () => {
                 <MenuItem value="2">
                   {t("assessment.management.schoolTypes.secondary")}
                 </MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth size="small">
+              <InputLabel>
+                {t("assessment.management.schoolManagement")}
+              </InputLabel>
+              <Select
+                value={newAssessment.management}
+                label={t("assessment.management.schoolManagement")}
+                onChange={(e) =>
+                  setNewAssessment((prev) => ({
+                    ...prev,
+                    management: e.target.value,
+                  }))
+                }
+              >
+                <MenuItem value="">
+                  <em>{t("assessment.management.selectSchoolManagement")}</em>
+                </MenuItem>
+                {schoolManagementOptions.map((management) => (
+                  <MenuItem key={management.smId} value={String(management.smId)}>
+                    {management.managementName}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             <TextField
@@ -1814,6 +1867,7 @@ const AssessmentManagement = () => {
               (duplicateSourceAssessment
                 ? cloneAssessmentMutation.isPending
                 : updateAssessmentMutation.isPending) ||
+              !newAssessment.management ||
               !newAssessment.assessmentEn?.trim() ||
               !newAssessment.assessmentGu?.trim()
             }
@@ -1821,7 +1875,8 @@ const AssessmentManagement = () => {
               const nameEn = newAssessment.assessmentEn?.trim();
               const nameGu = newAssessment.assessmentGu?.trim();
               const nameHi = newAssessment.assessmentHi?.trim() || "";
-              if (!nameEn || !nameGu) {
+              const managementId = Number(newAssessment.management);
+              if (!nameEn || !nameGu || !managementId) {
                 enqueueSnackbar(t("assessment.management.addProperAssessmentName"), {
                   variant: "warning",
                 });
@@ -1841,6 +1896,7 @@ const AssessmentManagement = () => {
                       setAddAssessmentModalOpen(false);
                       setNewAssessment({
                         schoolType: "1",
+                        management: "",
                         assessmentEn: "",
                         assessmentHi: "",
                         assessmentGu: "",
@@ -1859,6 +1915,7 @@ const AssessmentManagement = () => {
                   assessmentId: editingAssessment.assessmentId,
                 }),
                 schoolType: parseInt(newAssessment.schoolType, 10),
+                management: managementId,
                 assessmentEn: nameEn,
                 assessmentHi: nameHi,
                 assessmentGu: nameGu,
@@ -1875,6 +1932,7 @@ const AssessmentManagement = () => {
                   setAddAssessmentModalOpen(false);
                   setNewAssessment({
                     schoolType: "1",
+                    management: "",
                     assessmentEn: "",
                     assessmentHi: "",
                     assessmentGu: "",

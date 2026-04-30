@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, IconButton } from "@mui/material";
-import { Lock as LockIcon, Menu as MenuIcon, Close as CloseIcon } from "@mui/icons-material";
+import {
+  Lock as LockIcon,
+  Menu as MenuIcon,
+  Close as CloseIcon,
+} from "@mui/icons-material";
 import useAuthStore from "../../store/useAuthStore";
-import FeatureCard from "../../components/FeatureCard/FeatureCard";
-import DomainPill from "../../components/DomainPill/DomainPill";
-import SectionBadge from "../../components/SectionBadge/SectionBadge";
 // Import CSS at the top level to ensure it's loaded
 import "./dashboard.css";
 
@@ -134,7 +135,9 @@ const Dashboard = () => {
         tabIndex={0}
         aria-label="Close menu"
       />
-      <div className={`mobile-nav-drawer ${mobileMenuOpen ? "mobile-nav-open" : ""}`}>
+      <div
+        className={`mobile-nav-drawer ${mobileMenuOpen ? "mobile-nav-open" : ""}`}
+      >
         <div className="mobile-nav-header">
           <span className="mobile-nav-title">Menu</span>
           <IconButton
@@ -146,16 +149,32 @@ const Dashboard = () => {
           </IconButton>
         </div>
         <nav className="mobile-nav">
-          <a href="#" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+          <a
+            href="#"
+            className="mobile-nav-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
             Home
           </a>
-          <a href="#" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+          <a
+            href="#"
+            className="mobile-nav-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
             Schools
           </a>
-          <a href="#" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+          <a
+            href="#"
+            className="mobile-nav-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
             About
           </a>
-          <a href="#" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+          <a
+            href="#"
+            className="mobile-nav-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
             Grievance
           </a>
           <Button

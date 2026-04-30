@@ -962,6 +962,15 @@ export const getAssessments = async (academicYear) => {
 };
 
 /**
+ * Get school management list
+ * @returns {Promise} API response
+ */
+export const getSchoolManagement = async () => {
+  const response = await axiosInstance.get("/admin/school-management");
+  return response.data;
+};
+
+/**
  * Update assessment details
  * @param {Object} payload - { assessmentId, roleId, isPublished, startDate, endDate }
  * @returns {Promise} API response
@@ -1058,6 +1067,18 @@ export const useGetAssessmentsQuery = (academicYear, options = {}) => {
       : ["admin", "assessments"],
     queryFn: () => getAssessments(academicYear),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    ...options,
+  });
+};
+
+/**
+ * React Query hook to get school management list
+ */
+export const useGetSchoolManagementQuery = (options = {}) => {
+  return useQuery({
+    queryKey: ["admin", "school-management"],
+    queryFn: getSchoolManagement,
+    staleTime: 10 * 60 * 1000,
     ...options,
   });
 };

@@ -48,6 +48,8 @@
       "editAssessment": "Edit Assessment",
       "duplicateFrom": "Duplicate from",
       "schoolType": "School Type",
+      "schoolManagement": "School Management",
+      "selectSchoolManagement": "Select School Management",
       "schoolTypes": {
         "primary": "Primary (Class 1 to 8)",
         "secondary": "Secondary (Class 9 to 12)",
