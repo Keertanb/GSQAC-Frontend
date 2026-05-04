@@ -1345,8 +1345,6 @@ const CRCAssessment = () => {
           };
           submitAssessmentMutation.mutate(sessionPayload);
         } else {
-          // Refetch questions and domains to update progress bars
-          refetchQuestions();
           refetchDomains();
         }
         // Optionally clear answers or navigate

@@ -1,8 +1,21 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import axiosInstance from "../config/axios";
 import { queryKeys } from "../config/queryClient";
+import { queryClient } from "../lib/queryClient";
 import { enqueueSnackbar } from "notistack";
 import useAuthStore from "../store/useAuthStore";
+import { getRoleId } from "../constants/roles";
+
+/** @param {Object} payload */
+function resolveSubdomainSubmitRoleId(payload) {
+  if (payload?.roleId != null && payload.roleId !== "") {
+    return Number(payload.roleId);
+  }
+  const authRole = useAuthStore.getState().role;
+  if (!authRole) return null;
+  const id = getRoleId(authRole);
+  return id != null ? Number(id) : null;
+}
 
 /**
  * Get domains and subdomains for school
@@ -137,14 +150,22 @@ export const getSchoolSections = async (params) => {
 
 /**
  * Submit subdomain-wise answers
- * @param {Object} payload - { isAns: number, subDomainId: number, cls: number, section: string, questionType: number, answers: Array }
+ * @param {Object} payload - { isAns: number, subDomainId: number, cls: number, section: string, questionType: number, answers: Array, roleId?: number }
  * @param {number} payload.questionType - Question type (1: General, 2: Classroom Observation, 3: Subject Observation, 4: FLN)
  * @returns {Promise} API response
  */
 export const submitSubdomainWiseAnswers = async (payload) => {
+  const roleId = resolveSubdomainSubmitRoleId(payload);
+  const body = {
+    ...payload,
+    ...(roleId != null ? { roleId } : {}),
+  };
+  const config =
+    roleId != null ? { headers: { roleId } } : undefined;
   const response = await axiosInstance.post(
     "/school/sub-domain-wise-submit-answers",
-    payload
+    body,
+    config
   );
   return response.data;
 };
@@ -242,35 +263,40 @@ export const useGetSchoolSectionsQuery = ({ schoolId, enabled = true }) => {
  * @returns {Object} Mutation object from React Query
  */
 export const useSubmitSubdomainWiseAnswersMutation = (options = {}) => {
+  const { onSuccess: userOnSuccess, onError: userOnError, ...rest } = options;
   return useMutation({
     mutationFn: (data) => submitSubdomainWiseAnswers(data),
     mutationKey: queryKeys.school.submitSubdomainWiseAnswers(),
-    onSuccess: (data) => {
-      enqueueSnackbar(data?.message || "Answers submitted successfully", {
-        variant: "success",
+    onSuccess: async (data, variables, context) => {
+      await queryClient.invalidateQueries({
+        queryKey: ["admin", "subdomain-questions"],
       });
-      if (options.onSuccess) {
-        options.onSuccess(data);
+      if (userOnSuccess) {
+        await userOnSuccess(data, variables, context);
+      } else {
+        enqueueSnackbar(data?.message || "Answers submitted successfully", {
+          variant: "success",
+        });
       }
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
       enqueueSnackbar(
         error?.response?.data?.message || "Failed to submit answers",
         {
           variant: "error",
         }
       );
-      if (options.onError) {
-        options.onError(error);
+      if (userOnError) {
+        userOnError(error, variables, context);
       }
     },
-    ...options,
+    ...rest,
   });
 };
 
 /**
  * Submit assessment
- * @param {Object} payload - { userId: number, isSubmitted: number }
+ * @param {Object} payload - { assessmentId, sessionId, userId, roleId, schoolId, isSubmitted }
  * @returns {Promise} API response
  */
 export const submitAssessment = async (payload) => {

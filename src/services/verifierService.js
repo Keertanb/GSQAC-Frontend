@@ -3,6 +3,18 @@ import axiosInstance from "../config/axios";
 import { queryKeys } from "../config/queryClient";
 import { enqueueSnackbar } from "notistack";
 import useAuthStore from "../store/useAuthStore";
+import { getRoleId } from "../constants/roles";
+
+/** @param {Object} payload */
+function resolveSubdomainSubmitRoleId(payload) {
+  if (payload?.roleId != null && payload.roleId !== "") {
+    return Number(payload.roleId);
+  }
+  const authRole = useAuthStore.getState().role;
+  if (!authRole) return null;
+  const id = getRoleId(authRole);
+  return id != null ? Number(id) : null;
+}
 
 /**
  * Get domains and subdomains for verifier/inspector
@@ -99,14 +111,22 @@ export const submitAnswer = async (payload) => {
 
 /**
  * Submit all answers for a subdomain
- * @param {Object} payload - Answers payload (should include schoolId, questionType)
+ * @param {Object} payload - Answers payload (should include schoolId, questionType, roleId optional)
  * @param {number} payload.questionType - Question type (1: General, 2: Classroom Observation, 3: Subject Observation, 4: FLN)
  * @returns {Promise} API response
  */
 export const submitSubdomainWiseAnswers = async (payload) => {
+  const roleId = resolveSubdomainSubmitRoleId(payload);
+  const body = {
+    ...payload,
+    ...(roleId != null ? { roleId } : {}),
+  };
+  const config =
+    roleId != null ? { headers: { roleId } } : undefined;
   const response = await axiosInstance.post(
-    "school/sub-domain-wise-submit-answers",
-    payload
+    "/school/sub-domain-wise-submit-answers",
+    body,
+    config
   );
   return response.data;
 };

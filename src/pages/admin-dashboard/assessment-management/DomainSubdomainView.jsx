@@ -70,7 +70,7 @@ const DomainSubdomainView = ({
     roleId
       ? Object.keys(roleIdMap).find((key) => roleIdMap[key] === roleId) ||
           "admin"
-      : "admin"
+      : "admin",
   );
   const [editingSubdomain, setEditingSubdomain] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -83,9 +83,9 @@ const DomainSubdomainView = ({
       const isEdit = variables?.subDomainId !== undefined;
       enqueueSnackbar(
         isEdit
-          ? (data?.message || "Subdomain updated successfully")
-          : (data?.message || "Subdomain added successfully"),
-        { variant: "success" }
+          ? data?.message || "Subdomain updated successfully"
+          : data?.message || "Subdomain added successfully",
+        { variant: "success" },
       );
       setNewSubdomainName({ en: "", hi: "", gu: "" });
       setShowAddSubdomain(false);
@@ -180,10 +180,10 @@ const DomainSubdomainView = ({
     // Check if at least 2 languages are provided
     if (filledLanguages.length < 2) {
       enqueueSnackbar(
-        "Please add subdomain name in at least 2 languages (Gujarati, English, or Hindi).",
+        "Please add subdomain name in at least 2 languages (Gujarati, English).",
         {
           variant: "warning",
-        }
+        },
       );
       return;
     }
@@ -216,7 +216,7 @@ const DomainSubdomainView = ({
 
     // Set selected role based on domain's roleId
     const subdomainRole = Object.keys(roleIdMap).find(
-      (key) => roleIdMap[key] === domain.roleId
+      (key) => roleIdMap[key] === domain.roleId,
     );
     if (subdomainRole) {
       setSelectedSubdomainRole(subdomainRole);
@@ -348,7 +348,7 @@ const DomainSubdomainView = ({
                 <TextField
                   fullWidth
                   label={`${t(
-                    "assessment.subdomain.subdomainName"
+                    "assessment.subdomain.subdomainName",
                   )} (Gujarati)`}
                   value={newSubdomainName.gu}
                   onChange={(e) =>
@@ -531,7 +531,7 @@ const DomainSubdomainView = ({
         message={
           subdomainToDelete
             ? `Are you sure you want to delete "${getSubdomainName(
-                subdomainToDelete
+                subdomainToDelete,
               )}"? This action cannot be undone.`
             : "Are you sure you want to delete this subdomain?"
         }

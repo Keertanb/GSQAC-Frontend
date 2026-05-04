@@ -1,8 +1,21 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import axiosInstance from "../config/axios";
 import { queryKeys } from "../config/queryClient";
+import { queryClient } from "../lib/queryClient";
 import { enqueueSnackbar } from "notistack";
 import useAuthStore from "../store/useAuthStore";
+import { getRoleId } from "../constants/roles";
+
+/** @param {Object} payload */
+function resolveSubdomainSubmitRoleId(payload) {
+  if (payload?.roleId != null && payload.roleId !== "") {
+    return Number(payload.roleId);
+  }
+  const authRole = useAuthStore.getState().role;
+  if (!authRole) return null;
+  const id = getRoleId(authRole);
+  return id != null ? Number(id) : null;
+}
 
 /**
  * Get domains and subdomains for CRC
@@ -106,23 +119,25 @@ export const submitAnswer = async (payload) => {
 
 /**
  * Submit all answers for a subdomain
- * @param {Object} payload - Answers payload
+ * @param {Object} payload - Answers payload (include questionType: 1–4 when applicable)
  * @param {string} schoolId - School ID to send in payload
  * @returns {Promise} API response
  */
 export const submitSubdomainWiseAnswers = async (payload, schoolId) => {
-  // Remove questionType from payload
-  const { questionType, ...payloadWithoutQuestionType } = payload;
-  
-  // Add schoolId to payload if provided
+  const roleId = resolveSubdomainSubmitRoleId(payload);
+
   const finalPayload = {
-    ...payloadWithoutQuestionType,
+    ...payload,
     ...(schoolId && { schoolId }),
+    ...(roleId != null ? { roleId } : {}),
   };
 
+  const config =
+    roleId != null ? { headers: { roleId } } : undefined;
   const response = await axiosInstance.post(
     "/school/sub-domain-wise-submit-answers",
-    finalPayload
+    finalPayload,
+    config
   );
   return response.data;
 };
@@ -244,39 +259,46 @@ export const useSubmitAnswerMutation = (options = {}) => {
  * @returns {Object} Mutation object from React Query
  */
 export const useSubmitSubdomainWiseAnswersMutation = (options = {}) => {
-  const { schoolId, ...mutationOptions } = options;
+  const {
+    schoolId,
+    onSuccess: userOnSuccess,
+    onError: userOnError,
+    ...rest
+  } = options;
   return useMutation({
     mutationFn: (data) => {
-      // Use schoolId from options or from data
       const schoolIdToSend = schoolId || data.schoolId;
-      // Remove schoolId from payload if it exists
       const { schoolId: _, ...payload } = data;
       return submitSubdomainWiseAnswers(payload, schoolIdToSend);
     },
     mutationKey: queryKeys.crc.submitSubdomainWiseAnswers(),
-    onSuccess: (data) => {
-      enqueueSnackbar(
-        data?.message || "Answers submitted successfully",
-        {
-          variant: "success",
-        }
-      );
-      if (mutationOptions.onSuccess) {
-        mutationOptions.onSuccess(data);
+    onSuccess: async (data, variables, context) => {
+      await queryClient.invalidateQueries({
+        queryKey: ["crc", "subdomain-questions"],
+      });
+      if (userOnSuccess) {
+        await userOnSuccess(data, variables, context);
+      } else {
+        enqueueSnackbar(
+          data?.message || "Answers submitted successfully",
+          {
+            variant: "success",
+          }
+        );
       }
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
       enqueueSnackbar(
         error?.response?.data?.message || "Failed to submit answers",
         {
           variant: "error",
         }
       );
-      if (mutationOptions.onError) {
-        mutationOptions.onError(error);
+      if (userOnError) {
+        userOnError(error, variables, context);
       }
     },
-    ...mutationOptions,
+    ...rest,
   });
 };
 

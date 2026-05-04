@@ -382,8 +382,12 @@ const Login = () => {
                   variant="standard"
                   placeholder={`e.g. ${
                     selectedRole === "school"
-                      ? "SCH-2024-001"
-                      : "Enter Admin ID"
+                      ? "Enter School ID"
+                      : selectedRole === "admin"
+                        ? "Enter Admin ID"
+                        : selectedRole === "crc"
+                          ? "Enter Crc ID"
+                          : "Enter Verifier ID"
                   }`}
                   value={userId}
                   onChange={handleUserIdChange}

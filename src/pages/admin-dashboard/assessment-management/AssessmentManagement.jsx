@@ -37,7 +37,6 @@ import {
   Delete,
   Edit,
   Check,
-  Close,
   CameraAlt,
   ContentCopy,
 } from "@mui/icons-material";
@@ -97,6 +96,58 @@ const toDateInputValue = (dateStr) => {
   return parsed || "";
 };
 
+/** Private → 1, Public → 0 (matches GET /admin/assessment `managementName`) */
+const deriveManagementBinaryFromManagementName = (managementName) => {
+  if (managementName == null || managementName === "") return null;
+  const n = String(managementName).trim().toLowerCase();
+  if (n === "private" || n.includes("private")) return 1;
+  if (n === "public" || n.includes("public")) return 0;
+  return null;
+};
+
+/**
+ * Numeric `management` for POST /admin/assessment: prefer explicit id fields,
+ * else map `managementName` (Private=1, Public=0).
+ */
+const getAssessmentManagementForApi = (assessment) => {
+  if (!assessment) return null;
+  const explicit =
+    assessment.management ?? assessment.smId ?? assessment.managementId;
+  if (explicit !== undefined && explicit !== null && explicit !== "") {
+    const num = Number(explicit);
+    if (!Number.isNaN(num)) return num;
+  }
+  return deriveManagementBinaryFromManagementName(assessment.managementName);
+};
+
+/** Value for school-management Select: smId match, else "1"/"0" from managementName */
+const resolveAssessmentManagementSelectValue = (
+  assessment,
+  schoolManagementOptions = [],
+) => {
+  if (!assessment) return "";
+  const explicit =
+    assessment.management ?? assessment.smId ?? assessment.managementId;
+  if (explicit !== undefined && explicit !== null && explicit !== "") {
+    return String(explicit);
+  }
+  const name = assessment.managementName;
+  if (name && Array.isArray(schoolManagementOptions) && schoolManagementOptions.length) {
+    const match = schoolManagementOptions.find(
+      (o) =>
+        String(o.managementName ?? "")
+          .trim()
+          .toLowerCase() === String(name).trim().toLowerCase(),
+    );
+    if (match != null && match.smId !== undefined && match.smId !== null) {
+      return String(match.smId);
+    }
+  }
+  const derived = deriveManagementBinaryFromManagementName(name);
+  if (derived === 1 || derived === 0) return String(derived);
+  return "";
+};
+
 const AssessmentManagement = () => {
   const { t, i18n } = useTranslation();
 
@@ -139,42 +190,6 @@ const AssessmentManagement = () => {
       assessmentEn: "",
       assessmentHi: "",
       assessmentGu: "",
-    });
-    setAddAssessmentModalOpen(true);
-  };
-
-  const handleDuplicateAssessment = (assessment) => {
-    setEditingAssessment(null);
-    setDuplicateSourceAssessment(assessment);
-    setNewAssessment({
-      schoolType: assessment.schoolType?.toString() || "1",
-      management: (
-        assessment.management ??
-        assessment.smId ??
-        assessment.managementId ??
-        ""
-      )?.toString(),
-      assessmentEn: assessment.assessmentEn || "",
-      assessmentHi: assessment.assessmentHi || "",
-      assessmentGu: assessment.assessmentGu || "",
-    });
-    setAddAssessmentModalOpen(true);
-  };
-
-  const handleEditAssessment = (assessment) => {
-    setDuplicateSourceAssessment(null);
-    setEditingAssessment(assessment);
-    setNewAssessment({
-      schoolType: assessment.schoolType?.toString() || "1",
-      management: (
-        assessment.management ??
-        assessment.smId ??
-        assessment.managementId ??
-        ""
-      )?.toString(),
-      assessmentEn: assessment.assessmentEn || "",
-      assessmentHi: assessment.assessmentHi || "",
-      assessmentGu: assessment.assessmentGu || "",
     });
     setAddAssessmentModalOpen(true);
   };
@@ -407,6 +422,38 @@ const AssessmentManagement = () => {
   const { data: schoolManagementData } = useGetSchoolManagementQuery();
   const schoolManagementOptions = schoolManagementData?.data || [];
 
+  const handleDuplicateAssessment = (assessment) => {
+    setEditingAssessment(null);
+    setDuplicateSourceAssessment(assessment);
+    setNewAssessment({
+      schoolType: assessment.schoolType?.toString() || "1",
+      management: resolveAssessmentManagementSelectValue(
+        assessment,
+        schoolManagementOptions,
+      ),
+      assessmentEn: assessment.assessmentEn || "",
+      assessmentHi: assessment.assessmentHi || "",
+      assessmentGu: assessment.assessmentGu || "",
+    });
+    setAddAssessmentModalOpen(true);
+  };
+
+  const handleEditAssessment = (assessment) => {
+    setDuplicateSourceAssessment(null);
+    setEditingAssessment(assessment);
+    setNewAssessment({
+      schoolType: assessment.schoolType?.toString() || "1",
+      management: resolveAssessmentManagementSelectValue(
+        assessment,
+        schoolManagementOptions,
+      ),
+      assessmentEn: assessment.assessmentEn || "",
+      assessmentHi: assessment.assessmentHi || "",
+      assessmentGu: assessment.assessmentGu || "",
+    });
+    setAddAssessmentModalOpen(true);
+  };
+
   const {
     data: assessmentRoleAssignmentsData,
     isLoading: isLoadingAssessmentRoleAssignments,
@@ -435,7 +482,7 @@ const AssessmentManagement = () => {
             assignment &&
             assignment.assessmentId !== null &&
             assignment.assessmentId !== undefined &&
-            assignment.assessmentId !== ""
+            assignment.assessmentId !== "",
         )
         .map((assignment, index) => ({
           id: assignment?.id ?? null,
@@ -688,6 +735,17 @@ const AssessmentManagement = () => {
     });
   };
 
+  /** Trash in settings: remove unsaved row locally, or delete persisted assignment via API */
+  const handleRoleAssignmentTrashClick = (roleId, index) => {
+    const assignment = roleAssignments[roleId]?.[index];
+    if (!assignment) return;
+    if (assignment.isNew) {
+      handleRemoveRoleAssignmentRow(roleId, index);
+      return;
+    }
+    handleDeleteRoleAssignment(roleId, index);
+  };
+
   const handleDeleteDomain = (domain, event) => {
     event.stopPropagation();
     setDomainToDelete(domain);
@@ -733,7 +791,7 @@ const AssessmentManagement = () => {
     // Check if at least 2 languages are provided
     if (filledLanguages.length < 2) {
       enqueueSnackbar(
-        "Please add domain name in at least 2 languages (Gujarati, English, or Hindi).",
+        "Please add domain name in at least 2 languages (Gujarati, English).",
         {
           variant: "warning",
         },
@@ -857,11 +915,7 @@ const AssessmentManagement = () => {
         assessmentId: editingAssessment.assessmentId,
         isActive: editingAssessment.isActive,
         schoolType: editingAssessment.schoolType,
-        management:
-          editingAssessment.management ??
-          editingAssessment.smId ??
-          editingAssessment.managementId ??
-          null,
+        management: getAssessmentManagementForApi(editingAssessment),
         assessmentEn: tempAssessmentName.en,
         assessmentHi: tempAssessmentName.hi,
         assessmentGu: tempAssessmentName.gu,
@@ -897,11 +951,7 @@ const AssessmentManagement = () => {
         assessmentHi: assessment.assessmentHi || "",
         assessmentGu: assessment.assessmentGu || "",
         schoolType: assessment.schoolType,
-        management:
-          assessment.management ??
-          assessment.smId ??
-          assessment.managementId ??
-          null,
+        management: getAssessmentManagementForApi(assessment),
         isActive: newIsActive,
       };
 
@@ -1290,8 +1340,12 @@ const AssessmentManagement = () => {
                           label={
                             assessment.schoolType === 1 ||
                             assessment.schoolType === "1"
-                              ? t("assessment.management.schoolTypes.primaryShort")
-                              : t("assessment.management.schoolTypes.secondaryShort")
+                              ? t(
+                                  "assessment.management.schoolTypes.primaryShort",
+                                )
+                              : t(
+                                  "assessment.management.schoolTypes.secondaryShort",
+                                )
                           }
                           sx={{
                             bgcolor: colors.accent.purple + "15",
@@ -1449,7 +1503,9 @@ const AssessmentManagement = () => {
                             }}
                           >
                             <TextField
-                              label={t("assessment.management.domainNameGujarati")}
+                              label={t(
+                                "assessment.management.domainNameGujarati",
+                              )}
                               value={newDomainName.gu}
                               onChange={(e) =>
                                 setNewDomainName({
@@ -1461,7 +1517,9 @@ const AssessmentManagement = () => {
                               size="small"
                             />
                             <TextField
-                              label={t("assessment.management.domainNameEnglish")}
+                              label={t(
+                                "assessment.management.domainNameEnglish",
+                              )}
                               value={newDomainName.en}
                               onChange={(e) =>
                                 setNewDomainName({
@@ -1796,7 +1854,10 @@ const AssessmentManagement = () => {
                   <em>{t("assessment.management.selectSchoolManagement")}</em>
                 </MenuItem>
                 {schoolManagementOptions.map((management) => (
-                  <MenuItem key={management.smId} value={String(management.smId)}>
+                  <MenuItem
+                    key={management.smId}
+                    value={String(management.smId)}
+                  >
                     {management.managementName}
                   </MenuItem>
                 ))}
@@ -1851,6 +1912,7 @@ const AssessmentManagement = () => {
               setAddAssessmentModalOpen(false);
               setNewAssessment({
                 schoolType: "1",
+                management: "",
                 assessmentEn: "",
                 assessmentHi: "",
                 assessmentGu: "",
@@ -1867,7 +1929,8 @@ const AssessmentManagement = () => {
               (duplicateSourceAssessment
                 ? cloneAssessmentMutation.isPending
                 : updateAssessmentMutation.isPending) ||
-              !newAssessment.management ||
+              newAssessment.management === "" ||
+              newAssessment.management == null ||
               !newAssessment.assessmentEn?.trim() ||
               !newAssessment.assessmentGu?.trim()
             }
@@ -1876,10 +1939,19 @@ const AssessmentManagement = () => {
               const nameGu = newAssessment.assessmentGu?.trim();
               const nameHi = newAssessment.assessmentHi?.trim() || "";
               const managementId = Number(newAssessment.management);
-              if (!nameEn || !nameGu || !managementId) {
-                enqueueSnackbar(t("assessment.management.addProperAssessmentName"), {
-                  variant: "warning",
-                });
+              if (
+                !nameEn ||
+                !nameGu ||
+                newAssessment.management === "" ||
+                newAssessment.management == null ||
+                Number.isNaN(managementId)
+              ) {
+                enqueueSnackbar(
+                  t("assessment.management.addProperAssessmentName"),
+                  {
+                    variant: "warning",
+                  },
+                );
                 return;
               }
               if (duplicateSourceAssessment) {
@@ -2073,7 +2145,9 @@ const AssessmentManagement = () => {
                           }}
                         >
                           <Typography variant="body2" color="text.secondary">
-                            {t("assessment.management.noAssessmentsAssignedYet")}
+                            {t(
+                              "assessment.management.noAssessmentsAssignedYet",
+                            )}
                           </Typography>
                         </Card>
                       ) : (
@@ -2099,7 +2173,7 @@ const AssessmentManagement = () => {
                             >
                               {(() => {
                                 const startDateValue = toDateInputValue(
-                                  assignment.startDate
+                                  assignment.startDate,
                                 );
                                 const endDateMin =
                                   startDateValue && startDateValue > todayDate
@@ -2107,164 +2181,184 @@ const AssessmentManagement = () => {
                                     : todayDate;
 
                                 return (
-                              <Box
-                                sx={{
-                                  display: "grid",
-                                  gridTemplateColumns: {
-                                    xs: "1fr",
-                                    md: "2fr 1fr 1fr auto",
-                                  },
-                                  gap: 1.5,
-                                  alignItems: "center",
-                                }}
-                              >
-                                <FormControl size="small" fullWidth>
-                                  <InputLabel>
-                                    {t("assessment.management.assessment")}
-                                  </InputLabel>
-                                  <Select
-                                    value={assignment.assessmentId || ""}
-                                    label={t("assessment.management.assessment")}
-                                    onChange={(e) =>
-                                      handleRoleAssignmentChange(
-                                        role.roleId,
-                                        index,
-                                        "assessmentId",
-                                        e.target.value,
-                                      )
-                                    }
-                                    disabled={
-                                      assignment.isPublished === 1 &&
-                                      !assignment.isNew
-                                    }
+                                  <Box
+                                    sx={{
+                                      display: "grid",
+                                      gridTemplateColumns: {
+                                        xs: "1fr",
+                                        md: "2fr 1fr 1fr auto",
+                                      },
+                                      gap: 1.5,
+                                      alignItems: "center",
+                                    }}
                                   >
-                                    <MenuItem value="">
-                                      <em>{t("assessment.management.none")}</em>
-                                    </MenuItem>
-                                    {(assessmentsData?.data || [])
-                                      .filter((assessmentOption) => {
-                                        const optionId = Number(
-                                          assessmentOption.assessmentId
-                                        );
-                                        const currentSelectedId = Number(
-                                          assignment.assessmentId
-                                        );
-
-                                        // Keep currently selected option visible in this row.
-                                        if (optionId === currentSelectedId) {
-                                          return true;
+                                    <FormControl size="small" fullWidth>
+                                      <InputLabel>
+                                        {t("assessment.management.assessment")}
+                                      </InputLabel>
+                                      <Select
+                                        value={assignment.assessmentId || ""}
+                                        label={t(
+                                          "assessment.management.assessment",
+                                        )}
+                                        onChange={(e) =>
+                                          handleRoleAssignmentChange(
+                                            role.roleId,
+                                            index,
+                                            "assessmentId",
+                                            e.target.value,
+                                          )
                                         }
-
-                                        // Hide assessments already assigned in other rows of same role.
-                                        return !assignmentsForRole.some(
-                                          (assignedRow, rowIndex) =>
-                                            rowIndex !== index &&
-                                            Number(assignedRow.assessmentId) === optionId
-                                        );
-                                      })
-                                      .map((assessment) => (
-                                        <MenuItem
-                                          key={assessment.assessmentId}
-                                          value={assessment.assessmentId}
-                                        >
-                                          {getAssessmentName(assessment)}
+                                        disabled={
+                                          assignment.isPublished === 1 &&
+                                          !assignment.isNew
+                                        }
+                                      >
+                                        <MenuItem value="">
+                                          <em>
+                                            {t("assessment.management.none")}
+                                          </em>
                                         </MenuItem>
-                                      ))}
-                                  </Select>
-                                </FormControl>
+                                        {(assessmentsData?.data || [])
+                                          .filter((assessmentOption) => {
+                                            const optionId = Number(
+                                              assessmentOption.assessmentId,
+                                            );
+                                            const currentSelectedId = Number(
+                                              assignment.assessmentId,
+                                            );
 
-                                <TextField
-                                  size="small"
-                                  type="date"
-                                  label={t("assessment.management.startDate")}
-                                  value={toDateInputValue(assignment.startDate)}
-                                  onChange={(e) =>
-                                    handleRoleAssignmentChange(
-                                      role.roleId,
-                                      index,
-                                      "startDate",
-                                      e.target.value || "",
-                                    )
-                                  }
-                                  InputLabelProps={{ shrink: true }}
-                                  inputProps={{ min: todayDate, max: "9999-12-31" }}
-                                  sx={{
-                                    "& .MuiOutlinedInput-root": {
-                                      borderRadius: 2,
-                                      bgcolor: "#f8fafc",
-                                      "& fieldset": {
-                                        borderColor: colors.neutral.gray300,
-                                      },
-                                      "&:hover fieldset": {
-                                        borderColor: colors.primary.blue,
-                                      },
-                                      "&.Mui-focused fieldset": {
-                                        borderWidth: "1.5px",
-                                        borderColor: colors.primary.blue,
-                                      },
-                                    },
-                                  }}
-                                  fullWidth
-                                />
+                                            // Keep currently selected option visible in this row.
+                                            if (
+                                              optionId === currentSelectedId
+                                            ) {
+                                              return true;
+                                            }
 
-                                <TextField
-                                  size="small"
-                                  type="date"
-                                  label={t("assessment.management.endDate")}
-                                  value={toDateInputValue(assignment.endDate)}
-                                  onChange={(e) =>
-                                    handleRoleAssignmentChange(
-                                      role.roleId,
-                                      index,
-                                      "endDate",
-                                      e.target.value || "",
-                                    )
-                                  }
-                                  InputLabelProps={{ shrink: true }}
-                                  inputProps={{ min: endDateMin, max: "9999-12-31" }}
-                                  sx={{
-                                    "& .MuiOutlinedInput-root": {
-                                      borderRadius: 2,
-                                      bgcolor: "#f8fafc",
-                                      "& fieldset": {
-                                        borderColor: colors.neutral.gray300,
-                                      },
-                                      "&:hover fieldset": {
-                                        borderColor: colors.primary.blue,
-                                      },
-                                      "&.Mui-focused fieldset": {
-                                        borderWidth: "1.5px",
-                                        borderColor: colors.primary.blue,
-                                      },
-                                    },
-                                  }}
-                                  fullWidth
-                                />
+                                            // Hide assessments already assigned in other rows of same role.
+                                            return !assignmentsForRole.some(
+                                              (assignedRow, rowIndex) =>
+                                                rowIndex !== index &&
+                                                Number(
+                                                  assignedRow.assessmentId,
+                                                ) === optionId,
+                                            );
+                                          })
+                                          .map((assessment) => (
+                                            <MenuItem
+                                              key={assessment.assessmentId}
+                                              value={assessment.assessmentId}
+                                            >
+                                              {getAssessmentName(assessment)}
+                                            </MenuItem>
+                                          ))}
+                                      </Select>
+                                    </FormControl>
 
-                                <Chip
-                                  size="small"
-                                  label={
-                                    assignment.isPublished === 1
-                                      ? t("assessment.management.published")
-                                      : t("assessment.management.draft")
-                                  }
-                                  sx={{
-                                    justifySelf: {
-                                      xs: "flex-start",
-                                      md: "center",
-                                    },
-                                    bgcolor:
-                                      assignment.isPublished === 1
-                                        ? colors.accent.green + "15"
-                                        : colors.semantic.warning + "15",
-                                    color:
-                                      assignment.isPublished === 1
-                                        ? colors.accent.green
-                                        : colors.semantic.warning,
-                                    fontWeight: 600,
-                                  }}
-                                />
-                              </Box>
+                                    <TextField
+                                      size="small"
+                                      type="date"
+                                      label={t(
+                                        "assessment.management.startDate",
+                                      )}
+                                      value={toDateInputValue(
+                                        assignment.startDate,
+                                      )}
+                                      onChange={(e) =>
+                                        handleRoleAssignmentChange(
+                                          role.roleId,
+                                          index,
+                                          "startDate",
+                                          e.target.value || "",
+                                        )
+                                      }
+                                      InputLabelProps={{ shrink: true }}
+                                      inputProps={{
+                                        min: todayDate,
+                                        max: "9999-12-31",
+                                      }}
+                                      sx={{
+                                        "& .MuiOutlinedInput-root": {
+                                          borderRadius: 2,
+                                          bgcolor: "#f8fafc",
+                                          "& fieldset": {
+                                            borderColor: colors.neutral.gray300,
+                                          },
+                                          "&:hover fieldset": {
+                                            borderColor: colors.primary.blue,
+                                          },
+                                          "&.Mui-focused fieldset": {
+                                            borderWidth: "1.5px",
+                                            borderColor: colors.primary.blue,
+                                          },
+                                        },
+                                      }}
+                                      fullWidth
+                                    />
+
+                                    <TextField
+                                      size="small"
+                                      type="date"
+                                      label={t("assessment.management.endDate")}
+                                      value={toDateInputValue(
+                                        assignment.endDate,
+                                      )}
+                                      onChange={(e) =>
+                                        handleRoleAssignmentChange(
+                                          role.roleId,
+                                          index,
+                                          "endDate",
+                                          e.target.value || "",
+                                        )
+                                      }
+                                      InputLabelProps={{ shrink: true }}
+                                      inputProps={{
+                                        min: endDateMin,
+                                        max: "9999-12-31",
+                                      }}
+                                      sx={{
+                                        "& .MuiOutlinedInput-root": {
+                                          borderRadius: 2,
+                                          bgcolor: "#f8fafc",
+                                          "& fieldset": {
+                                            borderColor: colors.neutral.gray300,
+                                          },
+                                          "&:hover fieldset": {
+                                            borderColor: colors.primary.blue,
+                                          },
+                                          "&.Mui-focused fieldset": {
+                                            borderWidth: "1.5px",
+                                            borderColor: colors.primary.blue,
+                                          },
+                                        },
+                                      }}
+                                      fullWidth
+                                    />
+
+                                    <Chip
+                                      size="small"
+                                      label={
+                                        assignment.isPublished === 1
+                                          ? t("assessment.management.published")
+                                          : t("assessment.management.draft")
+                                      }
+                                      sx={{
+                                        justifySelf: {
+                                          xs: "flex-start",
+                                          md: "center",
+                                        },
+                                        bgcolor:
+                                          assignment.isPublished === 1
+                                            ? colors.accent.green + "15"
+                                            : colors.semantic.warning + "15",
+                                        color:
+                                          assignment.isPublished === 1
+                                            ? colors.accent.green
+                                            : colors.semantic.warning,
+                                        fontWeight: 600,
+                                      }}
+                                    />
+                                  </Box>
                                 );
                               })()}
 
@@ -2272,56 +2366,37 @@ const AssessmentManagement = () => {
                                 sx={{
                                   mt: 1.5,
                                   display: "flex",
-                                  justifyContent: "space-between",
+                                  justifyContent: "flex-end",
                                   alignItems: "center",
                                   gap: 1,
                                   flexWrap: "wrap",
                                 }}
                               >
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 1,
-                                  }}
-                                >
-                                  {assignment.isNew && (
-                                    <Button
-                                      variant="text"
-                                      color="error"
-                                      size="small"
-                                      startIcon={<Close />}
-                                      onClick={() =>
-                                        handleRemoveRoleAssignmentRow(
-                                          role.roleId,
-                                          index,
-                                        )
-                                      }
-                                    >
-                                      {t("assessment.management.remove")}
-                                    </Button>
-                                  )}
-                                </Box>
-
                                 <Box sx={{ display: "flex", gap: 1 }}>
                                   <IconButton
                                     size="small"
                                     color="error"
                                     title={
-                                      assignment.isPublished === 1
-                                        ? t(
-                                            "assessment.management.unpublishBeforeDeleting",
-                                          )
-                                        : t(
-                                            "assessment.management.deleteAssignment",
-                                          )
+                                      assignment.isNew
+                                        ? t("assessment.management.remove")
+                                        : assignment.isPublished === 1
+                                          ? t(
+                                              "assessment.management.unpublishBeforeDeleting",
+                                            )
+                                          : t(
+                                              "assessment.management.deleteAssignment",
+                                            )
                                     }
                                     onClick={() =>
-                                      handleDeleteRoleAssignment(role.roleId, index)
+                                      handleRoleAssignmentTrashClick(
+                                        role.roleId,
+                                        index,
+                                      )
                                     }
                                     disabled={
-                                      assignment.isPublished === 1 ||
-                                      deleteAssessmentRoleAssignmentMutation.isPending
+                                      deleteAssessmentRoleAssignmentMutation.isPending ||
+                                      (!assignment.isNew &&
+                                        assignment.isPublished === 1)
                                     }
                                   >
                                     <Delete fontSize="small" />

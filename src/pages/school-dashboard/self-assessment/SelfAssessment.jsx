@@ -1456,6 +1456,7 @@ const SelfAssessment = () => {
         if (sessionId === null) {
           const sessionPayload = {
             sessionId: null,
+            assessmentId: selectedAssessment?.assessmentId ?? null,
             userId: Number(userId),
             roleId: Number(roleId),
             schoolId: userName || undefined,
@@ -1463,8 +1464,6 @@ const SelfAssessment = () => {
           };
           submitAssessmentMutation.mutate(sessionPayload);
         } else {
-          // Refetch questions and domains to update progress bars
-          refetchQuestions();
           refetchDomains();
         }
         // Optionally clear answers or navigate
@@ -5814,22 +5813,21 @@ const SelfAssessment = () => {
                           variant="contained"
                           onClick={handleSubmit}
                           disabled={(() => {
-                            // Check if mutation is pending
-                            if (submitSubdomainWiseAnswersMutation.isPending) {
+                            if (
+                              submitSubdomainWiseAnswersMutation.isPending
+                            ) {
                               return true;
                             }
 
-                            // Check if there are any answers
                             const hasAnswers =
                               (answers && Object.keys(answers).length > 0) ||
                               (textAnswers &&
                                 Object.keys(textAnswers).length > 0);
 
                             if (!hasAnswers) {
-                              return true; // Disable if no answers
+                              return true;
                             }
 
-                            // Check if user has answered any class-based questions (type 2 or 3)
                             const hasAnsweredClassBasedQuestions =
                               classBasedQuestions.some(
                                 (q) =>
@@ -5837,7 +5835,6 @@ const SelfAssessment = () => {
                                   textAnswers[q.questionId],
                               );
 
-                            // Check if user has answered any subject observation questions (type 3)
                             const hasAnsweredSubjectQuestions =
                               subjectObservationQuestions.some(
                                 (q) =>
@@ -5845,24 +5842,35 @@ const SelfAssessment = () => {
                                   textAnswers[q.questionId],
                               );
 
-                            // Only require class/section if user has answered class-based questions
                             if (hasAnsweredClassBasedQuestions) {
                               if (!selectedClass || !selectedSection) {
-                                return true; // Disable button
+                                return true;
                               }
-                              // If answered subject questions, also require subject selection
                               if (
                                 hasAnsweredSubjectQuestions &&
                                 !selectedSubject
                               ) {
-                                return true; // Disable button
+                                return true;
                               }
                             }
 
-                            return false; // Enable button
+                            return false;
                           })()}
+                          startIcon={
+                            submitSubdomainWiseAnswersMutation.isPending ? (
+                              <CircularProgress
+                                size={18}
+                                thickness={5}
+                                color="inherit"
+                                aria-hidden
+                              />
+                            ) : null
+                          }
                           sx={{
                             bgcolor: colors.accent.green,
+                            minWidth: 168,
+                            textTransform: "none",
+                            fontWeight: 600,
                             "&:hover": { bgcolor: colors.accent.greenDark },
                             "&:disabled": {
                               bgcolor: colors.neutral.gray300,

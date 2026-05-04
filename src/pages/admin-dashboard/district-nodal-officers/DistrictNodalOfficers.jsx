@@ -46,7 +46,7 @@ const DistrictNodalOfficers = () => {
       .max(50, "User name must not exceed 50 characters"),
     mobileNumber: Yup.string()
       .required("Mobile number is required")
-      .matches(/^[0-9]{10}$/, "Mobile number must be exactly 10 digits"),
+      .matches(/^[0-9]{10}$/, "Enter a valid 10-digit mobile number"),
     districts: Yup.array()
       .min(1, "At least one district must be selected")
       .required("At least one district is required"),
@@ -95,10 +95,15 @@ const DistrictNodalOfficers = () => {
       }
     }
 
+    const rawMobile = String(editingOfficer?.mobileNumber ?? "").replace(
+      /\D/g,
+      "",
+    );
+
     return {
       userId: editingOfficer?.userId || null,
       userName: editingOfficer?.userName || "",
-      mobileNumber: editingOfficer?.mobileNumber || "",
+      mobileNumber: rawMobile.slice(0, 10),
       districts: districtsArray,
       isActive:
         editingOfficer?.isActive === true || editingOfficer?.isActive === 1
@@ -111,19 +116,25 @@ const DistrictNodalOfficers = () => {
     useGetAllDistrictsQuery();
   const districts = districtsData?.data || [];
 
-  // Get total count from API response for server-side pagination
-  const totalCountFromApi =
+  // Total count for server-side pagination (same pattern as Verifier.jsx)
+  const totalCount =
     officersData?.data?.total ??
     officersData?.total ??
-    officersData?.data?.count ??
-    officersData?.count ??
-    officersData?.data?.totalCount ??
-    officersData?.totalCount ??
-    officersData?.data?.totalRecords ??
-    officersData?.totalRecords ??
-    officersData?.data?.pagination?.total ??
-    officersData?.pagination?.total;
-  const totalCount = totalCountFromApi ?? officers.length;
+    (searchQuery
+      ? officers.length
+      : officersData?.data?.totalCount ??
+        officersData?.totalCount ??
+        officersData?.data?.count ??
+        officersData?.count ??
+        officersData?.data?.totalRecords ??
+        officersData?.totalRecords ??
+        officersData?.data?.pagination?.total ??
+        officersData?.pagination?.total ??
+        officersData?.data?.meta?.total ??
+        officersData?.meta?.total ??
+        officersData?.data?.meta?.totalItems ??
+        officersData?.meta?.totalItems ??
+        officers.length);
 
   // Since API handles search, we use officers directly (no client-side filtering)
   // If API doesn't support search, we can add client-side filtering back
@@ -522,7 +533,7 @@ const DistrictNodalOfficers = () => {
           <div className="stat-card stat-card-blue">
             <div>
               <p className="stat-label stat-label-blue">Total Officers</p>
-              <p className="stat-value stat-value-blue">{officers.length}</p>
+              <p className="stat-value stat-value-blue">{totalCount}</p>
             </div>
             <div className="stat-icon stat-icon-blue">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -700,13 +711,42 @@ const DistrictNodalOfficers = () => {
                     placeholder="Enter user name"
                   />
 
-                  <FormikField
-                    name="mobileNumber"
-                    label="Mobile Number"
-                    type="tel"
-                    required
-                    placeholder="Enter mobile number"
-                  />
+                  <div className="form-group">
+                    <label className="form-label">
+                      Mobile Number
+                      <span className="form-label-required">*</span>
+                    </label>
+                    <input
+                      name="mobileNumber"
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      maxLength={10}
+                      placeholder="Enter 10-digit mobile number"
+                      value={formik.values.mobileNumber}
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 10);
+                        formik.setFieldValue("mobileNumber", digitsOnly);
+                      }}
+                      onBlur={() =>
+                        formik.setFieldTouched("mobileNumber", true)
+                      }
+                      className={`form-input ${
+                        formik.touched.mobileNumber &&
+                        formik.errors.mobileNumber
+                          ? "form-input-error"
+                          : ""
+                      }`}
+                    />
+                    {formik.touched.mobileNumber &&
+                      formik.errors.mobileNumber && (
+                        <div className="form-error">
+                          {formik.errors.mobileNumber}
+                        </div>
+                      )}
+                  </div>
 
                   <div className="form-group">
                     <div className="form-label-container">

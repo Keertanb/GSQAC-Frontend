@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -111,7 +111,13 @@ const QuestionsView = ({
   const [allowImageUpload, setAllowImageUpload] = useState("no"); // For MCQ: allow image upload in school assessment
   const [flnAnswer, setFlnAnswer] = useState(""); // State for FLN text field answer
   const [optionErrors, setOptionErrors] = useState({}); // State for option validation errors (per option: { [optionId]: { en, hi, gu } })
+  const [optionFieldTouched, setOptionFieldTouched] = useState({}); // Show field errors only after blur (per optionId, per lang)
   const [deletedOptionIds, setDeletedOptionIds] = useState([]);
+
+  const newOptionsRef = useRef(newOptions);
+  useEffect(() => {
+    newOptionsRef.current = newOptions;
+  }, [newOptions]);
 
   // Map question type strings to numbers
   const questionTypeMap = {
@@ -235,9 +241,6 @@ const QuestionsView = ({
       { id: newOptionId, text: { en: "", hi: "", gu: "" } },
     ];
     setNewOptions(updatedOptions);
-    // Validate after adding new option
-    const errors = validateOptions(updatedOptions);
-    setOptionErrors(errors);
   };
 
   const handleDeleteOption = (optionId) => {
@@ -248,6 +251,11 @@ const QuestionsView = ({
       }
       const updatedOptions = newOptions.filter((opt) => opt.id !== optionId);
       setNewOptions(updatedOptions);
+      setOptionFieldTouched((prev) => {
+        const next = { ...prev };
+        delete next[optionId];
+        return next;
+      });
       setOptionErrors(validateOptions(updatedOptions));
     }
   };
@@ -287,6 +295,31 @@ const QuestionsView = ({
     return errors;
   };
 
+  const hasVisibleOptionAlert = useMemo(() => {
+    return newOptions.some((opt) =>
+      ["en", "hi", "gu"].some(
+        (lang) =>
+          optionErrors[opt.id]?.[lang] && optionFieldTouched[opt.id]?.[lang],
+      ),
+    );
+  }, [newOptions, optionErrors, optionFieldTouched]);
+
+  const handleOptionBlur = useCallback((optionId, field) => {
+    setOptionFieldTouched((prev) => ({
+      ...prev,
+      [optionId]: { ...(prev[optionId] || {}), [field]: true },
+    }));
+    setOptionErrors(validateOptions(newOptionsRef.current));
+  }, []);
+
+  const getVisibleOptionFieldError = (optionId, lang) =>
+    !!(optionFieldTouched[optionId]?.[lang] && optionErrors[optionId]?.[lang]);
+
+  const getVisibleOptionHelperText = (optionId, lang) =>
+    getVisibleOptionFieldError(optionId, lang)
+      ? optionErrors[optionId]?.[lang] || ""
+      : "";
+
   const handleOptionChange = (optionId, field, value) => {
     const updatedOptions = newOptions.map((opt) =>
       opt.id === optionId
@@ -295,10 +328,6 @@ const QuestionsView = ({
     );
 
     setNewOptions(updatedOptions);
-
-    // Validate options after change
-    const errors = validateOptions(updatedOptions);
-    setOptionErrors(errors);
   };
 
   // Step 1: Add/Update the question first
@@ -380,7 +409,8 @@ const QuestionsView = ({
         setShowOptionsForm(false);
         setEditingQuestion(null);
         setCurrentQuestionId(null);
-        setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
+        setOptionErrors({});
+        setOptionFieldTouched({});
         return;
       }
 
@@ -411,6 +441,8 @@ const QuestionsView = ({
 
       // Use React's state batching - set both states together
       // This ensures they update in the same render cycle
+      setOptionErrors({});
+      setOptionFieldTouched({});
       setShowAddQuestion(false);
       setShowOptionsForm(true);
 
@@ -454,6 +486,11 @@ const QuestionsView = ({
       (e) => e?.en || e?.hi || e?.gu,
     );
     if (hasValidationError) {
+      const allTouched = {};
+      newOptions.forEach((opt) => {
+        allTouched[opt.id] = { en: true, hi: true, gu: true };
+      });
+      setOptionFieldTouched(allTouched);
       enqueueSnackbar(
         "Please fix option validation errors. English and Gujarati are required for each option.",
         {
@@ -468,6 +505,12 @@ const QuestionsView = ({
       (opt) => opt.text.en.trim() && opt.text.gu.trim(),
     );
     if (completeOptions.length < 2) {
+      const allTouched = {};
+      newOptions.forEach((opt) => {
+        allTouched[opt.id] = { en: true, hi: true, gu: true };
+      });
+      setOptionFieldTouched(allTouched);
+      setOptionErrors(validateOptions(newOptions));
       enqueueSnackbar(
         "Please add at least 2 options with both English and Gujarati text",
         {
@@ -527,7 +570,8 @@ const QuestionsView = ({
       setEditingQuestion(null);
       setCurrentQuestionId(null);
       setDeletedOptionIds([]);
-      setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
+      setOptionErrors({});
+      setOptionFieldTouched({});
     } catch (error) {
       console.error("Error adding options:", error);
       // Error toaster is shown by useUpsertQuestionOptionMutation onError in adminService
@@ -536,6 +580,8 @@ const QuestionsView = ({
 
   const handleEditQuestion = (question) => {
     // Question already has all language fields since we fetch without languageCode
+    setOptionErrors({});
+    setOptionFieldTouched({});
     setEditingQuestion(question);
     setCurrentQuestionId(question.questionId);
 
@@ -955,6 +1001,8 @@ const QuestionsView = ({
                 setIsClassroomObservation(0);
                 setQuestionType("single_choice");
                 setAllowImageUpload("no");
+                setOptionErrors({});
+                setOptionFieldTouched({});
                 setShowAddQuestion(!showAddQuestion);
 
                 // Scroll to add question section after state update
@@ -1263,7 +1311,8 @@ const QuestionsView = ({
                               setQuestionType("single_choice");
                               setEditingQuestion(null);
                               setCurrentQuestionId(null);
-                              setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
+                              setOptionErrors({});
+                              setOptionFieldTouched({});
                             }}
                             disabled={upsertQuestionMutation.isPending}
                           >
@@ -1332,10 +1381,8 @@ const QuestionsView = ({
                             {t("assessment.question.addOption")}
                           </Button>
                         </Box>
-                        {/* Validation Errors Display */}
-                        {Object.values(optionErrors).some(
-                          (e) => e?.en || e?.hi || e?.gu,
-                        ) && (
+                        {/* Validation Errors Display (only after field blur or failed submit) */}
+                        {hasVisibleOptionAlert && (
                           <Alert
                             severity="error"
                             sx={{
@@ -1351,9 +1398,18 @@ const QuestionsView = ({
                             </Typography>
                             {[
                               ...new Set(
-                                Object.values(optionErrors)
-                                  .flatMap((err) => [err?.en, err?.hi, err?.gu])
-                                  .filter(Boolean),
+                                newOptions.flatMap((opt) =>
+                                  ["en", "hi", "gu"].flatMap((lang) => {
+                                    const msg = optionErrors[opt.id]?.[lang];
+                                    if (
+                                      !msg ||
+                                      !optionFieldTouched[opt.id]?.[lang]
+                                    ) {
+                                      return [];
+                                    }
+                                    return [msg];
+                                  }),
+                                ),
                               ),
                             ].map((message) => (
                               <Typography
@@ -1436,13 +1492,22 @@ const QuestionsView = ({
                                       e.target.value,
                                     )
                                   }
+                                  onBlur={() =>
+                                    handleOptionBlur(option.id, "gu")
+                                  }
                                   variant="outlined"
                                   size="small"
                                   required
                                   multiline
                                   rows={2}
-                                  error={!!optionErrors[option.id]?.gu}
-                                  helperText={optionErrors[option.id]?.gu || ""}
+                                  error={getVisibleOptionFieldError(
+                                    option.id,
+                                    "gu",
+                                  )}
+                                  helperText={getVisibleOptionHelperText(
+                                    option.id,
+                                    "gu",
+                                  )}
                                 />
                                 <TextField
                                   fullWidth
@@ -1457,13 +1522,22 @@ const QuestionsView = ({
                                       e.target.value,
                                     )
                                   }
+                                  onBlur={() =>
+                                    handleOptionBlur(option.id, "en")
+                                  }
                                   variant="outlined"
                                   size="small"
                                   required
                                   multiline
                                   rows={2}
-                                  error={!!optionErrors[option.id]?.en}
-                                  helperText={optionErrors[option.id]?.en || ""}
+                                  error={getVisibleOptionFieldError(
+                                    option.id,
+                                    "en",
+                                  )}
+                                  helperText={getVisibleOptionHelperText(
+                                    option.id,
+                                    "en",
+                                  )}
                                 />
                                 <TextField
                                   fullWidth
@@ -1478,12 +1552,21 @@ const QuestionsView = ({
                                       e.target.value,
                                     )
                                   }
+                                  onBlur={() =>
+                                    handleOptionBlur(option.id, "hi")
+                                  }
                                   variant="outlined"
                                   size="small"
                                   multiline
                                   rows={2}
-                                  error={!!optionErrors[option.id]?.hi}
-                                  helperText={optionErrors[option.id]?.hi || ""}
+                                  error={getVisibleOptionFieldError(
+                                    option.id,
+                                    "hi",
+                                  )}
+                                  helperText={getVisibleOptionHelperText(
+                                    option.id,
+                                    "hi",
+                                  )}
                                 />
                               </Box>
                               {/* Translation Button for Option */}
@@ -1528,12 +1611,7 @@ const QuestionsView = ({
                               )
                             }
                             onClick={handleAddOptions}
-                            disabled={
-                              upsertQuestionOptionMutation.isPending ||
-                              Object.values(optionErrors).some(
-                                (e) => e?.en || e?.hi || e?.gu,
-                              )
-                            }
+                            disabled={upsertQuestionOptionMutation.isPending}
                             sx={{
                               bgcolor: colors.accent.green,
                               "&:hover": { bgcolor: colors.accent.greenDark },
@@ -1988,7 +2066,8 @@ const QuestionsView = ({
                         setQuestionType("single_choice");
                         setEditingQuestion(null);
                         setCurrentQuestionId(null);
-                        setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
+                        setOptionErrors({});
+                        setOptionFieldTouched({});
                       }}
                       disabled={upsertQuestionMutation.isPending}
                     >
@@ -2084,10 +2163,8 @@ const QuestionsView = ({
                             {t("assessment.question.addOption")}
                           </Button>
                         </Box>
-                        {/* Validation Errors Display */}
-                        {Object.values(optionErrors).some(
-                          (e) => e?.en || e?.hi || e?.gu,
-                        ) && (
+                        {/* Validation Errors Display (only after field blur or failed submit) */}
+                        {hasVisibleOptionAlert && (
                           <Alert
                             severity="error"
                             sx={{
@@ -2101,21 +2178,30 @@ const QuestionsView = ({
                             >
                               Validation Errors:
                             </Typography>
-                            {Object.values(optionErrors).some((e) => e?.en) && (
-                              <Typography variant="body2" sx={{ mb: 0.5 }}>
-                                • Duplicate English options are not allowed
+                            {[
+                              ...new Set(
+                                newOptions.flatMap((opt) =>
+                                  ["en", "hi", "gu"].flatMap((lang) => {
+                                    const msg = optionErrors[opt.id]?.[lang];
+                                    if (
+                                      !msg ||
+                                      !optionFieldTouched[opt.id]?.[lang]
+                                    ) {
+                                      return [];
+                                    }
+                                    return [msg];
+                                  }),
+                                ),
+                              ),
+                            ].map((message) => (
+                              <Typography
+                                key={message}
+                                variant="body2"
+                                sx={{ mb: 0.5 }}
+                              >
+                                • {message}
                               </Typography>
-                            )}
-                            {Object.values(optionErrors).some((e) => e?.hi) && (
-                              <Typography variant="body2" sx={{ mb: 0.5 }}>
-                                • Duplicate Hindi options are not allowed
-                              </Typography>
-                            )}
-                            {Object.values(optionErrors).some((e) => e?.gu) && (
-                              <Typography variant="body2">
-                                • Duplicate Gujarati options are not allowed
-                              </Typography>
-                            )}
+                            ))}
                           </Alert>
                         )}
                       </>
@@ -2196,13 +2282,22 @@ const QuestionsView = ({
                                     e.target.value,
                                   )
                                 }
+                                onBlur={() =>
+                                  handleOptionBlur(option.id, "gu")
+                                }
                                 variant="outlined"
                                 size="small"
                                 required
                                 multiline
                                 rows={2}
-                                error={!!optionErrors[option.id]?.gu}
-                                helperText={optionErrors[option.id]?.gu || ""}
+                                error={getVisibleOptionFieldError(
+                                  option.id,
+                                  "gu",
+                                )}
+                                helperText={getVisibleOptionHelperText(
+                                  option.id,
+                                  "gu",
+                                )}
                               />
                               <TextField
                                 fullWidth
@@ -2217,13 +2312,22 @@ const QuestionsView = ({
                                     e.target.value,
                                   )
                                 }
+                                onBlur={() =>
+                                  handleOptionBlur(option.id, "en")
+                                }
                                 variant="outlined"
                                 size="small"
                                 required
                                 multiline
                                 rows={2}
-                                error={!!optionErrors[option.id]?.en}
-                                helperText={optionErrors[option.id]?.en || ""}
+                                error={getVisibleOptionFieldError(
+                                  option.id,
+                                  "en",
+                                )}
+                                helperText={getVisibleOptionHelperText(
+                                  option.id,
+                                  "en",
+                                )}
                               />
                               <TextField
                                 fullWidth
@@ -2238,12 +2342,21 @@ const QuestionsView = ({
                                     e.target.value,
                                   )
                                 }
+                                onBlur={() =>
+                                  handleOptionBlur(option.id, "hi")
+                                }
                                 variant="outlined"
                                 size="small"
                                 multiline
                                 rows={2}
-                                error={!!optionErrors[option.id]?.hi}
-                                helperText={optionErrors[option.id]?.hi || ""}
+                                error={getVisibleOptionFieldError(
+                                  option.id,
+                                  "hi",
+                                )}
+                                helperText={getVisibleOptionHelperText(
+                                  option.id,
+                                  "hi",
+                                )}
                               />
                             </Box>
                             {/* Translation Button for Option */}
@@ -2289,12 +2402,7 @@ const QuestionsView = ({
                           )
                         }
                         onClick={handleAddOptions}
-                        disabled={
-                          upsertQuestionOptionMutation.isPending ||
-                          Object.values(optionErrors).some(
-                            (e) => e?.en || e?.hi || e?.gu,
-                          )
-                        }
+                        disabled={upsertQuestionOptionMutation.isPending}
                         sx={{
                           bgcolor: colors.accent.green,
                           "&:hover": { bgcolor: colors.accent.greenDark },
@@ -2322,7 +2430,8 @@ const QuestionsView = ({
                             { id: 2, text: { en: "", hi: "", gu: "" } },
                           ]);
                           setCurrentQuestionId(null);
-                          setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
+                          setOptionErrors({});
+                          setOptionFieldTouched({});
                         }}
                         disabled={upsertQuestionOptionMutation.isPending}
                       >
@@ -2616,7 +2725,8 @@ const QuestionsView = ({
                         setQuestionType("single_choice");
                         setEditingQuestion(null);
                         setCurrentQuestionId(null);
-                        setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
+                        setOptionErrors({});
+                        setOptionFieldTouched({});
                       }}
                       disabled={upsertQuestionMutation.isPending}
                     >
@@ -2680,10 +2790,8 @@ const QuestionsView = ({
                         {t("assessment.question.addOption")}
                       </Button>
                     </Box>
-                    {/* Validation Errors Display */}
-                    {Object.values(optionErrors).some(
-                      (e) => e?.en || e?.hi || e?.gu,
-                    ) && (
+                    {/* Validation Errors Display (only after field blur or failed submit) */}
+                    {hasVisibleOptionAlert && (
                       <Alert
                         severity="error"
                         sx={{
@@ -2697,21 +2805,30 @@ const QuestionsView = ({
                         >
                           Validation Errors:
                         </Typography>
-                        {Object.values(optionErrors).some((e) => e?.en) && (
-                          <Typography variant="body2" sx={{ mb: 0.5 }}>
-                            • Duplicate English options are not allowed
+                        {[
+                          ...new Set(
+                            newOptions.flatMap((opt) =>
+                              ["en", "hi", "gu"].flatMap((lang) => {
+                                const msg = optionErrors[opt.id]?.[lang];
+                                if (
+                                  !msg ||
+                                  !optionFieldTouched[opt.id]?.[lang]
+                                ) {
+                                  return [];
+                                }
+                                return [msg];
+                              }),
+                            ),
+                          ),
+                        ].map((message) => (
+                          <Typography
+                            key={message}
+                            variant="body2"
+                            sx={{ mb: 0.5 }}
+                          >
+                            • {message}
                           </Typography>
-                        )}
-                        {Object.values(optionErrors).some((e) => e?.hi) && (
-                          <Typography variant="body2" sx={{ mb: 0.5 }}>
-                            • Duplicate Hindi options are not allowed
-                          </Typography>
-                        )}
-                        {Object.values(optionErrors).some((e) => e?.gu) && (
-                          <Typography variant="body2">
-                            • Duplicate Gujarati options are not allowed
-                          </Typography>
-                        )}
+                        ))}
                       </Alert>
                     )}
 
@@ -2778,13 +2895,22 @@ const QuestionsView = ({
                                   e.target.value,
                                 )
                               }
+                              onBlur={() =>
+                                handleOptionBlur(option.id, "gu")
+                              }
                               variant="outlined"
                               size="small"
                               required
                               multiline
                               rows={2}
-                              error={!!optionErrors[option.id]?.gu}
-                              helperText={optionErrors[option.id]?.gu || ""}
+                              error={getVisibleOptionFieldError(
+                                option.id,
+                                "gu",
+                              )}
+                              helperText={getVisibleOptionHelperText(
+                                option.id,
+                                "gu",
+                              )}
                             />
                             <TextField
                               fullWidth
@@ -2799,12 +2925,22 @@ const QuestionsView = ({
                                   e.target.value,
                                 )
                               }
+                              onBlur={() =>
+                                handleOptionBlur(option.id, "en")
+                              }
                               variant="outlined"
                               size="small"
+                              required
                               multiline
                               rows={2}
-                              error={!!optionErrors[option.id]?.en}
-                              helperText={optionErrors[option.id]?.en || ""}
+                              error={getVisibleOptionFieldError(
+                                option.id,
+                                "en",
+                              )}
+                              helperText={getVisibleOptionHelperText(
+                                option.id,
+                                "en",
+                              )}
                             />
                             <TextField
                               fullWidth
@@ -2819,12 +2955,21 @@ const QuestionsView = ({
                                   e.target.value,
                                 )
                               }
+                              onBlur={() =>
+                                handleOptionBlur(option.id, "hi")
+                              }
                               variant="outlined"
                               size="small"
                               multiline
                               rows={2}
-                              error={!!optionErrors[option.id]?.hi}
-                              helperText={optionErrors[option.id]?.hi || ""}
+                              error={getVisibleOptionFieldError(
+                                option.id,
+                                "hi",
+                              )}
+                              helperText={getVisibleOptionHelperText(
+                                option.id,
+                                "hi",
+                              )}
                             />
                           </Box>
                           {/* {option.text.gu.trim() && (
@@ -2866,12 +3011,7 @@ const QuestionsView = ({
                           )
                         }
                         onClick={handleAddOptions}
-                        disabled={
-                          upsertQuestionOptionMutation.isPending ||
-                          Object.values(optionErrors).some(
-                            (e) => e?.en || e?.hi || e?.gu,
-                          )
-                        }
+                        disabled={upsertQuestionOptionMutation.isPending}
                         sx={{
                           bgcolor: colors.accent.green,
                           "&:hover": { bgcolor: colors.accent.greenDark },
@@ -2899,7 +3039,8 @@ const QuestionsView = ({
                             { id: 2, text: { en: "", hi: "", gu: "" } },
                           ]);
                           setCurrentQuestionId(null);
-                          setOptionErrors({ en: "", hi: "", gu: "" }); // Clear validation errors
+                          setOptionErrors({});
+                          setOptionFieldTouched({});
                         }}
                         disabled={upsertQuestionOptionMutation.isPending}
                       >
