@@ -61,7 +61,6 @@ const CriteriaQuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
   const selectedCriteria =
     criteriaList.find((c) => c.criteriaId === selectedCriteriaId) ||
     (criteriaList.length > 0 ? criteriaList[0] : null);
-  console.log(selectedCriteria, "criteriaListcriteriaList");
 
   // Auto-select first criteria if none selected
   React.useEffect(() => {
@@ -517,7 +516,7 @@ const CriteriaQuestionsView = ({ subdomainData, onBack, currentLanguage }) => {
                                     >
                                       <Chip
                                         label={String.fromCharCode(
-                                          65 + optIndex
+                                          65 + optIndex,
                                         )}
                                         size="small"
                                         sx={{

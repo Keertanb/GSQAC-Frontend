@@ -42,7 +42,7 @@ const OtpVerify = () => {
   useEffect(() => {
     const authState = useAuthStore.getState();
     const { user, token, role: authRole } = authState;
-    
+
     // If user is already authenticated (has token and user), redirect to dashboard
     if (user && token && authRole) {
       const dashboardRoutes = {
@@ -52,10 +52,9 @@ const OtpVerify = () => {
         admin: "/admin-dashboard",
         crc: "/crc-dashboard",
       };
-      
+
       const dashboardRoute = dashboardRoutes[authRole];
       if (dashboardRoute) {
-        console.log("User already authenticated, redirecting to dashboard:", dashboardRoute);
         navigate(dashboardRoute, { replace: true });
         return;
       }
@@ -67,23 +66,10 @@ const OtpVerify = () => {
     if (locationUserId && locationRole) {
       const currentStoreUserId = useAuthStore.getState().userId;
       if (!currentStoreUserId) {
-        console.log("Setting userId from location state:", locationUserId);
         setOtpUserId(locationUserId, locationRole);
       }
     }
   }, [locationUserId, locationRole, setOtpUserId]);
-
-  // Log current state for debugging
-  useEffect(() => {
-    console.log("OTP Verify - Current state:", {
-      storeUserId,
-      locationUserId,
-      userId,
-      role,
-      locationRole,
-      currentRole,
-    });
-  }, [storeUserId, locationUserId, userId, role, locationRole, currentRole]);
 
   const getRoleLabel = () => {
     const roleLabels = {
@@ -100,38 +86,18 @@ const OtpVerify = () => {
 
   useEffect(() => {
     if (locationRole) {
-      console.log("OTP Verify - Has locationRole, waiting for userId:", {
-        locationRole,
-        locationUserId,
-        storeUserId,
-      });
-
       // Give a delay to allow userId to be set in store from location state
       const timer = setTimeout(() => {
         const finalUserId = useAuthStore.getState().userId || locationUserId;
         const finalRole = useAuthStore.getState().role || locationRole;
 
-        console.log("OTP Verify - After delay, checking auth state:", {
-          finalRole,
-          finalUserId,
-          locationRole,
-          locationUserId,
-          storeUserId,
-          role,
-        });
-
-        // Only redirect if we truly don't have both role and userId after delay
         if (!finalRole || !finalUserId) {
           console.warn(
-            "Missing role or userId after delay, redirecting to login"
+            "Missing role or userId after delay, redirecting to login",
           );
           navigate("/login", { replace: true });
-        } else {
-          console.log(
-            "OTP Verify - Auth state valid after delay, staying on page"
-          );
         }
-      }, 500); // Increased delay to allow store updates
+      }, 500);
 
       return () => clearTimeout(timer);
     }
@@ -141,19 +107,9 @@ const OtpVerify = () => {
       const finalUserId = useAuthStore.getState().userId;
       const finalRole = useAuthStore.getState().role;
 
-      console.log("OTP Verify - No locationRole, checking store auth state:", {
-        finalRole,
-        finalUserId,
-        storeUserId,
-        role,
-      });
-
-      // Only redirect if we truly don't have both role and userId
       if (!finalRole || !finalUserId) {
         console.warn("Missing role or userId in store, redirecting to login");
         navigate("/login", { replace: true });
-      } else {
-        console.log("OTP Verify - Store auth state valid, staying on page");
       }
     }, 300);
 
@@ -214,7 +170,6 @@ const OtpVerify = () => {
       },
       {
         onSuccess: (data) => {
-          console.log(data.data[0], "datadatadata");
           const token =
             data?.data[0]?.token ||
             data[0]?.token ||
@@ -255,7 +210,7 @@ const OtpVerify = () => {
             "Invalid OTP. Please try again.";
           setError(errorMessage);
         },
-      }
+      },
     );
   };
 
@@ -501,7 +456,7 @@ const OtpVerify = () => {
             )}
           </Box>
 
-          <Box
+          {/* <Box
             sx={{
               mt: 3,
               mb: 2,
@@ -519,7 +474,7 @@ const OtpVerify = () => {
               <strong style={{ color: colors.primary.blue }}>123456</strong> for
               testing
             </Typography>
-          </Box>
+          </Box> */}
 
           <Button
             variant="contained"

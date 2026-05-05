@@ -49,7 +49,7 @@ export const useGetSubdomainQuestionsQuery = ({
 }) => {
   // Get userId from auth store if not provided
   const userIdToUse = userId || useAuthStore.getState().userId;
-  
+
   return useQuery({
     queryKey: queryKeys.admin.subdomainQuestions(
       subDomainId,
@@ -58,7 +58,7 @@ export const useGetSubdomainQuestionsQuery = ({
       classNumber,
       section,
       subjectId,
-      userIdToUse // Include userId in query key
+      userIdToUse, // Include userId in query key
     ),
     queryFn: () =>
       getSubdomainQuestions({
@@ -72,7 +72,7 @@ export const useGetSubdomainQuestionsQuery = ({
       }),
     enabled: enabled && !!subDomainId && !!roleId,
     staleTime: 0, // Always consider data stale to refetch on mount
-    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnMount: "always", // Always refetch when component mounts
     refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 };
@@ -93,13 +93,13 @@ export const useGetDomainsQuery = ({
 }) => {
   // Get userId from auth store if not provided
   const userIdToUse = userId || useAuthStore.getState().userId;
-  
+
   return useQuery({
     queryKey: queryKeys.school.domains(roleId, languageCode, userIdToUse),
     queryFn: () => getDomains({ roleId, languageCode }),
     enabled: enabled && !!roleId,
     staleTime: 0, // Always consider data stale to refetch on mount
-    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnMount: "always", // Always refetch when component mounts
     refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 };
@@ -160,12 +160,11 @@ export const submitSubdomainWiseAnswers = async (payload) => {
     ...payload,
     ...(roleId != null ? { roleId } : {}),
   };
-  const config =
-    roleId != null ? { headers: { roleId } } : undefined;
+  const config = roleId != null ? { headers: { roleId } } : undefined;
   const response = await axiosInstance.post(
     "/school/sub-domain-wise-submit-answers",
     body,
-    config
+    config,
   );
   return response.data;
 };
@@ -284,7 +283,7 @@ export const useSubmitSubdomainWiseAnswersMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to submit answers",
         {
           variant: "error",
-        }
+        },
       );
       if (userOnError) {
         userOnError(error, variables, context);
@@ -302,7 +301,7 @@ export const useSubmitSubdomainWiseAnswersMutation = (options = {}) => {
 export const submitAssessment = async (payload) => {
   const response = await axiosInstance.post(
     "/school/submit-assessment",
-    payload
+    payload,
   );
   return response.data;
 };
@@ -329,7 +328,7 @@ export const useSubmitAssessmentMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to submit assessment",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -379,8 +378,6 @@ export const useGetSchoolInfrastructureQuery = ({
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
-
-const authState = useAuthStore.getState();
 
 export const getSubdomainQuestions = async (params) => {
   const {
@@ -443,7 +440,7 @@ export const useUpdateSchoolInfrastructureMutation = (options = {}) => {
         data?.message || "Infrastructure details updated successfully",
         {
           variant: "success",
-        }
+        },
       );
       if (options.onSuccess) {
         options.onSuccess(data);
@@ -455,7 +452,7 @@ export const useUpdateSchoolInfrastructureMutation = (options = {}) => {
           "Failed to update infrastructure details",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);

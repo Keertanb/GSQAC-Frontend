@@ -2467,6 +2467,7 @@ const QuestionsView = ({
                     border: `2px solid ${colors.primary.blue}`,
                     maxWidth: "100%",
                     mt: 2,
+                    textAlign: "left",
                   }}
                 >
                   <Typography
@@ -2750,6 +2751,7 @@ const QuestionsView = ({
                     border: `2px solid ${colors.accent.green}`,
                     maxWidth: "100%",
                     mt: 2,
+                    textAlign: "left",
                   }}
                 >
                   <Typography

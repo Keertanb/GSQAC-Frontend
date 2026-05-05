@@ -204,10 +204,8 @@ const DomainSubdomainView = ({
   };
 
   const handleEditSubdomain = (subdomain) => {
-    console.log("Editing subdomain:", subdomain); // Debug log
     setEditingSubdomain(subdomain);
 
-    // Prefill subdomain names with fallback to subDomainName if specific language fields are missing
     setNewSubdomainName({
       en: subdomain.subDomainNameEn || subdomain.subDomainName || "",
       hi: subdomain.subDomainNameHi || subdomain.subDomainName || "",

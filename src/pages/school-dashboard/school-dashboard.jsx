@@ -437,7 +437,7 @@ const SchoolDashboard = () => {
                             mb: 0.5,
                           }}
                         >
-                          Total sadsadd
+                          Total Students
                         </Typography>
                         <Typography
                           variant="h3"
