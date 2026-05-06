@@ -1,32 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { CircularProgress } from "@mui/material";
 import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Select,
-  MenuItem,
-  FormControl,
-  InputAdornment,
-  Paper,
-  Fade,
-  CircularProgress,
-} from "@mui/material";
-import {
-  ArrowBack,
   ArrowForward,
-  AutoAwesome,
+  ArrowBack,
   PersonOutline,
   SchoolOutlined,
-  PeopleOutline,
   VerifiedUserOutlined,
   AdminPanelSettingsOutlined,
-  LockOutlined,
   AccountTreeOutlined,
-  ShieldOutlined,
+  CheckCircle,
+  Star as StarIcon,
+  EmojiEvents as EmojiEventsIcon,
+  Shield as ShieldIcon,
+  KeyboardArrowDown as ArrowDownIcon,
 } from "@mui/icons-material";
-import { colors } from "../../constants/colors";
 import { roles, getRoleId } from "../../constants/roles";
 import { useSendOtpMutation } from "../../services/authService";
 import useAuthStore from "../../store/useAuthStore";
@@ -38,10 +26,21 @@ const Login = () => {
   const [selectedRole, setSelectedRole] = useState("");
   const [userId, setUserId] = useState("");
   const [errors, setErrors] = useState({ role: "", userId: "" });
-  const [focusedInput, setFocusedInput] = useState("");
+  const [inputFocused, setInputFocused] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
   const { setOtpUserId } = useAuthStore();
 
-  // Check for role query parameter on mount and pre-select if present
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   useEffect(() => {
     const roleParam = searchParams.get("role");
     if (roleParam && roles.some((r) => r.value === roleParam)) {
@@ -51,25 +50,15 @@ const Login = () => {
 
   const sendOtpMutation = useSendOtpMutation({
     onSuccess: (data) => {
-      // Extract userId from various possible response structures
-      // Handle: data.userId, data.data.userId, data.data[0].userId, data.data[0].id, etc.
       let apiUserId = null;
-
-      // Try direct access
       if (data?.userId) {
         apiUserId = data.userId;
-      }
-      // Try nested object access
-      else if (data?.data?.userId) {
+      } else if (data?.data?.userId) {
         apiUserId = data.data.userId;
-      }
-      // Try array access (data.data is an array)
-      else if (Array.isArray(data?.data) && data.data.length > 0) {
+      } else if (Array.isArray(data?.data) && data.data.length > 0) {
         const firstItem = data.data[0];
         apiUserId = firstItem?.userId || firstItem?.id || firstItem?.user?.id;
-      }
-      // Try deeply nested
-      else if (data?.data?.data?.userId) {
+      } else if (data?.data?.data?.userId) {
         apiUserId = data.data.data.userId;
       }
 
@@ -79,18 +68,13 @@ const Login = () => {
           ...errors,
           userId: "Failed to get user ID from server. Please try again.",
         });
-        return; // Don't navigate if no userId
+        return;
       }
 
-      // Set userId in store first (synchronous operation)
       setOtpUserId(apiUserId, selectedRole);
-
       setTimeout(() => {
         navigate("/otp-verify", {
-          state: {
-            role: selectedRole,
-            userId: apiUserId,
-          },
+          state: { role: selectedRole, userId: apiUserId },
           replace: false,
         });
       }, 50);
@@ -108,18 +92,19 @@ const Login = () => {
 
   const getRoleIcon = (roleValue) => {
     const iconMap = {
-      school: <SchoolOutlined />,
-      parent: <PeopleOutline />,
-      inspector: <VerifiedUserOutlined />,
-      admin: <AdminPanelSettingsOutlined />,
-      crc: <AccountTreeOutlined />,
+      school: <SchoolOutlined fontSize="small" />,
+      parent: <PersonOutline fontSize="small" />,
+      inspector: <VerifiedUserOutlined fontSize="small" />,
+      admin: <AdminPanelSettingsOutlined fontSize="small" />,
+      crc: <AccountTreeOutlined fontSize="small" />,
     };
-    return iconMap[roleValue] || <PersonOutline />;
+    return iconMap[roleValue] || <PersonOutline fontSize="small" />;
   };
 
-  const handleRoleChange = (event) => {
-    setSelectedRole(event.target.value);
+  const handleRoleSelect = (roleValue) => {
+    setSelectedRole(roleValue);
     setErrors({ ...errors, role: "" });
+    setUserId("");
   };
 
   const handleUserIdChange = (e) => {
@@ -132,10 +117,9 @@ const Login = () => {
     let hasError = false;
 
     if (!selectedRole) {
-      newErrors.role = "Please select a role";
+      newErrors.role = "Please select a role to continue";
       hasError = true;
     }
-
     if (!userId.trim()) {
       newErrors.userId = "Please enter your User ID";
       hasError = true;
@@ -146,340 +130,260 @@ const Login = () => {
       return;
     }
 
-    // Get roleId from selected role
     const roleId = getRoleId(selectedRole);
+    sendOtpMutation.mutate({ userName: userId.trim(), roleId });
+  };
 
-    // Only mutate - navigation happens in onSuccess callback
-    sendOtpMutation.mutate({
-      userName: userId.trim(),
-      roleId: roleId,
-    });
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleContinue();
   };
 
   const selectedRoleData = roles.find((r) => r.value === selectedRole);
 
   return (
-    <Box className="login-container">
-      <Box className="login-visual-panel">
-        <Box className="visual-overlay" />
+    <div className="lp-container">
+      {/* ── Left: Branding Panel ── */}
+      <div className="lp-visual">
+        <div className="lp-visual-pattern" />
 
-        <div className="blob blob-1"></div>
-        <div className="blob blob-2"></div>
+        {/* Hero copy — mirrors dashboard Gunotsav 2.0 section */}
+        <div className="lp-hero-copy">
+          <p className="lp-drive-pill">
+            <StarIcon
+              className="lp-drive-star"
+              fontSize="small"
+              aria-hidden="true"
+            />
+            Gujarat&apos;s school quality drive
+          </p>
 
-        <Box className="visual-content">
-          <Box className="illustration-wrapper">
-            <svg
-              viewBox="0 0 500 500"
-              xmlns="http://www.w3.org/2000/svg"
-              className="floating-vector"
+          <h1 className="lp-hero-title">
+            Gunotsav <span className="lp-hero-accent">2.0</span>
+          </h1>
+
+          <div className="lp-mini-cards">
+            <article
+              className="lp-mini-card lp-mini-card--gold"
+              aria-label="GSQAC"
             >
-              <defs>
-                <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop
-                    offset="0%"
-                    style={{ stopColor: "#ffffff", stopOpacity: 0.8 }}
-                  />
-                  <stop
-                    offset="100%"
-                    style={{ stopColor: "#ffffff", stopOpacity: 0.1 }}
-                  />
-                </linearGradient>
-              </defs>
-
-              <path
-                d="M250 450 L100 350 L100 150 L250 50 L400 150 L400 350 Z"
-                fill="url(#grad1)"
-                opacity="0.1"
+              <EmojiEventsIcon
+                className="lp-mini-icon lp-mini-icon--gold"
+                aria-hidden="true"
               />
+              <p className="lp-mini-kicker">Accreditation council</p>
+              <h2 className="lp-mini-acronym">GSQAC</h2>
+              <p className="lp-mini-desc">
+                Gujarat State Quality Accreditation Council
+              </p>
+            </article>
 
-              <g className="float-element-1">
-                <rect
-                  x="150"
-                  y="200"
-                  width="80"
-                  height="100"
-                  rx="10"
-                  fill="#fbbf24"
-                  opacity="0.9"
-                />
-                <rect
-                  x="160"
-                  y="210"
-                  width="60"
-                  height="80"
-                  rx="5"
-                  fill="#fff"
-                  opacity="0.3"
-                />
-              </g>
-
-              <g className="float-element-2">
-                <circle cx="350" cy="180" r="50" fill="#f97316" opacity="0.9" />
-                <path
-                  d="M330 180 L350 200 L380 160"
-                  stroke="white"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  fill="none"
-                />
-              </g>
-
-              <g className="float-element-3">
-                <rect
-                  x="200"
-                  y="300"
-                  width="140"
-                  height="90"
-                  rx="15"
-                  fill="#3b82f6"
-                  opacity="0.9"
-                />
-                <circle cx="270" cy="345" r="25" fill="white" opacity="0.2" />
-              </g>
-
-              {/* Connecting Lines */}
-              <path
-                d="M190 250 Q 250 250 270 300"
-                stroke="white"
-                strokeWidth="2"
-                strokeDasharray="5,5"
-                opacity="0.5"
-                fill="none"
+            <article
+              className="lp-mini-card lp-mini-card--blue"
+              aria-label="SQAAF"
+            >
+              <ShieldIcon
+                className="lp-mini-icon lp-mini-icon--blue"
+                aria-hidden="true"
               />
-              <path
-                d="M350 230 Q 320 280 270 300"
-                stroke="white"
-                strokeWidth="2"
-                strokeDasharray="5,5"
-                opacity="0.5"
-                fill="none"
-              />
-            </svg>
-          </Box>
-
-          <Box sx={{ position: "relative", zIndex: 2, mt: 4 }}>
-            <Box className="visual-drive-pill">
-              <AutoAwesome sx={{ fontSize: 16 }} />
-              Gujarat's school quality drive
-            </Box>
-            <Typography variant="h3" className="visual-title">
-              Gunotsav <span className="visual-title-accent">2.0</span>
-            </Typography>
-            <Typography variant="body1" className="visual-subtitle">
-              A statewide initiative to assess, assure and enhance school
-              quality through data-driven insights aligned with NEP-2020.
-            </Typography>
-            <Box className="visual-mini-cards">
-              <Box className="visual-mini-card">
-                <ShieldOutlined sx={{ fontSize: 18 }} />
-                <Typography variant="caption">GSQAC</Typography>
-              </Box>
-              <Box className="visual-mini-card">
-                <SchoolOutlined sx={{ fontSize: 18 }} />
-                <Typography variant="caption">SQAAF</Typography>
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-
-        {/* Organic Curve Divider */}
-        <div className="custom-shape-divider-y">
-          <svg
-            data-name="Layer 1"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 1200 120"
-            preserveAspectRatio="none"
-          >
-            <path
-              d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
-              className="shape-fill"
-            ></path>
-          </svg>
+              <h2 className="lp-mini-acronym">SQAAF</h2>
+              <p className="lp-mini-desc">
+                School Quality Assessment and Assurance Framework
+              </p>
+            </article>
+          </div>
         </div>
-      </Box>
 
-      {/* RIGHT SECTION: Form */}
-      <Box className="login-form-panel">
-        <Paper elevation={0} className="login-card">
-          <Box className="login-auth-card">
-            <Box className="login-auth-header">
-              <Typography
-                variant="h4"
-                fontWeight="800"
-                color="primary"
-                className="login-auth-title"
-              >
-                Welcome to Gunotsav 2.0
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                className="login-auth-subtitle"
-              >
-                Sign in to continue quality assessment workflows
-              </Typography>
-              <Box className="login-symbol-row">
-                <Box className="login-symbol-chip">
-                  <LockOutlined sx={{ fontSize: 15 }} />
-                  <span>Secure</span>
-                </Box>
-                <Box className="login-symbol-chip">
-                  <VerifiedUserOutlined sx={{ fontSize: 15 }} />
-                  <span>Trusted</span>
-                </Box>
-              </Box>
-            </Box>
+        {/* Bottom accent bar — same orange/green as dashboard separator */}
+        <div className="lp-sep">
+          <div className="lp-sep-orange" />
+          <div className="lp-sep-green" />
+        </div>
+      </div>
 
-            {/* Role Selector */}
-            <FormControl
-              fullWidth
-              sx={{ mb: 3 }}
-              variant="standard"
-              error={!!errors.role}
-            >
-              <Select
-                value={selectedRole}
-                onChange={handleRoleChange}
-                displayEmpty
-                disableUnderline
-                className={`custom-select ${selectedRole ? "active" : ""}`}
-                MenuProps={{
-                  PaperProps: {
-                    sx: {
-                      borderRadius: 3,
-                      mt: 1,
-                      boxShadow: "0 10px 40px -10px rgba(0,0,0,0.1)",
-                    },
-                  },
-                }}
-              >
-                <MenuItem value="" disabled>
-                  <span style={{ color: "#9ca3af" }}>Select your role</span>
-                </MenuItem>
-                {roles.map((role) => (
-                  <MenuItem
-                    key={role.value}
-                    value={role.value}
-                    sx={{
-                      py: 2,
-                      px: 2,
-                      gap: 2,
-                      borderRadius: 2,
-                      mx: 1,
-                      my: 0.5,
-                    }}
-                  >
-                    <Box
-                      className="role-icon-box"
-                      sx={{ bgcolor: `${role.color}15`, color: role.color }}
-                    >
-                      {getRoleIcon(role.value)}
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight="600">
-                        {role.label}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors.role && (
-                <Typography variant="caption" color="error" sx={{ mt: 1 }}>
-                  {errors.role}
-                </Typography>
-              )}
-            </FormControl>
+      {/* ── Right: Form Panel ── */}
+      <div className="lp-form-panel">
+        <div className="lp-form-inner">
+          {/* Back to home */}
+          <button className="lp-back-btn" onClick={() => navigate("/")}>
+            <ArrowBack sx={{ fontSize: 16 }} />
+            Back to Home
+          </button>
 
-            <Fade in={!!selectedRole} timeout={500}>
-              <Box>
-                <Box
-                  className={`custom-input-group ${
-                    focusedInput === "userId" ? "focused" : ""
-                  } ${errors.userId ? "error" : ""}`}
+          {/* ── Login card ── */}
+          <div className="lp-card">
+            <div className="lp-form-header">
+              <h2 className="lp-form-title">Welcome Back</h2>
+              <p className="lp-form-subtitle">
+                Select your role and sign in to continue
+              </p>
+            </div>
+
+            {/* Role dropdown */}
+            <div className="lp-section">
+              <span className="lp-section-label">Select your role</span>
+              <div
+                className={`lp-dropdown${dropdownOpen ? " lp-dropdown--open" : ""}${errors.role ? " lp-dropdown--error" : ""}`}
+                ref={dropdownRef}
+              >
+                {/* Trigger */}
+                <button
+                  type="button"
+                  className="lp-dropdown-trigger"
+                  onClick={() => setDropdownOpen((o) => !o)}
+                  aria-haspopup="listbox"
+                  aria-expanded={dropdownOpen}
                 >
-                  <Typography variant="caption" className="input-label-text">
-                    {selectedRoleData?.authMethod || "User ID"}
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    variant="standard"
-                    placeholder={`e.g. ${
-                      selectedRole === "school"
-                        ? "Enter School ID"
-                        : selectedRole === "admin"
-                          ? "Enter Admin ID"
-                          : selectedRole === "crc"
-                            ? "Enter Crc ID"
-                            : "Enter Verifier ID"
-                    }`}
-                    value={userId}
-                    onChange={handleUserIdChange}
-                    onFocus={() => setFocusedInput("userId")}
-                    onBlur={() => setFocusedInput("")}
-                    InputProps={{
-                      disableUnderline: true,
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PersonOutline
+                  {selectedRole ? (
+                    <>
+                      <span
+                        className="lp-dd-icon"
+                        style={{
+                          background: `${selectedRoleData.color}18`,
+                          color: selectedRoleData.color,
+                        }}
+                      >
+                        {getRoleIcon(selectedRole)}
+                      </span>
+                      <span className="lp-dd-selected">
+                        <span className="lp-dd-name">
+                          {selectedRoleData.label}
+                        </span>
+                        <span className="lp-dd-desc">
+                          {selectedRoleData.description}
+                        </span>
+                      </span>
+                    </>
+                  ) : (
+                    <span className="lp-dd-placeholder">Choose your role…</span>
+                  )}
+                  <ArrowDownIcon
+                    className="lp-dd-arrow"
+                    sx={{
+                      fontSize: 20,
+                      transition: "transform 0.2s",
+                      transform: dropdownOpen
+                        ? "rotate(180deg)"
+                        : "rotate(0deg)",
+                    }}
+                  />
+                </button>
+
+                {/* Options menu */}
+                {dropdownOpen && (
+                  <div className="lp-dropdown-menu" role="listbox">
+                    {roles.map((role) => (
+                      <button
+                        key={role.value}
+                        type="button"
+                        role="option"
+                        aria-selected={selectedRole === role.value}
+                        className={`lp-dd-option${selectedRole === role.value ? " lp-dd-option--active" : ""}`}
+                        style={{ "--rc": role.color }}
+                        onClick={() => {
+                          handleRoleSelect(role.value);
+                          setDropdownOpen(false);
+                        }}
+                      >
+                        <span
+                          className="lp-dd-icon"
+                          style={{
+                            background: `${role.color}18`,
+                            color: role.color,
+                          }}
+                        >
+                          {getRoleIcon(role.value)}
+                        </span>
+                        <span className="lp-dd-option-text">
+                          <span className="lp-dd-name">{role.label}</span>
+                          <span className="lp-dd-desc">{role.description}</span>
+                        </span>
+                        {selectedRole === role.value && (
+                          <CheckCircle
                             sx={{
-                              color:
-                                focusedInput === "userId"
-                                  ? "primary.main"
-                                  : "text.disabled",
+                              fontSize: 16,
+                              color: role.color,
+                              flexShrink: 0,
                             }}
                           />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-                {errors.userId && (
-                  <Typography variant="caption" color="error" sx={{ ml: 1 }}>
-                    {errors.userId}
-                  </Typography>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 )}
-              </Box>
-            </Fade>
+              </div>
+              {errors.role && <span className="lp-error">{errors.role}</span>}
+            </div>
 
-            <Box sx={{ mt: 6 }}>
-              <Button
-                fullWidth
-                variant="contained"
-                size="large"
-                onClick={handleContinue}
-                disabled={
-                  !selectedRole || !userId.trim() || sendOtpMutation.isPending
-                }
-                endIcon={
-                  sendOtpMutation.isPending ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : (
-                    <ArrowForward />
-                  )
-                }
-                className="login-btn"
-                sx={{
-                  bgcolor:
-                    selectedRoleData?.color ||
-                    colors.primary?.blue ||
-                    "#1e3a8a",
-                }}
+            {/* User ID input — animates in when role is selected */}
+            <div
+              className={`lp-input-section${selectedRole ? " lp-input-visible" : ""}`}
+            >
+              <span className="lp-section-label">
+                {selectedRoleData?.authMethod || "User ID"}
+              </span>
+              <div
+                className={`lp-input-wrap${inputFocused ? " lp-input-focused" : ""}${errors.userId ? " lp-input-error" : ""}`}
               >
-                {sendOtpMutation.isPending
-                  ? "Sending OTP..."
-                  : "Continue Securely"}
-              </Button>
-            </Box>
+                <PersonOutline className="lp-input-adorn" />
+                <input
+                  className="lp-input"
+                  type="text"
+                  placeholder={`Enter your ${selectedRoleData?.authMethod || "User ID"}`}
+                  value={userId}
+                  onChange={handleUserIdChange}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
+                  onKeyDown={handleKeyDown}
+                  autoFocus={!!selectedRole}
+                />
+              </div>
+              {errors.userId && (
+                <span className="lp-error">{errors.userId}</span>
+              )}
+            </div>
 
-            {/* <Box sx={{ mt: 4, textAlign: "center" }}>
-              <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                Having trouble? <span className="link-text">Contact Admin</span>
-              </Typography>
-            </Box> */}
-          </Box>
-        </Paper>
-      </Box>
-    </Box>
+            {/* Continue button */}
+            <button
+              className="lp-continue-btn"
+              onClick={handleContinue}
+              disabled={
+                !selectedRole || !userId.trim() || sendOtpMutation.isPending
+              }
+              style={{ "--btn-c": selectedRoleData?.color || "#1e3a8a" }}
+            >
+              {sendOtpMutation.isPending ? (
+                <>
+                  <CircularProgress size={18} color="inherit" />
+                  <span>Sending OTP…</span>
+                </>
+              ) : (
+                <>
+                  <span>Continue Securely</span>
+                  <ArrowForward sx={{ fontSize: 18 }} />
+                </>
+              )}
+            </button>
+
+            <div className="lp-footer">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              Secured with OTP verification
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
