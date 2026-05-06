@@ -47,6 +47,8 @@
       "editAssessment": "મૂલ્યાંકન સંપાદિત કરો",
       "duplicateFrom": "માથી નકલ કરો",
       "schoolType": "શાળા પ્રકાર",
+      "schoolManagement": "શાળા સંચાલન",
+      "selectSchoolManagement": "શાળા સંચાલન પસંદ કરો",
       "schoolTypes": {
         "primary": "પ્રાથમિક (ધોરણ 1 થી 8)",
         "secondary": "માધ્યમિક (ધોરણ 9 થી 12)",

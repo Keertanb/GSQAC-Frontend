@@ -1,8 +1,21 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import axiosInstance from "../config/axios";
 import { queryKeys } from "../config/queryClient";
+import { queryClient } from "../lib/queryClient";
 import { enqueueSnackbar } from "notistack";
 import useAuthStore from "../store/useAuthStore";
+import { getRoleId } from "../constants/roles";
+
+/** @param {Object} payload */
+function resolveSubdomainSubmitRoleId(payload) {
+  if (payload?.roleId != null && payload.roleId !== "") {
+    return Number(payload.roleId);
+  }
+  const authRole = useAuthStore.getState().role;
+  if (!authRole) return null;
+  const id = getRoleId(authRole);
+  return id != null ? Number(id) : null;
+}
 
 /**
  * Get domains and subdomains for school
@@ -36,7 +49,7 @@ export const useGetSubdomainQuestionsQuery = ({
 }) => {
   // Get userId from auth store if not provided
   const userIdToUse = userId || useAuthStore.getState().userId;
-  
+
   return useQuery({
     queryKey: queryKeys.admin.subdomainQuestions(
       subDomainId,
@@ -45,7 +58,7 @@ export const useGetSubdomainQuestionsQuery = ({
       classNumber,
       section,
       subjectId,
-      userIdToUse // Include userId in query key
+      userIdToUse, // Include userId in query key
     ),
     queryFn: () =>
       getSubdomainQuestions({
@@ -59,7 +72,7 @@ export const useGetSubdomainQuestionsQuery = ({
       }),
     enabled: enabled && !!subDomainId && !!roleId,
     staleTime: 0, // Always consider data stale to refetch on mount
-    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnMount: "always", // Always refetch when component mounts
     refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 };
@@ -80,13 +93,13 @@ export const useGetDomainsQuery = ({
 }) => {
   // Get userId from auth store if not provided
   const userIdToUse = userId || useAuthStore.getState().userId;
-  
+
   return useQuery({
     queryKey: queryKeys.school.domains(roleId, languageCode, userIdToUse),
     queryFn: () => getDomains({ roleId, languageCode }),
     enabled: enabled && !!roleId,
     staleTime: 0, // Always consider data stale to refetch on mount
-    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnMount: "always", // Always refetch when component mounts
     refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 };
@@ -137,14 +150,21 @@ export const getSchoolSections = async (params) => {
 
 /**
  * Submit subdomain-wise answers
- * @param {Object} payload - { isAns: number, subDomainId: number, cls: number, section: string, questionType: number, answers: Array }
+ * @param {Object} payload - { isAns: number, subDomainId: number, cls: number, section: string, questionType: number, answers: Array, roleId?: number }
  * @param {number} payload.questionType - Question type (1: General, 2: Classroom Observation, 3: Subject Observation, 4: FLN)
  * @returns {Promise} API response
  */
 export const submitSubdomainWiseAnswers = async (payload) => {
+  const roleId = resolveSubdomainSubmitRoleId(payload);
+  const body = {
+    ...payload,
+    ...(roleId != null ? { roleId } : {}),
+  };
+  const config = roleId != null ? { headers: { roleId } } : undefined;
   const response = await axiosInstance.post(
     "/school/sub-domain-wise-submit-answers",
-    payload
+    body,
+    config,
   );
   return response.data;
 };
@@ -242,41 +262,46 @@ export const useGetSchoolSectionsQuery = ({ schoolId, enabled = true }) => {
  * @returns {Object} Mutation object from React Query
  */
 export const useSubmitSubdomainWiseAnswersMutation = (options = {}) => {
+  const { onSuccess: userOnSuccess, onError: userOnError, ...rest } = options;
   return useMutation({
     mutationFn: (data) => submitSubdomainWiseAnswers(data),
     mutationKey: queryKeys.school.submitSubdomainWiseAnswers(),
-    onSuccess: (data) => {
-      enqueueSnackbar(data?.message || "Answers submitted successfully", {
-        variant: "success",
+    onSuccess: async (data, variables, context) => {
+      await queryClient.invalidateQueries({
+        queryKey: ["admin", "subdomain-questions"],
       });
-      if (options.onSuccess) {
-        options.onSuccess(data);
+      if (userOnSuccess) {
+        await userOnSuccess(data, variables, context);
+      } else {
+        enqueueSnackbar(data?.message || "Answers submitted successfully", {
+          variant: "success",
+        });
       }
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
       enqueueSnackbar(
         error?.response?.data?.message || "Failed to submit answers",
         {
           variant: "error",
-        }
+        },
       );
-      if (options.onError) {
-        options.onError(error);
+      if (userOnError) {
+        userOnError(error, variables, context);
       }
     },
-    ...options,
+    ...rest,
   });
 };
 
 /**
  * Submit assessment
- * @param {Object} payload - { userId: number, isSubmitted: number }
+ * @param {Object} payload - { assessmentId, sessionId, userId, roleId, schoolId, isSubmitted }
  * @returns {Promise} API response
  */
 export const submitAssessment = async (payload) => {
   const response = await axiosInstance.post(
     "/school/submit-assessment",
-    payload
+    payload,
   );
   return response.data;
 };
@@ -303,7 +328,7 @@ export const useSubmitAssessmentMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to submit assessment",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -353,8 +378,6 @@ export const useGetSchoolInfrastructureQuery = ({
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
-
-const authState = useAuthStore.getState();
 
 export const getSubdomainQuestions = async (params) => {
   const {
@@ -417,7 +440,7 @@ export const useUpdateSchoolInfrastructureMutation = (options = {}) => {
         data?.message || "Infrastructure details updated successfully",
         {
           variant: "success",
-        }
+        },
       );
       if (options.onSuccess) {
         options.onSuccess(data);
@@ -429,7 +452,7 @@ export const useUpdateSchoolInfrastructureMutation = (options = {}) => {
           "Failed to update infrastructure details",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);

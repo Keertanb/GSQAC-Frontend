@@ -3,6 +3,18 @@ import axiosInstance from "../config/axios";
 import { queryKeys } from "../config/queryClient";
 import { enqueueSnackbar } from "notistack";
 import useAuthStore from "../store/useAuthStore";
+import { getRoleId } from "../constants/roles";
+
+/** @param {Object} payload */
+function resolveSubdomainSubmitRoleId(payload) {
+  if (payload?.roleId != null && payload.roleId !== "") {
+    return Number(payload.roleId);
+  }
+  const authRole = useAuthStore.getState().role;
+  if (!authRole) return null;
+  const id = getRoleId(authRole);
+  return id != null ? Number(id) : null;
+}
 
 /**
  * Get domains and subdomains for verifier/inspector
@@ -99,14 +111,21 @@ export const submitAnswer = async (payload) => {
 
 /**
  * Submit all answers for a subdomain
- * @param {Object} payload - Answers payload (should include schoolId, questionType)
+ * @param {Object} payload - Answers payload (should include schoolId, questionType, roleId optional)
  * @param {number} payload.questionType - Question type (1: General, 2: Classroom Observation, 3: Subject Observation, 4: FLN)
  * @returns {Promise} API response
  */
 export const submitSubdomainWiseAnswers = async (payload) => {
+  const roleId = resolveSubdomainSubmitRoleId(payload);
+  const body = {
+    ...payload,
+    ...(roleId != null ? { roleId } : {}),
+  };
+  const config = roleId != null ? { headers: { roleId } } : undefined;
   const response = await axiosInstance.post(
-    "school/sub-domain-wise-submit-answers",
-    payload
+    "/school/sub-domain-wise-submit-answers",
+    body,
+    config,
   );
   return response.data;
 };
@@ -158,7 +177,7 @@ export const useGetSubdomainQuestionsQuery = ({
       classNumber,
       section,
       subjectId,
-      schoolId
+      schoolId,
     ),
     queryFn: () =>
       getSubdomainQuestions({
@@ -198,7 +217,7 @@ export const useSubmitAnswerMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to submit answer",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -230,7 +249,7 @@ export const useSubmitSubdomainWiseAnswersMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to submit answers",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -280,7 +299,7 @@ export const getSchoolGrades = async (params) => {
 export const submitAssessment = async (payload) => {
   const response = await axiosInstance.post(
     "/school/submit-assessment",
-    payload
+    payload,
   );
   return response.data;
 };
@@ -373,7 +392,7 @@ export const useSubmitAssessmentMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to submit assessment",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -390,10 +409,10 @@ export const useSubmitAssessmentMutation = (options = {}) => {
  */
 export const getVerifierAllocatedSchools = async (params) => {
   const { districtId, userId, ...otherParams } = params;
-  
+
   // Build params object - always include districtId
   const queryParams = {};
-  
+
   // Always include districtId in params (can be null for "All" option)
   // Explicitly set districtId - if it's null or undefined, set it to null
   if (districtId !== undefined && districtId !== null) {
@@ -411,7 +430,7 @@ export const getVerifierAllocatedSchools = async (params) => {
   // Get userId from auth store if not provided in params, and set in header if present
   const authState = useAuthStore.getState();
   const userIdToSend = userId || authState.userId;
-  
+
   const config = {
     params: queryParams,
     headers: {},
@@ -420,21 +439,12 @@ export const getVerifierAllocatedSchools = async (params) => {
       const searchParams = new URLSearchParams();
       Object.keys(params).forEach((key) => {
         const value = params[key];
-        // Only include the parameter if it's not null or undefined
-        // When districtId is null (for "All" selection), omit it from the query string
         if (value !== undefined && value !== null) {
           searchParams.append(key, String(value));
         }
       });
       const queryString = searchParams.toString();
-      // Debug log to verify what's being sent
-      console.log("API Query Params:", {
-        originalParams: params,
-        queryString,
-        districtId: params.districtId,
-        districtIdType: typeof params.districtId,
-        districtIdIsNull: params.districtId === null,
-      });
+
       return queryString;
     },
   };
@@ -445,7 +455,7 @@ export const getVerifierAllocatedSchools = async (params) => {
 
   const response = await axiosInstance.get(
     "/verifier/get-school-allocated-verifier",
-    config
+    config,
   );
   return response.data;
 };
@@ -480,7 +490,7 @@ export const useGetVerifierAllocatedSchoolsQuery = ({
  */
 export const getDistrictsByVerifier = async () => {
   const response = await axiosInstance.get(
-    "/verifier/get-districtId-by-verifier"
+    "/verifier/get-districtId-by-verifier",
   );
   return response.data;
 };
@@ -528,7 +538,7 @@ export const getVerifierDashboard = async (params) => {
 
   const response = await axiosInstance.get(
     "/verifier/get-verifier-dashboard",
-    config
+    config,
   );
   // Response structure: { message: "Success", data: { userId, totalAllocatedSchool, totalPendingSchool, totalCompletedSchool } }
   return response.data;

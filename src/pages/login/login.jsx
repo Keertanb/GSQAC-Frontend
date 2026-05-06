@@ -16,14 +16,15 @@ import {
 import {
   ArrowBack,
   ArrowForward,
+  AutoAwesome,
   PersonOutline,
   SchoolOutlined,
   PeopleOutline,
   VerifiedUserOutlined,
   AdminPanelSettingsOutlined,
   LockOutlined,
-  EmailOutlined,
   AccountTreeOutlined,
+  ShieldOutlined,
 } from "@mui/icons-material";
 import { colors } from "../../constants/colors";
 import { roles, getRoleId } from "../../constants/roles";
@@ -50,8 +51,6 @@ const Login = () => {
 
   const sendOtpMutation = useSendOtpMutation({
     onSuccess: (data) => {
-      console.log("Send OTP Success Response:", data);
-
       // Extract userId from various possible response structures
       // Handle: data.userId, data.data.userId, data.data[0].userId, data.data[0].id, etc.
       let apiUserId = null;
@@ -74,11 +73,6 @@ const Login = () => {
         apiUserId = data.data.data.userId;
       }
 
-      console.log("Extracted userId:", apiUserId, "Role:", selectedRole);
-      console.log("Full response structure:", JSON.stringify(data, null, 2));
-      console.log("Data array contents:", data?.data);
-
-      // Only proceed if we have a userId
       if (!apiUserId) {
         console.error("No userId found in response. Full response:", data);
         setErrors({
@@ -90,14 +84,8 @@ const Login = () => {
 
       // Set userId in store first (synchronous operation)
       setOtpUserId(apiUserId, selectedRole);
-      console.log("UserId set in store:", apiUserId);
 
-      // Navigate after a small delay to ensure store is updated
       setTimeout(() => {
-        console.log("Navigating to OTP verify with:", {
-          role: selectedRole,
-          userId: apiUserId,
-        });
         navigate("/otp-verify", {
           state: {
             role: selectedRole,
@@ -270,14 +258,27 @@ const Login = () => {
           </Box>
 
           <Box sx={{ position: "relative", zIndex: 2, mt: 4 }}>
+            <Box className="visual-drive-pill">
+              <AutoAwesome sx={{ fontSize: 16 }} />
+              Gujarat's school quality drive
+            </Box>
             <Typography variant="h3" className="visual-title">
-              Quality Assurance
-              <br /> Simplified.
+              Gunotsav <span className="visual-title-accent">2.0</span>
             </Typography>
             <Typography variant="body1" className="visual-subtitle">
-              Empowering schools and inspectors with real-time insights and
-              seamless management.
+              A statewide initiative to assess, assure and enhance school
+              quality through data-driven insights aligned with NEP-2020.
             </Typography>
+            <Box className="visual-mini-cards">
+              <Box className="visual-mini-card">
+                <ShieldOutlined sx={{ fontSize: 18 }} />
+                <Typography variant="caption">GSQAC</Typography>
+              </Box>
+              <Box className="visual-mini-card">
+                <SchoolOutlined sx={{ fontSize: 18 }} />
+                <Typography variant="caption">SQAAF</Typography>
+              </Box>
+            </Box>
           </Box>
         </Box>
 
@@ -300,152 +301,181 @@ const Login = () => {
       {/* RIGHT SECTION: Form */}
       <Box className="login-form-panel">
         <Paper elevation={0} className="login-card">
-          <Box sx={{ mb: 5, textAlign: "center" }}>
-            <Typography
-              variant="h4"
-              fontWeight="800"
-              color="primary"
-              sx={{ mb: 1, letterSpacing: "-0.5px" }}
-            >
-              Welcome Back
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Please enter your details to sign in
-            </Typography>
-          </Box>
-
-          {/* Role Selector */}
-          <FormControl
-            fullWidth
-            sx={{ mb: 3 }}
-            variant="standard"
-            error={!!errors.role}
-          >
-            <Select
-              value={selectedRole}
-              onChange={handleRoleChange}
-              displayEmpty
-              disableUnderline
-              className={`custom-select ${selectedRole ? "active" : ""}`}
-              MenuProps={{
-                PaperProps: {
-                  sx: {
-                    borderRadius: 3,
-                    mt: 1,
-                    boxShadow: "0 10px 40px -10px rgba(0,0,0,0.1)",
-                  },
-                },
-              }}
-            >
-              <MenuItem value="" disabled>
-                <span style={{ color: "#9ca3af" }}>Select your role</span>
-              </MenuItem>
-              {roles.map((role) => (
-                <MenuItem
-                  key={role.value}
-                  value={role.value}
-                  sx={{ py: 2, px: 2, gap: 2, borderRadius: 2, mx: 1, my: 0.5 }}
-                >
-                  <Box
-                    className="role-icon-box"
-                    sx={{ bgcolor: `${role.color}15`, color: role.color }}
-                  >
-                    {getRoleIcon(role.value)}
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight="600">
-                      {role.label}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
-            {errors.role && (
-              <Typography variant="caption" color="error" sx={{ mt: 1 }}>
-                {errors.role}
-              </Typography>
-            )}
-          </FormControl>
-
-          <Fade in={!!selectedRole} timeout={500}>
-            <Box>
-              <Box
-                className={`custom-input-group ${
-                  focusedInput === "userId" ? "focused" : ""
-                } ${errors.userId ? "error" : ""}`}
+          <Box className="login-auth-card">
+            <Box className="login-auth-header">
+              <Typography
+                variant="h4"
+                fontWeight="800"
+                color="primary"
+                className="login-auth-title"
               >
-                <Typography variant="caption" className="input-label-text">
-                  {selectedRoleData?.authMethod || "User ID"}
-                </Typography>
-                <TextField
-                  fullWidth
-                  variant="standard"
-                  placeholder={`e.g. ${
-                    selectedRole === "school"
-                      ? "SCH-2024-001"
-                      : "Enter Admin ID"
-                  }`}
-                  value={userId}
-                  onChange={handleUserIdChange}
-                  onFocus={() => setFocusedInput("userId")}
-                  onBlur={() => setFocusedInput("")}
-                  InputProps={{
-                    disableUnderline: true,
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PersonOutline
-                          sx={{
-                            color:
-                              focusedInput === "userId"
-                                ? "primary.main"
-                                : "text.disabled",
-                          }}
-                        />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+                Welcome to Gunotsav 2.0
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                className="login-auth-subtitle"
+              >
+                Sign in to continue quality assessment workflows
+              </Typography>
+              <Box className="login-symbol-row">
+                <Box className="login-symbol-chip">
+                  <LockOutlined sx={{ fontSize: 15 }} />
+                  <span>Secure</span>
+                </Box>
+                <Box className="login-symbol-chip">
+                  <VerifiedUserOutlined sx={{ fontSize: 15 }} />
+                  <span>Trusted</span>
+                </Box>
               </Box>
-              {errors.userId && (
-                <Typography variant="caption" color="error" sx={{ ml: 1 }}>
-                  {errors.userId}
+            </Box>
+
+            {/* Role Selector */}
+            <FormControl
+              fullWidth
+              sx={{ mb: 3 }}
+              variant="standard"
+              error={!!errors.role}
+            >
+              <Select
+                value={selectedRole}
+                onChange={handleRoleChange}
+                displayEmpty
+                disableUnderline
+                className={`custom-select ${selectedRole ? "active" : ""}`}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      borderRadius: 3,
+                      mt: 1,
+                      boxShadow: "0 10px 40px -10px rgba(0,0,0,0.1)",
+                    },
+                  },
+                }}
+              >
+                <MenuItem value="" disabled>
+                  <span style={{ color: "#9ca3af" }}>Select your role</span>
+                </MenuItem>
+                {roles.map((role) => (
+                  <MenuItem
+                    key={role.value}
+                    value={role.value}
+                    sx={{
+                      py: 2,
+                      px: 2,
+                      gap: 2,
+                      borderRadius: 2,
+                      mx: 1,
+                      my: 0.5,
+                    }}
+                  >
+                    <Box
+                      className="role-icon-box"
+                      sx={{ bgcolor: `${role.color}15`, color: role.color }}
+                    >
+                      {getRoleIcon(role.value)}
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight="600">
+                        {role.label}
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+              {errors.role && (
+                <Typography variant="caption" color="error" sx={{ mt: 1 }}>
+                  {errors.role}
                 </Typography>
               )}
+            </FormControl>
+
+            <Fade in={!!selectedRole} timeout={500}>
+              <Box>
+                <Box
+                  className={`custom-input-group ${
+                    focusedInput === "userId" ? "focused" : ""
+                  } ${errors.userId ? "error" : ""}`}
+                >
+                  <Typography variant="caption" className="input-label-text">
+                    {selectedRoleData?.authMethod || "User ID"}
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    variant="standard"
+                    placeholder={`e.g. ${
+                      selectedRole === "school"
+                        ? "Enter School ID"
+                        : selectedRole === "admin"
+                          ? "Enter Admin ID"
+                          : selectedRole === "crc"
+                            ? "Enter Crc ID"
+                            : "Enter Verifier ID"
+                    }`}
+                    value={userId}
+                    onChange={handleUserIdChange}
+                    onFocus={() => setFocusedInput("userId")}
+                    onBlur={() => setFocusedInput("")}
+                    InputProps={{
+                      disableUnderline: true,
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PersonOutline
+                            sx={{
+                              color:
+                                focusedInput === "userId"
+                                  ? "primary.main"
+                                  : "text.disabled",
+                            }}
+                          />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+                {errors.userId && (
+                  <Typography variant="caption" color="error" sx={{ ml: 1 }}>
+                    {errors.userId}
+                  </Typography>
+                )}
+              </Box>
+            </Fade>
+
+            <Box sx={{ mt: 6 }}>
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                onClick={handleContinue}
+                disabled={
+                  !selectedRole || !userId.trim() || sendOtpMutation.isPending
+                }
+                endIcon={
+                  sendOtpMutation.isPending ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <ArrowForward />
+                  )
+                }
+                className="login-btn"
+                sx={{
+                  bgcolor:
+                    selectedRoleData?.color ||
+                    colors.primary?.blue ||
+                    "#1e3a8a",
+                }}
+              >
+                {sendOtpMutation.isPending
+                  ? "Sending OTP..."
+                  : "Continue Securely"}
+              </Button>
             </Box>
-          </Fade>
 
-          <Box sx={{ mt: 6 }}>
-            <Button
-              fullWidth
-              variant="contained"
-              size="large"
-              onClick={handleContinue}
-              disabled={
-                !selectedRole || !userId.trim() || sendOtpMutation.isPending
-              }
-              endIcon={
-                sendOtpMutation.isPending ? (
-                  <CircularProgress size={20} color="inherit" />
-                ) : (
-                  <ArrowForward />
-                )
-              }
-              className="login-btn"
-              sx={{
-                bgcolor:
-                  selectedRoleData?.color || colors.primary?.blue || "#1e3a8a",
-              }}
-            >
-              {sendOtpMutation.isPending
-                ? "Sending OTP..."
-                : "Continue Securely"}
-            </Button>
-          </Box>
-
-          <Box sx={{ mt: 4, textAlign: "center" }}>
-            <Typography variant="body2" sx={{ color: "#6b7280" }}>
-              Having trouble? <span className="link-text">Contact Admin</span>
-            </Typography>
+            {/* <Box sx={{ mt: 4, textAlign: "center" }}>
+              <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                Having trouble? <span className="link-text">Contact Admin</span>
+              </Typography>
+            </Box> */}
           </Box>
         </Paper>
       </Box>

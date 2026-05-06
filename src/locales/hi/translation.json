@@ -47,6 +47,8 @@
       "editAssessment": "मूल्यांकन संपादित करें",
       "duplicateFrom": "से डुप्लिकेट करें",
       "schoolType": "स्कूल प्रकार",
+      "schoolManagement": "स्कूल प्रबंधन",
+      "selectSchoolManagement": "स्कूल प्रबंधन चुनें",
       "schoolTypes": {
         "primary": "प्राथमिक (कक्षा 1 से 8)",
         "secondary": "माध्यमिक (कक्षा 9 से 12)",

@@ -96,7 +96,7 @@ export const upsertDomain = async (payload) => {
 export const upsertSubdomain = async (payload) => {
   const response = await axiosInstance.post(
     "/questionnaire/sub-domain",
-    payload
+    payload,
   );
   return response.data;
 };
@@ -119,7 +119,7 @@ export const upsertQuestion = async (payload) => {
 export const upsertQuestionOption = async (payload) => {
   const response = await axiosInstance.post(
     "/questionnaire/question-option",
-    payload
+    payload,
   );
   return response.data;
 };
@@ -157,15 +157,16 @@ export const deleteQuestion = async (questionId) => {
  */
 export const deleteQuestionOption = async (payload) => {
   const isBulkDeleteByOptionIds =
-    payload &&
-    typeof payload === "object" &&
-    Array.isArray(payload.optionIds);
+    payload && typeof payload === "object" && Array.isArray(payload.optionIds);
 
-  const response = await axiosInstance.delete("/questionnaire/question-option", {
-    ...(isBulkDeleteByOptionIds
-      ? { data: { optionIds: payload.optionIds } }
-      : { params: { questionId: payload } }),
-  });
+  const response = await axiosInstance.delete(
+    "/questionnaire/question-option",
+    {
+      ...(isBulkDeleteByOptionIds
+        ? { data: { optionIds: payload.optionIds } }
+        : { params: { questionId: payload } }),
+    },
+  );
   return response.data;
 };
 
@@ -176,7 +177,6 @@ export const deleteQuestionOption = async (payload) => {
  */
 export const submitAnswer = async (payload) => {
   const response = await axiosInstance.post("/school/submit-answers", payload);
-  console.log(payload, "payloadpayload");
   return response.data;
 };
 
@@ -225,7 +225,7 @@ export const useGetSubdomainQuestionsQuery = ({
       roleId,
       languageCode,
       classNumber,
-      section
+      section,
     ),
     queryFn: () =>
       getSubdomainQuestions({
@@ -278,7 +278,7 @@ export const useUpsertDomainMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to save domain",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -310,7 +310,7 @@ export const useUpsertSubdomainMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to save subdomain",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -339,7 +339,7 @@ export const useUpsertQuestionMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to save question",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -368,7 +368,7 @@ export const useUpsertQuestionOptionMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to save option",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -400,7 +400,7 @@ export const useDeleteDomainMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to delete domain",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -432,7 +432,7 @@ export const useDeleteQuestionMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to delete question",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -464,7 +464,7 @@ export const useDeleteQuestionOptionMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to delete question option",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -496,7 +496,7 @@ export const useSubmitAnswerMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to submit answer",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -583,7 +583,7 @@ export const useUpsertVerifierMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to save verifier",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -692,7 +692,7 @@ export const upsertDistrictNodalOfficer = async (payload) => {
  * @returns {Object} Query object from React Query
  */
 export const useGetDistrictNodalOfficersQuery = (
-  params = { page: 1, limit: 10 }
+  params = { page: 1, limit: 10 },
 ) => {
   return useQuery({
     queryKey: [
@@ -721,7 +721,7 @@ export const useUpsertDistrictNodalOfficerMutation = (options = {}) => {
         data?.message || "District Nodal Officer saved successfully",
         {
           variant: "success",
-        }
+        },
       );
       if (options.onSuccess) {
         options.onSuccess(data);
@@ -733,7 +733,7 @@ export const useUpsertDistrictNodalOfficerMutation = (options = {}) => {
           "Failed to save district nodal officer",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -835,7 +835,7 @@ export const useSaveSchoolAllocationMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to save school allocation",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -898,7 +898,7 @@ export const useUpdateRoleStatusMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to update role status",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -916,7 +916,7 @@ export const useUpdateRoleStatusMutation = (options = {}) => {
 export const translateText = async (payload) => {
   const response = await axiosInstance.post(
     "/translation/upsert-translation",
-    payload
+    payload,
   );
   return response.data;
 };
@@ -958,6 +958,15 @@ export const useTranslateTextMutation = (options = {}) => {
 export const getAssessments = async (academicYear) => {
   const config = academicYear ? { params: { academicYear } } : {};
   const response = await axiosInstance.get("/admin/assessment", config);
+  return response.data;
+};
+
+/**
+ * Get school management list
+ * @returns {Promise} API response
+ */
+export const getSchoolManagement = async () => {
+  const response = await axiosInstance.get("/admin/school-management");
   return response.data;
 };
 
@@ -1006,7 +1015,10 @@ export const getAssessmentRoleAssignments = async () => {
  * @returns {Promise} API response
  */
 export const updateAssessmentRoleAssignment = async (payload) => {
-  const response = await axiosInstance.post("/admin/assessment-role-assignment", payload);
+  const response = await axiosInstance.post(
+    "/admin/assessment-role-assignment",
+    payload,
+  );
   return response.data;
 };
 
@@ -1016,9 +1028,12 @@ export const updateAssessmentRoleAssignment = async (payload) => {
  * @returns {Promise} API response
  */
 export const deleteAssessmentRoleAssignment = async (payload) => {
-  const response = await axiosInstance.delete("/admin/assessment-role-assignment", {
-    data: payload,
-  });
+  const response = await axiosInstance.delete(
+    "/admin/assessment-role-assignment",
+    {
+      data: payload,
+    },
+  );
   return response.data;
 };
 
@@ -1063,6 +1078,18 @@ export const useGetAssessmentsQuery = (academicYear, options = {}) => {
 };
 
 /**
+ * React Query hook to get school management list
+ */
+export const useGetSchoolManagementQuery = (options = {}) => {
+  return useQuery({
+    queryKey: ["admin", "school-management"],
+    queryFn: getSchoolManagement,
+    staleTime: 10 * 60 * 1000,
+    ...options,
+  });
+};
+
+/**
  * React Query hook to update assessment
  */
 export const useUpdateAssessmentMutation = (options = {}) => {
@@ -1082,7 +1109,7 @@ export const useUpdateAssessmentMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to update assessment",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -1110,7 +1137,7 @@ export const useCloneAssessmentMutation = (options = {}) => {
     onError: (error) => {
       enqueueSnackbar(
         error?.response?.data?.message || "Failed to clone assessment",
-        { variant: "error" }
+        { variant: "error" },
       );
       if (options.onError) {
         options.onError(error);
@@ -1140,7 +1167,7 @@ export const usePublishAssessmentMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to publish assessment",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -1182,7 +1209,7 @@ export const useUpdateAssessmentRoleAssignmentMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to update assignment",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -1204,7 +1231,7 @@ export const useDeleteAssessmentRoleAssignmentMutation = (options = {}) => {
         data?.message || "Assessment role assignment deleted successfully",
         {
           variant: "success",
-        }
+        },
       );
       if (options.onSuccess) {
         options.onSuccess(data);
@@ -1216,7 +1243,7 @@ export const useDeleteAssessmentRoleAssignmentMutation = (options = {}) => {
           "Failed to delete assessment role assignment",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -1246,7 +1273,7 @@ export const useDeleteSubdomainMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to delete subdomain",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
@@ -1276,7 +1303,7 @@ export const useDeleteAssessmentMutation = (options = {}) => {
         error?.response?.data?.message || "Failed to delete assessment",
         {
           variant: "error",
-        }
+        },
       );
       if (options.onError) {
         options.onError(error);
