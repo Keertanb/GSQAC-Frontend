@@ -5,6 +5,7 @@ import {
   ArrowForward,
   ArrowBack,
   PersonOutline,
+  LockOutlined,
   SchoolOutlined,
   VerifiedUserOutlined,
   AdminPanelSettingsOutlined,
@@ -25,11 +26,13 @@ const Login = () => {
   const [searchParams] = useSearchParams();
   const [selectedRole, setSelectedRole] = useState("");
   const [userId, setUserId] = useState("");
-  const [errors, setErrors] = useState({ role: "", userId: "" });
+  const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState({ role: "", userId: "", password: "" });
   const [inputFocused, setInputFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const { setOtpUserId } = useAuthStore();
+  const { setUserData } = useAuthStore();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -50,34 +53,65 @@ const Login = () => {
 
   const sendOtpMutation = useSendOtpMutation({
     onSuccess: (data) => {
-      let apiUserId = null;
-      if (data?.userId) {
-        apiUserId = data.userId;
-      } else if (data?.data?.userId) {
-        apiUserId = data.data.userId;
-      } else if (Array.isArray(data?.data) && data.data.length > 0) {
-        const firstItem = data.data[0];
-        apiUserId = firstItem?.userId || firstItem?.id || firstItem?.user?.id;
-      } else if (data?.data?.data?.userId) {
-        apiUserId = data.data.data.userId;
-      }
+      const firstItem = Array.isArray(data?.data) ? data.data[0] : null;
+      const apiUserId =
+        data?.userId ||
+        data?.data?.userId ||
+        firstItem?.userId ||
+        firstItem?.id ||
+        firstItem?.user?.id ||
+        data?.data?.data?.userId;
 
-      if (!apiUserId) {
-        console.error("No userId found in response. Full response:", data);
+      const token =
+        firstItem?.token ||
+        data?.token ||
+        data?.accessToken ||
+        data?.data?.token ||
+        data?.data?.accessToken;
+
+      const apiUserName =
+        firstItem?.userName ||
+        data?.userName ||
+        data?.data?.userName ||
+        userId.trim();
+
+      if (!apiUserId || !token) {
+        console.error("Missing login details in response. Full response:", data);
         setErrors({
           ...errors,
-          userId: "Failed to get user ID from server. Please try again.",
+          userId: "Login response is incomplete. Please try again.",
         });
         return;
       }
 
-      setOtpUserId(apiUserId, selectedRole);
-      setTimeout(() => {
-        navigate("/otp-verify", {
-          state: { role: selectedRole, userId: apiUserId },
-          replace: false,
-        });
-      }, 50);
+      const dashboardRoutes = {
+        school: "/school-dashboard",
+        parent: "/parent-dashboard",
+        inspector: "/inspector-dashboard",
+        admin: "/admin-dashboard",
+        crc: "/crc-dashboard",
+      };
+
+      const dashboardRoute = dashboardRoutes[selectedRole] || "/";
+      const normalizedUserId =
+        typeof apiUserId === "string" && !Number.isNaN(Number(apiUserId))
+          ? Number(apiUserId)
+          : apiUserId;
+
+      setUserData(
+        {
+          id: normalizedUserId,
+          role: selectedRole,
+          name: apiUserName,
+          userName: apiUserName,
+        },
+        token,
+        selectedRole,
+        normalizedUserId,
+        apiUserName,
+      );
+
+      navigate(dashboardRoute, { replace: true });
     },
     onError: (error) => {
       console.error("Send OTP Error:", error);
@@ -105,6 +139,7 @@ const Login = () => {
     setSelectedRole(roleValue);
     setErrors({ ...errors, role: "" });
     setUserId("");
+    setPassword("");
   };
 
   const handleUserIdChange = (e) => {
@@ -112,8 +147,13 @@ const Login = () => {
     setErrors({ ...errors, userId: "" });
   };
 
+  const handlePasswordChange = (e) => {
+    setPassword(e.target.value);
+    setErrors({ ...errors, password: "" });
+  };
+
   const handleContinue = () => {
-    const newErrors = { role: "", userId: "" };
+    const newErrors = { role: "", userId: "", password: "" };
     let hasError = false;
 
     if (!selectedRole) {
@@ -124,6 +164,10 @@ const Login = () => {
       newErrors.userId = "Please enter your User ID";
       hasError = true;
     }
+    if (!password.trim()) {
+      newErrors.password = "Please enter your password";
+      hasError = true;
+    }
 
     if (hasError) {
       setErrors(newErrors);
@@ -131,7 +175,11 @@ const Login = () => {
     }
 
     const roleId = getRoleId(selectedRole);
-    sendOtpMutation.mutate({ userName: userId.trim(), roleId });
+    sendOtpMutation.mutate({
+      userName: userId.trim(),
+      password: password.trim(),
+      roleId,
+    });
   };
 
   const handleKeyDown = (e) => {
@@ -148,20 +196,20 @@ const Login = () => {
 
         {/* Hero copy — mirrors dashboard Gunotsav 2.0 section */}
         <div className="lp-hero-copy">
-          <p className="lp-drive-pill">
+          {/* <p className="lp-drive-pill">
             <StarIcon
               className="lp-drive-star"
               fontSize="small"
               aria-hidden="true"
             />
             Gujarat&apos;s school quality drive
-          </p>
+          </p> */}
 
           <h1 className="lp-hero-title">
             Gunotsav <span className="lp-hero-accent">2.0</span>
           </h1>
 
-          <div className="lp-mini-cards">
+          {/* <div className="lp-mini-cards">
             <article
               className="lp-mini-card lp-mini-card--gold"
               aria-label="GSQAC"
@@ -190,7 +238,7 @@ const Login = () => {
                 School Quality Assessment and Assurance Framework
               </p>
             </article>
-          </div>
+          </div> */}
         </div>
 
         {/* Bottom accent bar — same orange/green as dashboard separator */}
@@ -340,6 +388,28 @@ const Login = () => {
               {errors.userId && (
                 <span className="lp-error">{errors.userId}</span>
               )}
+
+              <div className="lp-field-gap" />
+
+              <span className="lp-section-label">Password</span>
+              <div
+                className={`lp-input-wrap${passwordFocused ? " lp-input-focused" : ""}${errors.password ? " lp-input-error" : ""}`}
+              >
+                <LockOutlined className="lp-input-adorn" />
+                <input
+                  className="lp-input"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={handlePasswordChange}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  onKeyDown={handleKeyDown}
+                />
+              </div>
+              {errors.password && (
+                <span className="lp-error">{errors.password}</span>
+              )}
             </div>
 
             {/* Continue button */}
@@ -347,7 +417,10 @@ const Login = () => {
               className="lp-continue-btn"
               onClick={handleContinue}
               disabled={
-                !selectedRole || !userId.trim() || sendOtpMutation.isPending
+                !selectedRole ||
+                !userId.trim() ||
+                !password.trim() ||
+                sendOtpMutation.isPending
               }
               style={{ "--btn-c": selectedRoleData?.color || "#1e3a8a" }}
             >

@@ -135,10 +135,12 @@
   margin: 0 0 1.1rem 0;
   line-height: 1.1;
   letter-spacing: -0.03em;
+  width: 100%;
+  text-align: center;
 }
 
 .lp-hero-accent {
-  background: linear-gradient(90deg, #f97316 0%, #fbbf24 100%);
+  background: linear-gradient(90deg, #f6f6f6 0%, #ffffff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -471,9 +473,13 @@
 }
 
 .lp-input-section.lp-input-visible {
-  max-height: 120px;
+  max-height: 260px;
   opacity: 1;
   margin-bottom: 1.25rem;
+}
+
+.lp-field-gap {
+  height: 0.85rem;
 }
 
 .lp-input-wrap {
