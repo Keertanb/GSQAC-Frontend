@@ -23,6 +23,16 @@ export const verifyOtp = async (payload) => {
 };
 
 /**
+ * Reset password
+ * @param {Object} payload - { userName: string, roleId: number, newPassword: string, confirmPassword: string, oldPassword?: string }
+ * @returns {Promise} API response
+ */
+export const resetPassword = async (payload) => {
+  const response = await axiosInstance.post("/auth/reset-password", payload);
+  return response.data;
+};
+
+/**
  * Logout user
  * @returns {Promise} API response
  */
@@ -53,6 +63,19 @@ export const useVerifyOtpMutation = (options = {}) => {
   return useMutation({
     mutationFn: (data) => verifyOtp(data),
     mutationKey: queryKeys.auth.verifyOtp(),
+    ...options,
+  });
+};
+
+/**
+ * React Query hook for reset password
+ * @param {Object} options - Mutation options
+ * @returns {Object} Mutation object from React Query
+ */
+export const useResetPasswordMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => resetPassword(data),
+    mutationKey: queryKeys.auth.resetPassword(),
     ...options,
   });
 };

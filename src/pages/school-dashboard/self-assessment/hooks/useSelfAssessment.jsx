@@ -6,9 +6,13 @@ import { Box, CircularProgress, useTheme, useMediaQuery } from "@mui/material";
 import {
   Assessment,
   Assignment,
+  Business,
   Class,
   Create,
+  Groups,
   MenuBook,
+  School as SchoolIcon,
+  WorkspacePremium,
 } from "@mui/icons-material";
 import { enqueueSnackbar } from "notistack";
 import { colors } from "../../../../constants/colors";

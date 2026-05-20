@@ -439,6 +439,7 @@ export function useAssessmentManagement() {
         { variant: "success" },
       );
       refetchAssessmentRoleAssignments();
+      refetchAssessments();
     },
   });
 
@@ -481,6 +482,7 @@ export function useAssessmentManagement() {
     setRoleAssignments(initialRoleAssignments);
     setExpandedSettingsRole(2);
     refetchAssessmentRoleAssignments(); // Refetch to discard any unsaved changes
+    refetchAssessments();
   };
 
   const handleRoleAssignmentChange = (roleId, index, field, value) => {
@@ -529,6 +531,7 @@ export function useAssessmentManagement() {
           },
         );
         refetchAssessmentRoleAssignments();
+        refetchAssessments();
       },
     });
 
@@ -536,6 +539,7 @@ export function useAssessmentManagement() {
     useDeleteAssessmentRoleAssignmentMutation({
       onSuccess: () => {
         refetchAssessmentRoleAssignments();
+        refetchAssessments();
       },
     });
 

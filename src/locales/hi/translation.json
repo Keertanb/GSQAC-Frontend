@@ -55,6 +55,10 @@
         "primaryShort": "प्राथमिक",
         "secondaryShort": "माध्यमिक"
       },
+      "schoolManagementTypes": {
+        "privateSchool": "निजी विद्यालय",
+        "governmentSchool": "सरकारी विद्यालय"
+      },
       "addProperAssessmentName": "सही मूल्यांकन नाम जोड़ें",
       "cloning": "डुप्लिकेट किया जा रहा है...",
       "duplicate": "डुप्लिकेट",

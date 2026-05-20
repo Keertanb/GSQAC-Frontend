@@ -56,6 +56,10 @@
         "primaryShort": "Primary",
         "secondaryShort": "Secondary"
       },
+      "schoolManagementTypes": {
+        "privateSchool": "Private School",
+        "governmentSchool": "Government School"
+      },
       "addProperAssessmentName": "Add proper assessment name",
       "cloning": "Cloning...",
       "duplicate": "Duplicate",

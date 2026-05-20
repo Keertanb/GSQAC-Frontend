@@ -32,6 +32,30 @@ export const toDateInputValue = (dateStr) => {
   return parsed || "";
 };
 
+/** GET /admin/assessment `management`: 1 = Private, 2 = Government */
+export const getAssessmentManagementId = (assessment) => {
+  if (!assessment) return null;
+  const raw =
+    assessment.management ?? assessment.smId ?? assessment.managementId;
+  if (raw !== undefined && raw !== null && raw !== "") {
+    const num = Number(raw);
+    if (!Number.isNaN(num)) return num;
+  }
+  const name = assessment.managementName;
+  if (name == null || name === "") return null;
+  const n = String(name).trim().toLowerCase();
+  if (n === "private" || n.includes("private")) return 1;
+  if (
+    n === "government" ||
+    n.includes("government") ||
+    n === "public" ||
+    n.includes("public")
+  ) {
+    return 2;
+  }
+  return null;
+};
+
 /** Private → 1, Public → 0 (matches GET /admin/assessment `managementName`) */
 export const deriveManagementBinaryFromManagementName = (managementName) => {
   if (managementName == null || managementName === "") return null;

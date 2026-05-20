@@ -55,6 +55,10 @@
         "primaryShort": "પ્રાથમિક",
         "secondaryShort": "માધ્યમિક"
       },
+      "schoolManagementTypes": {
+        "privateSchool": "ખાનગી શાળા",
+        "governmentSchool": "સરકારી શાળા"
+      },
       "addProperAssessmentName": "યોગ્ય મૂલ્યાંકન નામ ઉમેરો",
       "cloning": "નકલ કરી રહ્યા છીએ...",
       "duplicate": "નકલ કરો",

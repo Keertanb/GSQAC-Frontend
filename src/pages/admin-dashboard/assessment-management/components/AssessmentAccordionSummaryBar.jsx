@@ -8,6 +8,12 @@ import {
   Typography,
 } from "@mui/material";
 import { ContentCopy, Delete, Edit } from "@mui/icons-material";
+import { getAssessmentManagementId } from "../utils/assessmentManagementUtils";
+
+const MANAGEMENT_CHIP_STYLES = {
+  1: { color: "#ea580c" },
+  2: { color: "#059669" },
+};
 
 /** Accordion summary: title, chips, active switch, duplicate / edit / delete. */
 export function AssessmentAccordionSummaryBar({
@@ -23,6 +29,17 @@ export function AssessmentAccordionSummaryBar({
   onStartEdit,
   onDelete,
 }) {
+  const managementId = getAssessmentManagementId(assessment);
+  const managementChipStyle = managementId
+    ? MANAGEMENT_CHIP_STYLES[managementId]
+    : null;
+  const managementChipLabel =
+    managementId === 1
+      ? t("assessment.management.schoolManagementTypes.privateSchool")
+      : managementId === 2
+        ? t("assessment.management.schoolManagementTypes.governmentSchool")
+        : null;
+
   return (
     <Box
       sx={{
@@ -56,6 +73,17 @@ export function AssessmentAccordionSummaryBar({
             sx={{
               bgcolor: colors.accent.purple + "15",
               color: colors.accent.purple,
+              fontWeight: 600,
+            }}
+          />
+        )}
+        {managementChipLabel && managementChipStyle && (
+          <Chip
+            size="small"
+            label={managementChipLabel}
+            sx={{
+              bgcolor: managementChipStyle.color + "15",
+              color: managementChipStyle.color,
               fontWeight: 600,
             }}
           />

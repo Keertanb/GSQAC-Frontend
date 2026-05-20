@@ -6,9 +6,13 @@ import { useTheme, useMediaQuery } from "@mui/material";
 import {
   Assessment,
   Assignment,
+  Business,
   Class,
-  MenuBook,
   Create,
+  Groups,
+  MenuBook,
+  School as SchoolIcon,
+  WorkspacePremium,
 } from "@mui/icons-material";
 import { colors } from "../../../../constants/colors";
 import {

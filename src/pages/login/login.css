@@ -478,6 +478,10 @@
   margin-bottom: 1.25rem;
 }
 
+.lp-input-section.lp-input-visible--reset {
+  max-height: 520px;
+}
+
 .lp-field-gap {
   height: 0.85rem;
 }
@@ -524,12 +528,89 @@
 }
 .lp-input::placeholder { color: #94a3b8; }
 
+.lp-password-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  color: #94a3b8;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.lp-password-toggle:hover {
+  color: #1e3a8a;
+}
+
+.lp-input-focused .lp-password-toggle {
+  color: #64748b;
+}
+
+.lp-input-focused .lp-password-toggle:hover {
+  color: #1e3a8a;
+}
+
 /* Error text */
 .lp-error {
   display: block;
   font-size: 0.8rem;
   color: #ef4444;
   margin-top: 0.4rem;
+}
+
+.lp-error--form {
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
+.lp-reset-link {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #1e3a8a;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: right;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.lp-reset-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.lp-back-login-btn {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  color: #64748b;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.lp-back-login-btn:hover:not(:disabled) {
+  border-color: #1e3a8a;
+  color: #1e3a8a;
+}
+
+.lp-back-login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ── Continue button ── */
