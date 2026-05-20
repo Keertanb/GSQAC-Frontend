@@ -404,11 +404,11 @@ export const useSubmitAssessmentMutation = (options = {}) => {
 
 /**
  * Get verifier allocated schools list
- * @param {Object} params - { districtId: number, userId?: number }
+ * @param {Object} params - { districtId: number, userId?: number, page?: number, limit?: number }
  * @returns {Promise} API response
  */
 export const getVerifierAllocatedSchools = async (params) => {
-  const { districtId, userId, ...otherParams } = params;
+  const { districtId, userId, page, limit, ...otherParams } = params;
 
   // Build params object - always include districtId
   const queryParams = {};
@@ -420,6 +420,14 @@ export const getVerifierAllocatedSchools = async (params) => {
   } else {
     // Explicitly set to null when "All" is selected or districtId is undefined
     queryParams.districtId = null;
+  }
+
+  if (page !== undefined && page !== null) {
+    queryParams.page = Number(page);
+  }
+
+  if (limit !== undefined && limit !== null) {
+    queryParams.limit = Number(limit);
   }
 
   // Add any other params
@@ -471,11 +479,14 @@ export const getVerifierAllocatedSchools = async (params) => {
 export const useGetVerifierAllocatedSchoolsQuery = ({
   districtId,
   userId,
+  page = 0,
+  limit = 10,
   enabled = true,
 }) => {
   return useQuery({
-    queryKey: queryKeys.verifier.allocatedSchools(districtId),
-    queryFn: () => getVerifierAllocatedSchools({ districtId, userId }),
+    queryKey: queryKeys.verifier.allocatedSchools(districtId, page, limit),
+    queryFn: () =>
+      getVerifierAllocatedSchools({ districtId, userId, page, limit }),
     enabled: enabled,
     staleTime: 0, // Always consider data stale to allow refetching on district change
     cacheTime: 0, // Don't cache to ensure fresh data on every change

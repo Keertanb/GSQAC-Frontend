@@ -15,7 +15,7 @@ export function useSchoolAllocated() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedDistrictId, setSelectedDistrictId] = useState("all");
 
   // Get districtId, userId, and role from auth store
@@ -98,6 +98,8 @@ export function useSchoolAllocated() {
   } = useGetVerifierAllocatedSchoolsQuery({
     districtId: districtIdForAPI, // Will be null when "All" is selected, or a number for specific district
     userId: userId ? Number(userId) : undefined,
+    page: currentPage,
+    limit: itemsPerPage,
     enabled: true, // Always enabled - React Query will handle refetching when districtId changes
   });
 
@@ -123,7 +125,7 @@ export function useSchoolAllocated() {
     setTimeout(() => {
       // Refetch schools with new districtId (always defined, can be null)
       queryClient.refetchQueries({
-        queryKey: queryKeys.verifier.allocatedSchools(newDistrictIdForAPI),
+        queryKey: ["verifier", "allocated-schools", newDistrictIdForAPI],
         exact: false, // Refetch all matching queries
       });
 
@@ -135,7 +137,16 @@ export function useSchoolAllocated() {
     }, 0);
   };
 
-  const staticSchoolsData = schoolsData?.data || [];
+  const schoolsResponseData = schoolsData?.data;
+  const staticSchoolsData = Array.isArray(schoolsResponseData)
+    ? schoolsResponseData
+    : schoolsResponseData?.rows || [];
+  const totalCount = Array.isArray(schoolsResponseData)
+    ? schoolsData?.total ?? staticSchoolsData.length
+    : schoolsResponseData?.total ??
+      schoolsResponseData?.totalCount ??
+      schoolsData?.total ??
+      staticSchoolsData.length;
 
   // Filter schools based on search query
   const filteredSchools = staticSchoolsData.filter((school) => {
@@ -369,12 +380,20 @@ export function useSchoolAllocated() {
     });
   };
 
+  const handleItemsPerPageChange = (newItemsPerPage) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(0);
+  };
+
   return {
     searchQuery,
     setSearchQuery,
     currentPage,
     setCurrentPage,
     itemsPerPage,
+    setItemsPerPage,
+    handleItemsPerPageChange,
+    totalCount,
     selectedDistrictId,
     districts,
     isLoadingDistricts,

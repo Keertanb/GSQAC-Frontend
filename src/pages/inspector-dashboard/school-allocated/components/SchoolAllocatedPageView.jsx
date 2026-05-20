@@ -10,6 +10,8 @@ export function SchoolAllocatedPageView({ c }) {
     currentPage,
     setCurrentPage,
     itemsPerPage,
+    handleItemsPerPageChange,
+    totalCount,
     selectedDistrictId,
     districts,
     isLoadingDistricts,
@@ -36,8 +38,6 @@ export function SchoolAllocatedPageView({ c }) {
           </div>
         </div>
 
-        {/* District Dropdown for Verifiers */}
-        {/* Temporarily showing for all users to test - change back to isVerifier when working */}
         {true && (
           <div style={{ marginBottom: "1.5rem", maxWidth: "400px" }}>
             {isLoadingDistricts ? (
@@ -225,7 +225,9 @@ export function SchoolAllocatedPageView({ c }) {
           itemsPerPage={itemsPerPage}
           currentPage={currentPage + 1}
           onPageChange={(page) => setCurrentPage(page - 1)}
-          totalCount={filteredSchools.length}
+          onItemsPerPageChange={handleItemsPerPageChange}
+          totalCount={searchQuery ? filteredSchools.length : totalCount}
+          serverSidePagination={!searchQuery}
           emptyTitle="No schools found"
           emptySubtitle={
             searchQuery
