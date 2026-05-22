@@ -10,6 +10,9 @@ import { exportToExcel } from "../../../../utils/exportToExcel";
 import {
   parseDistrictIds,
   getNodalOfficerFormInitialValues,
+  sanitizeMobileNumber,
+  INDIAN_MOBILE_REGEX,
+  getPasswordError,
 } from "../utils/districtNodalOfficersUtils";
 
 export function useDistrictNodalOfficers() {
@@ -57,7 +60,22 @@ export function useDistrictNodalOfficers() {
           .max(50, "User name must not exceed 50 characters"),
         mobileNumber: Yup.string()
           .required("Mobile number is required")
-          .matches(/^[0-9]{10}$/, "Enter a valid 10-digit mobile number"),
+          .test(
+            "mobile-length",
+            "Mobile number must be exactly 10 digits",
+            (value) =>
+              sanitizeMobileNumber(value).length === 10,
+          )
+          .test(
+            "mobile-valid",
+            "Enter a valid 10-digit mobile number (must start with 6, 7, 8, or 9)",
+            (value) => INDIAN_MOBILE_REGEX.test(sanitizeMobileNumber(value)),
+          ),
+        password: Yup.string().test("password-valid", function (value) {
+          const error = getPasswordError(value);
+          if (!error) return true;
+          return this.createError({ message: error });
+        }),
         districts: Yup.array()
           .min(1, "At least one district must be selected")
           .required("At least one district is required"),
@@ -232,6 +250,7 @@ export function useDistrictNodalOfficers() {
         userId: officer.userId,
         userName: officer.userName,
         mobileNumber: officer.mobileNumber,
+        password: officer.password ?? "",
         isActive:
           officer.isActive === true || officer.isActive === 1 ? 0 : 1,
         districtIds,
@@ -370,7 +389,8 @@ export function useDistrictNodalOfficers() {
       const payload = {
         userId: values.userId || null,
         userName: values.userName,
-        mobileNumber: values.mobileNumber,
+        mobileNumber: sanitizeMobileNumber(values.mobileNumber),
+        password: values.password,
         isActive: values.isActive,
         districtIds,
       };

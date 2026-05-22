@@ -1,5 +1,22 @@
 /* Self Assessment - Mobile responsive */
 
+/* Collapsible left domains panel */
+.sa-left-panel-shell {
+  flex-shrink: 0;
+}
+
+.sa-left-panel-shell--collapsed .sa-domains-panel {
+  pointer-events: none;
+}
+
+.sa-left-panel-divider {
+  flex-shrink: 0;
+}
+
+.sa-left-panel-toggle {
+  display: inline-flex !important;
+}
+
 /* Ensure container doesn't overflow */
 .self-assessment-page-content {
   width: 100%;

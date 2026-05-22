@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import FormikWrapper from "../../../../components/FormikWrapper/FormikWrapper";
 import FormikField from "../../../../components/FormikWrapper/FormikField";
+import { sanitizeMobileNumber } from "../utils/districtNodalOfficersUtils";
 
 export function DistrictNodalOfficerModal({
   open,
@@ -13,6 +15,14 @@ export function DistrictNodalOfficerModal({
   districts,
   upsertMutation,
 }) {
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setShowPassword(false);
+    }
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -60,14 +70,16 @@ export function DistrictNodalOfficerModal({
                   type="tel"
                   inputMode="numeric"
                   autoComplete="tel"
+                  pattern="[6-9][0-9]{9}"
                   maxLength={10}
                   placeholder="Enter 10-digit mobile number"
                   value={formik.values.mobileNumber}
                   onChange={(e) => {
-                    const digitsOnly = e.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, 10);
-                    formik.setFieldValue("mobileNumber", digitsOnly);
+                    const sanitized = sanitizeMobileNumber(e.target.value);
+                    formik.setFieldValue("mobileNumber", sanitized);
+                    if (formik.errors.mobileNumber) {
+                      formik.setFieldError("mobileNumber", undefined);
+                    }
                   }}
                   onBlur={() => formik.setFieldTouched("mobileNumber", true)}
                   className={`form-input ${
@@ -75,9 +87,82 @@ export function DistrictNodalOfficerModal({
                       ? "form-input-error"
                       : ""
                   }`}
+                  aria-invalid={
+                    !!(formik.touched.mobileNumber && formik.errors.mobileNumber)
+                  }
+                  aria-describedby={
+                    formik.touched.mobileNumber && formik.errors.mobileNumber
+                      ? "nodal-officer-mobile-number-error"
+                      : undefined
+                  }
                 />
                 {formik.touched.mobileNumber && formik.errors.mobileNumber && (
-                  <div className="form-error">{formik.errors.mobileNumber}</div>
+                  <div
+                    id="nodal-officer-mobile-number-error"
+                    className="form-error"
+                    role="alert"
+                  >
+                    {formik.errors.mobileNumber}
+                  </div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  Password
+                  <span className="form-label-required">*</span>
+                </label>
+                <div className="nodal-officer-password-input-wrap">
+                  <input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    minLength={7}
+                    placeholder={
+                      editingOfficer
+                        ? "Update password (more than 6 characters)"
+                        : "Enter password (more than 6 characters)"
+                    }
+                    value={formik.values.password}
+                    onChange={formik.handleChange}
+                    onBlur={() => formik.setFieldTouched("password", true)}
+                    className={`form-input form-input-password ${
+                      formik.touched.password && formik.errors.password
+                        ? "form-input-error"
+                        : ""
+                    }`}
+                    aria-invalid={
+                      !!(formik.touched.password && formik.errors.password)
+                    }
+                    aria-describedby={
+                      formik.touched.password && formik.errors.password
+                        ? "nodal-officer-password-error"
+                        : undefined
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="nodal-officer-password-toggle"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showPassword ? (
+                      <VisibilityOff sx={{ fontSize: 20 }} />
+                    ) : (
+                      <Visibility sx={{ fontSize: 20 }} />
+                    )}
+                  </button>
+                </div>
+                {formik.touched.password && formik.errors.password && (
+                  <div
+                    id="nodal-officer-password-error"
+                    className="form-error"
+                    role="alert"
+                  >
+                    {formik.errors.password}
+                  </div>
                 )}
               </div>
 

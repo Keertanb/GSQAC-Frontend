@@ -8,6 +8,42 @@ import {
 } from "../../../../services/adminService";
 import { exportToExcel } from "../../../../utils/exportToExcel";
 
+const MOBILE_NUMBER_MAX_LENGTH = 10;
+const INDIAN_MOBILE_REGEX = /^[6-9]\d{9}$/;
+
+const sanitizeMobileNumber = (value) =>
+  String(value ?? "")
+    .replace(/\D/g, "")
+    .slice(0, MOBILE_NUMBER_MAX_LENGTH);
+
+const getMobileNumberError = (mobileNumber) => {
+  const mobile = sanitizeMobileNumber(mobileNumber);
+  if (!mobile) {
+    return "Mobile number is required";
+  }
+  if (mobile.length !== MOBILE_NUMBER_MAX_LENGTH) {
+    return "Mobile number must be exactly 10 digits";
+  }
+  if (!INDIAN_MOBILE_REGEX.test(mobile)) {
+    return "Enter a valid 10-digit mobile number (must start with 6, 7, 8, or 9)";
+  }
+  return "";
+};
+
+const getPasswordError = (password, { required = true } = {}) => {
+  if (!required) {
+    return "";
+  }
+  const value = String(password ?? "");
+  if (!value) {
+    return "Password is required";
+  }
+  if (value.length <= 6) {
+    return "Password must be more than 6 characters";
+  }
+  return "";
+};
+
 export function useVerifierManagement() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,8 +55,13 @@ export function useVerifierManagement() {
     userId: null,
     userName: "",
     mobileNumber: "",
+    password: "",
     isActive: 1,
     districts: [],
+  });
+  const [formErrors, setFormErrors] = useState({
+    mobileNumber: "",
+    password: "",
   });
 
   const queryClient = useQueryClient();
@@ -208,9 +249,11 @@ export function useVerifierManagement() {
       userId: null,
       userName: "",
       mobileNumber: "",
+      password: "",
       isActive: 1,
       districts: [],
     });
+    setFormErrors({ mobileNumber: "", password: "" });
   }, []);
 
   const handleOpenModal = useCallback(() => {
@@ -219,9 +262,11 @@ export function useVerifierManagement() {
       userId: null,
       userName: "",
       mobileNumber: "",
+      password: "",
       isActive: 1,
       districts: [],
     });
+    setFormErrors({ mobileNumber: "", password: "" });
     setIsModalOpen(true);
   }, []);
 
@@ -231,10 +276,12 @@ export function useVerifierManagement() {
     setFormData({
       userId: verifier.userId,
       userName: verifier.userName || "",
-      mobileNumber: verifier.mobileNumber || "",
+      mobileNumber: sanitizeMobileNumber(verifier.mobileNumber),
+      password: verifier.password ?? "",
       isActive: verifier.isActive === true || verifier.isActive === 1 ? 1 : 0,
       districts: districtArray,
     });
+    setFormErrors({ mobileNumber: "", password: "" });
     setIsModalOpen(true);
   }, [parseDistrictIds]);
 
@@ -246,6 +293,7 @@ export function useVerifierManagement() {
       userId: verifier.userId,
       userName: verifier.userName,
       mobileNumber: verifier.mobileNumber,
+      password: verifier.password ?? "",
       isActive: verifier.isActive === true || verifier.isActive === 1 ? 0 : 1,
       districtIds: districtIds,
     };
@@ -388,6 +436,20 @@ export function useVerifierManagement() {
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
+
+    const mobileError = getMobileNumberError(formData.mobileNumber);
+    const passwordError = getPasswordError(formData.password);
+
+    if (mobileError || passwordError) {
+      setFormErrors({
+        mobileNumber: mobileError,
+        password: passwordError,
+      });
+      return;
+    }
+
+    setFormErrors({ mobileNumber: "", password: "" });
+
     // Ensure districts is always an array
     const districtIds = Array.isArray(formData.districts)
       ? formData.districts
@@ -396,7 +458,8 @@ export function useVerifierManagement() {
     const payload = {
       userId: formData.userId || null,
       userName: formData.userName,
-      mobileNumber: formData.mobileNumber,
+      mobileNumber: sanitizeMobileNumber(formData.mobileNumber),
+      password: formData.password,
       isActive: formData.isActive,
       districtIds: districtIds,
     };
@@ -412,6 +475,43 @@ export function useVerifierManagement() {
     }));
   }, []);
 
+  const handleMobileNumberChange = useCallback((e) => {
+    const sanitized = sanitizeMobileNumber(e.target.value);
+    setFormData((prev) => ({
+      ...prev,
+      mobileNumber: sanitized,
+    }));
+    setFormErrors((prev) => ({
+      ...prev,
+      mobileNumber: "",
+    }));
+  }, []);
+
+  const handleMobileNumberBlur = useCallback(() => {
+    setFormErrors((prev) => ({
+      ...prev,
+      mobileNumber: getMobileNumberError(formData.mobileNumber),
+    }));
+  }, [formData.mobileNumber]);
+
+  const handlePasswordChange = useCallback((e) => {
+    const { value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      password: value,
+    }));
+    setFormErrors((prev) => ({
+      ...prev,
+      password: "",
+    }));
+  }, []);
+
+  const handlePasswordBlur = useCallback(() => {
+    setFormErrors((prev) => ({
+      ...prev,
+      password: getPasswordError(formData.password),
+    }));
+  }, [formData.password]);
 
   return {
     isModalOpen,
@@ -453,5 +553,10 @@ export function useVerifierManagement() {
     handleToggleStatus,
     handleSubmit,
     handleInputChange,
+    handleMobileNumberChange,
+    handleMobileNumberBlur,
+    handlePasswordChange,
+    handlePasswordBlur,
+    formErrors,
   };
 }

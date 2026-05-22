@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box, Paper, Typography, Button, Card, CardContent, CircularProgress, Alert, Chip,
   RadioGroup, FormControlLabel, Radio, FormControl, AppBar, Toolbar, IconButton,
@@ -7,6 +7,7 @@ import {
 } from "@mui/material";
 import {
   CheckCircle, ArrowForward, Menu, Assessment, Class, Assignment, ExpandMore, ExpandLess,
+  ChevronLeft, ChevronRight,
   WorkspacePremium, MenuBook, Groups, Business, School as SchoolIcon, Language, Create,
   LocationOn, AccountTree, PhotoCamera, Close
 } from "@mui/icons-material";
@@ -19,6 +20,9 @@ import "../SelfAssessment.css";
 
 export function SelfAssessmentLayout({ c }) {
   const { navigate, theme, matchDownMD, drawerOpen, setDrawerOpen, logout, user, userId, userName, t, i18n, currentLanguage, setCurrentLanguage, selectedDomain, setSelectedDomain, selectedSubdomain, setSelectedSubdomain, answers, setAnswers, subdomainAnswers, setSubdomainAnswers, subdomainTextAnswers, setSubdomainTextAnswers, classWiseAnswers, setClassWiseAnswers, classWiseTextAnswers, setClassWiseTextAnswers, selectedClassGroup, setSelectedClassGroup, selectedClass, setSelectedClass, selectedSection, setSelectedSection, selectedSubject, setSelectedSubject, textAnswers, setTextAnswers, expandedQuestions, setExpandedQuestions, showSubmitConfirmation, setShowSubmitConfirmation, selectedQuestionTab, setSelectedQuestionTab, sessionId, setSessionId, selectedAssessmentId, setSelectedAssessmentId, chartDrilldownAssessmentId, setChartDrilldownAssessmentId, mcqQuestionImages, setMcqQuestionImages, mcqImageInputRef, pendingMcqImageSlot, setPendingMcqImageSlot, logoutMutation, handleDrawerToggle, handleLogout, languageCodeMap, languageCode, roleId, queryClient, domainsData, isLoadingDomains, isErrorDomains, refetchDomains, allQuestionsData, hasSubjectWiseQuestions, questionsData, isLoadingQuestions, isErrorQuestions, refetchQuestions, schoolDataResponse, isLoadingSchoolData, schoolData, gradesData, isLoadingGrades, gradesCounts, lowerClass, upperClass, classOptions, filteredClassOptions, sectionsData, isLoadingSections, subjectsData, isLoadingSubjects, sections, subjects, assessments, selectedAssessment, domains, isPublished, endDate, isSubmitted, isEndDatePassed, isReadOnly, mapGroupRangeToApiFormat, getGroupFlagColor, getFlagColorValue, getTotalQuestionsFromGroupWise, getTotalQuestionsCount, allQuestionsForCount, allQuestions, singleChoiceQuestionsForCount, classroomObservationQuestionsForCount, subjectObservationQuestionsForCount, flnQuestionsForCount, generalQuestionsForCount, singleChoiceQuestions, classroomObservationQuestions, subjectObservationQuestions, flnQuestions, classBasedQuestions, generalQuestions, generalQuestionsTotalCount, classroomObservationQuestionsTotalCount, subjectObservationQuestionsTotalCount, flnQuestionsTotalCount, questionTabs, currentTab, getSubdomainProgress, getDomainProgress, getDomainName, getSubdomainName, getProgressColor, getQuestionText, getOptionText, shouldShowApiAnswer, getDomainIcon, toggleQuestionExpansion, parseOptions, handleDomainSelect, handleSubdomainSelect, handleAssessmentSelect, handleAnswerChange, questionAllowsImageUpload, getMcqImagesForQuestion, getMcqImagePreviewSrc, getMcqImageLocation, getMcqImageFilesForQuestion, buildAttachedImagesForQuestion, uploadImagesToPresignedUrls, handleMcqImageCaptureClick, getAddressFromCoords, handleMcqImageFileChange, handleMcqImageRemove, handleTextAnswerChange, submitAnswerMutation, submitSubdomainWiseAnswersMutation, submitAssessmentMutation, handleOpenSubmitConfirmation, handleConfirmSubmit, allDomainsComplete, domainChartData, assessmentChartData, currentChartData, totalAnswered, totalQuestions, domainNumber, subdomainNumber, handleSubmitQuestion, handleSubmit } = c;
+
+  const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
+  const leftPanelWidth = 380;
 
   return (
 
@@ -324,36 +328,72 @@ export function SelfAssessmentLayout({ c }) {
               sx={{
                 display: "flex",
                 flexDirection: { xs: "column", md: "row" },
-                gap: { xs: 2, md: 3 },
+                gap: { xs: 2, md: 0 },
                 flex: 1,
                 minHeight: 0,
+                minWidth: 0,
                 overflow: { xs: "visible", md: "hidden" },
+                alignItems: "stretch",
               }}
             >
-              {/* Left Panel - Domains and Subdomains */}
-              <Paper
+              {/* Left panel — collapses horizontally so questions expand */}
+              <Box
+                className={`sa-left-panel-shell${
+                  isLeftPanelCollapsed ? " sa-left-panel-shell--collapsed" : ""
+                }`}
                 sx={{
-                  width: { xs: "100%", md: "380px" },
-                  minWidth: { xs: 0, md: "380px" },
-                  flexShrink: { md: 0 },
-                  borderRadius: 3,
-                  bgcolor: "white",
-                  display: "flex",
-                  flexDirection: "column",
+                  flexShrink: 0,
+                  width: {
+                    xs: "100%",
+                    md: isLeftPanelCollapsed ? 0 : leftPanelWidth,
+                  },
+                  minWidth: {
+                    xs: 0,
+                    md: isLeftPanelCollapsed ? 0 : leftPanelWidth,
+                  },
+                  maxWidth: { xs: "100%", md: isLeftPanelCollapsed ? 0 : leftPanelWidth },
                   overflow: "hidden",
-                  maxHeight: { xs: "none", md: "calc(100vh - 200px)" },
-                  minHeight: { xs: "240px", md: "auto" },
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                  transition:
+                    "width 0.28s ease, min-width 0.28s ease, max-width 0.28s ease",
+                  display: {
+                    xs: isLeftPanelCollapsed ? "none" : "block",
+                    md: "block",
+                  },
                 }}
               >
-                {/* Left Panel Header */}
+                <Paper
+                  className="sa-domains-panel"
+                  sx={{
+                    width: leftPanelWidth,
+                    minWidth: leftPanelWidth,
+                    borderRadius: 3,
+                    bgcolor: "white",
+                    display: "flex",
+                    flexDirection: "column",
+                    overflow: "hidden",
+                    maxHeight: { xs: "none", md: "calc(100vh - 200px)" },
+                    minHeight: { xs: "240px", md: "auto" },
+                    height: { md: "100%" },
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                  }}
+                >
                 <Box
                   sx={{
                     p: { xs: 2, md: 3 },
                     borderBottom: `2px solid ${colors.neutral.gray200}`,
                     bgcolor: colors.background.secondary,
+                    flexShrink: 0,
                   }}
                 >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      gap: 1,
+                    }}
+                  >
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography
                     variant="h6"
                     sx={{
@@ -371,6 +411,24 @@ export function SelfAssessmentLayout({ c }) {
                   >
                     {t("selfAssessment.navigateSubtitle")}
                   </Typography>
+                    </Box>
+                    {matchDownMD && (
+                      <IconButton
+                        type="button"
+                        size="small"
+                        onClick={() => setIsLeftPanelCollapsed(true)}
+                        aria-label="Collapse assessment domains panel"
+                        sx={{
+                          flexShrink: 0,
+                          color: colors.primary.blue,
+                          bgcolor: colors.primary.blue + "12",
+                          "&:hover": { bgcolor: colors.primary.blue + "22" },
+                        }}
+                      >
+                        <ChevronLeft fontSize="small" />
+                      </IconButton>
+                    )}
+                  </Box>
                   {assessments.length > 1 && (
                     <Box sx={{ mt: 2 }}>
                       <Typography
@@ -385,7 +443,7 @@ export function SelfAssessmentLayout({ c }) {
                           onChange={(e) => {
                             const selectedId = Number(e.target.value);
                             const assessment = assessments.find(
-                              (a) => Number(a.assessmentId) === selectedId
+                              (a) => Number(a.assessmentId) === selectedId,
                             );
                             if (assessment) {
                               handleAssessmentSelect(assessment);
@@ -829,6 +887,85 @@ export function SelfAssessmentLayout({ c }) {
                   </Box>
                 )}
               </Paper>
+              </Box>
+
+              {!matchDownMD && (
+                <Box
+                  className="sa-left-panel-divider"
+                  sx={{
+                    flexShrink: 0,
+                    width: 28,
+                    display: "flex",
+                    alignItems: "flex-start",
+                    justifyContent: "center",
+                    pt: 2,
+                    borderLeft: isLeftPanelCollapsed
+                      ? "none"
+                      : `1px solid ${colors.neutral.gray200}`,
+                  }}
+                >
+                  <IconButton
+                    type="button"
+                    className="sa-left-panel-toggle"
+                    onClick={() => setIsLeftPanelCollapsed((prev) => !prev)}
+                    aria-expanded={!isLeftPanelCollapsed}
+                    aria-label={
+                      isLeftPanelCollapsed
+                        ? "Expand assessment domains panel"
+                        : "Collapse assessment domains panel"
+                    }
+                    title={
+                      isLeftPanelCollapsed
+                        ? "Show domains"
+                        : "Hide domains"
+                    }
+                    sx={{
+                      width: 28,
+                      height: 48,
+                      borderRadius: "0 8px 8px 0",
+                      bgcolor: colors.primary.blue,
+                      color: "#fff",
+                      boxShadow: "0 2px 8px rgba(30, 58, 138, 0.25)",
+                      "&:hover": { bgcolor: colors.primary.dark },
+                    }}
+                  >
+                    {isLeftPanelCollapsed ? (
+                      <ChevronRight fontSize="small" />
+                    ) : (
+                      <ChevronLeft fontSize="small" />
+                    )}
+                  </IconButton>
+                </Box>
+              )}
+
+              <Box
+                className="sa-main-workspace"
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  minHeight: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: { xs: 2, md: 0 },
+                  overflow: { xs: "visible", md: "hidden" },
+                }}
+              >
+              {matchDownMD && isLeftPanelCollapsed && (
+                <Button
+                  variant="outlined"
+                  startIcon={<Menu />}
+                  onClick={() => setIsLeftPanelCollapsed(false)}
+                  sx={{
+                    alignSelf: "flex-start",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderColor: colors.primary.blue,
+                    color: colors.primary.blue,
+                  }}
+                >
+                  {t("selfAssessment.assessmentDomains")}
+                </Button>
+              )}
 
               {/* Right Panel - Questions */}
               {selectedSubdomain && (
@@ -4409,6 +4546,7 @@ export function SelfAssessmentLayout({ c }) {
                   </Box>
                 </Paper>
               )}
+              </Box>
             </Box>
           </Box>
         </Box>

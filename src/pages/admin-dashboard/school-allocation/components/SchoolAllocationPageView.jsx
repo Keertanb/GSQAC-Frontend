@@ -4,7 +4,36 @@ import AppButton from "../../../../components/AppButton/AppButton";
 import AppDropdown from "../../../../components/AppDropdown/AppDropdown";
 
 export function SchoolAllocationPageView({ c }) {
-  const { filters, setFilters, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage, schoolAssignments, setSchoolAssignments, originalAssignments, setOriginalAssignments, saveAllocationMutation, districtsData, districts, blocksData, blocks, schoolsData, isLoadingSchools, schools, totalSchools, selectedDistrictId, verifiersData, verifiers, filteredSchools, handleFilterChange, handleItemsPerPageChange, handleAssignmentChange, handleSaveAssignment, handleExportToExcel } = c;
+  const {
+    filters,
+    setFilters,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
+    setItemsPerPage,
+    schoolAssignments,
+    setSchoolAssignments,
+    originalAssignments,
+    setOriginalAssignments,
+    saveAllocationMutation,
+    districtsData,
+    districts,
+    blocksData,
+    blocks,
+    schoolsData,
+    isLoadingSchools,
+    schools,
+    totalSchools,
+    selectedDistrictId,
+    verifiersData,
+    verifiers,
+    filteredSchools,
+    handleFilterChange,
+    handleItemsPerPageChange,
+    handleAssignmentChange,
+    handleSaveAssignment,
+    handleExportToExcel,
+  } = c;
 
   return (
     <div className="school-allocation-container">
@@ -103,7 +132,7 @@ export function SchoolAllocationPageView({ c }) {
             />
           </div>
 
-          <div className="filter-group">
+          {/* <div className="filter-group">
             <label className="filter-label">School Name</label>
             <input
               type="text"
@@ -112,7 +141,7 @@ export function SchoolAllocationPageView({ c }) {
               className="filter-input"
               placeholder="Enter school name"
             />
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -157,7 +186,7 @@ export function SchoolAllocationPageView({ c }) {
               label: "District",
               render: (school) => {
                 const district = districts.find(
-                  (d) => d.value === school.districtId
+                  (d) => d.value === school.districtId,
                 );
                 return (
                   <div className="school-district-cell">
@@ -216,7 +245,7 @@ export function SchoolAllocationPageView({ c }) {
                       handleAssignmentChange(
                         school.schoolId,
                         "verifierId",
-                        value
+                        value,
                       )
                     }
                     placeholder="Select Verifier"
@@ -241,7 +270,7 @@ export function SchoolAllocationPageView({ c }) {
                       handleAssignmentChange(
                         school.schoolId,
                         "date",
-                        e.target.value
+                        e.target.value,
                       )
                     }
                     className="table-input"
@@ -255,26 +284,28 @@ export function SchoolAllocationPageView({ c }) {
               label: "Actions",
               render: (school) => {
                 const assignment = schoolAssignments[school.schoolId] || {};
-                const originalAssignment = originalAssignments[school.schoolId] || {};
+                const originalAssignment =
+                  originalAssignments[school.schoolId] || {};
                 const isSaving = saveAllocationMutation.isPending;
-                
+
                 // Check if assignment has required fields
-                const hasRequiredFields = assignment.verifierId && assignment.date;
-                
+                const hasRequiredFields =
+                  assignment.verifierId && assignment.date;
+
                 // Check if values have changed from original
-                const hasChanged = 
+                const hasChanged =
                   assignment.verifierId !== originalAssignment.verifierId ||
                   assignment.date !== originalAssignment.date;
-                
+
                 // Disable if:
                 // 1. Missing required fields
                 // 2. Currently saving
                 // 3. Status is "Allocated" AND no changes were made
-                const isDisabled = 
-                  !hasRequiredFields || 
-                  isSaving || 
+                const isDisabled =
+                  !hasRequiredFields ||
+                  isSaving ||
                   (assignment.status === "Allocated" && !hasChanged);
-                
+
                 return (
                   <button
                     onClick={() => handleSaveAssignment(school.schoolId)}
@@ -284,10 +315,10 @@ export function SchoolAllocationPageView({ c }) {
                       !assignment.verifierId || !assignment.date
                         ? "Please select verifier and date"
                         : assignment.status === "Allocated" && !hasChanged
-                        ? "No changes to save"
-                        : assignment.id
-                        ? "Update assignment"
-                        : "Save assignment"
+                          ? "No changes to save"
+                          : assignment.id
+                            ? "Update assignment"
+                            : "Save assignment"
                     }
                   >
                     {isSaving ? (

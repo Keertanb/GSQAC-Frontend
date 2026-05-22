@@ -540,7 +540,7 @@ export const useGetVerifierCountQuery = (options = {}) => {
 
 /**
  * Upsert (add or edit) verifier
- * @param {Object} payload - { userId?: number, userName: string, mobileNumber: string, isActive: number }
+ * @param {Object} payload - { userId?: number, userName: string, mobileNumber: string, password?: string, isActive: number, districtIds: number[] }
  * @returns {Promise} API response
  */
 export const upsertVerifier = async (payload) => {
@@ -678,7 +678,7 @@ export const getDistrictNodalOfficers = async (params) => {
 
 /**
  * Upsert (add or edit) district nodal officer
- * @param {Object} payload - { userId?: number, roleId: number, userName: string, mobileNumber: string, isActive: number, districtIds: number[], email?: string }
+ * @param {Object} payload - { userId?: number, roleId: number, userName: string, mobileNumber: string, password?: string, isActive: number, districtIds: number[], email?: string }
  * @returns {Promise} API response
  */
 export const upsertDistrictNodalOfficer = async (payload) => {

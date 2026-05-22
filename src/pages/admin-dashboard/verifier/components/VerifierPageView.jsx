@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import AppTable from "../../../../components/AppTable/AppTable";
 import AppButton from "../../../../components/AppButton/AppButton";
 
 export function VerifierPageView({ c }) {
+  const [showPassword, setShowPassword] = useState(false);
   const {
     isModalOpen,
     editingVerifier,
@@ -30,7 +32,18 @@ export function VerifierPageView({ c }) {
     handleCloseModal,
     handleSubmit,
     handleInputChange,
+    handleMobileNumberChange,
+    handleMobileNumberBlur,
+    handlePasswordChange,
+    handlePasswordBlur,
+    formErrors,
   } = c;
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      setShowPassword(false);
+    }
+  }, [isModalOpen]);
 
   return (
     <div className="verifier-container">
@@ -290,11 +303,87 @@ export function VerifierPageView({ c }) {
                   type="tel"
                   name="mobileNumber"
                   value={formData.mobileNumber}
-                  onChange={handleInputChange}
+                  onChange={handleMobileNumberChange}
+                  onBlur={handleMobileNumberBlur}
+                  inputMode="numeric"
+                  pattern="[6-9][0-9]{9}"
+                  maxLength={10}
                   required
-                  className="verifier-form-input"
-                  placeholder="Enter mobile number"
+                  className={`verifier-form-input${
+                    formErrors.mobileNumber ? " verifier-form-input-error" : ""
+                  }`}
+                  placeholder="Enter 10-digit mobile number"
+                  aria-invalid={!!formErrors.mobileNumber}
+                  aria-describedby={
+                    formErrors.mobileNumber
+                      ? "verifier-mobile-number-error"
+                      : undefined
+                  }
                 />
+                {formErrors.mobileNumber && (
+                  <div
+                    id="verifier-mobile-number-error"
+                    className="verifier-form-error"
+                    role="alert"
+                  >
+                    {formErrors.mobileNumber}
+                  </div>
+                )}
+              </div>
+
+              <div className="verifier-form-group">
+                <label className="verifier-form-label">
+                  Password{" "}
+                  <span className="verifier-form-label-required">*</span>
+                </label>
+                <div className="verifier-password-input-wrap">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handlePasswordChange}
+                    onBlur={handlePasswordBlur}
+                    required
+                    minLength={7}
+                    className={`verifier-form-input verifier-form-input-password${
+                      formErrors.password ? " verifier-form-input-error" : ""
+                    }`}
+                    placeholder={
+                      editingVerifier
+                        ? "Update password (more than 6 characters)"
+                        : "Enter password (more than 6 characters)"
+                    }
+                    aria-invalid={!!formErrors.password}
+                    aria-describedby={
+                      formErrors.password
+                        ? "verifier-password-error"
+                        : undefined
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="verifier-password-toggle"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showPassword ? (
+                      <VisibilityOff sx={{ fontSize: 20 }} />
+                    ) : (
+                      <Visibility sx={{ fontSize: 20 }} />
+                    )}
+                  </button>
+                </div>
+                {formErrors.password && (
+                  <div
+                    id="verifier-password-error"
+                    className="verifier-form-error"
+                    role="alert"
+                  >
+                    {formErrors.password}
+                  </div>
+                )}
               </div>
 
               <div className="verifier-form-group">
