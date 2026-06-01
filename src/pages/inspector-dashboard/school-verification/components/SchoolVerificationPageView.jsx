@@ -2725,6 +2725,7 @@ export function SchoolVerificationPageView({ c }) {
                       onClick={handleSubmit}
                       disabled={
                         submitSubdomainWiseAnswersMutation.isPending ||
+                        submitAssessmentMutation.isPending ||
                         !areAllQuestionsAnsweredForCurrentTab ||
                         // For class-based questions (classroom and subject), validate class and section
                         ((currentTab?.id === "classroom" ||
@@ -2746,8 +2747,22 @@ export function SchoolVerificationPageView({ c }) {
                           ? "Please select subject before saving"
                           : "Save assessment for this question type"
                       }
+                      startIcon={
+                        submitSubdomainWiseAnswersMutation.isPending ||
+                        submitAssessmentMutation.isPending ? (
+                          <CircularProgress
+                            size={18}
+                            thickness={5}
+                            color="inherit"
+                            aria-hidden
+                          />
+                        ) : null
+                      }
                       sx={{
                         bgcolor: colors.accent.green,
+                        minWidth: 168,
+                        textTransform: "none",
+                        fontWeight: 600,
                         "&:hover": { bgcolor: colors.accent.greenDark },
                         "&:disabled": {
                           bgcolor: colors.neutral.gray300,
@@ -2755,7 +2770,8 @@ export function SchoolVerificationPageView({ c }) {
                         },
                       }}
                     >
-                      {submitSubdomainWiseAnswersMutation.isPending
+                      {submitSubdomainWiseAnswersMutation.isPending ||
+                      submitAssessmentMutation.isPending
                         ? "Saving..."
                         : "Save Assessment"}
                     </Button>

@@ -32,6 +32,53 @@ export const toDateInputValue = (dateStr) => {
   return parsed || "";
 };
 
+export const getCurrentYear = () => new Date().getFullYear();
+
+/** First day of current year (YYYY-MM-DD) for date input min. */
+export const getMinDateInCurrentYear = () => {
+  const year = getCurrentYear();
+  return `${year}-01-01`;
+};
+
+export const isAssignmentDateYearValid = (dateStr) => {
+  const normalized = toDateInputValue(dateStr);
+  if (!normalized) return true;
+  const year = Number.parseInt(normalized.split("-")[0], 10);
+  return !Number.isNaN(year) && year >= getCurrentYear();
+};
+
+/** Block typing/paste; native calendar picker remains available. */
+export const getDatePickerOnlyInputProps = (extra = {}) => ({
+  ...extra,
+  onKeyDown: (event) => {
+    const allowedKeys = new Set([
+      "Tab",
+      "Shift",
+      "Escape",
+      "Enter",
+      "ArrowLeft",
+      "ArrowRight",
+      "ArrowUp",
+      "ArrowDown",
+      "Home",
+      "End",
+    ]);
+    if (
+      allowedKeys.has(event.key) ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    if (event.key.length === 1) {
+      event.preventDefault();
+    }
+  },
+  onPaste: (event) => event.preventDefault(),
+  onDrop: (event) => event.preventDefault(),
+});
+
 /** GET /admin/assessment `management`: 1 = Private, 2 = Government */
 export const getAssessmentManagementId = (assessment) => {
   if (!assessment) return null;

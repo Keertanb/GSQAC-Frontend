@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetAllDistrictsQuery,
   useGetDistrictWiseBlocksQuery,
@@ -8,7 +9,14 @@ import {
 } from "../../../../services/adminService";
 import { exportToExcel } from "../../../../utils/exportToExcel";
 
+const normalizeAllocationDate = (value) => {
+  if (value == null || value === "") return "";
+  const str = String(value);
+  return str.includes("T") ? str.split("T")[0] : str.slice(0, 10);
+};
+
 export function useSchoolAllocation() {
+  const queryClient = useQueryClient();
 
   const [filters, setFilters] = useState({
     schoolId: "",
@@ -42,6 +50,8 @@ export function useSchoolAllocation() {
             ...prev[payload.schoolId],
             id: returnedId || prev[payload.schoolId]?.id,
             status: payload.status || "Allocated",
+            date: normalizeAllocationDate(payload.allocatedDate),
+            verifierId: String(payload.userId),
           },
         }));
         
@@ -50,9 +60,11 @@ export function useSchoolAllocation() {
           ...prev,
           [payload.schoolId]: {
             verifierId: String(payload.userId),
-            date: payload.allocatedDate,
+            date: normalizeAllocationDate(payload.allocatedDate),
           },
         }));
+
+        queryClient.invalidateQueries({ queryKey: ["admin", "school-list"] });
       }
     },
   });
@@ -86,84 +98,77 @@ export function useSchoolAllocation() {
 
   // Initialize school assignments from API data when schools are loaded
   useEffect(() => {
-    if (schools.length > 0) {
-      setSchoolAssignments((prev) => {
-        const updated = { ...prev };
-        const originalUpdated = { ...originalAssignments };
-        
-        schools.forEach((school) => {
-          // If school has allocation data (status is "Allocated"), pre-fill the assignment
-          if (
-            school.status === "Allocated" &&
-            school.userId &&
-            school.allocatedDate
-          ) {
-            // Check if we need to update (only if not manually edited or if data changed)
-            const existingAssignment = updated[school.schoolId];
-            const shouldUpdate =
-              !existingAssignment ||
-              existingAssignment.verifierId !== String(school.userId) ||
-              existingAssignment.date !== school.allocatedDate;
+    if (schools.length === 0) return;
 
-            if (shouldUpdate) {
-              updated[school.schoolId] = {
-                verifierId: String(school.userId),
-                date: school.allocatedDate,
-                status: school.status,
-                // If there's an id field in the response, include it
-                id:
-                  school.id ||
-                  school.allocationId ||
-                  existingAssignment?.id ||
-                  null,
-              };
-              
-              // Store original values for change detection
-              originalUpdated[school.schoolId] = {
-                verifierId: String(school.userId),
-                date: school.allocatedDate,
-              };
-            } else {
-              // Preserve existing assignment but ensure status is set
-              updated[school.schoolId] = {
-                ...existingAssignment,
-                status: school.status,
-              };
-              
-              // Store original values if not already stored
-              if (!originalUpdated[school.schoolId] && existingAssignment) {
-                originalUpdated[school.schoolId] = {
-                  verifierId: existingAssignment.verifierId || "",
-                  date: existingAssignment.date || "",
-                };
-              }
-            }
-          } else if (school.status === "Pending" || !school.status) {
-            // Set status to Pending if not allocated
-            const existingAssignment = updated[school.schoolId];
-            if (!existingAssignment) {
-              updated[school.schoolId] = {
-                status: "Pending",
-              };
-            } else if (!existingAssignment.status) {
-              updated[school.schoolId] = {
-                ...existingAssignment,
-                status: "Pending",
-              };
-            }
-            
-            // Clear original assignment for pending schools
-            originalUpdated[school.schoolId] = {
-              verifierId: "",
-              date: "",
+    const originalUpdates = {};
+
+    setSchoolAssignments((prev) => {
+      const updated = { ...prev };
+
+      for (const school of schools) {
+        const schoolId = school.schoolId;
+        const existingAssignment = updated[schoolId];
+        const isApiAllocated =
+          school.status === "Allocated" &&
+          school.userId &&
+          school.allocatedDate;
+
+        if (isApiAllocated) {
+          const verifierId = String(school.userId);
+          const date = normalizeAllocationDate(school.allocatedDate);
+          const shouldUpdate =
+            !existingAssignment ||
+            String(existingAssignment.verifierId || "") !== verifierId ||
+            normalizeAllocationDate(existingAssignment.date) !== date;
+
+          if (shouldUpdate) {
+            updated[schoolId] = {
+              verifierId,
+              date,
+              status: "Allocated",
+              id:
+                school.id ||
+                school.allocationId ||
+                existingAssignment?.id ||
+                null,
+            };
+          } else if (existingAssignment) {
+            updated[schoolId] = {
+              ...existingAssignment,
+              status: "Allocated",
             };
           }
-        });
-        
-        setOriginalAssignments((prev) => ({ ...prev, ...originalUpdated }));
-        return updated;
-      });
-    }
+
+          originalUpdates[schoolId] = { verifierId, date };
+          continue;
+        }
+
+        // Keep locally saved allocation when API row is still pending (e.g. after filter refetch)
+        if (existingAssignment?.status === "Allocated") {
+          originalUpdates[schoolId] = {
+            verifierId: String(existingAssignment.verifierId || ""),
+            date: normalizeAllocationDate(existingAssignment.date),
+          };
+          continue;
+        }
+
+        if (school.status === "Pending" || !school.status) {
+          if (!existingAssignment) {
+            updated[schoolId] = { status: "Pending" };
+          } else if (!existingAssignment.status) {
+            updated[schoolId] = {
+              ...existingAssignment,
+              status: "Pending",
+            };
+          }
+          originalUpdates[schoolId] = { verifierId: "", date: "" };
+        }
+      }
+
+      return updated;
+    });
+
+    setOriginalAssignments((prev) => ({ ...prev, ...originalUpdates }));
   }, [schools]);
 
   // Get district ID from selected district filter

@@ -5,6 +5,9 @@ import { colors } from "../../../../constants/colors";
 
 import {
   getAssessmentManagementForApi,
+  getCurrentYear,
+  getMinDateInCurrentYear,
+  isAssignmentDateYearValid,
   resolveAssessmentManagementSelectValue,
 } from "../utils/assessmentManagementUtils";
 import {
@@ -355,6 +358,7 @@ export function useAssessmentManagement() {
         : [];
 
       // Ignore backend placeholder/blank rows (no assessmentId).
+      // Newest assignments first (API returns oldest-first).
       acc[roleId] = assessments
         .filter(
           (assignment) =>
@@ -371,7 +375,8 @@ export function useAssessmentManagement() {
           isPublished: assignment?.isPublished ?? 0,
           isNew: false,
           localKey: `${roleId}-${assignment?.assessmentId ?? "na"}-${index}`,
-        }));
+        }))
+        .reverse();
 
       return acc;
     }, emptyAssignments);
@@ -494,11 +499,21 @@ export function useAssessmentManagement() {
     }));
   };
 
+  const handleRoleAssignmentDateChange = (roleId, index, field, value) => {
+    if (value && !isAssignmentDateYearValid(value)) {
+      enqueueSnackbar(
+        `Date year must be ${getCurrentYear()} or later.`,
+        { variant: "warning" },
+      );
+      return;
+    }
+    handleRoleAssignmentChange(roleId, index, field, value);
+  };
+
   const handleAddRoleAssignmentRow = (roleId) => {
     setRoleAssignments((prev) => ({
       ...prev,
       [roleId]: [
-        ...(prev[roleId] || []),
         {
           id: null,
           assessmentId: "",
@@ -508,6 +523,7 @@ export function useAssessmentManagement() {
           isNew: true,
           localKey: `new-${roleId}-${Date.now()}`,
         },
+        ...(prev[roleId] || []),
       ],
     }));
   };
@@ -549,6 +565,18 @@ export function useAssessmentManagement() {
       enqueueSnackbar("Please select an assessment for this role.", {
         variant: "warning",
       });
+      return;
+    }
+
+    if (
+      (assignment.startDate &&
+        !isAssignmentDateYearValid(assignment.startDate)) ||
+      (assignment.endDate && !isAssignmentDateYearValid(assignment.endDate))
+    ) {
+      enqueueSnackbar(
+        `Date year must be ${getCurrentYear()} or later.`,
+        { variant: "warning" },
+      );
       return;
     }
 
@@ -779,6 +807,8 @@ export function useAssessmentManagement() {
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   }, []);
 
+  const minDateCurrentYear = useMemo(() => getMinDateInCurrentYear(), []);
+
   const startEditingAssessment = (assessment, e) => {
     if (e) e.stopPropagation();
     setEditingAssessment(assessment);
@@ -951,6 +981,7 @@ export function useAssessmentManagement() {
     handleOpenSettingsModal,
     handleCloseSettingsModal,
     handleRoleAssignmentChange,
+    handleRoleAssignmentDateChange,
     handleAddRoleAssignmentRow,
     handleRemoveRoleAssignmentRow,
     updateAssessmentRoleAssignmentMutation,
@@ -971,6 +1002,7 @@ export function useAssessmentManagement() {
     getAssessmentName,
     getAssessmentRoleIds,
     todayDate,
+    minDateCurrentYear,
     startEditingAssessment,
     saveAssessmentName,
     cancelEditAssessment,

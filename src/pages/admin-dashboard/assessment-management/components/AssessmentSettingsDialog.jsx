@@ -21,7 +21,11 @@ import {
   Typography,
 } from "@mui/material";
 import { Add, Delete, ExpandMore } from "@mui/icons-material";
-import { toDateInputValue } from "../utils/assessmentManagementUtils";
+import {
+  getDatePickerOnlyInputProps,
+  isAssignmentDateYearValid,
+  toDateInputValue,
+} from "../utils/assessmentManagementUtils";
 
 /** Role ↔ assessment assignments (settings modal). Presentational; mutations live in hook. */
 export function AssessmentSettingsDialog({ c }) {
@@ -39,7 +43,9 @@ export function AssessmentSettingsDialog({ c }) {
     assessmentsData,
     getAssessmentName,
     todayDate,
+    minDateCurrentYear,
     handleRoleAssignmentChange,
+    handleRoleAssignmentDateChange,
     handleRoleAssignmentTrashClick,
     handleUpdateRoleAssignment,
     handlePublishRoleAssignment,
@@ -188,10 +194,24 @@ export function AssessmentSettingsDialog({ c }) {
                           const startDateValue = toDateInputValue(
                             assignment.startDate,
                           );
-                          const endDateMin =
-                            startDateValue && startDateValue > todayDate
+                          const startDateMin =
+                            todayDate > minDateCurrentYear
+                              ? todayDate
+                              : minDateCurrentYear;
+                          const endDateMinCandidate =
+                            startDateValue && startDateValue > startDateMin
                               ? startDateValue
-                              : todayDate;
+                              : startDateMin;
+                          const endDateMin =
+                            endDateMinCandidate > minDateCurrentYear
+                              ? endDateMinCandidate
+                              : minDateCurrentYear;
+                          const startDateInvalid =
+                            !!startDateValue &&
+                            !isAssignmentDateYearValid(startDateValue);
+                          const endDateInvalid =
+                            !!toDateInputValue(assignment.endDate) &&
+                            !isAssignmentDateYearValid(assignment.endDate);
 
                           return (
                             <Box
@@ -278,18 +298,24 @@ export function AssessmentSettingsDialog({ c }) {
                                   assignment.startDate,
                                 )}
                                 onChange={(e) =>
-                                  handleRoleAssignmentChange(
+                                  handleRoleAssignmentDateChange(
                                     role.roleId,
                                     index,
                                     "startDate",
                                     e.target.value || "",
                                   )
                                 }
+                                error={startDateInvalid}
+                                helperText={
+                                  startDateInvalid
+                                    ? `Year must be ${minDateCurrentYear.slice(0, 4)} or later`
+                                    : ""
+                                }
                                 InputLabelProps={{ shrink: true }}
-                                inputProps={{
-                                  min: todayDate,
+                                inputProps={getDatePickerOnlyInputProps({
+                                  min: startDateMin,
                                   max: "9999-12-31",
-                                }}
+                                })}
                                 sx={{
                                   "& .MuiOutlinedInput-root": {
                                     borderRadius: 2,
@@ -305,6 +331,10 @@ export function AssessmentSettingsDialog({ c }) {
                                       borderColor: colors.primary.blue,
                                     },
                                   },
+                                  "& input[type='date']::-webkit-calendar-picker-indicator":
+                                    {
+                                      cursor: "pointer",
+                                    },
                                 }}
                                 fullWidth
                               />
@@ -317,18 +347,24 @@ export function AssessmentSettingsDialog({ c }) {
                                   assignment.endDate,
                                 )}
                                 onChange={(e) =>
-                                  handleRoleAssignmentChange(
+                                  handleRoleAssignmentDateChange(
                                     role.roleId,
                                     index,
                                     "endDate",
                                     e.target.value || "",
                                   )
                                 }
+                                error={endDateInvalid}
+                                helperText={
+                                  endDateInvalid
+                                    ? `Year must be ${minDateCurrentYear.slice(0, 4)} or later`
+                                    : ""
+                                }
                                 InputLabelProps={{ shrink: true }}
-                                inputProps={{
+                                inputProps={getDatePickerOnlyInputProps({
                                   min: endDateMin,
                                   max: "9999-12-31",
-                                }}
+                                })}
                                 sx={{
                                   "& .MuiOutlinedInput-root": {
                                     borderRadius: 2,
@@ -344,6 +380,10 @@ export function AssessmentSettingsDialog({ c }) {
                                       borderColor: colors.primary.blue,
                                     },
                                   },
+                                  "& input[type='date']::-webkit-calendar-picker-indicator":
+                                    {
+                                      cursor: "pointer",
+                                    },
                                 }}
                                 fullWidth
                               />

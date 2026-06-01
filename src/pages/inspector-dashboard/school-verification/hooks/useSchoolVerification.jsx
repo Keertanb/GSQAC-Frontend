@@ -1174,10 +1174,21 @@ export function useSchoolVerification() {
             [subdomainId]: { ...answers },
           }));
         }
-        // Refetch questions and domains to update progress bars and get sessionId
-        refetchQuestions();
-        refetchDomains();
-        // Optionally clear answers or navigate
+        // Create session after first successful save (same flow as self-assessment)
+        if (sessionId === null || sessionId === undefined) {
+          const sessionPayload = {
+            sessionId: null,
+            assessmentId: selectedAssessment?.assessmentId ?? null,
+            userId: Number(userId),
+            roleId: Number(roleId),
+            schoolId: schoolId || undefined,
+            isSubmitted: 0,
+          };
+          submitAssessmentMutation.mutate(sessionPayload);
+        } else {
+          refetchQuestions();
+          refetchDomains();
+        }
         enqueueSnackbar("All answers submitted successfully!", {
           variant: "success",
         });
@@ -1195,38 +1206,39 @@ export function useSchoolVerification() {
     });
 
   const submitAssessmentMutation = useSubmitAssessmentMutation({
-    onSuccess: (data) => {
-      setShowSubmitConfirmation(false);
-
-      // Refetch domains to update progress and isSubmitted status
-      refetchDomains();
-
-      // Refetch questions if subdomain is selected
-      if (selectedSubdomain) {
+    onSuccess: (data, variables) => {
+      if (variables.isSubmitted === 0) {
+        refetchDomains();
         refetchQuestions();
+      } else {
+        setShowSubmitConfirmation(false);
+
+        refetchDomains();
+
+        if (selectedSubdomain) {
+          refetchQuestions();
+        }
+
+        queryClient.invalidateQueries({
+          queryKey: ["verifier"],
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.verifier.domains(roleId, languageCode, schoolId),
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.verifier.schoolData(schoolId || userName),
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.verifier.schoolSections(schoolId || userName),
+        });
+
+        enqueueSnackbar("Assessment submitted successfully!", {
+          variant: "success",
+        });
       }
-
-      // Invalidate all verifier-related queries to refresh dashboard data
-      queryClient.invalidateQueries({
-        queryKey: ["verifier"],
-      });
-
-      // Invalidate specific queries
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.verifier.domains(roleId, languageCode, schoolId),
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.verifier.schoolData(schoolId || userName),
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.verifier.schoolSections(schoolId || userName),
-      });
-
-      enqueueSnackbar("Assessment submitted successfully!", {
-        variant: "success",
-      });
     },
     onError: (error) => {
       console.error("Error submitting assessment:", error);
@@ -1262,9 +1274,9 @@ export function useSchoolVerification() {
       return;
     }
 
-    // If sessionId is null, this is the first submit (isSubmitted: 0)
-    // If sessionId is present, this is the final submit (isSubmitted: 1)
-    const isFirstSubmit = sessionId === null || sessionId === undefined;
+    if (submitAssessmentMutation.isPending) {
+      return;
+    }
 
     const payload = {
       sessionId: sessionId || null,
@@ -1272,7 +1284,7 @@ export function useSchoolVerification() {
       userId: Number(userId),
       roleId: Number(roleId),
       schoolId: schoolId || undefined,
-      isSubmitted: isFirstSubmit ? 0 : 1,
+      isSubmitted: 1,
     };
     submitAssessmentMutation.mutate(payload);
   };
@@ -1288,6 +1300,13 @@ export function useSchoolVerification() {
 
   // Handle submit - Submit all answers for the current subdomain
   const handleSubmit = () => {
+    if (
+      submitSubdomainWiseAnswersMutation.isPending ||
+      submitAssessmentMutation.isPending
+    ) {
+      return;
+    }
+
     const questionTypeByTabId = {
       general: 1,
       classroom: 2,
@@ -1456,19 +1475,6 @@ export function useSchoolVerification() {
     };
 
     submitSubdomainWiseAnswersMutation.mutate(payload);
-
-    // If sessionId is null, call submit-assessment API for first submit
-    if (sessionId === null || sessionId === undefined) {
-      const firstSubmitPayload = {
-        sessionId: null,
-        assessmentId: selectedAssessment?.assessmentId ?? null,
-        userId: Number(userId),
-        roleId: Number(roleId),
-        schoolId: schoolId || undefined,
-        isSubmitted: 0,
-      };
-      submitAssessmentMutation.mutate(firstSubmitPayload);
-    }
   };
 
   // Prepare chart data for bar graph

@@ -305,10 +305,39 @@ const FacilityCard = ({ label, value, icon: Icon, onChange }) => (
 );
 
 export function SchoolDetailsPageView({ c }) {
-  const { navigate, theme, matchDownMD, drawerOpen, setDrawerOpen, logout, user, userId, userName, gridItemStyles, currentYear, schoolId, logoutMutation, updateInfrastructureMutation, handleDrawerToggle, handleLogout, schoolDataResponse, isLoading, isError, error, schoolData, setSchoolData, extractValue, convertInfrastructureValue, handleChange, handleFacilityChange, handleSave, getFieldName, infrastructureMutation } = c;
+  const {
+    navigate,
+    theme,
+    matchDownMD,
+    drawerOpen,
+    setDrawerOpen,
+    logout,
+    user,
+    userId,
+    userName,
+    gridItemStyles,
+    currentYear,
+    schoolId,
+    logoutMutation,
+    updateInfrastructureMutation,
+    handleDrawerToggle,
+    handleLogout,
+    schoolDataResponse,
+    isLoading,
+    isError,
+    error,
+    schoolData,
+    setSchoolData,
+    extractValue,
+    convertInfrastructureValue,
+    handleChange,
+    handleFacilityChange,
+    handleSave,
+    getFieldName,
+    infrastructureMutation,
+  } = c;
 
   return (
-
     <Box sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
       <AppDrawer open={drawerOpen} handleDrawerToggle={handleDrawerToggle} />
       <Box
@@ -590,7 +619,7 @@ export function SchoolDetailsPageView({ c }) {
                         lg={3}
                         sx={gridItemStyles}
                       >
-                        <Box>
+                        {/* <Box>
                           <Typography
                             variant="caption"
                             sx={{
@@ -618,7 +647,7 @@ export function SchoolDetailsPageView({ c }) {
                               height: 32,
                             }}
                           />
-                        </Box>
+                        </Box> */}
                       </Grid>
                     </Grid>
                   </Box>

@@ -19,15 +19,14 @@ const RoleManagement = () => {
   const updateMutation = useUpdateRoleStatusMutation({
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "roles"] });
-      enqueueSnackbar(
-        data?.message || "Role status updated successfully",
-        { variant: "success" }
-      );
+      enqueueSnackbar(data?.message || "Role status updated successfully", {
+        variant: "success",
+      });
     },
     onError: (error) => {
       enqueueSnackbar(
         error?.response?.data?.message || "Failed to update role status",
-        { variant: "error" }
+        { variant: "error" },
       );
     },
   });
@@ -39,21 +38,19 @@ const RoleManagement = () => {
 
   // Table columns definition
   const columns = [
-    {
-      id: "roleId",
-      label: "Role ID",
-      render: (role) => (
-        <div className="cell-id">
-          <span className="id-badge">{role.roleId}</span>
-        </div>
-      ),
-    },
+    // {
+    //   id: "roleId",
+    //   label: "Role ID",
+    //   render: (role) => (
+    //     <div className="cell-id">
+    //       <span className="id-badge">{role.roleId}</span>
+    //     </div>
+    //   ),
+    // },
     {
       id: "roleName",
       label: "Role Name",
-      render: (role) => (
-        <span className="name-text">{role.roleName}</span>
-      ),
+      render: (role) => <span className="name-text">{role.roleName}</span>,
     },
     {
       id: "status",
@@ -207,9 +204,7 @@ const RoleManagement = () => {
             </svg>
           </div>
           <p className="empty-title">No roles found</p>
-          <p className="empty-subtitle">
-            No roles available in the system
-          </p>
+          <p className="empty-subtitle">No roles available in the system</p>
         </div>
       ) : (
         <AppTable
@@ -242,4 +237,3 @@ const RoleManagement = () => {
 };
 
 export default RoleManagement;
-
