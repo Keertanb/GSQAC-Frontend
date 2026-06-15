@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../../../config/queryClient";
 import {
@@ -8,10 +8,14 @@ import {
   useGetVerifierDashboardQuery,
 } from "../../../../services/verifierService";
 import useAuthStore from "../../../../store/useAuthStore";
-import { INSPECTOR_SCHOOL_VERIFICATION_URL } from "../../../../routes/routeUrls";
+import {
+  INSPECTOR_ALLOCATED_SCHOOLS_URL,
+  INSPECTOR_SCHOOL_VERIFICATION_URL,
+} from "../../../../routes/routeUrls";
 
 export function useSchoolAllocated() {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -102,6 +106,31 @@ export function useSchoolAllocated() {
     limit: itemsPerPage,
     enabled: true, // Always enabled - React Query will handle refetching when districtId changes
   });
+
+  // Refetch list (and dashboard stats) whenever this screen is shown
+  useEffect(() => {
+    if (location.pathname !== INSPECTOR_ALLOCATED_SCHOOLS_URL) {
+      return;
+    }
+
+    queryClient.invalidateQueries({
+      queryKey: ["verifier", "allocated-schools"],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["verifier", "dashboard"],
+    });
+
+    void refetchSchools();
+    void refetchDashboard();
+  }, [
+    location.pathname,
+    districtIdForAPI,
+    currentPage,
+    itemsPerPage,
+    queryClient,
+    refetchSchools,
+    refetchDashboard,
+  ]);
 
   // Handle district dropdown change and refetch APIs
   const handleDistrictChange = (value) => {

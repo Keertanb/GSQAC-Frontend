@@ -45,6 +45,11 @@ export function VerifierPageView({ c }) {
     }
   }, [isModalOpen]);
 
+  const hasDistrictSelected =
+    Array.isArray(formData.districts) && formData.districts.length > 0;
+  const isAddVerifierSubmitDisabled =
+    !editingVerifier && !hasDistrictSelected;
+
   return (
     <div className="verifier-container">
       {/* Header Section */}
@@ -511,7 +516,14 @@ export function VerifierPageView({ c }) {
                 </button>
                 <button
                   type="submit"
-                  disabled={upsertMutation.isPending}
+                  disabled={
+                    upsertMutation.isPending || isAddVerifierSubmitDisabled
+                  }
+                  title={
+                    isAddVerifierSubmitDisabled
+                      ? "Please select at least one district"
+                      : undefined
+                  }
                   className="verifier-modal-button verifier-modal-button-submit"
                 >
                   {upsertMutation.isPending

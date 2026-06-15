@@ -613,6 +613,35 @@
   cursor: not-allowed;
 }
 
+.lp-send-otp-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid #1e3a8a;
+  border-radius: 12px;
+  background: #fff;
+  color: #1e3a8a;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.lp-send-otp-btn:hover:not(:disabled) {
+  background: #1e3a8a;
+  color: #fff;
+}
+
+.lp-send-otp-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* ── Continue button ── */
 .lp-continue-btn {
   width: 100%;

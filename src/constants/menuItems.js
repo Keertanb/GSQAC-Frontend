@@ -8,7 +8,6 @@ import {
   ReportProblem,
   Assignment,
   CheckCircle,
-  List,
   VerifiedUser,
   Business,
   AccountCircle,
@@ -161,7 +160,6 @@ export const adminMenuItems = [
     url: "/admin-dashboard/school-allocation",
     activeFinder: ["/admin-dashboard/school-allocation"],
   },
-
   {
     id: "role-management",
     label: "Role Management",

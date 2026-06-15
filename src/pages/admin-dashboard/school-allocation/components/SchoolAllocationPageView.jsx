@@ -46,7 +46,7 @@ export function SchoolAllocationPageView({ c }) {
               Manage school assignments and verifier allocations
             </p>
           </div>
-          <AppButton
+          {/* <AppButton
             variant="plain"
             size="icon"
             iconOnly
@@ -62,7 +62,7 @@ export function SchoolAllocationPageView({ c }) {
                 />
               </svg>
             }
-          />
+          /> */}
         </div>
       </div>
 

@@ -488,9 +488,9 @@ export const useGetVerifierAllocatedSchoolsQuery = ({
     queryFn: () =>
       getVerifierAllocatedSchools({ districtId, userId, page, limit }),
     enabled: enabled,
-    staleTime: 0, // Always consider data stale to allow refetching on district change
-    cacheTime: 0, // Don't cache to ensure fresh data on every change
-    refetchOnMount: true,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
     refetchOnWindowFocus: false,
   });
 };

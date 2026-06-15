@@ -455,6 +455,10 @@ export function useVerifierManagement() {
       ? formData.districts
       : [];
 
+    if (!formData.userId && districtIds.length === 0) {
+      return;
+    }
+
     const payload = {
       userId: formData.userId || null,
       userName: formData.userName,

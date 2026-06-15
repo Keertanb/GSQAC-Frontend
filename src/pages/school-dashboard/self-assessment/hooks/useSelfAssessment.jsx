@@ -34,6 +34,26 @@ import {
   useSubmitAnswerMutation,
 } from "../../../../services/adminService";
 
+const getSessionIdFromDomainsResponse = (domainsResponse, assessmentId) => {
+  if (!domainsResponse) return null;
+
+  if (Array.isArray(domainsResponse.data)) {
+    if (
+      domainsResponse.data.length > 0 &&
+      domainsResponse.data[0]?.domains
+    ) {
+      const assessment =
+        domainsResponse.data.find(
+          (item) => Number(item.assessmentId) === Number(assessmentId),
+        ) || domainsResponse.data[0];
+      return assessment?.sessionId ?? domainsResponse.sessionId ?? null;
+    }
+    return domainsResponse.sessionId ?? null;
+  }
+
+  return domainsResponse.sessionId ?? null;
+};
+
 export function useSelfAssessment() {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -57,7 +77,6 @@ export function useSelfAssessment() {
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
   const [selectedQuestionTab, setSelectedQuestionTab] = useState(0);
-  const [sessionId, setSessionId] = useState(null);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
   const [chartDrilldownAssessmentId, setChartDrilldownAssessmentId] =
     useState(null);
@@ -100,6 +119,7 @@ export function useSelfAssessment() {
   const {
     data: domainsData,
     isLoading: isLoadingDomains,
+    isFetching: isFetchingDomains,
     isError: isErrorDomains,
     refetch: refetchDomains,
   } = useGetDomainsQuery({
@@ -324,6 +344,8 @@ export function useSelfAssessment() {
   const endDate = selectedAssessment?.endDate ?? domainsData?.endDate ?? null;
   const isSubmitted =
     selectedAssessment?.isSubmitted ?? domainsData?.isSubmitted ?? false;
+  const sessionId =
+    selectedAssessment?.sessionId ?? domainsData?.sessionId ?? null;
 
   // Check if endDate has passed (end date is inclusive - closed only after end of endDate day)
   const isEndDatePassed = useMemo(() => {
@@ -338,11 +360,6 @@ export function useSelfAssessment() {
 
   // Assessment is read-only if submitted or endDate has passed
   const isReadOnly = isSubmitted || isEndDatePassed;
-
-  // Extract and store sessionId from domains API response
-  useEffect(() => {
-    setSessionId(selectedAssessment?.sessionId ?? null);
-  }, [selectedAssessment?.sessionId]);
 
   // Helper function to map dropdown group range to API group range format
   const mapGroupRangeToApiFormat = (groupRange) => {
@@ -1398,8 +1415,13 @@ export function useSelfAssessment() {
             [subdomainId]: { ...answers },
           }));
         }
-        // If sessionId is null, create session by calling submit-assessment API
-        if (sessionId === null) {
+        const domainsResult = await refetchDomains();
+        const freshSessionId = getSessionIdFromDomainsResponse(
+          domainsResult.data,
+          selectedAssessment?.assessmentId ?? selectedAssessmentId,
+        );
+
+        if (freshSessionId === null || freshSessionId === undefined) {
           const sessionPayload = {
             sessionId: null,
             assessmentId: selectedAssessment?.assessmentId ?? null,
@@ -1410,7 +1432,7 @@ export function useSelfAssessment() {
           };
           submitAssessmentMutation.mutate(sessionPayload);
         } else {
-          refetchDomains();
+          refetchQuestions();
         }
         enqueueSnackbar("All answers submitted successfully!", {
           variant: "success",
@@ -1497,16 +1519,41 @@ export function useSelfAssessment() {
   };
 
   // Handler to confirm final submit
-  const handleConfirmSubmit = () => {
-    const payload = {
-      sessionId: sessionId || null,
-      assessmentId: selectedAssessment?.assessmentId ?? null,
-      userId: Number(userId),
-      roleId: Number(roleId),
-      schoolId: userName || undefined,
-      isSubmitted: 1,
-    };
-    submitAssessmentMutation.mutate(payload);
+  const handleConfirmSubmit = async () => {
+    if (!userId) {
+      enqueueSnackbar("User ID is missing. Please login again.", {
+        variant: "error",
+      });
+      return;
+    }
+
+    if (submitAssessmentMutation.isPending || isFetchingDomains) {
+      return;
+    }
+
+    try {
+      const domainsResult = await refetchDomains();
+      const freshSessionId = getSessionIdFromDomainsResponse(
+        domainsResult.data,
+        selectedAssessment?.assessmentId ?? selectedAssessmentId,
+      );
+
+      const payload = {
+        sessionId: freshSessionId ?? null,
+        assessmentId: selectedAssessment?.assessmentId ?? null,
+        userId: Number(userId),
+        roleId: Number(roleId),
+        schoolId: userName || undefined,
+        isSubmitted: 1,
+      };
+      submitAssessmentMutation.mutate(payload);
+    } catch (error) {
+      console.error("Error refreshing domains before submit:", error);
+      enqueueSnackbar(
+        "Failed to refresh assessment session. Please try again.",
+        { variant: "error" },
+      );
+    }
   };
 
   const allDomainsComplete = useMemo(() => {
@@ -1765,6 +1812,14 @@ export function useSelfAssessment() {
 
   // Handle submit - Submit all answers for the current subdomain
   const handleSubmit = () => {
+    if (
+      submitSubdomainWiseAnswersMutation.isPending ||
+      submitAssessmentMutation.isPending ||
+      isFetchingDomains
+    ) {
+      return;
+    }
+
     if (!selectedSubdomain) {
       enqueueSnackbar("Please select a subdomain first.", {
         variant: "warning",
@@ -1979,7 +2034,6 @@ export function useSelfAssessment() {
     selectedQuestionTab,
     setSelectedQuestionTab,
     sessionId,
-    setSessionId,
     selectedAssessmentId,
     setSelectedAssessmentId,
     chartDrilldownAssessmentId,
@@ -1998,6 +2052,7 @@ export function useSelfAssessment() {
     queryClient,
     domainsData,
     isLoadingDomains,
+    isFetchingDomains,
     isErrorDomains,
     refetchDomains,
     allQuestionsData,

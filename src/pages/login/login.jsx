@@ -5,6 +5,7 @@ import {
   ArrowForward,
   ArrowBack,
   PersonOutline,
+  PhoneOutlined,
   LockOutlined,
   SchoolOutlined,
   VerifiedUserOutlined,
@@ -21,8 +22,9 @@ import {
 import { enqueueSnackbar } from "notistack";
 import { roles, getRoleId } from "../../constants/roles";
 import {
-  useResetPasswordMutation,
   useSendOtpMutation,
+  useSendSchoolOtpMutation,
+  useSchoolResetPasswordMutation,
 } from "../../services/authService";
 import useAuthStore from "../../store/useAuthStore";
 import "./login.css";
@@ -35,20 +37,25 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isResetPasswordMode, setIsResetPasswordMode] = useState(false);
-  const [oldPassword, setOldPassword] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [schoolResetId, setSchoolResetId] = useState(null);
+  const [isOtpSent, setIsOtpSent] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState({ role: "", userId: "", password: "" });
   const [resetErrors, setResetErrors] = useState({
     userId: "",
-    oldPassword: "",
+    mobileNumber: "",
+    otpCode: "",
     newPassword: "",
     confirmPassword: "",
     form: "",
   });
   const [inputFocused, setInputFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
-  const [oldPasswordFocused, setOldPasswordFocused] = useState(false);
+  const [mobileFocused, setMobileFocused] = useState(false);
+  const [otpFocused, setOtpFocused] = useState(false);
   const [newPasswordFocused, setNewPasswordFocused] = useState(false);
   const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -72,24 +79,42 @@ const Login = () => {
     }
   }, [searchParams]);
 
-  const resetPasswordMutation = useResetPasswordMutation({
+  const sendSchoolOtpMutation = useSendSchoolOtpMutation({
+    onSuccess: (data) => {
+      const resetId = data?.data?.id;
+      if (!resetId) {
+        setResetErrors((prev) => ({
+          ...prev,
+          form: "OTP response is incomplete. Please try again.",
+        }));
+        return;
+      }
+      setSchoolResetId(resetId);
+      setIsOtpSent(true);
+      setOtpCode("");
+      enqueueSnackbar(data?.message || "OTP sent successfully", {
+        variant: "success",
+      });
+    },
+    onError: (error) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to send OTP. Please try again.";
+      setResetErrors((prev) => ({ ...prev, form: errorMessage }));
+    },
+  });
+
+  const schoolResetPasswordMutation = useSchoolResetPasswordMutation({
     onSuccess: (data) => {
       enqueueSnackbar(
-        data?.message || "Password reset successfully",
+        data?.data?.message ||
+          data?.message ||
+          "Password reset successfully",
         { variant: "success" },
       );
-      setIsResetPasswordMode(false);
-      setOldPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
+      clearResetPasswordState();
       setPassword("");
-      setResetErrors({
-        userId: "",
-        oldPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-        form: "",
-      });
     },
     onError: (error) => {
       const errorMessage =
@@ -186,16 +211,31 @@ const Login = () => {
 
   const clearResetPasswordState = () => {
     setIsResetPasswordMode(false);
-    setOldPassword("");
+    setMobileNumber("");
+    setOtpCode("");
+    setSchoolResetId(null);
+    setIsOtpSent(false);
     setNewPassword("");
     setConfirmPassword("");
     setResetErrors({
       userId: "",
-      oldPassword: "",
+      mobileNumber: "",
+      otpCode: "",
       newPassword: "",
       confirmPassword: "",
       form: "",
     });
+  };
+
+  const sanitizeMobileNumber = (value) => value.replace(/\D/g, "").slice(0, 10);
+
+  const getMobileNumberError = (mobile) => {
+    if (!mobile) return "Please enter your mobile number";
+    if (mobile.length !== 10) return "Enter a valid 10-digit mobile number";
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+      return "Enter a valid 10-digit mobile number (must start with 6, 7, 8, or 9)";
+    }
+    return "";
   };
 
   const handleRoleSelect = (roleValue) => {
@@ -217,10 +257,11 @@ const Login = () => {
     setErrors({ ...errors, password: "" });
   };
 
-  const handleResetPassword = () => {
+  const handleSendSchoolOtp = () => {
     const nextErrors = {
       userId: "",
-      oldPassword: "",
+      mobileNumber: "",
+      otpCode: "",
       newPassword: "",
       confirmPassword: "",
       form: "",
@@ -231,8 +272,43 @@ const Login = () => {
       nextErrors.userId = "Please enter your UDISE Code";
       hasError = true;
     }
-    if (!oldPassword.trim()) {
-      nextErrors.oldPassword = "Please enter your current password";
+
+    const mobile = sanitizeMobileNumber(mobileNumber);
+    const mobileError = getMobileNumberError(mobile);
+    if (mobileError) {
+      nextErrors.mobileNumber = mobileError;
+      hasError = true;
+    }
+
+    if (hasError) {
+      setResetErrors(nextErrors);
+      return;
+    }
+
+    sendSchoolOtpMutation.mutate({
+      userName: userId.trim(),
+      roleId: String(getRoleId("school")),
+      mobileNo: mobile,
+    });
+  };
+
+  const handleSchoolResetPassword = () => {
+    const nextErrors = {
+      userId: "",
+      mobileNumber: "",
+      otpCode: "",
+      newPassword: "",
+      confirmPassword: "",
+      form: "",
+    };
+    let hasError = false;
+
+    if (!userId.trim()) {
+      nextErrors.userId = "Please enter your UDISE Code";
+      hasError = true;
+    }
+    if (!otpCode.trim()) {
+      nextErrors.otpCode = "Please enter the OTP";
       hasError = true;
     }
     if (!newPassword.trim()) {
@@ -251,18 +327,21 @@ const Login = () => {
       nextErrors.confirmPassword = "Passwords do not match";
       hasError = true;
     }
+    if (!schoolResetId) {
+      nextErrors.form = "Please send OTP before resetting your password";
+      hasError = true;
+    }
 
     if (hasError) {
       setResetErrors(nextErrors);
       return;
     }
 
-    resetPasswordMutation.mutate({
+    schoolResetPasswordMutation.mutate({
+      id: schoolResetId,
+      otpCode: otpCode.trim(),
       userName: userId.trim(),
-      roleId: getRoleId("school"),
-      oldPassword: oldPassword.trim(),
-      newPassword: newPassword.trim(),
-      confirmPassword: confirmPassword.trim(),
+      password: newPassword.trim(),
     });
   };
 
@@ -503,6 +582,11 @@ const Login = () => {
                       onChange={(e) => {
                         handleUserIdChange(e);
                         setResetErrors((prev) => ({ ...prev, userId: "" }));
+                        if (isOtpSent) {
+                          setIsOtpSent(false);
+                          setSchoolResetId(null);
+                          setOtpCode("");
+                        }
                       }}
                       onFocus={() => setInputFocused(true)}
                       onBlur={() => setInputFocused(false)}
@@ -513,78 +597,141 @@ const Login = () => {
                     <span className="lp-error">{resetErrors.userId}</span>
                   )}
                   <div className="lp-field-gap" />
-                  <span className="lp-section-label">Current Password</span>
+                  <span className="lp-section-label">Mobile Number</span>
                   <div
-                    className={`lp-input-wrap${oldPasswordFocused ? " lp-input-focused" : ""}${resetErrors.oldPassword ? " lp-input-error" : ""}`}
+                    className={`lp-input-wrap${mobileFocused ? " lp-input-focused" : ""}${resetErrors.mobileNumber ? " lp-input-error" : ""}`}
                   >
-                    <LockOutlined className="lp-input-adorn" />
+                    <PhoneOutlined className="lp-input-adorn" />
                     <input
                       className="lp-input"
-                      type="password"
-                      placeholder="Enter your current password"
-                      value={oldPassword}
+                      type="tel"
+                      inputMode="numeric"
+                      placeholder="Enter your registered mobile number"
+                      value={mobileNumber}
                       onChange={(e) => {
-                        setOldPassword(e.target.value);
-                        setResetErrors((prev) => ({ ...prev, oldPassword: "" }));
-                      }}
-                      onFocus={() => setOldPasswordFocused(true)}
-                      onBlur={() => setOldPasswordFocused(false)}
-                    />
-                  </div>
-                  {resetErrors.oldPassword && (
-                    <span className="lp-error">{resetErrors.oldPassword}</span>
-                  )}
-                  <div className="lp-field-gap" />
-                  <span className="lp-section-label">New Password</span>
-                  <div
-                    className={`lp-input-wrap${newPasswordFocused ? " lp-input-focused" : ""}${resetErrors.newPassword ? " lp-input-error" : ""}`}
-                  >
-                    <LockOutlined className="lp-input-adorn" />
-                    <input
-                      className="lp-input"
-                      type="password"
-                      placeholder="Enter your new password"
-                      value={newPassword}
-                      onChange={(e) => {
-                        setNewPassword(e.target.value);
-                        setResetErrors((prev) => ({ ...prev, newPassword: "" }));
-                      }}
-                      onFocus={() => setNewPasswordFocused(true)}
-                      onBlur={() => setNewPasswordFocused(false)}
-                    />
-                  </div>
-                  {resetErrors.newPassword && (
-                    <span className="lp-error">{resetErrors.newPassword}</span>
-                  )}
-                  <div className="lp-field-gap" />
-                  <span className="lp-section-label">Confirm New Password</span>
-                  <div
-                    className={`lp-input-wrap${confirmPasswordFocused ? " lp-input-focused" : ""}${resetErrors.confirmPassword ? " lp-input-error" : ""}`}
-                  >
-                    <LockOutlined className="lp-input-adorn" />
-                    <input
-                      className="lp-input"
-                      type="password"
-                      placeholder="Confirm your new password"
-                      value={confirmPassword}
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value);
+                        setMobileNumber(sanitizeMobileNumber(e.target.value));
                         setResetErrors((prev) => ({
                           ...prev,
-                          confirmPassword: "",
+                          mobileNumber: "",
+                          form: "",
                         }));
+                        if (isOtpSent) {
+                          setIsOtpSent(false);
+                          setSchoolResetId(null);
+                          setOtpCode("");
+                        }
                       }}
-                      onFocus={() => setConfirmPasswordFocused(true)}
-                      onBlur={() => setConfirmPasswordFocused(false)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleResetPassword();
-                      }}
+                      onFocus={() => setMobileFocused(true)}
+                      onBlur={() => setMobileFocused(false)}
                     />
                   </div>
-                  {resetErrors.confirmPassword && (
-                    <span className="lp-error">
-                      {resetErrors.confirmPassword}
-                    </span>
+                  {resetErrors.mobileNumber && (
+                    <span className="lp-error">{resetErrors.mobileNumber}</span>
+                  )}
+                  <button
+                    type="button"
+                    className="lp-send-otp-btn"
+                    onClick={handleSendSchoolOtp}
+                    disabled={
+                      !userId.trim() ||
+                      !mobileNumber.trim() ||
+                      sendSchoolOtpMutation.isPending
+                    }
+                  >
+                    {sendSchoolOtpMutation.isPending ? (
+                      <>
+                        <CircularProgress size={16} color="inherit" />
+                        <span>Sending OTP…</span>
+                      </>
+                    ) : (
+                      <span>{isOtpSent ? "Resend OTP" : "Send OTP"}</span>
+                    )}
+                  </button>
+                  {isOtpSent && (
+                    <>
+                      <div className="lp-field-gap" />
+                      <span className="lp-section-label">OTP</span>
+                      <div
+                        className={`lp-input-wrap${otpFocused ? " lp-input-focused" : ""}${resetErrors.otpCode ? " lp-input-error" : ""}`}
+                      >
+                        <LockOutlined className="lp-input-adorn" />
+                        <input
+                          className="lp-input"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Enter the OTP sent to your mobile"
+                          value={otpCode}
+                          onChange={(e) => {
+                            setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                            setResetErrors((prev) => ({ ...prev, otpCode: "" }));
+                          }}
+                          onFocus={() => setOtpFocused(true)}
+                          onBlur={() => setOtpFocused(false)}
+                        />
+                      </div>
+                      {resetErrors.otpCode && (
+                        <span className="lp-error">{resetErrors.otpCode}</span>
+                      )}
+                      <div className="lp-field-gap" />
+                      <span className="lp-section-label">New Password</span>
+                      <div
+                        className={`lp-input-wrap${newPasswordFocused ? " lp-input-focused" : ""}${resetErrors.newPassword ? " lp-input-error" : ""}`}
+                      >
+                        <LockOutlined className="lp-input-adorn" />
+                        <input
+                          className="lp-input"
+                          type="password"
+                          placeholder="Enter your new password"
+                          value={newPassword}
+                          onChange={(e) => {
+                            setNewPassword(e.target.value);
+                            setResetErrors((prev) => ({
+                              ...prev,
+                              newPassword: "",
+                            }));
+                          }}
+                          onFocus={() => setNewPasswordFocused(true)}
+                          onBlur={() => setNewPasswordFocused(false)}
+                        />
+                      </div>
+                      {resetErrors.newPassword && (
+                        <span className="lp-error">
+                          {resetErrors.newPassword}
+                        </span>
+                      )}
+                      <div className="lp-field-gap" />
+                      <span className="lp-section-label">
+                        Confirm New Password
+                      </span>
+                      <div
+                        className={`lp-input-wrap${confirmPasswordFocused ? " lp-input-focused" : ""}${resetErrors.confirmPassword ? " lp-input-error" : ""}`}
+                      >
+                        <LockOutlined className="lp-input-adorn" />
+                        <input
+                          className="lp-input"
+                          type="password"
+                          placeholder="Confirm your new password"
+                          value={confirmPassword}
+                          onChange={(e) => {
+                            setConfirmPassword(e.target.value);
+                            setResetErrors((prev) => ({
+                              ...prev,
+                              confirmPassword: "",
+                            }));
+                          }}
+                          onFocus={() => setConfirmPasswordFocused(true)}
+                          onBlur={() => setConfirmPasswordFocused(false)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSchoolResetPassword();
+                          }}
+                        />
+                      </div>
+                      {resetErrors.confirmPassword && (
+                        <span className="lp-error">
+                          {resetErrors.confirmPassword}
+                        </span>
+                      )}
+                    </>
                   )}
                   {resetErrors.form && (
                     <span className="lp-error lp-error--form">
@@ -669,36 +816,41 @@ const Login = () => {
 
             {isResetPasswordMode ? (
               <>
-                <button
-                  type="button"
-                  className="lp-continue-btn"
-                  onClick={handleResetPassword}
-                  disabled={
-                    !userId.trim() ||
-                    !oldPassword.trim() ||
-                    !newPassword.trim() ||
-                    !confirmPassword.trim() ||
-                    resetPasswordMutation.isPending
-                  }
-                  style={{ "--btn-c": "#1e3a8a" }}
-                >
-                  {resetPasswordMutation.isPending ? (
-                    <>
-                      <CircularProgress size={18} color="inherit" />
-                      <span>Resetting password…</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Reset Password</span>
-                      <ArrowForward sx={{ fontSize: 18 }} />
-                    </>
-                  )}
-                </button>
+                {isOtpSent && (
+                  <button
+                    type="button"
+                    className="lp-continue-btn"
+                    onClick={handleSchoolResetPassword}
+                    disabled={
+                      !userId.trim() ||
+                      !otpCode.trim() ||
+                      !newPassword.trim() ||
+                      !confirmPassword.trim() ||
+                      schoolResetPasswordMutation.isPending
+                    }
+                    style={{ "--btn-c": "#1e3a8a" }}
+                  >
+                    {schoolResetPasswordMutation.isPending ? (
+                      <>
+                        <CircularProgress size={18} color="inherit" />
+                        <span>Resetting password…</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Reset Password</span>
+                        <ArrowForward sx={{ fontSize: 18 }} />
+                      </>
+                    )}
+                  </button>
+                )}
                 <button
                   type="button"
                   className="lp-back-login-btn"
                   onClick={clearResetPasswordState}
-                  disabled={resetPasswordMutation.isPending}
+                  disabled={
+                    sendSchoolOtpMutation.isPending ||
+                    schoolResetPasswordMutation.isPending
+                  }
                 >
                   Back to login
                 </button>

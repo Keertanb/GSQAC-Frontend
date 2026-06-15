@@ -33,6 +33,26 @@ export const resetPassword = async (payload) => {
 };
 
 /**
+ * Send OTP for school password reset
+ * @param {Object} payload - { userName: string, roleId: string, mobileNo: string }
+ * @returns {Promise} API response
+ */
+export const sendSchoolOtp = async (payload) => {
+  const response = await axiosInstance.post("/school/send-otp", payload);
+  return response.data;
+};
+
+/**
+ * Reset school password with OTP
+ * @param {Object} payload - { id: number, otpCode: string, userName: string, password: string }
+ * @returns {Promise} API response
+ */
+export const resetSchoolPassword = async (payload) => {
+  const response = await axiosInstance.post("/school/reset-password", payload);
+  return response.data;
+};
+
+/**
  * Logout user
  * @returns {Promise} API response
  */
@@ -76,6 +96,32 @@ export const useResetPasswordMutation = (options = {}) => {
   return useMutation({
     mutationFn: (data) => resetPassword(data),
     mutationKey: queryKeys.auth.resetPassword(),
+    ...options,
+  });
+};
+
+/**
+ * React Query hook for sending school reset OTP
+ * @param {Object} options - Mutation options
+ * @returns {Object} Mutation object from React Query
+ */
+export const useSendSchoolOtpMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => sendSchoolOtp(data),
+    mutationKey: queryKeys.auth.schoolSendOtp(),
+    ...options,
+  });
+};
+
+/**
+ * React Query hook for school password reset with OTP
+ * @param {Object} options - Mutation options
+ * @returns {Object} Mutation object from React Query
+ */
+export const useSchoolResetPasswordMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => resetSchoolPassword(data),
+    mutationKey: queryKeys.auth.schoolResetPassword(),
     ...options,
   });
 };
