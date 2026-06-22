@@ -163,6 +163,14 @@
     "failedToLoadAssessment": "मूल्यांकन लोड नहीं हो सका। कृपया अपना कनेक्शन जांचें या प्रशासक से संपर्क करें।",
     "failedToLoadQuestions": "प्रश्न लोड नहीं हो सके",
     "loadingClasses": "कक्षाएं लोड हो रही हैं...",
+    "mobileStep": {
+      "domains": "डोमेन",
+      "subdomains": "उप-डोमेन",
+      "questions": "प्रश्न",
+      "back": "वापस जाएं",
+      "selectDomain": "जारी रखने के लिए डोमेन चुनें",
+      "selectSubdomain": "प्रश्नों के उत्तर देने के लिए उप-डोमेन चुनें"
+    },
     "tabs": {
       "generalQuestions": "सामान्य प्रश्न",
       "classroomObservation": "कक्षा अवलोकन",

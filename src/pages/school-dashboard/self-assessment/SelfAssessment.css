@@ -25,8 +25,89 @@
   box-sizing: border-box;
 }
 
-/* Touch-friendly form controls on mobile */
+/* Mobile stepper navigation */
+.sa-mobile-stepper .MuiStepButton-root {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.sa-nav-list {
+  padding: 20px 24px;
+}
+
+.sa-nav-card {
+  border-radius: 12px;
+}
+
+.sa-nav-card .MuiCardContent-root {
+  padding: 18px 20px;
+}
+
+.sa-questions-content {
+  padding: 24px 28px;
+}
+
+.sa-questions-content .sa-question-card .sa-question-header {
+  padding: 20px 24px;
+}
+
+.sa-questions-content .sa-question-card .MuiCardContent-root {
+  padding: 24px 24px 28px;
+}
+
 @media (max-width: 960px) {
+  .sa-mobile-stepper .MuiStepLabel-label {
+    font-size: 0.625rem !important;
+    white-space: normal;
+    line-height: 1.2;
+  }
+
+  .sa-main-workspace {
+    width: 100%;
+  }
+
+  .sa-domains-panel {
+    max-height: none !important;
+  }
+
+  .sa-domains-panel .sa-panel-header,
+  .sa-questions-panel .sa-panel-header {
+    padding: 20px 18px !important;
+  }
+
+  .sa-nav-list {
+    padding: 20px 16px 24px !important;
+  }
+
+  .sa-nav-card {
+    border-radius: 14px !important;
+  }
+
+  .sa-nav-card .MuiCardContent-root {
+    padding: 20px 18px !important;
+  }
+
+  .sa-questions-content {
+    padding: 20px 16px 28px !important;
+  }
+
+  .sa-questions-content .sa-question-card {
+    border-radius: 14px !important;
+    margin-bottom: 4px;
+  }
+
+  .sa-questions-content .sa-question-card .sa-question-header {
+    padding: 18px 20px !important;
+  }
+
+  .sa-questions-content .sa-question-card .MuiCardContent-root {
+    padding: 20px 18px 22px !important;
+  }
+
+  .sa-questions-content .sa-question-list {
+    gap: 20px !important;
+  }
+
   .self-assessment-page-content .MuiFormControlLabel-root {
     min-height: 48px;
     margin-left: 0;
@@ -79,7 +160,7 @@
 
   /* Question card padding */
   .self-assessment-page-content .MuiCardContent-root {
-    padding: 16px !important;
+    padding: 18px 20px !important;
   }
 
   .self-assessment-page-content [class*="question"] .MuiChip-root {

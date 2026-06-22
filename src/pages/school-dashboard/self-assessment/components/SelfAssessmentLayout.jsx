@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   Box, Paper, Typography, Button, Card, CardContent, CircularProgress, Alert, Chip,
   RadioGroup, FormControlLabel, Radio, FormControl, AppBar, Toolbar, IconButton,
@@ -15,6 +15,7 @@ import { colors } from "../../../../constants/colors";
 import AppDrawer from "../../../../components/AppDrawer/AppDrawer";
 import { DRAWER_WIDTH } from "../../../../constants/menuItems";
 import ConfirmationModal from "../../../../components/ConfirmationModal/ConfirmationModal";
+import { SelfAssessmentMobileStepper } from "./SelfAssessmentMobileStepper";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import "../SelfAssessment.css";
 
@@ -22,7 +23,80 @@ export function SelfAssessmentLayout({ c }) {
   const { navigate, theme, matchDownMD, drawerOpen, setDrawerOpen, logout, user, userId, userName, t, i18n, currentLanguage, setCurrentLanguage, selectedDomain, setSelectedDomain, selectedSubdomain, setSelectedSubdomain, answers, setAnswers, subdomainAnswers, setSubdomainAnswers, subdomainTextAnswers, setSubdomainTextAnswers, classWiseAnswers, setClassWiseAnswers, classWiseTextAnswers, setClassWiseTextAnswers, selectedClassGroup, setSelectedClassGroup, selectedClass, setSelectedClass, selectedSection, setSelectedSection, selectedSubject, setSelectedSubject, textAnswers, setTextAnswers, expandedQuestions, setExpandedQuestions, showSubmitConfirmation, setShowSubmitConfirmation, selectedQuestionTab, setSelectedQuestionTab, sessionId, selectedAssessmentId, setSelectedAssessmentId, chartDrilldownAssessmentId, setChartDrilldownAssessmentId, mcqQuestionImages, setMcqQuestionImages, mcqImageInputRef, pendingMcqImageSlot, setPendingMcqImageSlot, logoutMutation, handleDrawerToggle, handleLogout, languageCodeMap, languageCode, roleId, queryClient, domainsData, isLoadingDomains, isFetchingDomains, isErrorDomains, refetchDomains, allQuestionsData, hasSubjectWiseQuestions, questionsData, isLoadingQuestions, isErrorQuestions, refetchQuestions, schoolDataResponse, isLoadingSchoolData, schoolData, gradesData, isLoadingGrades, gradesCounts, lowerClass, upperClass, classOptions, filteredClassOptions, sectionsData, isLoadingSections, subjectsData, isLoadingSubjects, sections, subjects, assessments, selectedAssessment, domains, isPublished, endDate, isSubmitted, isEndDatePassed, isReadOnly, mapGroupRangeToApiFormat, getGroupFlagColor, getFlagColorValue, getTotalQuestionsFromGroupWise, getTotalQuestionsCount, allQuestionsForCount, allQuestions, singleChoiceQuestionsForCount, classroomObservationQuestionsForCount, subjectObservationQuestionsForCount, flnQuestionsForCount, generalQuestionsForCount, singleChoiceQuestions, classroomObservationQuestions, subjectObservationQuestions, flnQuestions, classBasedQuestions, generalQuestions, generalQuestionsTotalCount, classroomObservationQuestionsTotalCount, subjectObservationQuestionsTotalCount, flnQuestionsTotalCount, questionTabs, currentTab, getSubdomainProgress, getDomainProgress, getDomainName, getSubdomainName, getProgressColor, getQuestionText, getOptionText, shouldShowApiAnswer, getDomainIcon, toggleQuestionExpansion, parseOptions, handleDomainSelect, handleSubdomainSelect, handleAssessmentSelect, handleAnswerChange, questionAllowsImageUpload, getMcqImagesForQuestion, getMcqImagePreviewSrc, getMcqImageLocation, getMcqImageFilesForQuestion, buildAttachedImagesForQuestion, uploadImagesToPresignedUrls, handleMcqImageCaptureClick, getAddressFromCoords, handleMcqImageFileChange, handleMcqImageRemove, handleTextAnswerChange, submitAnswerMutation, submitSubdomainWiseAnswersMutation, submitAssessmentMutation, handleOpenSubmitConfirmation, handleConfirmSubmit, allDomainsComplete, domainChartData, assessmentChartData, currentChartData, totalAnswered, totalQuestions, domainNumber, subdomainNumber, handleSubmitQuestion, handleSubmit } = c;
 
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
+  const [mobileStep, setMobileStep] = useState(0);
   const leftPanelWidth = 380;
+
+  const scrollMobileToTop = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, []);
+
+  const handleMobileDomainSelect = (domain) => {
+    const isSame = selectedDomain?.domainId === domain.domainId;
+    if (isSame) {
+      setMobileStep(1);
+      scrollMobileToTop();
+      return;
+    }
+    handleDomainSelect(domain);
+    if (matchDownMD) {
+      setMobileStep(1);
+      scrollMobileToTop();
+    }
+  };
+
+  const handleMobileSubdomainSelect = (subdomain) => {
+    handleSubdomainSelect(subdomain);
+    if (matchDownMD) {
+      setMobileStep(2);
+      scrollMobileToTop();
+    }
+  };
+
+  const handleMobileStepChange = (step) => {
+    if (step === 0) {
+      setMobileStep(0);
+      setSelectedSubdomain(null);
+      scrollMobileToTop();
+      return;
+    }
+    if (step === 1 && selectedDomain) {
+      setMobileStep(1);
+      setSelectedSubdomain(null);
+      scrollMobileToTop();
+      return;
+    }
+    if (step === 2 && selectedSubdomain) {
+      setMobileStep(2);
+      scrollMobileToTop();
+    }
+  };
+
+  const handleMobileStepBack = () => {
+    if (mobileStep === 2) {
+      setSelectedSubdomain(null);
+      setAnswers({});
+      setTextAnswers({});
+      setMobileStep(1);
+      scrollMobileToTop();
+      return;
+    }
+    if (mobileStep === 1) {
+      setMobileStep(0);
+      setSelectedDomain(null);
+      setSelectedSubdomain(null);
+      scrollMobileToTop();
+    }
+  };
+
+  const showMobileNavigation = matchDownMD;
+  const showMobileSubdomainsPanel =
+    matchDownMD && mobileStep === 1 && !!selectedDomain;
+  const showMobileQuestionsPanel =
+    selectedSubdomain && (!matchDownMD || mobileStep === 2);
+  const showMobileNavPanel =
+    matchDownMD && (mobileStep === 0 || mobileStep === 1);
 
   return (
 
@@ -210,14 +284,17 @@ export function SelfAssessmentLayout({ c }) {
           </Toolbar>
         </AppBar>
 
-        <Box sx={{ mt: 8 }} className="self-assessment-page-content">
+        <Box sx={{ mt: 8 }} className="self-assessment-page-content app-page-below-header">
           <Box
             sx={{
               pl: drawerOpen && !matchDownMD ? 0 : { xs: 1.5, sm: 2, md: 3 },
               pr: { xs: 1.5, sm: 2, md: 3 },
               py: { xs: 2, md: 3 },
-              height: { xs: "auto", md: "calc(100vh - 64px)" },
-              minHeight: { xs: "calc(100vh - 64px)", md: "calc(100vh - 64px)" },
+              height: { xs: "auto", md: "calc(100vh - var(--app-header-offset, 72px))" },
+              minHeight: {
+                xs: "calc(100vh - var(--app-header-offset, 72px))",
+                md: "calc(100vh - var(--app-header-offset, 72px))",
+              },
               display: "flex",
               flexDirection: "column",
               overflow: { xs: "visible", md: "hidden" },
@@ -323,6 +400,19 @@ export function SelfAssessmentLayout({ c }) {
               </Box>
             </Box>
 
+            {showMobileNavigation && (
+              <SelfAssessmentMobileStepper
+                activeStep={mobileStep}
+                onStepChange={handleMobileStepChange}
+                onBack={handleMobileStepBack}
+                t={t}
+                selectedDomain={selectedDomain}
+                selectedSubdomain={selectedSubdomain}
+                getDomainName={getDomainName}
+                getSubdomainName={getSubdomainName}
+              />
+            )}
+
             {/* Main Content - Split Layout */}
             <Box
               sx={{
@@ -356,7 +446,7 @@ export function SelfAssessmentLayout({ c }) {
                   transition:
                     "width 0.28s ease, min-width 0.28s ease, max-width 0.28s ease",
                   display: {
-                    xs: isLeftPanelCollapsed ? "none" : "block",
+                    xs: showMobileNavPanel ? "block" : "none",
                     md: "block",
                   },
                 }}
@@ -364,22 +454,23 @@ export function SelfAssessmentLayout({ c }) {
                 <Paper
                   className="sa-domains-panel"
                   sx={{
-                    width: leftPanelWidth,
-                    minWidth: leftPanelWidth,
+                    width: { xs: "100%", md: leftPanelWidth },
+                    minWidth: { xs: 0, md: leftPanelWidth },
                     borderRadius: 3,
                     bgcolor: "white",
                     display: "flex",
                     flexDirection: "column",
                     overflow: "hidden",
                     maxHeight: { xs: "none", md: "calc(100vh - 200px)" },
-                    minHeight: { xs: "240px", md: "auto" },
+                    minHeight: { xs: "auto", md: "auto" },
                     height: { md: "100%" },
                     boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
                   }}
                 >
                 <Box
+                  className="sa-panel-header"
                   sx={{
-                    p: { xs: 2, md: 3 },
+                    p: { xs: 2.5, md: 3 },
                     borderBottom: `2px solid ${colors.neutral.gray200}`,
                     bgcolor: colors.background.secondary,
                     flexShrink: 0,
@@ -402,17 +493,21 @@ export function SelfAssessmentLayout({ c }) {
                       mb: 0.5,
                     }}
                   >
-                    {t("selfAssessment.assessmentDomains")}
+                    {showMobileSubdomainsPanel
+                      ? t("selfAssessment.mobileStep.subdomains")
+                      : t("selfAssessment.assessmentDomains")}
                   </Typography>
                   <Typography
                     variant="body2"
                     color="text.secondary"
                     sx={{ fontSize: "0.8125rem" }}
                   >
-                    {t("selfAssessment.navigateSubtitle")}
+                    {showMobileSubdomainsPanel && selectedDomain
+                      ? getDomainName(selectedDomain)
+                      : t("selfAssessment.navigateSubtitle")}
                   </Typography>
                     </Box>
-                    {matchDownMD && (
+                    {!matchDownMD && (
                       <IconButton
                         type="button"
                         size="small"
@@ -469,18 +564,159 @@ export function SelfAssessmentLayout({ c }) {
 
                 {/* Domains/Subdomains List */}
                 <Box
+                  className="sa-nav-list"
                   sx={{
                     flex: 1,
                     overflowY: "auto",
-                    p: { xs: 2, md: 2.5 },
+                    p: { xs: 2.5, md: 2.5 },
                   }}
                 >
-                  {domains.length > 0 ? (
+                  {showMobileSubdomainsPanel ? (
+                    selectedDomain?.subDomain?.length > 0 ? (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: { xs: 2, md: 1.5 },
+                        }}
+                      >
+                        {selectedDomain.subDomain.map((subdomain, subdomainIndex) => {
+                          const subdomainId =
+                            subdomain.subDomainId || subdomain.id;
+                          const subdomainProgress =
+                            getSubdomainProgress(subdomain);
+                          const isSubdomainSelected =
+                            selectedSubdomain?.subDomainId === subdomainId ||
+                            selectedSubdomain?.id === subdomainId;
+                          const domainIdx = domains.findIndex(
+                            (d) => d.domainId === selectedDomain.domainId,
+                          );
+                          const subdomainNumber = `${domainIdx + 1}.${
+                            subdomainIndex + 1
+                          }`;
+
+                          return (
+                            <Card
+                              className="sa-nav-card sa-nav-card--subdomain"
+                              key={subdomainId}
+                              onClick={() =>
+                                handleMobileSubdomainSelect(subdomain)
+                              }
+                              sx={{
+                                cursor: "pointer",
+                                transition: "all 0.3s ease",
+                                border: isSubdomainSelected
+                                  ? "2px solid"
+                                  : "1px solid",
+                                borderColor: isSubdomainSelected
+                                  ? colors.primary.blue
+                                  : colors.neutral.gray200,
+                                borderRadius: 2,
+                                bgcolor: isSubdomainSelected
+                                  ? colors.primary.blue + "12"
+                                  : "white",
+                                boxShadow: isSubdomainSelected
+                                  ? `0 4px 12px ${colors.primary.blue}20`
+                                  : "0 2px 8px rgba(0,0,0,0.04)",
+                                "&:active": {
+                                  transform: "scale(0.99)",
+                                },
+                              }}
+                            >
+                              <CardContent
+                                sx={{
+                                  p: { xs: 2.5, md: 2 },
+                                  "&:last-child": { pb: { xs: 2.5, md: 2 } },
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1.5,
+                                    mb: 1,
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      width: 32,
+                                      height: 32,
+                                      borderRadius: 1,
+                                      bgcolor: colors.accent.green,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      flexShrink: 0,
+                                    }}
+                                  >
+                                    <Typography
+                                      sx={{
+                                        color: "white",
+                                        fontWeight: 700,
+                                        fontSize: "0.75rem",
+                                      }}
+                                    >
+                                      {String.fromCharCode(
+                                        65 + (subdomainIndex % 26),
+                                      )}
+                                    </Typography>
+                                  </Box>
+                                  <Typography
+                                    variant="body1"
+                                    sx={{
+                                      fontWeight: 600,
+                                      color: colors.text.primary,
+                                      fontSize: "0.9375rem",
+                                      lineHeight: 1.35,
+                                    }}
+                                  >
+                                    {subdomainNumber}.{" "}
+                                    {getSubdomainName(subdomain)}
+                                  </Typography>
+                                  {subdomainProgress === 100 && (
+                                    <CheckCircle
+                                      sx={{
+                                        color: colors.accent.green,
+                                        fontSize: 18,
+                                        ml: "auto",
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={subdomainProgress}
+                                  sx={{
+                                    height: 6,
+                                    borderRadius: 3,
+                                    bgcolor: colors.neutral.gray200,
+                                    "& .MuiLinearProgress-bar": {
+                                      borderRadius: 3,
+                                      bgcolor:
+                                        getProgressColor(subdomainProgress),
+                                    },
+                                  }}
+                                />
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </Box>
+                    ) : (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ textAlign: "center", py: 4 }}
+                      >
+                        {t("selfAssessment.mobileStep.selectSubdomain")}
+                      </Typography>
+                    )
+                  ) : domains.length > 0 ? (
                     <Box
                       sx={{
                         display: "flex",
                         flexDirection: "column",
-                        gap: 1.5,
+                        gap: { xs: 2, md: 1.5 },
                       }}
                     >
                       {domains.map((domain, domainIndex) => {
@@ -493,7 +729,12 @@ export function SelfAssessmentLayout({ c }) {
                         return (
                           <Box key={domain.domainId}>
                             <Card
-                              onClick={() => handleDomainSelect(domain)}
+                              className="sa-nav-card sa-nav-card--domain"
+                              onClick={() =>
+                                matchDownMD
+                                  ? handleMobileDomainSelect(domain)
+                                  : handleDomainSelect(domain)
+                              }
                               sx={{
                                 cursor: "pointer",
                                 transition: "all 0.3s ease",
@@ -516,7 +757,10 @@ export function SelfAssessmentLayout({ c }) {
                               }}
                             >
                               <CardContent
-                                sx={{ p: 2, "&:last-child": { pb: 2 } }}
+                                sx={{
+                                  p: { xs: 2.5, md: 2 },
+                                  "&:last-child": { pb: { xs: 2.5, md: 2 } },
+                                }}
                               >
                                 <Box
                                   sx={{
@@ -616,8 +860,9 @@ export function SelfAssessmentLayout({ c }) {
                               </CardContent>
                             </Card>
 
-                            {/* Show Subdomains when domain is selected */}
-                            {isDomainSelected &&
+                            {/* Show Subdomains when domain is selected (desktop only) */}
+                            {!matchDownMD &&
+                              isDomainSelected &&
                               domain.subDomain &&
                               domain.subDomain.length > 0 && (
                                 <Box
@@ -643,13 +888,14 @@ export function SelfAssessmentLayout({ c }) {
 
                                       return (
                                         <Card
+                                          className="sa-nav-card sa-nav-card--subdomain"
                                           key={subdomainId}
                                           onClick={() =>
                                             handleSubdomainSelect(subdomain)
                                           }
                                           sx={{
                                             cursor: "pointer",
-                                            mb: 1.2,
+                                            mb: 1.5,
                                             transition: "all 0.3s ease",
                                             border: isSubdomainSelected
                                               ? "2px solid"
@@ -673,8 +919,10 @@ export function SelfAssessmentLayout({ c }) {
                                         >
                                           <CardContent
                                             sx={{
-                                              p: 1.2,
-                                              "&:last-child": { pb: 1.2 },
+                                              p: { xs: 2, md: 1.75 },
+                                              "&:last-child": {
+                                                pb: { xs: 2, md: 1.75 },
+                                              },
                                             }}
                                           >
                                             <Box
@@ -836,8 +1084,8 @@ export function SelfAssessmentLayout({ c }) {
                   )}
                 </Box>
 
-                {/* Final Submit Button */}
-                {isPublished && !isReadOnly && (
+                {/* Final Submit Button (desktop / mobile steps 0–1) */}
+                {isPublished && !isReadOnly && (!matchDownMD || mobileStep < 2) && (
                   <Box
                     sx={{
                       p: 2.5,
@@ -950,26 +1198,10 @@ export function SelfAssessmentLayout({ c }) {
                   overflow: { xs: "visible", md: "hidden" },
                 }}
               >
-              {matchDownMD && isLeftPanelCollapsed && (
-                <Button
-                  variant="outlined"
-                  startIcon={<Menu />}
-                  onClick={() => setIsLeftPanelCollapsed(false)}
-                  sx={{
-                    alignSelf: "flex-start",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    borderColor: colors.primary.blue,
-                    color: colors.primary.blue,
-                  }}
-                >
-                  {t("selfAssessment.assessmentDomains")}
-                </Button>
-              )}
-
               {/* Right Panel - Questions */}
-              {selectedSubdomain && (
+              {showMobileQuestionsPanel && (
                 <Paper
+                  className="sa-questions-panel"
                   sx={{
                     flex: 1,
                     minHeight: { xs: "400px", md: 0 },
@@ -985,8 +1217,9 @@ export function SelfAssessmentLayout({ c }) {
                 >
                   {/* Right Panel Header */}
                   <Box
+                    className="sa-panel-header"
                     sx={{
-                      p: { xs: 2, md: 3 },
+                      p: { xs: 2.5, md: 3 },
                       borderBottom: `2px solid ${colors.neutral.gray200}`,
                       bgcolor: colors.background.secondary,
                     }}
@@ -1035,11 +1268,12 @@ export function SelfAssessmentLayout({ c }) {
 
                   {/* Questions Content */}
                   <Box
+                    className="sa-questions-content"
                     sx={{
                       flex: 1,
                       overflowY: "auto",
                       overflowX: "hidden",
-                      p: { xs: 1.5, sm: 2, md: 3.5 },
+                      p: { xs: 2.5, sm: 2.5, md: 3.5 },
                       WebkitOverflowScrolling: "touch",
                     }}
                   >
@@ -1524,10 +1758,11 @@ export function SelfAssessmentLayout({ c }) {
                                 </Alert>
                               ) : (
                                 <Box
+                                  className="sa-question-list"
                                   sx={{
                                     display: "flex",
                                     flexDirection: "column",
-                                    gap: 2.5,
+                                    gap: { xs: 3, md: 2.5 },
                                   }}
                                 >
                                   {currentTab.questions.map(
@@ -1557,6 +1792,7 @@ export function SelfAssessmentLayout({ c }) {
 
                                       return (
                                         <Card
+                                          className="sa-question-card"
                                           key={question.questionId}
                                           sx={{
                                             borderRadius: 2,
@@ -1574,6 +1810,7 @@ export function SelfAssessmentLayout({ c }) {
                                         >
                                           {/* Question Header - Always Visible */}
                                           <Box
+                                            className="sa-question-header"
                                             onClick={() =>
                                               toggleQuestionExpansion(
                                                 question.questionId,
@@ -1637,7 +1874,12 @@ export function SelfAssessmentLayout({ c }) {
 
                                           {/* Question Content - Expandable */}
                                           {isExpanded && (
-                                            <CardContent sx={{ p: 3, pt: 2.5 }}>
+                                            <CardContent
+                                              sx={{
+                                                p: { xs: 2.5, md: 3 },
+                                                pt: { xs: 2, md: 2.5 },
+                                              }}
+                                            >
                                               {question.isClassroomObservation ===
                                                 1 &&
                                                 question.observationCount && (
@@ -2464,10 +2706,11 @@ export function SelfAssessmentLayout({ c }) {
                                 </Alert>
                               ) : (
                                 <Box
+                                  className="sa-question-list"
                                   sx={{
                                     display: "flex",
                                     flexDirection: "column",
-                                    gap: 2.5,
+                                    gap: { xs: 3, md: 2.5 },
                                   }}
                                 >
                                   {currentTab.questions.map(
@@ -2497,6 +2740,7 @@ export function SelfAssessmentLayout({ c }) {
 
                                       return (
                                         <Card
+                                          className="sa-question-card"
                                           key={question.questionId}
                                           sx={{
                                             borderRadius: 2,
@@ -2514,6 +2758,7 @@ export function SelfAssessmentLayout({ c }) {
                                         >
                                           {/* Question Header - Always Visible */}
                                           <Box
+                                            className="sa-question-header"
                                             onClick={() =>
                                               toggleQuestionExpansion(
                                                 question.questionId,
@@ -2577,7 +2822,12 @@ export function SelfAssessmentLayout({ c }) {
 
                                           {/* Question Content - Expandable */}
                                           {isExpanded && (
-                                            <CardContent sx={{ p: 3, pt: 2.5 }}>
+                                            <CardContent
+                                              sx={{
+                                                p: { xs: 2.5, md: 3 },
+                                                pt: { xs: 2, md: 2.5 },
+                                              }}
+                                            >
                                               {options &&
                                                 options.length > 0 && (
                                                   <FormControl
@@ -3022,10 +3272,11 @@ export function SelfAssessmentLayout({ c }) {
                                 </Alert>
                               ) : (
                                 <Box
+                                  className="sa-question-list"
                                   sx={{
                                     display: "flex",
                                     flexDirection: "column",
-                                    gap: 2.5,
+                                    gap: { xs: 3, md: 2.5 },
                                   }}
                                 >
                                   {currentTab.questions.map(
@@ -3063,6 +3314,7 @@ export function SelfAssessmentLayout({ c }) {
 
                                       return (
                                         <Card
+                                          className="sa-question-card"
                                           key={question.questionId}
                                           sx={{
                                             borderRadius: 2,
@@ -3080,6 +3332,7 @@ export function SelfAssessmentLayout({ c }) {
                                         >
                                           {/* Question Header - Always Visible */}
                                           <Box
+                                            className="sa-question-header"
                                             onClick={() =>
                                               toggleQuestionExpansion(
                                                 question.questionId,
@@ -3144,7 +3397,12 @@ export function SelfAssessmentLayout({ c }) {
 
                                           {/* Question Content - Expandable */}
                                           {isExpanded && (
-                                            <CardContent sx={{ p: 3, pt: 2.5 }}>
+                                            <CardContent
+                                              sx={{
+                                                p: { xs: 2.5, md: 3 },
+                                                pt: { xs: 2, md: 2.5 },
+                                              }}
+                                            >
                                               {/* FLN Input Fields for classes 2 and 3 */}
                                               <Box
                                                 sx={{
@@ -3427,10 +3685,11 @@ export function SelfAssessmentLayout({ c }) {
                                 </Alert>
                               ) : (
                                 <Box
+                                  className="sa-question-list"
                                   sx={{
                                     display: "flex",
                                     flexDirection: "column",
-                                    gap: 2.5,
+                                    gap: { xs: 3, md: 2.5 },
                                   }}
                                 >
                                   {currentTab.questions.map(
@@ -3459,6 +3718,7 @@ export function SelfAssessmentLayout({ c }) {
 
                                       return (
                                         <Card
+                                          className="sa-question-card"
                                           key={question.questionId}
                                           sx={{
                                             borderRadius: 2,
@@ -3476,6 +3736,7 @@ export function SelfAssessmentLayout({ c }) {
                                         >
                                           {/* Question Header - Always Visible */}
                                           <Box
+                                            className="sa-question-header"
                                             onClick={() =>
                                               toggleQuestionExpansion(
                                                 question.questionId,
@@ -3548,7 +3809,12 @@ export function SelfAssessmentLayout({ c }) {
 
                                           {/* Question Content - Expandable */}
                                           {isExpanded && (
-                                            <CardContent sx={{ p: 3, pt: 2.5 }}>
+                                            <CardContent
+                                              sx={{
+                                                p: { xs: 2.5, md: 3 },
+                                                pt: { xs: 2, md: 2.5 },
+                                              }}
+                                            >
                                               {options &&
                                                 options.length > 0 && (
                                                   <FormControl
@@ -3947,6 +4213,10 @@ export function SelfAssessmentLayout({ c }) {
                             setSelectedDomain(null);
                             setSelectedSubdomain(null);
                             setAnswers({});
+                            if (matchDownMD) {
+                              setMobileStep(0);
+                              scrollMobileToTop();
+                            }
                           }}
                           sx={{
                             borderColor: colors.primary.blue,
@@ -4031,11 +4301,52 @@ export function SelfAssessmentLayout({ c }) {
                       </Box>
                     )}
                   </Box>
+
+                  {matchDownMD && isPublished && !isReadOnly && (
+                    <Box
+                      sx={{
+                        p: 2,
+                        borderTop: `2px solid ${colors.neutral.gray200}`,
+                        bgcolor: colors.background.secondary,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        onClick={handleOpenSubmitConfirmation}
+                        disabled={
+                          submitAssessmentMutation.isPending ||
+                          !allDomainsComplete ||
+                          isReadOnly
+                        }
+                        sx={{
+                          bgcolor: colors.accent.green,
+                          textTransform: "none",
+                          fontWeight: 600,
+                          py: 1.5,
+                          borderRadius: 2,
+                          "&:hover": { bgcolor: colors.accent.greenDark },
+                          "&:disabled": {
+                            bgcolor: colors.neutral.gray300,
+                            color: colors.neutral.gray600,
+                          },
+                        }}
+                      >
+                        {submitAssessmentMutation.isPending
+                          ? "Submitting..."
+                          : allDomainsComplete
+                            ? "Submit Assessment"
+                            : "Final Submit"}
+                      </Button>
+                    </Box>
+                  )}
                 </Paper>
               )}
 
-              {/* Domain View - When Domain Selected but No Subdomain */}
-              {selectedDomain &&
+              {/* Domain View - When Domain Selected but No Subdomain (desktop) */}
+              {!matchDownMD &&
+                selectedDomain &&
                 !selectedSubdomain &&
                 (() => {
                   const domainIdx = domains.findIndex(
@@ -4329,8 +4640,8 @@ export function SelfAssessmentLayout({ c }) {
                   );
                 })()}
 
-              {/* Domains Overview - No Domain Selected */}
-              {!selectedDomain && (
+              {/* Domains Overview - No Domain Selected (desktop) */}
+              {!matchDownMD && !selectedDomain && (
                 <Paper
                   elevation={2}
                   sx={{

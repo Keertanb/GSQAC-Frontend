@@ -73,6 +73,18 @@
 }
 
 /* Mobile: ensure drawer doesn't overflow and touch targets are adequate */
+@media (max-width: 960px) {
+  .MuiDrawer-paper {
+    max-width: 85vw !important;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .drawer-header {
+    min-height: 84px;
+  }
+}
+
 @media (max-width: 600px) {
   .MuiDrawer-paper {
     max-width: 85vw !important;

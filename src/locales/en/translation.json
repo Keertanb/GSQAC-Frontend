@@ -165,6 +165,14 @@
     "failedToLoadAssessment": "Failed to load assessment. Please check your connection or contact administrator.",
     "failedToLoadQuestions": "Failed to load questions",
     "loadingClasses": "Loading classes...",
+    "mobileStep": {
+      "domains": "Domains",
+      "subdomains": "Sub-domains",
+      "questions": "Questions",
+      "back": "Go back",
+      "selectDomain": "Select a domain to continue",
+      "selectSubdomain": "Select a sub-domain to answer questions"
+    },
     "tabs": {
       "generalQuestions": "General Questions",
       "classroomObservation": "Classroom Observation",

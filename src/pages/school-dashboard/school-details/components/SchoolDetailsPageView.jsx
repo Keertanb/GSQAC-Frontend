@@ -220,19 +220,16 @@ const FacilityCard = ({ label, value, icon: Icon, onChange }) => (
   <Box
     sx={{
       display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 2,
+      flexDirection: "column",
+      gap: 1.5,
       height: "100%",
     }}
   >
     <Box
       sx={{
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
         gap: 1.5,
-        flex: 1,
-        minWidth: 0,
       }}
     >
       <Box
@@ -245,6 +242,7 @@ const FacilityCard = ({ label, value, icon: Icon, onChange }) => (
           justifyContent: "center",
           minWidth: 40,
           minHeight: 40,
+          flexShrink: 0,
         }}
       >
         {Icon && <Icon sx={{ fontSize: 20, color: colors.accent.green }} />}
@@ -255,18 +253,18 @@ const FacilityCard = ({ label, value, icon: Icon, onChange }) => (
           color: colors.text.primary,
           fontWeight: 600,
           fontSize: "0.875rem",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
+          lineHeight: 1.4,
+          wordBreak: "break-word",
+          overflowWrap: "break-word",
         }}
       >
         {label}
       </Typography>
     </Box>
     <FormControl
+      fullWidth
       size="small"
       sx={{
-        minWidth: 120,
         "& .MuiOutlinedInput-root": {
           borderRadius: 1.5,
           bgcolor: "white",
@@ -292,6 +290,9 @@ const FacilityCard = ({ label, value, icon: Icon, onChange }) => (
           fontSize: "0.8125rem",
           "& .MuiSelect-select": {
             py: 0.875,
+            whiteSpace: "normal",
+            overflow: "visible",
+            textOverflow: "clip",
           },
         }}
       >
@@ -363,7 +364,7 @@ export function SchoolDetailsPageView({ c }) {
             zIndex: theme.zIndex.drawer + 1,
             boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
             borderBottom: `1px solid ${colors.neutral.gray200}`,
-            height: "72px",
+            minHeight: "72px",
             width:
               drawerOpen && !matchDownMD
                 ? `calc(100% - ${DRAWER_WIDTH.xs}px)`
@@ -927,14 +928,7 @@ export function SchoolDetailsPageView({ c }) {
                   </Box>
                   <Box sx={{ p: 3 }}>
                     <Grid container spacing={2.5}>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
+                      <Grid item xs={12} sm={6} md={6} lg={6}>
                         <FacilityCard
                           label="Drinking Water"
                           value={schoolData.drinkingWater}
@@ -947,14 +941,7 @@ export function SchoolDetailsPageView({ c }) {
                           }
                         />
                       </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
+                      <Grid item xs={12} sm={6} md={6} lg={6}>
                         <FacilityCard
                           label="Pucca Building"
                           value={schoolData.puccaBuilding}
@@ -967,14 +954,7 @@ export function SchoolDetailsPageView({ c }) {
                           }
                         />
                       </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
+                      <Grid item xs={12} sm={6} md={6} lg={6}>
                         <FacilityCard
                           label="Electricity"
                           value={schoolData.electricity}
@@ -987,14 +967,7 @@ export function SchoolDetailsPageView({ c }) {
                           }
                         />
                       </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
+                      <Grid item xs={12} sm={6} md={6} lg={6}>
                         <FacilityCard
                           label="Functional Toilets"
                           value={schoolData.functionalToilets}
