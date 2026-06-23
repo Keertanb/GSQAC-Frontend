@@ -164,6 +164,14 @@ const Dashboard = () => {
             </Button>
 
             <IconButton
+              className="mobile-login-btn"
+              aria-label="Login"
+              onClick={() => navigate("/login")}
+            >
+              <LockIcon />
+            </IconButton>
+
+            <IconButton
               className="mobile-toggle"
               aria-label="Open menu"
               onClick={() => setMobileMenuOpen(true)}
@@ -203,6 +211,8 @@ const Dashboard = () => {
               {label}
             </a>
           ))}
+        </nav>
+        <div className="mobile-nav-footer">
           <Button
             fullWidth
             variant="contained"
@@ -215,7 +225,19 @@ const Dashboard = () => {
           >
             Login
           </Button>
-        </nav>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<SchoolIcon />}
+            className="mobile-nav-school-login"
+            onClick={() => {
+              closeMobileMenu();
+              navigate("/login?role=school");
+            }}
+          >
+            School Login
+          </Button>
+        </div>
       </aside>
 
       <section
