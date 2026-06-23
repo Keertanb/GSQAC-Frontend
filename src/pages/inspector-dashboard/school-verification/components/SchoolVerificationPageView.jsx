@@ -14,18 +14,48 @@ import { colors } from "../../../../constants/colors";
 import AppDrawer from "../../../../components/AppDrawer/AppDrawer";
 import { DRAWER_WIDTH } from "../../../../constants/menuItems";
 import ConfirmationModal from "../../../../components/ConfirmationModal/ConfirmationModal";
+import { SelfAssessmentMobileStepper } from "../../../school-dashboard/self-assessment/components/SelfAssessmentMobileStepper";
+import { AssessmentOverallProgress } from "../../../../components/AssessmentOverallProgress/AssessmentOverallProgress";
+import { useAssessmentMobileLayout } from "../../../../hooks/useAssessmentMobileLayout";
+import { renderAssessmentOptionLabel } from "../../../../utils/assessmentOptionLabel";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import "../../../school-dashboard/self-assessment/SelfAssessment.css";
 
 export function SchoolVerificationPageView({ c }) {
-  const { t, i18n, navigate, location, userId, userName, queryClient, currentLanguage, setCurrentLanguage, selectedDomain, setSelectedDomain, selectedSubdomain, setSelectedSubdomain, answers, setAnswers, subdomainAnswers, setSubdomainAnswers, subdomainTextAnswers, setSubdomainTextAnswers, classWiseAnswers, setClassWiseAnswers, classWiseTextAnswers, setClassWiseTextAnswers, selectedClassGroup, setSelectedClassGroup, selectedClass, setSelectedClass, selectedSection, setSelectedSection, selectedSubject, setSelectedSubject, textAnswers, setTextAnswers, expandedQuestions, setExpandedQuestions, showSubmitConfirmation, setShowSubmitConfirmation, selectedQuestionTab, setSelectedQuestionTab, selectedAssessmentId, setSelectedAssessmentId, chartDrilldownAssessmentId, setChartDrilldownAssessmentId, schoolFromState, schoolId, languageCodeMap, languageCode, roleId, domainsData, isLoadingDomains, isErrorDomains, refetchDomains, allQuestionsData, hasSubjectWiseQuestions, questionsData, isLoadingQuestions, isErrorQuestions, refetchQuestions, schoolDataResponse, isLoadingSchoolData, schoolData, gradesData, isLoadingGrades, gradesCounts, lowerClass, upperClass, classOptions, filteredClassOptions, sectionsData, isLoadingSections, subjectsData, isLoadingSubjects, sections, subjects, assessments, selectedAssessment, domains, isPublished, endDate, isSubmitted, sessionId, mapGroupRangeToApiFormat, getGroupFlagColor, getFlagColorValue, getTotalQuestionsFromGroupWise, getTotalQuestionsCount, allQuestionsForCount, allQuestions, generalQuestionsTotalCount, classroomObservationQuestionsTotalCount, subjectObservationQuestionsTotalCount, flnQuestionsTotalCount, singleChoiceQuestionsForCount, classroomObservationQuestionsForCount, subjectObservationQuestionsForCount, flnQuestionsForCount, generalQuestionsForCount, singleChoiceQuestions, classroomObservationQuestions, subjectObservationQuestions, flnQuestions, classBasedQuestions, generalQuestions, getDomainName, getSubdomainName, getQuestionText, getOptionText, getSubdomainProgress, getDomainProgress, shouldShowApiAnswer, getDomainIcon, getProgressColor, toggleQuestionExpansion, parseOptions, handleDomainSelect, handleSubdomainSelect, handleAssessmentSelect, handleAnswerChange, handleTextAnswerChange, submitAnswerMutation, submitSubdomainWiseAnswersMutation, submitAssessmentMutation, handleOpenSubmitConfirmation, handleConfirmSubmit, allDomainsComplete, handleSubmit, domainChartData, assessmentChartData, currentChartData, domainNumber, subdomainNumber, questionTabs, currentTab, areAllQuestionsAnsweredForCurrentTab } = c;
+  const { t, i18n, matchDownMD, navigate, location, userId, userName, queryClient, currentLanguage, setCurrentLanguage, selectedDomain, setSelectedDomain, selectedSubdomain, setSelectedSubdomain, answers, setAnswers, subdomainAnswers, setSubdomainAnswers, subdomainTextAnswers, setSubdomainTextAnswers, classWiseAnswers, setClassWiseAnswers, classWiseTextAnswers, setClassWiseTextAnswers, selectedClassGroup, setSelectedClassGroup, selectedClass, setSelectedClass, selectedSection, setSelectedSection, selectedSubject, setSelectedSubject, textAnswers, setTextAnswers, expandedQuestions, setExpandedQuestions, showSubmitConfirmation, setShowSubmitConfirmation, selectedQuestionTab, setSelectedQuestionTab, selectedAssessmentId, setSelectedAssessmentId, chartDrilldownAssessmentId, setChartDrilldownAssessmentId, schoolFromState, schoolId, languageCodeMap, languageCode, roleId, domainsData, isLoadingDomains, isErrorDomains, refetchDomains, allQuestionsData, hasSubjectWiseQuestions, questionsData, isLoadingQuestions, isErrorQuestions, refetchQuestions, schoolDataResponse, isLoadingSchoolData, schoolData, gradesData, isLoadingGrades, gradesCounts, lowerClass, upperClass, classOptions, filteredClassOptions, sectionsData, isLoadingSections, subjectsData, isLoadingSubjects, sections, subjects, assessments, selectedAssessment, domains, isPublished, assessmentProgress, endDate, isSubmitted, sessionId, mapGroupRangeToApiFormat, getGroupFlagColor, getFlagColorValue, getTotalQuestionsFromGroupWise, getTotalQuestionsCount, allQuestionsForCount, allQuestions, generalQuestionsTotalCount, classroomObservationQuestionsTotalCount, subjectObservationQuestionsTotalCount, flnQuestionsTotalCount, singleChoiceQuestionsForCount, classroomObservationQuestionsForCount, subjectObservationQuestionsForCount, flnQuestionsForCount, generalQuestionsForCount, singleChoiceQuestions, classroomObservationQuestions, subjectObservationQuestions, flnQuestions, classBasedQuestions, generalQuestions, getDomainName, getSubdomainName, getQuestionText, getOptionText, getSubdomainProgress, getDomainProgress, shouldShowApiAnswer, getDomainIcon, getProgressColor, toggleQuestionExpansion, parseOptions, handleDomainSelect, handleSubdomainSelect, handleAssessmentSelect, handleAnswerChange, handleTextAnswerChange, submitAnswerMutation, submitSubdomainWiseAnswersMutation, submitAssessmentMutation, handleOpenSubmitConfirmation, handleConfirmSubmit, allDomainsComplete, handleSubmit, domainChartData, assessmentChartData, currentChartData, domainNumber, subdomainNumber, questionTabs, currentTab, areAllQuestionsAnsweredForCurrentTab } = c;
+
+  const {
+    mobileStep,
+    showMobileNavigation,
+    showMobileSubdomainsPanel,
+    showMobileQuestionsPanel,
+    showMobileNavPanel,
+    handleMobileDomainSelect,
+    handleMobileSubdomainSelect,
+    handleMobileStepChange,
+    handleMobileStepBack,
+  } = useAssessmentMobileLayout({
+    matchDownMD,
+    selectedDomain,
+    selectedSubdomain,
+    setSelectedSubdomain,
+    setSelectedDomain,
+    handleDomainSelect,
+    handleSubdomainSelect,
+    setAnswers,
+    setTextAnswers,
+  });
+
+  const renderOptionLabel = (option, optIndex) =>
+    renderAssessmentOptionLabel(t, getOptionText, option, optIndex);
 
   return (
 
-    <Box sx={{ p: { xs: 2, sm: 3 } }}>
-      {/* Header */}
+    <Box className="crc-assessment-page-content" sx={{ p: { xs: 2, sm: 3 } }}>
+      {/* Header - desktop only */}
       <Box
         sx={{
-          display: "flex",
+          display: { xs: "none", md: "flex" },
           alignItems: "center",
           justifyContent: "space-between",
           mb: 3,
@@ -112,6 +142,99 @@ export function SchoolVerificationPageView({ c }) {
           </ToggleButtonGroup>
         </Box>
       </Box>
+
+      {matchDownMD && (
+        <Box
+          className="sa-mobile-page-toolbar"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1.5,
+            mb: 2,
+            flexWrap: "wrap",
+          }}
+        >
+          {isPublished && endDate ? (
+            <Typography
+              variant="caption"
+              sx={{
+                flex: 1,
+                minWidth: 0,
+                color: colors.semantic.warning,
+                fontWeight: 600,
+                fontSize: "0.75rem",
+                lineHeight: 1.4,
+              }}
+            >
+              {t("selfAssessment.endDateWarning", { date: endDate })}
+            </Typography>
+          ) : (
+            <Box sx={{ flex: 1 }} />
+          )}
+          <ToggleButtonGroup
+            value={currentLanguage}
+            exclusive
+            onChange={(e, newLanguage) => {
+              if (newLanguage !== null) {
+                setCurrentLanguage(newLanguage);
+                i18n.changeLanguage(newLanguage);
+              }
+            }}
+            size="small"
+            sx={{
+              flexShrink: 0,
+              "& .MuiToggleButton-root": {
+                px: 1.25,
+                py: 0.35,
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                borderColor: colors.primary.blue + "40",
+                color: colors.text.secondary,
+                "&.Mui-selected": {
+                  bgcolor: colors.primary.blue,
+                  color: "white",
+                },
+              },
+            }}
+          >
+            <ToggleButton value="gu">ગુ</ToggleButton>
+            <ToggleButton value="en">EN</ToggleButton>
+            <ToggleButton value="hi">हिं</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+      )}
+
+      {matchDownMD && isErrorDomains && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {t("schoolVerification.failedToLoadDomains")}
+        </Alert>
+      )}
+
+      {showMobileNavigation && (
+        <Box sx={{ mb: 2 }}>
+          <AssessmentOverallProgress
+            t={t}
+            assessmentProgress={assessmentProgress}
+            getProgressColor={getProgressColor}
+            compact
+          />
+        </Box>
+      )}
+
+      {showMobileNavigation && (
+        <SelfAssessmentMobileStepper
+          activeStep={mobileStep}
+          onStepChange={handleMobileStepChange}
+          onBack={handleMobileStepBack}
+          t={t}
+          selectedDomain={selectedDomain}
+          selectedSubdomain={selectedSubdomain}
+          getDomainName={getDomainName}
+          getSubdomainName={getSubdomainName}
+        />
+      )}
 
       {/* School Details Card */}
       {(schoolFromState || schoolData) && (
@@ -224,29 +347,45 @@ export function SchoolVerificationPageView({ c }) {
       <Box
         sx={{
           display: "flex",
+          flexDirection: { xs: "column", md: "row" },
           gap: { xs: 2, md: 3 },
-          minHeight: "calc(100vh - 300px)",
+          minHeight: { xs: "auto", md: "calc(100vh - 300px)" },
         }}
       >
         {/* Left Panel - Domains and Subdomains */}
-        <Paper
-          elevation={2}
+        <Box
+          className="sa-left-panel-shell"
           sx={{
             width: { xs: "100%", md: "380px" },
-            minWidth: { md: "380px" },
+            minWidth: { xs: 0, md: "380px" },
+            maxWidth: { xs: "100%", md: "380px" },
+            flexShrink: { md: 0 },
+            display: {
+              xs: showMobileNavPanel ? "block" : "none",
+              md: "block",
+            },
+          }}
+        >
+        <Paper
+          elevation={2}
+          className="sa-domains-panel"
+          sx={{
+            width: { xs: "100%", md: "380px" },
+            minWidth: { xs: 0, md: "380px" },
             borderRadius: 3,
             bgcolor: "white",
             display: "flex",
             flexDirection: "column",
-            maxHeight: "calc(100vh - 300px)",
+            maxHeight: { xs: "none", md: "calc(100vh - 300px)" },
             overflow: "hidden",
             boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
           }}
         >
           {/* Left Panel Header */}
           <Box
+            className="sa-panel-header"
             sx={{
-              p: 3,
+              p: { xs: 2.5, md: 3 },
               borderBottom: `2px solid ${colors.neutral.gray200}`,
               bgcolor: colors.background.secondary,
             }}
@@ -259,14 +398,18 @@ export function SchoolVerificationPageView({ c }) {
                 mb: 0.5,
               }}
             >
-              {t("selfAssessment.assessmentDomains")}
+              {showMobileSubdomainsPanel
+                ? t("selfAssessment.mobileStep.subdomains")
+                : t("selfAssessment.assessmentDomains")}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ fontSize: "0.8125rem" }}
             >
-              {t("selfAssessment.navigateSubtitle")}
+              {showMobileSubdomainsPanel && selectedDomain
+                ? getDomainName(selectedDomain)
+                : t("selfAssessment.navigateSubtitle")}
             </Typography>
             {assessments.length > 1 && (
               <Box sx={{ mt: 2 }}>
@@ -308,13 +451,107 @@ export function SchoolVerificationPageView({ c }) {
 
           {/* Domains/Subdomains List */}
           <Box
+            className="sa-nav-list"
             sx={{
               flex: 1,
               overflowY: "auto",
-              p: { xs: 2, md: 2.5 },
+              p: { xs: 2.5, md: 2.5 },
             }}
           >
-            {domains.length > 0 ? (
+            {showMobileSubdomainsPanel ? (
+              selectedDomain?.subDomain?.length > 0 ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: { xs: 2, md: 1.5 },
+                  }}
+                >
+                  {selectedDomain.subDomain.map((subdomain, subdomainIndex) => {
+                    const subdomainId =
+                      subdomain.subDomainId || subdomain.id;
+                    const subdomainProgress = getSubdomainProgress(subdomain);
+                    const isSubdomainSelected =
+                      selectedSubdomain?.subDomainId === subdomainId;
+                    const domainIdx = domains.findIndex(
+                      (d) => d.domainId === selectedDomain.domainId,
+                    );
+                    const subdomainNumber = `${domainIdx + 1}.${subdomainIndex + 1}`;
+
+                    return (
+                      <Card
+                        key={subdomainId}
+                        className="sa-nav-card"
+                        onClick={() => handleMobileSubdomainSelect(subdomain)}
+                        sx={{
+                          cursor: "pointer",
+                          transition: "all 0.3s ease",
+                          border: isSubdomainSelected
+                            ? "2px solid"
+                            : "1.5px solid",
+                          borderColor: isSubdomainSelected
+                            ? colors.primary.blue
+                            : "transparent",
+                          borderRadius: 2,
+                          bgcolor: isSubdomainSelected
+                            ? colors.primary.blue + "15"
+                            : colors.background.primary,
+                          boxShadow: isSubdomainSelected
+                            ? `0 4px 12px ${colors.primary.blue}30`
+                            : "0 2px 8px rgba(0,0,0,0.04)",
+                          "&:hover": {
+                            borderColor: colors.primary.blue,
+                            bgcolor: colors.primary.blue + "08",
+                          },
+                        }}
+                      >
+                        <CardContent
+                          sx={{
+                            p: { xs: 2.5, md: 2 },
+                            "&:last-child": { pb: { xs: 2.5, md: 2 } },
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 600,
+                              color: isSubdomainSelected
+                                ? colors.primary.blue
+                                : colors.text.primary,
+                              fontSize: "0.875rem",
+                              mb: 1,
+                            }}
+                          >
+                            {subdomainNumber}. {getSubdomainName(subdomain)}
+                          </Typography>
+                          <LinearProgress
+                            variant="determinate"
+                            value={subdomainProgress}
+                            sx={{
+                              height: 6,
+                              borderRadius: 3,
+                              bgcolor: colors.neutral.gray200,
+                              "& .MuiLinearProgress-bar": {
+                                borderRadius: 3,
+                                bgcolor: getProgressColor(subdomainProgress),
+                              },
+                            }}
+                          />
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </Box>
+              ) : (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ textAlign: "center", py: 4 }}
+                >
+                  {t("selfAssessment.mobileStep.selectSubdomain")}
+                </Typography>
+              )
+            ) : domains.length > 0 ? (
               <Box
                 sx={{
                   display: "flex",
@@ -332,7 +569,12 @@ export function SchoolVerificationPageView({ c }) {
                   return (
                     <Box key={domain.domainId}>
                       <Card
-                        onClick={() => handleDomainSelect(domain)}
+                        className="sa-nav-card"
+                        onClick={() =>
+                          matchDownMD
+                            ? handleMobileDomainSelect(domain)
+                            : handleDomainSelect(domain)
+                        }
                         sx={{
                           cursor: "pointer",
                           transition: "all 0.3s ease",
@@ -453,8 +695,9 @@ export function SchoolVerificationPageView({ c }) {
                         </CardContent>
                       </Card>
 
-                      {/* Show Subdomains when domain is selected */}
-                      {isDomainSelected &&
+                      {/* Show Subdomains when domain is selected (desktop only) */}
+                      {!matchDownMD &&
+                        isDomainSelected &&
                         domain.subDomain &&
                         domain.subDomain.length > 0 && (
                           <Box
@@ -685,9 +928,10 @@ export function SchoolVerificationPageView({ c }) {
             </Box>
           )}
         </Paper>
+        </Box>
 
         {/* Right Panel - Questions or Domain Overview */}
-        {selectedSubdomain && (
+        {showMobileQuestionsPanel && (
           <Paper
             elevation={2}
             sx={{
@@ -1387,13 +1631,10 @@ export function SchoolVerificationPageView({ c }) {
                                                           }}
                                                         />
                                                       }
-                                                      label={
-                                                        <Typography variant="body2">
-                                                          {getOptionText(
-                                                            option
-                                                          )}
-                                                        </Typography>
-                                                      }
+                                                      label={renderOptionLabel(
+                                                        option,
+                                                        optIndex
+                                                      )}
                                                       sx={{
                                                         mb: 1.5,
                                                         p: 2,
@@ -1999,13 +2240,10 @@ export function SchoolVerificationPageView({ c }) {
                                                           }}
                                                         />
                                                       }
-                                                      label={
-                                                        <Typography variant="body2">
-                                                          {getOptionText(
-                                                            option
-                                                          )}
-                                                        </Typography>
-                                                      }
+                                                      label={renderOptionLabel(
+                                                        option,
+                                                        optIndex
+                                                      )}
                                                       sx={{
                                                         mb: 1.5,
                                                         p: 2,
@@ -2644,11 +2882,10 @@ export function SchoolVerificationPageView({ c }) {
                                                         }}
                                                       />
                                                     }
-                                                    label={
-                                                      <Typography variant="body2">
-                                                        {getOptionText(option)}
-                                                      </Typography>
-                                                    }
+                                                    label={renderOptionLabel(
+                                                      option,
+                                                      optIndex
+                                                    )}
                                                     sx={{
                                                       mb: 1.5,
                                                       p: 2,
@@ -2782,8 +3019,8 @@ export function SchoolVerificationPageView({ c }) {
           </Paper>
         )}
 
-        {/* Domain View - When Domain Selected but No Subdomain */}
-        {selectedDomain && !selectedSubdomain && (
+        {/* Domain View - When Domain Selected but No Subdomain (desktop only) */}
+        {!matchDownMD && selectedDomain && !selectedSubdomain && (
           <Paper
             elevation={2}
             sx={{
@@ -3054,8 +3291,8 @@ export function SchoolVerificationPageView({ c }) {
           </Paper>
         )}
 
-        {/* Domains Overview - No Domain Selected */}
-        {!selectedDomain && (
+        {/* Domains Overview - No Domain Selected (desktop only) */}
+        {!matchDownMD && !selectedDomain && (
           <Paper
             elevation={2}
             sx={{
@@ -3076,27 +3313,40 @@ export function SchoolVerificationPageView({ c }) {
                 p: 3,
                 borderBottom: `2px solid ${colors.neutral.gray200}`,
                 bgcolor: colors.background.secondary,
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 3,
+                flexWrap: "wrap",
               }}
             >
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 700,
-                  color: colors.text.primary,
-                  mb: 0.5,
-                }}
-              >
-                {t("selfAssessment.assessmentOverview")}
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ fontSize: "0.875rem" }}
-              >
-                {assessments.length > 1
-                  ? "Review progress across assessments and domains"
-                  : "Review progress across all domains"}
-              </Typography>
+              <Box sx={{ flex: 1, minWidth: 220 }}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 700,
+                    color: colors.text.primary,
+                    mb: 0.5,
+                  }}
+                >
+                  {t("selfAssessment.assessmentOverview")}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ fontSize: "0.875rem" }}
+                >
+                  {assessments.length > 1
+                    ? "Review progress across assessments and domains"
+                    : "Review progress across all domains"}
+                </Typography>
+              </Box>
+              <AssessmentOverallProgress
+                t={t}
+                assessmentProgress={assessmentProgress}
+                getProgressColor={getProgressColor}
+                compact
+              />
             </Box>
 
             {/* Bar Graph - Domains Progress */}

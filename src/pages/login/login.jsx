@@ -108,9 +108,7 @@ const Login = () => {
   const schoolResetPasswordMutation = useSchoolResetPasswordMutation({
     onSuccess: (data) => {
       enqueueSnackbar(
-        data?.data?.message ||
-          data?.message ||
-          "Password reset successfully",
+        data?.data?.message || data?.message || "Password reset successfully",
         { variant: "success" },
       );
       clearResetPasswordState();
@@ -150,7 +148,10 @@ const Login = () => {
         userId.trim();
 
       if (!apiUserId || !token) {
-        console.error("Missing login details in response. Full response:", data);
+        console.error(
+          "Missing login details in response. Full response:",
+          data,
+        );
         setErrors({
           ...errors,
           userId: "Login response is incomplete. Please try again.",
@@ -465,100 +466,104 @@ const Login = () => {
 
             {/* Role dropdown */}
             {!isResetPasswordMode && (
-            <div className="lp-section">
-              <span className="lp-section-label">Select your role</span>
-              <div
-                className={`lp-dropdown${dropdownOpen ? " lp-dropdown--open" : ""}${errors.role ? " lp-dropdown--error" : ""}`}
-                ref={dropdownRef}
-              >
-                {/* Trigger */}
-                <button
-                  type="button"
-                  className="lp-dropdown-trigger"
-                  onClick={() => setDropdownOpen((o) => !o)}
-                  aria-haspopup="listbox"
-                  aria-expanded={dropdownOpen}
+              <div className="lp-section">
+                <span className="lp-section-label">Select your role</span>
+                <div
+                  className={`lp-dropdown${dropdownOpen ? " lp-dropdown--open" : ""}${errors.role ? " lp-dropdown--error" : ""}`}
+                  ref={dropdownRef}
                 >
-                  {selectedRole ? (
-                    <>
-                      <span
-                        className="lp-dd-icon"
-                        style={{
-                          background: `${selectedRoleData.color}18`,
-                          color: selectedRoleData.color,
-                        }}
-                      >
-                        {getRoleIcon(selectedRole)}
-                      </span>
-                      <span className="lp-dd-selected">
-                        <span className="lp-dd-name">
-                          {selectedRoleData.label}
-                        </span>
-                        <span className="lp-dd-desc">
-                          {selectedRoleData.description}
-                        </span>
-                      </span>
-                    </>
-                  ) : (
-                    <span className="lp-dd-placeholder">Choose your role…</span>
-                  )}
-                  <ArrowDownIcon
-                    className="lp-dd-arrow"
-                    sx={{
-                      fontSize: 20,
-                      transition: "transform 0.2s",
-                      transform: dropdownOpen
-                        ? "rotate(180deg)"
-                        : "rotate(0deg)",
-                    }}
-                  />
-                </button>
-
-                {/* Options menu */}
-                {dropdownOpen && (
-                  <div className="lp-dropdown-menu" role="listbox">
-                    {roles.map((role) => (
-                      <button
-                        key={role.value}
-                        type="button"
-                        role="option"
-                        aria-selected={selectedRole === role.value}
-                        className={`lp-dd-option${selectedRole === role.value ? " lp-dd-option--active" : ""}`}
-                        style={{ "--rc": role.color }}
-                        onClick={() => {
-                          handleRoleSelect(role.value);
-                          setDropdownOpen(false);
-                        }}
-                      >
+                  {/* Trigger */}
+                  <button
+                    type="button"
+                    className="lp-dropdown-trigger"
+                    onClick={() => setDropdownOpen((o) => !o)}
+                    aria-haspopup="listbox"
+                    aria-expanded={dropdownOpen}
+                  >
+                    {selectedRole ? (
+                      <>
                         <span
                           className="lp-dd-icon"
                           style={{
-                            background: `${role.color}18`,
-                            color: role.color,
+                            background: `${selectedRoleData.color}18`,
+                            color: selectedRoleData.color,
                           }}
                         >
-                          {getRoleIcon(role.value)}
+                          {getRoleIcon(selectedRole)}
                         </span>
-                        <span className="lp-dd-option-text">
-                          <span className="lp-dd-name">{role.label}</span>
-                          <span className="lp-dd-desc">{role.description}</span>
+                        <span className="lp-dd-selected">
+                          <span className="lp-dd-name">
+                            {selectedRoleData.label}
+                          </span>
+                          <span className="lp-dd-desc">
+                            {selectedRoleData.description}
+                          </span>
                         </span>
-                        {selectedRole === role.value && (
-                          <CheckCircle
-                            sx={{
-                              fontSize: 16,
+                      </>
+                    ) : (
+                      <span className="lp-dd-placeholder">
+                        Choose your role…
+                      </span>
+                    )}
+                    <ArrowDownIcon
+                      className="lp-dd-arrow"
+                      sx={{
+                        fontSize: 20,
+                        transition: "transform 0.2s",
+                        transform: dropdownOpen
+                          ? "rotate(180deg)"
+                          : "rotate(0deg)",
+                      }}
+                    />
+                  </button>
+
+                  {/* Options menu */}
+                  {dropdownOpen && (
+                    <div className="lp-dropdown-menu" role="listbox">
+                      {roles.map((role) => (
+                        <button
+                          key={role.value}
+                          type="button"
+                          role="option"
+                          aria-selected={selectedRole === role.value}
+                          className={`lp-dd-option${selectedRole === role.value ? " lp-dd-option--active" : ""}`}
+                          style={{ "--rc": role.color }}
+                          onClick={() => {
+                            handleRoleSelect(role.value);
+                            setDropdownOpen(false);
+                          }}
+                        >
+                          <span
+                            className="lp-dd-icon"
+                            style={{
+                              background: `${role.color}18`,
                               color: role.color,
-                              flexShrink: 0,
                             }}
-                          />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                          >
+                            {getRoleIcon(role.value)}
+                          </span>
+                          <span className="lp-dd-option-text">
+                            <span className="lp-dd-name">{role.label}</span>
+                            <span className="lp-dd-desc">
+                              {role.description}
+                            </span>
+                          </span>
+                          {selectedRole === role.value && (
+                            <CheckCircle
+                              sx={{
+                                fontSize: 16,
+                                color: role.color,
+                                flexShrink: 0,
+                              }}
+                            />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {errors.role && <span className="lp-error">{errors.role}</span>}
               </div>
-              {errors.role && <span className="lp-error">{errors.role}</span>}
-            </div>
             )}
 
             {/* User ID / reset password fields */}
@@ -662,8 +667,13 @@ const Login = () => {
                           placeholder="Enter the OTP sent to your mobile"
                           value={otpCode}
                           onChange={(e) => {
-                            setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6));
-                            setResetErrors((prev) => ({ ...prev, otpCode: "" }));
+                            setOtpCode(
+                              e.target.value.replace(/\D/g, "").slice(0, 6),
+                            );
+                            setResetErrors((prev) => ({
+                              ...prev,
+                              otpCode: "",
+                            }));
                           }}
                           onFocus={() => setOtpFocused(true)}
                           onBlur={() => setOtpFocused(false)}
@@ -741,75 +751,77 @@ const Login = () => {
                 </>
               ) : selectedRole ? (
                 <>
-              <span className="lp-section-label">
-                {selectedRoleData?.authMethod || "User ID"}
-              </span>
-              <div
-                className={`lp-input-wrap${inputFocused ? " lp-input-focused" : ""}${errors.userId ? " lp-input-error" : ""}`}
-              >
-                <PersonOutline className="lp-input-adorn" />
-                <input
-                  className="lp-input"
-                  type="text"
-                  placeholder={`Enter your ${selectedRoleData?.authMethod || "User ID"}`}
-                  value={userId}
-                  onChange={handleUserIdChange}
-                  onFocus={() => setInputFocused(true)}
-                  onBlur={() => setInputFocused(false)}
-                  onKeyDown={handleKeyDown}
-                  autoFocus={!!selectedRole}
-                />
-              </div>
-              {errors.userId && (
-                <span className="lp-error">{errors.userId}</span>
-              )}
-
-              <div className="lp-field-gap" />
-
-              <span className="lp-section-label">Password</span>
-              <div
-                className={`lp-input-wrap${passwordFocused ? " lp-input-focused" : ""}${errors.password ? " lp-input-error" : ""}`}
-              >
-                <LockOutlined className="lp-input-adorn" />
-                <input
-                  className="lp-input"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={handlePasswordChange}
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => setPasswordFocused(false)}
-                  onKeyDown={handleKeyDown}
-                />
-                <button
-                  type="button"
-                  className="lp-password-toggle"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? (
-                    <VisibilityOff sx={{ fontSize: 20 }} />
-                  ) : (
-                    <Visibility sx={{ fontSize: 20 }} />
+                  <span className="lp-section-label">
+                    {selectedRoleData?.authMethod || "User ID"}
+                  </span>
+                  <div
+                    className={`lp-input-wrap${inputFocused ? " lp-input-focused" : ""}${errors.userId ? " lp-input-error" : ""}`}
+                  >
+                    <PersonOutline className="lp-input-adorn" />
+                    <input
+                      className="lp-input"
+                      type="text"
+                      placeholder={`Enter your ${selectedRoleData?.authMethod || "User ID"}`}
+                      value={userId}
+                      onChange={handleUserIdChange}
+                      onFocus={() => setInputFocused(true)}
+                      onBlur={() => setInputFocused(false)}
+                      onKeyDown={handleKeyDown}
+                      autoFocus={!!selectedRole}
+                    />
+                  </div>
+                  {errors.userId && (
+                    <span className="lp-error">{errors.userId}</span>
                   )}
-                </button>
-              </div>
-              {errors.password && (
-                <span className="lp-error">{errors.password}</span>
-              )}
 
-                    {selectedRole === "school" && (
-                      <button
-                        type="button"
-                        className="lp-reset-link"
-                        onClick={() => {
-                          setIsResetPasswordMode(true);
-                          setErrors({ role: "", userId: "", password: "" });
-                        }}
-                      >
-                        Reset password?
-                      </button>
-                    )}
+                  <div className="lp-field-gap" />
+
+                  <span className="lp-section-label">Password</span>
+                  <div
+                    className={`lp-input-wrap${passwordFocused ? " lp-input-focused" : ""}${errors.password ? " lp-input-error" : ""}`}
+                  >
+                    <LockOutlined className="lp-input-adorn" />
+                    <input
+                      className="lp-input"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={handlePasswordChange}
+                      onFocus={() => setPasswordFocused(true)}
+                      onBlur={() => setPasswordFocused(false)}
+                      onKeyDown={handleKeyDown}
+                    />
+                    <button
+                      type="button"
+                      className="lp-password-toggle"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? (
+                        <VisibilityOff sx={{ fontSize: 20 }} />
+                      ) : (
+                        <Visibility sx={{ fontSize: 20 }} />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <span className="lp-error">{errors.password}</span>
+                  )}
+
+                  {selectedRole === "school" && (
+                    <button
+                      type="button"
+                      className="lp-reset-link"
+                      onClick={() => {
+                        setIsResetPasswordMode(true);
+                        setErrors({ role: "", userId: "", password: "" });
+                      }}
+                    >
+                      Reset password?
+                    </button>
+                  )}
                 </>
               ) : null}
             </div>
@@ -881,7 +893,7 @@ const Login = () => {
               </button>
             )}
 
-            {!isResetPasswordMode && (
+            {/* {!isResetPasswordMode && (
             <div className="lp-footer">
               <svg
                 width="13"
@@ -898,7 +910,7 @@ const Login = () => {
               </svg>
               Secured with OTP verification
             </div>
-            )}
+            )} */}
           </div>
         </div>
       </div>

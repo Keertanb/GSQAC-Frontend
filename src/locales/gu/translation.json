@@ -151,6 +151,7 @@
   },
   "selfAssessment": {
     "title": "સ્વ-મૂલ્યાંકન",
+    "appBarSubtitle": "શાળા મૂલ્યાંકન",
     "assessmentDomains": "મૂલ્યાંકન ડોમેન્સ",
     "navigateSubtitle": "ડોમેન્સ અને સબ-ડોમેન્સ દ્વારા નેવિગેટ કરો",
     "assessmentOverview": "મૂલ્યાંકન વિહંગાવલોકન",
@@ -171,6 +172,9 @@
       "selectDomain": "આગળ વધવા માટે ડોમેન પસંદ કરો",
       "selectSubdomain": "પ્રશ્નોના જવાબ આપવા માટે સબ-ડોમેન પસંદ કરો"
     },
+    "overallProgress": "સમગ્ર મૂલ્યાંકન પ્રગતિ",
+    "questionsAnswered": "{{total}} માંથી {{answered}} પ્રશ્નોના જવાબ આપ્યા",
+    "level": "સ્તર {{level}}",
     "tabs": {
       "generalQuestions": "સામાન્ય પ્રશ્નો",
       "classroomObservation": "વર્ગખંડ અવલોકન",

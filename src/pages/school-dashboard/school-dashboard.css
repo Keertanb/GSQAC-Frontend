@@ -1,5 +1,122 @@
-.dashboard-wrapper {
+.school-dashboard-page {
   min-height: 100vh;
-  background: #f9fafb;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
+.school-dashboard-content {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.sd-app-toolbar {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.sd-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 48%, #3b82f6 100%);
+  box-shadow: 0 20px 40px rgba(37, 99, 235, 0.18);
+}
+
+.sd-hero::before {
+  content: "";
+  position: absolute;
+  top: -80px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.sd-hero::after {
+  content: "";
+  position: absolute;
+  bottom: -100px;
+  left: -40px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.sd-stat-card {
+  border-radius: 16px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #ffffff !important;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease !important;
+  height: 100%;
+}
+
+.sd-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08) !important;
+}
+
+.sd-action-card {
+  border-radius: 18px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #ffffff !important;
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease !important;
+  height: 100%;
+}
+
+.sd-action-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.1) !important;
+}
+
+.sd-action-card:hover .sd-action-arrow {
+  transform: translateX(4px);
+}
+
+.sd-action-arrow {
+  transition: transform 0.22s ease;
+}
+
+@media (max-width: 960px) {
+  .sd-app-toolbar {
+    padding-left: max(12px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(12px, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .school-dashboard-main {
+    margin-top: calc(56px + env(safe-area-inset-top, 0px)) !important;
+    min-height: calc(100vh - 56px - env(safe-area-inset-top, 0px)) !important;
+  }
+
+  .sd-hero {
+    border-radius: 16px;
+    margin-bottom: 20px !important;
+  }
+
+  .sd-stat-card:hover,
+  .sd-action-card:hover {
+    transform: none;
+  }
+
+  .sd-stat-card:active,
+  .sd-action-card:active {
+    transform: scale(0.99);
+  }
+
+  .sd-action-card {
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 600px) {
+  .school-dashboard-content {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    padding-top: 20px !important;
+    padding-bottom: 24px !important;
+  }
+}

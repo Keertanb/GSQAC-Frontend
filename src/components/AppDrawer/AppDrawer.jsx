@@ -142,7 +142,6 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
           borderBottom: "1px solid rgba(15, 23, 42, 0.08)",
           boxShadow: "0 4px 14px rgba(15,23,42,0.06)",
           position: "relative",
-          zIndex: 1301,
           px: open ? 2.5 : 1.5,
           py: 1.25,
         }}
@@ -544,7 +543,13 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
   );
 
   return (
-    <Box component="nav" sx={{ flexShrink: { md: 0 }, zIndex: 1300 }}>
+    <Box
+      component="nav"
+      sx={{
+        flexShrink: { md: 0 },
+        zIndex: matchDownMD ? theme.zIndex.modal : 1300,
+      }}
+    >
       {!matchDownMD ? (
         <MiniAppDrawer variant="permanent" anchor="left" open={open}>
           {drawer}
@@ -557,6 +562,7 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: "block", md: "none" },
+            zIndex: theme.zIndex.modal,
             "& .MuiDrawer-paper": {
               width: DRAWER_WIDTH.xs,
               boxSizing: "border-box",

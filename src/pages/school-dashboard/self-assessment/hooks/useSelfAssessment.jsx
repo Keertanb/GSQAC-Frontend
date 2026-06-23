@@ -347,6 +347,23 @@ export function useSelfAssessment() {
   const sessionId =
     selectedAssessment?.sessionId ?? domainsData?.sessionId ?? null;
 
+  const assessmentProgress = useMemo(() => {
+    const totalQuestions = Number(selectedAssessment?.totalQuestions) || 0;
+    const totalAnswer = Number(selectedAssessment?.totalAnswer) || 0;
+    const answerPercentage = Number(selectedAssessment?.answerPercentage) || 0;
+    const clampedPercentage = Math.min(100, Math.max(0, answerPercentage));
+
+    return {
+      totalQuestions,
+      totalAnswer,
+      answerPercentage: clampedPercentage,
+      displayPercentage:
+        answerPercentage < 1 && answerPercentage > 0
+          ? Number(answerPercentage.toFixed(2))
+          : Math.round(clampedPercentage),
+    };
+  }, [selectedAssessment]);
+
   // Check if endDate has passed (end date is inclusive - closed only after end of endDate day)
   const isEndDatePassed = useMemo(() => {
     if (!endDate) return false;
@@ -2085,6 +2102,7 @@ export function useSelfAssessment() {
     isSubmitted,
     isEndDatePassed,
     isReadOnly,
+    assessmentProgress,
     mapGroupRangeToApiFormat,
     getGroupFlagColor,
     getFlagColorValue,

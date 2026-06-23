@@ -151,6 +151,7 @@
   },
   "selfAssessment": {
     "title": "स्व-मूल्यांकन",
+    "appBarSubtitle": "स्कूल मूल्यांकन",
     "assessmentDomains": "मूल्यांकन डोमेन",
     "navigateSubtitle": "डोमेन और उप-डोमेन के माध्यम से नेविगेट करें",
     "assessmentOverview": "मूल्यांकन अवलोकन",
@@ -171,6 +172,9 @@
       "selectDomain": "जारी रखने के लिए डोमेन चुनें",
       "selectSubdomain": "प्रश्नों के उत्तर देने के लिए उप-डोमेन चुनें"
     },
+    "overallProgress": "समग्र मूल्यांकन प्रगति",
+    "questionsAnswered": "{{answered}} में से {{total}} प्रश्नों के उत्तर दिए",
+    "level": "स्तर {{level}}",
     "tabs": {
       "generalQuestions": "सामान्य प्रश्न",
       "classroomObservation": "कक्षा अवलोकन",

@@ -333,6 +333,23 @@ export function useCRCAssessment() {
   const isPublished =
     selectedAssessment?.isPublished ?? domainsData?.isPublished ?? false;
 
+  const assessmentProgress = useMemo(() => {
+    const totalQuestions = Number(selectedAssessment?.totalQuestions) || 0;
+    const totalAnswer = Number(selectedAssessment?.totalAnswer) || 0;
+    const answerPercentage = Number(selectedAssessment?.answerPercentage) || 0;
+    const clampedPercentage = Math.min(100, Math.max(0, answerPercentage));
+
+    return {
+      totalQuestions,
+      totalAnswer,
+      answerPercentage: clampedPercentage,
+      displayPercentage:
+        answerPercentage < 1 && answerPercentage > 0
+          ? Number(answerPercentage.toFixed(2))
+          : Math.round(clampedPercentage),
+    };
+  }, [selectedAssessment]);
+
   // Helper function to map dropdown group range to API group range format
   const mapGroupRangeToApiFormat = (groupRange) => {
     const mapping = {
@@ -1923,6 +1940,7 @@ export function useCRCAssessment() {
     selectedAssessment,
     domains,
     isPublished,
+    assessmentProgress,
     mapGroupRangeToApiFormat,
     getGroupFlagColor,
     getFlagColorValue,

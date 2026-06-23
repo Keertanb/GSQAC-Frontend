@@ -49,6 +49,10 @@ import {
 import { colors } from "../../../../constants/colors";
 import AppDrawer from "../../../../components/AppDrawer/AppDrawer";
 import ConfirmationModal from "../../../../components/ConfirmationModal/ConfirmationModal";
+import { SelfAssessmentMobileStepper } from "../../../school-dashboard/self-assessment/components/SelfAssessmentMobileStepper";
+import { AssessmentOverallProgress } from "../../../../components/AssessmentOverallProgress/AssessmentOverallProgress";
+import { useAssessmentMobileLayout } from "../../../../hooks/useAssessmentMobileLayout";
+import { renderAssessmentOptionLabel } from "../../../../utils/assessmentOptionLabel";
 import {
   BarChart,
   Bar,
@@ -59,6 +63,7 @@ import {
   Cell,
 } from "recharts";
 import "../CRCAssessment.css";
+import "../../../school-dashboard/self-assessment/SelfAssessment.css";
 
 export function CRCAssessmentPageView({ c }) {
   const {
@@ -212,7 +217,33 @@ export function CRCAssessmentPageView({ c }) {
     subdomainNumber,
     handleSubmitQuestion,
     handleSubmit,
+    assessmentProgress,
   } = c;
+
+  const {
+    mobileStep,
+    showMobileNavigation,
+    showMobileSubdomainsPanel,
+    showMobileQuestionsPanel,
+    showMobileNavPanel,
+    handleMobileDomainSelect,
+    handleMobileSubdomainSelect,
+    handleMobileStepChange,
+    handleMobileStepBack,
+  } = useAssessmentMobileLayout({
+    matchDownMD,
+    selectedDomain,
+    selectedSubdomain,
+    setSelectedSubdomain,
+    setSelectedDomain,
+    handleDomainSelect,
+    handleSubdomainSelect,
+    setAnswers,
+    setTextAnswers,
+  });
+
+  const renderOptionLabel = (option, optIndex) =>
+    renderAssessmentOptionLabel(t, getOptionText, option, optIndex);
 
   return (
     <Box
@@ -382,10 +413,10 @@ export function CRCAssessmentPageView({ c }) {
         </Box>
       )}
 
-      {/* Header */}
+      {/* Header - desktop only (title in parent AppBar area on mobile) */}
       <Box
         sx={{
-          display: "flex",
+          display: { xs: "none", md: "flex" },
           flexDirection: { xs: "column", sm: "row" },
           alignItems: { xs: "stretch", sm: "center" },
           justifyContent: "space-between",
@@ -481,6 +512,105 @@ export function CRCAssessmentPageView({ c }) {
         </Box>
       </Box>
 
+      {/* Mobile: deadline + language */}
+      {matchDownMD && (
+        <Box
+          className="sa-mobile-page-toolbar"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1.5,
+            mb: 2,
+            flexWrap: "wrap",
+          }}
+        >
+          {endDate ? (
+            <Typography
+              variant="caption"
+              sx={{
+                flex: 1,
+                minWidth: 0,
+                color:
+                  isSubmitted === 1 || isSubmitted === true
+                    ? colors.semantic.error
+                    : colors.semantic.warning,
+                fontWeight: 600,
+                fontSize: "0.75rem",
+                lineHeight: 1.4,
+              }}
+            >
+              {isSubmitted === 1 || isSubmitted === true
+                ? t("selfAssessment.submissionClosedOn", { date: endDate })
+                : t("selfAssessment.submitBefore", { date: endDate })}
+            </Typography>
+          ) : (
+            <Box sx={{ flex: 1 }} />
+          )}
+          <ToggleButtonGroup
+            value={currentLanguage}
+            exclusive
+            onChange={(e, newLanguage) => {
+              if (newLanguage !== null) {
+                setCurrentLanguage(newLanguage);
+                i18n.changeLanguage(newLanguage);
+              }
+            }}
+            size="small"
+            sx={{
+              flexShrink: 0,
+              "& .MuiToggleButton-root": {
+                px: 1.25,
+                py: 0.35,
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                borderColor: colors.primary.blue + "40",
+                color: colors.text.secondary,
+                "&.Mui-selected": {
+                  bgcolor: colors.primary.blue,
+                  color: "white",
+                },
+              },
+            }}
+          >
+            <ToggleButton value="gu">ગુ</ToggleButton>
+            <ToggleButton value="en">EN</ToggleButton>
+            <ToggleButton value="hi">हिं</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+      )}
+
+      {matchDownMD && isErrorDomains && (
+        <Alert severity="warning" sx={{ mb: 2, fontSize: "0.75rem", py: 0.5 }}>
+          {t("selfAssessment.failedToLoadAssessment")}
+        </Alert>
+      )}
+
+      {showMobileNavigation && (
+        <Box sx={{ mb: 2 }}>
+          <AssessmentOverallProgress
+            t={t}
+            assessmentProgress={assessmentProgress}
+            getProgressColor={getProgressColor}
+            compact
+          />
+        </Box>
+      )}
+
+      {showMobileNavigation && (
+        <SelfAssessmentMobileStepper
+          activeStep={mobileStep}
+          onStepChange={handleMobileStepChange}
+          onBack={handleMobileStepBack}
+          t={t}
+          selectedDomain={selectedDomain}
+          selectedSubdomain={selectedSubdomain}
+          getDomainName={getDomainName}
+          getSubdomainName={getSubdomainName}
+        />
+      )}
+
       {/* Main Content - Split Layout */}
       <Box
         sx={{
@@ -493,7 +623,21 @@ export function CRCAssessmentPageView({ c }) {
         }}
       >
         {/* Left Panel - Domains and Subdomains */}
+        <Box
+          className="sa-left-panel-shell"
+          sx={{
+            width: { xs: "100%", md: "380px" },
+            minWidth: { xs: 0, md: "380px" },
+            maxWidth: { xs: "100%", md: "380px" },
+            flexShrink: { md: 0 },
+            display: {
+              xs: showMobileNavPanel ? "block" : "none",
+              md: "block",
+            },
+          }}
+        >
         <Paper
+          className="sa-domains-panel"
           sx={{
             width: { xs: "100%", md: "380px" },
             minWidth: { xs: 0, md: "380px" },
@@ -504,14 +648,15 @@ export function CRCAssessmentPageView({ c }) {
             flexDirection: "column",
             overflow: "hidden",
             maxHeight: { xs: "none", md: "calc(100vh - 200px)" },
-            minHeight: { xs: "240px", md: "auto" },
+            minHeight: { xs: "auto", md: "auto" },
             boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
           }}
         >
           {/* Left Panel Header */}
           <Box
+            className="sa-panel-header"
             sx={{
-              p: { xs: 2, md: 3 },
+              p: { xs: 2.5, md: 3 },
               borderBottom: `2px solid ${colors.neutral.gray200}`,
               bgcolor: colors.background.secondary,
             }}
@@ -524,14 +669,18 @@ export function CRCAssessmentPageView({ c }) {
                 mb: 0.5,
               }}
             >
-              {t("selfAssessment.assessmentDomains")}
+              {showMobileSubdomainsPanel
+                ? t("selfAssessment.mobileStep.subdomains")
+                : t("selfAssessment.assessmentDomains")}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ fontSize: "0.8125rem" }}
             >
-              {t("selfAssessment.navigateSubtitle")}
+              {showMobileSubdomainsPanel && selectedDomain
+                ? getDomainName(selectedDomain)
+                : t("selfAssessment.navigateSubtitle")}
             </Typography>
             {assessments.length > 1 && (
               <Box sx={{ mt: 2 }}>
@@ -573,13 +722,107 @@ export function CRCAssessmentPageView({ c }) {
 
           {/* Domains/Subdomains List */}
           <Box
+            className="sa-nav-list"
             sx={{
               flex: 1,
               overflowY: "auto",
-              p: { xs: 2, md: 2.5 },
+              p: { xs: 2.5, md: 2.5 },
             }}
           >
-            {domains.length > 0 ? (
+            {showMobileSubdomainsPanel ? (
+              selectedDomain?.subDomain?.length > 0 ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: { xs: 2, md: 1.5 },
+                  }}
+                >
+                  {selectedDomain.subDomain.map((subdomain, subdomainIndex) => {
+                    const subdomainId =
+                      subdomain.subDomainId || subdomain.id;
+                    const subdomainProgress = getSubdomainProgress(subdomain);
+                    const isSubdomainSelected =
+                      selectedSubdomain?.subDomainId === subdomainId;
+                    const domainIdx = domains.findIndex(
+                      (d) => d.domainId === selectedDomain.domainId,
+                    );
+                    const subdomainNumber = `${domainIdx + 1}.${subdomainIndex + 1}`;
+
+                    return (
+                      <Card
+                        key={subdomainId}
+                        className="sa-nav-card"
+                        onClick={() => handleMobileSubdomainSelect(subdomain)}
+                        sx={{
+                          cursor: "pointer",
+                          transition: "all 0.3s ease",
+                          border: isSubdomainSelected
+                            ? "2px solid"
+                            : "1.5px solid",
+                          borderColor: isSubdomainSelected
+                            ? colors.primary.blue
+                            : "transparent",
+                          borderRadius: 2,
+                          bgcolor: isSubdomainSelected
+                            ? colors.primary.blue + "15"
+                            : colors.background.primary,
+                          boxShadow: isSubdomainSelected
+                            ? `0 4px 12px ${colors.primary.blue}30`
+                            : "0 2px 8px rgba(0,0,0,0.04)",
+                          "&:hover": {
+                            borderColor: colors.primary.blue,
+                            bgcolor: colors.primary.blue + "08",
+                          },
+                        }}
+                      >
+                        <CardContent
+                          sx={{
+                            p: { xs: 2.5, md: 2 },
+                            "&:last-child": { pb: { xs: 2.5, md: 2 } },
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 600,
+                              color: isSubdomainSelected
+                                ? colors.primary.blue
+                                : colors.text.primary,
+                              fontSize: "0.875rem",
+                              mb: 1,
+                            }}
+                          >
+                            {subdomainNumber}. {getSubdomainName(subdomain)}
+                          </Typography>
+                          <LinearProgress
+                            variant="determinate"
+                            value={subdomainProgress}
+                            sx={{
+                              height: 6,
+                              borderRadius: 3,
+                              bgcolor: colors.neutral.gray200,
+                              "& .MuiLinearProgress-bar": {
+                                borderRadius: 3,
+                                bgcolor: getProgressColor(subdomainProgress),
+                              },
+                            }}
+                          />
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </Box>
+              ) : (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ textAlign: "center", py: 4 }}
+                >
+                  {t("selfAssessment.mobileStep.selectSubdomain")}
+                </Typography>
+              )
+            ) : domains.length > 0 ? (
               <Box
                 sx={{
                   display: "flex",
@@ -597,7 +840,12 @@ export function CRCAssessmentPageView({ c }) {
                   return (
                     <Box key={domain.domainId}>
                       <Card
-                        onClick={() => handleDomainSelect(domain)}
+                        className="sa-nav-card"
+                        onClick={() =>
+                          matchDownMD
+                            ? handleMobileDomainSelect(domain)
+                            : handleDomainSelect(domain)
+                        }
                         sx={{
                           cursor: "pointer",
                           transition: "all 0.3s ease",
@@ -718,8 +966,9 @@ export function CRCAssessmentPageView({ c }) {
                         </CardContent>
                       </Card>
 
-                      {/* Show Subdomains when domain is selected */}
-                      {isDomainSelected &&
+                      {/* Show Subdomains when domain is selected (desktop only) */}
+                      {!matchDownMD &&
+                        isDomainSelected &&
                         domain.subDomain &&
                         domain.subDomain.length > 0 && (
                           <Box
@@ -976,9 +1225,10 @@ export function CRCAssessmentPageView({ c }) {
             </Box>
           )}
         </Paper>
+        </Box>
 
         {/* Right Panel - Questions */}
-        {selectedSubdomain && (
+        {showMobileQuestionsPanel && (
           <Paper
             sx={{
               flex: 1,
@@ -1666,11 +1916,10 @@ export function CRCAssessmentPageView({ c }) {
                                                     }}
                                                   />
                                                 }
-                                                label={
-                                                  <Typography variant="body2">
-                                                    {getOptionText(option)}
-                                                  </Typography>
-                                                }
+                                                label={renderOptionLabel(
+                                                  option,
+                                                  optIndex,
+                                                )}
                                                 sx={{
                                                   mb: 1.5,
                                                   p: 2,
@@ -2253,11 +2502,10 @@ export function CRCAssessmentPageView({ c }) {
                                                     }}
                                                   />
                                                 }
-                                                label={
-                                                  <Typography variant="body2">
-                                                    {getOptionText(option)}
-                                                  </Typography>
-                                                }
+                                                label={renderOptionLabel(
+                                                  option,
+                                                  optIndex,
+                                                )}
                                                 sx={{
                                                   mb: 1.5,
                                                   p: 2,
@@ -2870,11 +3118,10 @@ export function CRCAssessmentPageView({ c }) {
                                                   }}
                                                 />
                                               }
-                                              label={
-                                                <Typography variant="body2">
-                                                  {getOptionText(option)}
-                                                </Typography>
-                                              }
+                                              label={renderOptionLabel(
+                                                option,
+                                                optIndex,
+                                              )}
                                               sx={{
                                                 mb: 1.5,
                                                 p: 2,
@@ -2987,8 +3234,9 @@ export function CRCAssessmentPageView({ c }) {
           </Paper>
         )}
 
-        {/* Domain View - When Domain Selected but No Subdomain */}
-        {selectedDomain &&
+        {/* Domain View - When Domain Selected but No Subdomain (desktop only) */}
+        {!matchDownMD &&
+          selectedDomain &&
           !selectedSubdomain &&
           (() => {
             const domainIdx = domains.findIndex(
@@ -3269,8 +3517,8 @@ export function CRCAssessmentPageView({ c }) {
             );
           })()}
 
-        {/* Domains Overview - No Domain Selected */}
-        {!selectedDomain && (
+        {/* Domains Overview - No Domain Selected (desktop only) */}
+        {!matchDownMD && !selectedDomain && (
           <Paper
             elevation={2}
             sx={{
@@ -3292,25 +3540,38 @@ export function CRCAssessmentPageView({ c }) {
                 p: 3,
                 borderBottom: `2px solid ${colors.neutral.gray200}`,
                 bgcolor: colors.background.secondary,
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 3,
+                flexWrap: "wrap",
               }}
             >
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 700,
-                  color: colors.text.primary,
-                  mb: 0.5,
-                }}
-              >
-                {t("selfAssessment.assessmentOverview")}
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ fontSize: "0.875rem" }}
-              >
-                {t("selfAssessment.reviewSubtitle")}
-              </Typography>
+              <Box sx={{ flex: 1, minWidth: 220 }}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 700,
+                    color: colors.text.primary,
+                    mb: 0.5,
+                  }}
+                >
+                  {t("selfAssessment.assessmentOverview")}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ fontSize: "0.875rem" }}
+                >
+                  {t("selfAssessment.reviewSubtitle")}
+                </Typography>
+              </Box>
+              <AssessmentOverallProgress
+                t={t}
+                assessmentProgress={assessmentProgress}
+                getProgressColor={getProgressColor}
+                compact
+              />
             </Box>
 
             {/* Bar Graph - Domains Progress */}

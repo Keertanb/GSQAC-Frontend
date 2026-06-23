@@ -56,7 +56,8 @@ import {
 import { getRoleId } from "../../../../constants/roles";
 import { enqueueSnackbar } from "notistack";
 import useAuthStore from "../../../../store/useAuthStore";
-import { ToggleButtonGroup, ToggleButton } from "@mui/material";
+import { ToggleButtonGroup, ToggleButton, useMediaQuery } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { useGetClassWiseSubjectsQuery } from "../../../../services/adminService";
 import ConfirmationModal from "../../../../components/ConfirmationModal/ConfirmationModal";
 import {
@@ -71,6 +72,8 @@ import {
 
 export function useSchoolVerification() {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const matchDownMD = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
   const location = useLocation();
   const { userId, userName } = useAuthStore();
@@ -334,6 +337,23 @@ export function useSchoolVerification() {
     selectedAssessment?.isSubmitted ?? domainsData?.isSubmitted ?? false;
   const sessionId =
     selectedAssessment?.sessionId ?? domainsData?.sessionId ?? null;
+
+  const assessmentProgress = useMemo(() => {
+    const totalQuestions = Number(selectedAssessment?.totalQuestions) || 0;
+    const totalAnswer = Number(selectedAssessment?.totalAnswer) || 0;
+    const answerPercentage = Number(selectedAssessment?.answerPercentage) || 0;
+    const clampedPercentage = Math.min(100, Math.max(0, answerPercentage));
+
+    return {
+      totalQuestions,
+      totalAnswer,
+      answerPercentage: clampedPercentage,
+      displayPercentage:
+        answerPercentage < 1 && answerPercentage > 0
+          ? Number(answerPercentage.toFixed(2))
+          : Math.round(clampedPercentage),
+    };
+  }, [selectedAssessment]);
 
   // Helper function to map dropdown group range to API group range format
   const mapGroupRangeToApiFormat = (groupRange) => {
@@ -1742,6 +1762,8 @@ export function useSchoolVerification() {
   return {
     t,
     i18n,
+    theme,
+    matchDownMD,
     navigate,
     location,
     userId,
@@ -1818,6 +1840,7 @@ export function useSchoolVerification() {
     selectedAssessment,
     domains,
     isPublished,
+    assessmentProgress,
     endDate,
     isSubmitted,
     sessionId,

@@ -153,6 +153,7 @@
   },
   "selfAssessment": {
     "title": "Self-Assessment",
+    "appBarSubtitle": "School Assessment",
     "assessmentDomains": "Assessment Domains",
     "navigateSubtitle": "Navigate through domains and sub-domains",
     "assessmentOverview": "Assessment Overview",
@@ -173,6 +174,9 @@
       "selectDomain": "Select a domain to continue",
       "selectSubdomain": "Select a sub-domain to answer questions"
     },
+    "overallProgress": "Assessment Progress",
+    "questionsAnswered": "{{answered}} of {{total}} questions answered",
+    "level": "Level {{level}}",
     "tabs": {
       "generalQuestions": "General Questions",
       "classroomObservation": "Classroom Observation",

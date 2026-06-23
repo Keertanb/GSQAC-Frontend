@@ -1,10 +1,23 @@
-/* CRC Assessment - Mobile responsive (same as Self Assessment) */
+/* CRC Assessment - Mobile responsive (shared with Self Assessment mobile styles) */
 
 .crc-assessment-page-content {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
   box-sizing: border-box;
+}
+
+@media (max-width: 960px) {
+  .crc-assessment-page-content .sa-mobile-stepper .MuiStepLabel-label {
+    font-size: 0.625rem !important;
+    white-space: normal;
+    line-height: 1.2;
+  }
+
+  .crc-assessment-page-content .sa-overall-progress {
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 
 @media (max-width: 960px) {

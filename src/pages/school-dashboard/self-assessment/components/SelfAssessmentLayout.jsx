@@ -7,7 +7,7 @@ import {
 } from "@mui/material";
 import {
   CheckCircle, ArrowForward, Menu, Assessment, Class, Assignment, ExpandMore, ExpandLess,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Logout as LogoutIcon,
   WorkspacePremium, MenuBook, Groups, Business, School as SchoolIcon, Language, Create,
   LocationOn, AccountTree, PhotoCamera, Close
 } from "@mui/icons-material";
@@ -20,7 +20,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import "../SelfAssessment.css";
 
 export function SelfAssessmentLayout({ c }) {
-  const { navigate, theme, matchDownMD, drawerOpen, setDrawerOpen, logout, user, userId, userName, t, i18n, currentLanguage, setCurrentLanguage, selectedDomain, setSelectedDomain, selectedSubdomain, setSelectedSubdomain, answers, setAnswers, subdomainAnswers, setSubdomainAnswers, subdomainTextAnswers, setSubdomainTextAnswers, classWiseAnswers, setClassWiseAnswers, classWiseTextAnswers, setClassWiseTextAnswers, selectedClassGroup, setSelectedClassGroup, selectedClass, setSelectedClass, selectedSection, setSelectedSection, selectedSubject, setSelectedSubject, textAnswers, setTextAnswers, expandedQuestions, setExpandedQuestions, showSubmitConfirmation, setShowSubmitConfirmation, selectedQuestionTab, setSelectedQuestionTab, sessionId, selectedAssessmentId, setSelectedAssessmentId, chartDrilldownAssessmentId, setChartDrilldownAssessmentId, mcqQuestionImages, setMcqQuestionImages, mcqImageInputRef, pendingMcqImageSlot, setPendingMcqImageSlot, logoutMutation, handleDrawerToggle, handleLogout, languageCodeMap, languageCode, roleId, queryClient, domainsData, isLoadingDomains, isFetchingDomains, isErrorDomains, refetchDomains, allQuestionsData, hasSubjectWiseQuestions, questionsData, isLoadingQuestions, isErrorQuestions, refetchQuestions, schoolDataResponse, isLoadingSchoolData, schoolData, gradesData, isLoadingGrades, gradesCounts, lowerClass, upperClass, classOptions, filteredClassOptions, sectionsData, isLoadingSections, subjectsData, isLoadingSubjects, sections, subjects, assessments, selectedAssessment, domains, isPublished, endDate, isSubmitted, isEndDatePassed, isReadOnly, mapGroupRangeToApiFormat, getGroupFlagColor, getFlagColorValue, getTotalQuestionsFromGroupWise, getTotalQuestionsCount, allQuestionsForCount, allQuestions, singleChoiceQuestionsForCount, classroomObservationQuestionsForCount, subjectObservationQuestionsForCount, flnQuestionsForCount, generalQuestionsForCount, singleChoiceQuestions, classroomObservationQuestions, subjectObservationQuestions, flnQuestions, classBasedQuestions, generalQuestions, generalQuestionsTotalCount, classroomObservationQuestionsTotalCount, subjectObservationQuestionsTotalCount, flnQuestionsTotalCount, questionTabs, currentTab, getSubdomainProgress, getDomainProgress, getDomainName, getSubdomainName, getProgressColor, getQuestionText, getOptionText, shouldShowApiAnswer, getDomainIcon, toggleQuestionExpansion, parseOptions, handleDomainSelect, handleSubdomainSelect, handleAssessmentSelect, handleAnswerChange, questionAllowsImageUpload, getMcqImagesForQuestion, getMcqImagePreviewSrc, getMcqImageLocation, getMcqImageFilesForQuestion, buildAttachedImagesForQuestion, uploadImagesToPresignedUrls, handleMcqImageCaptureClick, getAddressFromCoords, handleMcqImageFileChange, handleMcqImageRemove, handleTextAnswerChange, submitAnswerMutation, submitSubdomainWiseAnswersMutation, submitAssessmentMutation, handleOpenSubmitConfirmation, handleConfirmSubmit, allDomainsComplete, domainChartData, assessmentChartData, currentChartData, totalAnswered, totalQuestions, domainNumber, subdomainNumber, handleSubmitQuestion, handleSubmit } = c;
+  const { navigate, theme, matchDownMD, drawerOpen, setDrawerOpen, logout, user, userId, userName, t, i18n, currentLanguage, setCurrentLanguage, selectedDomain, setSelectedDomain, selectedSubdomain, setSelectedSubdomain, answers, setAnswers, subdomainAnswers, setSubdomainAnswers, subdomainTextAnswers, setSubdomainTextAnswers, classWiseAnswers, setClassWiseAnswers, classWiseTextAnswers, setClassWiseTextAnswers, selectedClassGroup, setSelectedClassGroup, selectedClass, setSelectedClass, selectedSection, setSelectedSection, selectedSubject, setSelectedSubject, textAnswers, setTextAnswers, expandedQuestions, setExpandedQuestions, showSubmitConfirmation, setShowSubmitConfirmation, selectedQuestionTab, setSelectedQuestionTab, sessionId, selectedAssessmentId, setSelectedAssessmentId, chartDrilldownAssessmentId, setChartDrilldownAssessmentId, mcqQuestionImages, setMcqQuestionImages, mcqImageInputRef, pendingMcqImageSlot, setPendingMcqImageSlot, logoutMutation, handleDrawerToggle, handleLogout, languageCodeMap, languageCode, roleId, queryClient, domainsData, isLoadingDomains, isFetchingDomains, isErrorDomains, refetchDomains, allQuestionsData, hasSubjectWiseQuestions, questionsData, isLoadingQuestions, isErrorQuestions, refetchQuestions, schoolDataResponse, isLoadingSchoolData, schoolData, gradesData, isLoadingGrades, gradesCounts, lowerClass, upperClass, classOptions, filteredClassOptions, sectionsData, isLoadingSections, subjectsData, isLoadingSubjects, sections, subjects, assessments, selectedAssessment, domains, isPublished, endDate, isSubmitted, isEndDatePassed, isReadOnly, assessmentProgress, mapGroupRangeToApiFormat, getGroupFlagColor, getFlagColorValue, getTotalQuestionsFromGroupWise, getTotalQuestionsCount, allQuestionsForCount, allQuestions, singleChoiceQuestionsForCount, classroomObservationQuestionsForCount, subjectObservationQuestionsForCount, flnQuestionsForCount, generalQuestionsForCount, singleChoiceQuestions, classroomObservationQuestions, subjectObservationQuestions, flnQuestions, classBasedQuestions, generalQuestions, generalQuestionsTotalCount, classroomObservationQuestionsTotalCount, subjectObservationQuestionsTotalCount, flnQuestionsTotalCount, questionTabs, currentTab, getSubdomainProgress, getDomainProgress, getDomainName, getSubdomainName, getProgressColor, getQuestionText, getOptionText, shouldShowApiAnswer, getDomainIcon, toggleQuestionExpansion, parseOptions, handleDomainSelect, handleSubdomainSelect, handleAssessmentSelect, handleAnswerChange, questionAllowsImageUpload, getMcqImagesForQuestion, getMcqImagePreviewSrc, getMcqImageLocation, getMcqImageFilesForQuestion, buildAttachedImagesForQuestion, uploadImagesToPresignedUrls, handleMcqImageCaptureClick, getAddressFromCoords, handleMcqImageFileChange, handleMcqImageRemove, handleTextAnswerChange, submitAnswerMutation, submitSubdomainWiseAnswersMutation, submitAssessmentMutation, handleOpenSubmitConfirmation, handleConfirmSubmit, allDomainsComplete, domainChartData, assessmentChartData, currentChartData, totalAnswered, totalQuestions, domainNumber, subdomainNumber, handleSubmitQuestion, handleSubmit } = c;
 
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const [mobileStep, setMobileStep] = useState(0);
@@ -98,6 +98,116 @@ export function SelfAssessmentLayout({ c }) {
   const showMobileNavPanel =
     matchDownMD && (mobileStep === 0 || mobileStep === 1);
 
+  const renderOptionLabel = (option, optIndex) => (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 1.25,
+        width: "100%",
+      }}
+    >
+      <Chip
+        label={t("selfAssessment.level", { level: optIndex })}
+        size="small"
+        sx={{
+          height: 26,
+          fontWeight: 700,
+          fontSize: "0.6875rem",
+          bgcolor: `${colors.primary.blue}14`,
+          color: colors.primary.blue,
+          border: `1px solid ${colors.primary.blue}30`,
+          flexShrink: 0,
+          mt: 0.125,
+        }}
+      />
+      <Typography variant="body2" sx={{ lineHeight: 1.5, flex: 1 }}>
+        {getOptionText(option)}
+      </Typography>
+    </Box>
+  );
+
+  const renderOverallProgress = (compact = false) => {
+    if (assessmentProgress.totalQuestions <= 0) return null;
+
+    return (
+      <Box
+        className="sa-overall-progress"
+        sx={{
+          p: compact ? { xs: 1.5, md: 2 } : { xs: 2, md: 2.5 },
+          borderRadius: 2,
+          bgcolor: "white",
+          border: `1px solid ${colors.neutral.gray200}`,
+          boxShadow: compact ? "none" : "0 2px 12px rgba(0,0,0,0.04)",
+          minWidth: compact ? { xs: "100%", md: 260 } : undefined,
+          maxWidth: compact ? { md: 300 } : undefined,
+          flex: compact ? { md: "0 0 280px" } : undefined,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1.5,
+            mb: 1,
+            flexWrap: "wrap",
+          }}
+        >
+          <Typography
+            variant={compact ? "caption" : "subtitle2"}
+            sx={{
+              fontWeight: 700,
+              color: colors.text.primary,
+              fontSize: compact ? "0.75rem" : "0.9375rem",
+              lineHeight: 1.3,
+            }}
+          >
+            {t("selfAssessment.overallProgress")}
+          </Typography>
+          <Typography
+            variant={compact ? "caption" : "subtitle2"}
+            sx={{
+              fontWeight: 700,
+              color: getProgressColor(assessmentProgress.answerPercentage),
+              fontSize: compact ? "0.8125rem" : "0.9375rem",
+            }}
+          >
+            {assessmentProgress.displayPercentage}%
+          </Typography>
+        </Box>
+        <LinearProgress
+          variant="determinate"
+          value={assessmentProgress.answerPercentage}
+          sx={{
+            height: compact ? 8 : 10,
+            borderRadius: 5,
+            bgcolor: colors.neutral.gray200,
+            "& .MuiLinearProgress-bar": {
+              borderRadius: 5,
+              bgcolor: getProgressColor(assessmentProgress.answerPercentage),
+            },
+          }}
+        />
+        <Typography
+          variant="caption"
+          sx={{
+            display: "block",
+            mt: 0.75,
+            color: colors.text.secondary,
+            fontWeight: 500,
+            fontSize: compact ? "0.6875rem" : "0.75rem",
+          }}
+        >
+          {t("selfAssessment.questionsAnswered", {
+            answered: assessmentProgress.totalAnswer,
+            total: assessmentProgress.totalQuestions,
+          })}
+        </Typography>
+      </Box>
+    );
+  };
+
   return (
 
     <Box sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
@@ -151,13 +261,18 @@ export function SelfAssessmentLayout({ c }) {
           }}
         >
           <Toolbar
+            className="sa-app-toolbar"
             sx={{
-              height: "72px",
-              minHeight: "72px !important",
-              px: { xs: 2, sm: 3, md: 4 },
+              height: { xs: 56, sm: 64, md: 72 },
+              minHeight: {
+                xs: "56px !important",
+                sm: "64px !important",
+                md: "72px !important",
+              },
+              px: { xs: 1.25, sm: 2, md: 4 },
               display: "flex",
               alignItems: "center",
-              gap: 2,
+              gap: { xs: 1, md: 2 },
             }}
           >
             <IconButton
@@ -166,64 +281,65 @@ export function SelfAssessmentLayout({ c }) {
               sx={{
                 color: "#64748b",
                 borderRadius: "12px",
-                width: "44px",
-                height: "44px",
+                width: { xs: 40, md: 44 },
+                height: { xs: 40, md: 44 },
+                flexShrink: 0,
                 backgroundColor: "rgba(255,255,255,0.9)",
                 border: "1px solid rgba(0,0,0,0.05)",
                 boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
                 "&:hover": {
                   backgroundColor: "#ffffff",
                   color: "#2563eb",
-                  transform: "scale(1.08)",
+                  transform: "scale(1.05)",
                   boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                   borderColor: "rgba(59, 130, 246, 0.2)",
                 },
                 transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
-              <Menu />
+              <Menu sx={{ fontSize: { xs: 22, md: 24 } }} />
             </IconButton>
             <Box
               sx={{
+                flex: 1,
+                minWidth: 0,
                 display: "flex",
                 alignItems: "center",
-                gap: 2.5,
-                mr: 2,
+                gap: { xs: 1.25, md: 2.5 },
               }}
             >
               <Box
                 sx={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "14px",
+                  width: { xs: 36, sm: 40, md: 48 },
+                  height: { xs: 36, sm: 40, md: 48 },
+                  borderRadius: { xs: "10px", md: "14px" },
                   background:
                     "linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #4f46e5 100%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: "0 4px 16px rgba(59, 130, 246, 0.35)",
-                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  boxShadow: "0 4px 16px rgba(59, 130, 246, 0.28)",
+                  flexShrink: 0,
                 }}
               >
                 <Assessment
                   sx={{
                     color: "white",
-                    fontSize: "1.625rem",
+                    fontSize: { xs: "1.125rem", sm: "1.375rem", md: "1.625rem" },
                   }}
                 />
               </Box>
-              <Box>
+              <Box sx={{ minWidth: 0 }}>
                 <Typography
                   variant="h6"
                   component="div"
+                  noWrap
                   sx={{
-                    fontSize: "1.125rem",
+                    fontSize: { xs: "0.9375rem", sm: "1rem", md: "1.125rem" },
                     fontWeight: 700,
                     color: "#0f172a",
                     letterSpacing: "-0.02em",
                     lineHeight: 1.2,
-                    fontFamily:
-                      "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
                     background:
                       "linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)",
                     WebkitBackgroundClip: "text",
@@ -231,56 +347,75 @@ export function SelfAssessmentLayout({ c }) {
                     backgroundClip: "text",
                   }}
                 >
-                  Self-Assessment
+                  {t("selfAssessment.title")}
                 </Typography>
                 <Typography
                   variant="caption"
+                  noWrap
                   sx={{
+                    display: { xs: "none", sm: "block" },
                     fontSize: "0.6875rem",
                     color: "#64748b",
                     fontWeight: 600,
-                    letterSpacing: "0.05em",
+                    letterSpacing: "0.04em",
                     textTransform: "uppercase",
-                    fontFamily:
-                      "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
                     lineHeight: 1.4,
                     mt: 0.25,
-                    display: "block",
                   }}
                 >
-                  School Assessment
+                  {t("selfAssessment.appBarSubtitle")}
                 </Typography>
               </Box>
             </Box>
-            <Box sx={{ flexGrow: 1 }} />
-            <Button
-              onClick={handleLogout}
-              sx={{
-                color: "#475569",
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                borderRadius: "12px",
-                px: 3,
-                py: 1.25,
-                backgroundColor: "rgba(255,255,255,0.9)",
-                border: "1px solid rgba(0,0,0,0.06)",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
-                fontFamily:
-                  "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
-                letterSpacing: "-0.01em",
-                "&:hover": {
-                  backgroundColor: "#fef2f2",
-                  color: "#dc2626",
-                  borderColor: "#fecaca",
-                  boxShadow: "0 4px 8px rgba(220, 38, 38, 0.15)",
-                  transform: "translateY(-1px)",
-                },
-                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-              }}
-            >
-              Logout
-            </Button>
+            {matchDownMD ? (
+              <IconButton
+                onClick={handleLogout}
+                aria-label="Logout"
+                sx={{
+                  flexShrink: 0,
+                  color: "#64748b",
+                  borderRadius: "12px",
+                  width: 40,
+                  height: 40,
+                  border: "1px solid rgba(0,0,0,0.06)",
+                  bgcolor: "rgba(255,255,255,0.9)",
+                  "&:hover": {
+                    bgcolor: "#fef2f2",
+                    color: "#dc2626",
+                    borderColor: "#fecaca",
+                  },
+                }}
+              >
+                <LogoutIcon sx={{ fontSize: 20 }} />
+              </IconButton>
+            ) : (
+              <Button
+                onClick={handleLogout}
+                sx={{
+                  flexShrink: 0,
+                  color: "#475569",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontSize: "0.875rem",
+                  borderRadius: "12px",
+                  px: 3,
+                  py: 1.25,
+                  backgroundColor: "rgba(255,255,255,0.9)",
+                  border: "1px solid rgba(0,0,0,0.06)",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
+                  "&:hover": {
+                    backgroundColor: "#fef2f2",
+                    color: "#dc2626",
+                    borderColor: "#fecaca",
+                    boxShadow: "0 4px 8px rgba(220, 38, 38, 0.15)",
+                    transform: "translateY(-1px)",
+                  },
+                  transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+              >
+                Logout
+              </Button>
+            )}
           </Toolbar>
         </AppBar>
 
@@ -303,11 +438,11 @@ export function SelfAssessmentLayout({ c }) {
             {/* Header */}
             <Box
               sx={{
-                display: "flex",
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "stretch", sm: "center" },
+                display: { xs: "none", md: "flex" },
+                flexDirection: { sm: "row" },
+                alignItems: { sm: "center" },
                 justifyContent: "space-between",
-                mb: { xs: 2, md: 3 },
+                mb: 3,
                 gap: 2,
               }}
             >
@@ -399,6 +534,84 @@ export function SelfAssessmentLayout({ c }) {
                 </ToggleButtonGroup>
               </Box>
             </Box>
+
+            {/* Mobile: language + deadline only (title lives in AppBar) */}
+            {matchDownMD && (
+              <Box
+                className="sa-mobile-page-toolbar"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 1.5,
+                  mb: 2,
+                  flexWrap: "wrap",
+                }}
+              >
+                {endDate ? (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      color: isReadOnly
+                        ? colors.semantic.error
+                        : colors.semantic.warning,
+                      fontWeight: 600,
+                      fontSize: "0.75rem",
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {isReadOnly
+                      ? t("selfAssessment.submissionClosedOn", { date: endDate })
+                      : t("selfAssessment.submitBefore", { date: endDate })}
+                  </Typography>
+                ) : (
+                  <Box sx={{ flex: 1 }} />
+                )}
+                <ToggleButtonGroup
+                  value={currentLanguage}
+                  exclusive
+                  onChange={(e, newLanguage) => {
+                    if (newLanguage !== null) {
+                      setCurrentLanguage(newLanguage);
+                      i18n.changeLanguage(newLanguage);
+                    }
+                  }}
+                  size="small"
+                  sx={{
+                    flexShrink: 0,
+                    "& .MuiToggleButton-root": {
+                      px: 1.25,
+                      py: 0.35,
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      borderColor: colors.primary.blue + "40",
+                      color: colors.text.secondary,
+                      "&.Mui-selected": {
+                        bgcolor: colors.primary.blue,
+                        color: "white",
+                      },
+                    },
+                  }}
+                >
+                  <ToggleButton value="gu">ગુ</ToggleButton>
+                  <ToggleButton value="en">EN</ToggleButton>
+                  <ToggleButton value="hi">हिं</ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+            )}
+
+            {matchDownMD && isErrorDomains && (
+              <Alert severity="warning" sx={{ mb: 2, fontSize: "0.75rem", py: 0.5 }}>
+                {t("selfAssessment.failedToLoadAssessment")}
+              </Alert>
+            )}
+
+            {showMobileNavigation && (
+              <Box sx={{ mb: 2 }}>{renderOverallProgress(true)}</Box>
+            )}
 
             {showMobileNavigation && (
               <SelfAssessmentMobileStepper
@@ -1948,13 +2161,10 @@ export function SelfAssessmentLayout({ c }) {
                                                                 }}
                                                               />
                                                             }
-                                                            label={
-                                                              <Typography variant="body2">
-                                                                {getOptionText(
-                                                                  option,
-                                                                )}
-                                                              </Typography>
-                                                            }
+                                                            label={renderOptionLabel(
+                                                              option,
+                                                              optIndex,
+                                                            )}
                                                             sx={{
                                                               mb: 1.5,
                                                               p: 2,
@@ -2877,13 +3087,10 @@ export function SelfAssessmentLayout({ c }) {
                                                                 }}
                                                               />
                                                             }
-                                                            label={
-                                                              <Typography variant="body2">
-                                                                {getOptionText(
-                                                                  option,
-                                                                )}
-                                                              </Typography>
-                                                            }
+                                                            label={renderOptionLabel(
+                                                              option,
+                                                              optIndex,
+                                                            )}
                                                             sx={{
                                                               mb: 1.5,
                                                               p: 2,
@@ -3864,13 +4071,10 @@ export function SelfAssessmentLayout({ c }) {
                                                                 }}
                                                               />
                                                             }
-                                                            label={
-                                                              <Typography variant="body2">
-                                                                {getOptionText(
-                                                                  option,
-                                                                )}
-                                                              </Typography>
-                                                            }
+                                                            label={renderOptionLabel(
+                                                              option,
+                                                              optIndex,
+                                                            )}
                                                             sx={{
                                                               mb: 1.5,
                                                               p: 2,
@@ -4663,25 +4867,33 @@ export function SelfAssessmentLayout({ c }) {
                       p: 3,
                       borderBottom: `2px solid ${colors.neutral.gray200}`,
                       bgcolor: colors.background.secondary,
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      gap: 3,
+                      flexWrap: "wrap",
                     }}
                   >
-                    <Typography
-                      variant="h5"
-                      sx={{
-                        fontWeight: 700,
-                        color: colors.text.primary,
-                        mb: 0.5,
-                      }}
-                    >
-                      {t("selfAssessment.assessmentOverview")}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ fontSize: "0.875rem" }}
-                    >
-                      {t("selfAssessment.reviewSubtitle")}
-                    </Typography>
+                    <Box sx={{ flex: 1, minWidth: 220 }}>
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          fontWeight: 700,
+                          color: colors.text.primary,
+                          mb: 0.5,
+                        }}
+                      >
+                        {t("selfAssessment.assessmentOverview")}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: "0.875rem" }}
+                      >
+                        {t("selfAssessment.reviewSubtitle")}
+                      </Typography>
+                    </Box>
+                    {renderOverallProgress(true)}
                   </Box>
 
                   {/* Bar Graph - Domains Progress */}

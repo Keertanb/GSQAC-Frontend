@@ -55,6 +55,24 @@
   padding: 24px 24px 28px;
 }
 
+/* Mobile app toolbar */
+@media (max-width: 960px) {
+  .sa-app-toolbar {
+    padding-left: max(12px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(12px, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .sa-mobile-page-toolbar .MuiToggleButtonGroup-root {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  }
+
+  .self-assessment-page-content.app-page-below-header {
+    margin-top: calc(56px + env(safe-area-inset-top, 0px)) !important;
+  }
+}
+
 @media (max-width: 960px) {
   .sa-mobile-stepper .MuiStepLabel-label {
     font-size: 0.625rem !important;
@@ -106,6 +124,11 @@
 
   .sa-questions-content .sa-question-list {
     gap: 20px !important;
+  }
+
+  .sa-overall-progress {
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .self-assessment-page-content .MuiFormControlLabel-root {
