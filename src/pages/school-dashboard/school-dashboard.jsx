@@ -29,6 +29,7 @@ import {
   Logout as LogoutIcon,
   LocationOn,
   Class as ClassIcon,
+  Description,
 } from "@mui/icons-material";
 import useAuthStore from "../../store/useAuthStore";
 import { useLogoutMutation } from "../../services/authService";
@@ -739,41 +740,18 @@ const SchoolDashboard = () => {
 
               <Grid item xs={12} sm={6} lg={4}>
                 <QuickActionCard
-                  title="Settings"
-                  description="Configure profile, preferences and account settings"
+                  title="Report Generation"
+                  description="Download your school accreditation report card as PDF"
                   accent={{ light: "#ede9fe" }}
-                  icon={<Settings sx={{ fontSize: 28, color: "#8b5cf6" }} />}
-                  disabled
+                  icon={<Description sx={{ fontSize: 28, color: "#8b5cf6" }} />}
+                  onClick={() => navigate("/school-dashboard/report-generation")}
                   footer={
-                    <Box sx={{ display: "flex", gap: 1.5 }}>
-                      {[
-                        { icon: <Settings sx={{ fontSize: 22, color: "#8b5cf6" }} />, label: "Configure" },
-                        { icon: <People sx={{ fontSize: 22, color: "#8b5cf6" }} />, label: "Manage" },
-                      ].map((item) => (
-                        <Box
-                          key={item.label}
-                          sx={{
-                            flex: 1,
-                            bgcolor: colors.background.secondary,
-                            borderRadius: "12px",
-                            p: 1.5,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            gap: 0.5,
-                            border: `1px solid ${colors.neutral.gray200}`,
-                          }}
-                        >
-                          {item.icon}
-                          <Typography
-                            variant="caption"
-                            sx={{ color: colors.text.secondary, fontWeight: 600, fontSize: "0.6875rem" }}
-                          >
-                            {item.label}
-                          </Typography>
-                        </Box>
-                      ))}
-                    </Box>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: colors.text.secondary, fontWeight: 600, fontSize: "0.75rem" }}
+                    >
+                      Available after assessment submission
+                    </Typography>
                   }
                 />
               </Grid>

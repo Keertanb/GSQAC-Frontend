@@ -14,13 +14,14 @@ import {
 import { colors } from "../../../../constants/colors";
 import AppDrawer from "../../../../components/AppDrawer/AppDrawer";
 import { DRAWER_WIDTH } from "../../../../constants/menuItems";
-import ConfirmationModal from "../../../../components/ConfirmationModal/ConfirmationModal";
+import { SubmitFeedbackModal, countFeedbackWords } from "./SubmitFeedbackModal";
+import { AssessmentNavProgressBar } from "../../../../components/AssessmentNavProgressBar/AssessmentNavProgressBar";
 import { SelfAssessmentMobileStepper } from "./SelfAssessmentMobileStepper";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import "../SelfAssessment.css";
 
 export function SelfAssessmentLayout({ c }) {
-  const { navigate, theme, matchDownMD, drawerOpen, setDrawerOpen, logout, user, userId, userName, t, i18n, currentLanguage, setCurrentLanguage, selectedDomain, setSelectedDomain, selectedSubdomain, setSelectedSubdomain, answers, setAnswers, subdomainAnswers, setSubdomainAnswers, subdomainTextAnswers, setSubdomainTextAnswers, classWiseAnswers, setClassWiseAnswers, classWiseTextAnswers, setClassWiseTextAnswers, selectedClassGroup, setSelectedClassGroup, selectedClass, setSelectedClass, selectedSection, setSelectedSection, selectedSubject, setSelectedSubject, textAnswers, setTextAnswers, expandedQuestions, setExpandedQuestions, showSubmitConfirmation, setShowSubmitConfirmation, selectedQuestionTab, setSelectedQuestionTab, sessionId, selectedAssessmentId, setSelectedAssessmentId, chartDrilldownAssessmentId, setChartDrilldownAssessmentId, mcqQuestionImages, setMcqQuestionImages, mcqImageInputRef, pendingMcqImageSlot, setPendingMcqImageSlot, logoutMutation, handleDrawerToggle, handleLogout, languageCodeMap, languageCode, roleId, queryClient, domainsData, isLoadingDomains, isFetchingDomains, isErrorDomains, refetchDomains, allQuestionsData, hasSubjectWiseQuestions, questionsData, isLoadingQuestions, isErrorQuestions, refetchQuestions, schoolDataResponse, isLoadingSchoolData, schoolData, gradesData, isLoadingGrades, gradesCounts, lowerClass, upperClass, classOptions, filteredClassOptions, sectionsData, isLoadingSections, subjectsData, isLoadingSubjects, sections, subjects, assessments, selectedAssessment, domains, isPublished, endDate, isSubmitted, isEndDatePassed, isReadOnly, assessmentProgress, mapGroupRangeToApiFormat, getGroupFlagColor, getFlagColorValue, getTotalQuestionsFromGroupWise, getTotalQuestionsCount, allQuestionsForCount, allQuestions, singleChoiceQuestionsForCount, classroomObservationQuestionsForCount, subjectObservationQuestionsForCount, flnQuestionsForCount, generalQuestionsForCount, singleChoiceQuestions, classroomObservationQuestions, subjectObservationQuestions, flnQuestions, classBasedQuestions, generalQuestions, generalQuestionsTotalCount, classroomObservationQuestionsTotalCount, subjectObservationQuestionsTotalCount, flnQuestionsTotalCount, questionTabs, currentTab, getSubdomainProgress, getDomainProgress, getDomainName, getSubdomainName, getProgressColor, getQuestionText, getOptionText, shouldShowApiAnswer, getDomainIcon, toggleQuestionExpansion, parseOptions, handleDomainSelect, handleSubdomainSelect, handleAssessmentSelect, handleAnswerChange, questionAllowsImageUpload, getMcqImagesForQuestion, getMcqImagePreviewSrc, getMcqImageLocation, getMcqImageFilesForQuestion, buildAttachedImagesForQuestion, uploadImagesToPresignedUrls, handleMcqImageCaptureClick, getAddressFromCoords, handleMcqImageFileChange, handleMcqImageRemove, handleTextAnswerChange, submitAnswerMutation, submitSubdomainWiseAnswersMutation, submitAssessmentMutation, handleOpenSubmitConfirmation, handleConfirmSubmit, allDomainsComplete, domainChartData, assessmentChartData, currentChartData, totalAnswered, totalQuestions, domainNumber, subdomainNumber, handleSubmitQuestion, handleSubmit } = c;
+  const { navigate, theme, matchDownMD, drawerOpen, setDrawerOpen, logout, user, userId, userName, t, i18n, currentLanguage, setCurrentLanguage, selectedDomain, setSelectedDomain, selectedSubdomain, setSelectedSubdomain, answers, setAnswers, subdomainAnswers, setSubdomainAnswers, subdomainTextAnswers, setSubdomainTextAnswers, classWiseAnswers, setClassWiseAnswers, classWiseTextAnswers, setClassWiseTextAnswers, selectedClassGroup, setSelectedClassGroup, selectedClass, setSelectedClass, selectedSection, setSelectedSection, selectedSubject, setSelectedSubject, textAnswers, setTextAnswers, expandedQuestions, setExpandedQuestions, showSubmitConfirmation, setShowSubmitConfirmation, submitFeedback, setSubmitFeedback, handleCloseSubmitFeedback, selectedQuestionTab, setSelectedQuestionTab, sessionId, selectedAssessmentId, setSelectedAssessmentId, chartDrilldownAssessmentId, setChartDrilldownAssessmentId, mcqQuestionImages, setMcqQuestionImages, mcqImageInputRef, pendingMcqImageSlot, setPendingMcqImageSlot, logoutMutation, handleDrawerToggle, handleLogout, languageCodeMap, languageCode, roleId, queryClient, domainsData, isLoadingDomains, isFetchingDomains, isErrorDomains, refetchDomains, allQuestionsData, hasSubjectWiseQuestions, questionsData, isLoadingQuestions, isErrorQuestions, refetchQuestions, schoolDataResponse, isLoadingSchoolData, schoolData, gradesData, isLoadingGrades, gradesCounts, lowerClass, upperClass, classOptions, filteredClassOptions, sectionsData, isLoadingSections, subjectsData, isLoadingSubjects, sections, subjects, assessments, selectedAssessment, domains, isPublished, endDate, isSubmitted, isEndDatePassed, isReadOnly, assessmentProgress, mapGroupRangeToApiFormat, getGroupFlagColor, getFlagColorValue, getTotalQuestionsFromGroupWise, getTotalQuestionsCount, allQuestionsForCount, allQuestions, singleChoiceQuestionsForCount, classroomObservationQuestionsForCount, subjectObservationQuestionsForCount, flnQuestionsForCount, generalQuestionsForCount, singleChoiceQuestions, classroomObservationQuestions, subjectObservationQuestions, flnQuestions, classBasedQuestions, generalQuestions, generalQuestionsTotalCount, classroomObservationQuestionsTotalCount, subjectObservationQuestionsTotalCount, flnQuestionsTotalCount, questionTabs, currentTab, getSubdomainProgress, getDomainProgress, getDomainName, getSubdomainName, getProgressColor, getQuestionText, getOptionText, shouldShowApiAnswer, getDomainIcon, toggleQuestionExpansion, parseOptions, handleDomainSelect, handleSubdomainSelect, handleAssessmentSelect, handleAnswerChange, questionAllowsImageUpload, getMcqImagesForQuestion, getMcqImagePreviewSrc, getMcqImageLocation, getMcqImageFilesForQuestion, buildAttachedImagesForQuestion, uploadImagesToPresignedUrls, handleMcqImageCaptureClick, getAddressFromCoords, handleMcqImageFileChange, handleMcqImageRemove, handleTextAnswerChange, submitAnswerMutation, submitSubdomainWiseAnswersMutation, submitAssessmentMutation, handleOpenSubmitConfirmation, handleConfirmSubmit, allDomainsComplete, domainChartData, assessmentChartData, currentChartData, totalAnswered, totalQuestions, domainNumber, subdomainNumber, handleSubmitQuestion, handleSubmit } = c;
 
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const [mobileStep, setMobileStep] = useState(0);
@@ -896,19 +897,11 @@ export function SelfAssessmentLayout({ c }) {
                                     />
                                   )}
                                 </Box>
-                                <LinearProgress
-                                  variant="determinate"
-                                  value={subdomainProgress}
-                                  sx={{
-                                    height: 6,
-                                    borderRadius: 3,
-                                    bgcolor: colors.neutral.gray200,
-                                    "& .MuiLinearProgress-bar": {
-                                      borderRadius: 3,
-                                      bgcolor:
-                                        getProgressColor(subdomainProgress),
-                                    },
-                                  }}
+                                <AssessmentNavProgressBar
+                                  progress={subdomainProgress}
+                                  getProgressColor={getProgressColor}
+                                  label={t("selfAssessment.progress")}
+                                  mobile
                                 />
                               </CardContent>
                             </Card>
@@ -5076,15 +5069,22 @@ export function SelfAssessmentLayout({ c }) {
       </Box>
 
       {/* Confirmation Modal for Final Submit */}
-      <ConfirmationModal
+      <SubmitFeedbackModal
         open={showSubmitConfirmation}
-        onClose={() => setShowSubmitConfirmation(false)}
+        onClose={handleCloseSubmitFeedback}
         onConfirm={handleConfirmSubmit}
-        title="Submit Assessment"
-        message="Are you sure you want to submit your assessment? You will not be able to edit your responses after submission."
-        confirmText="Yes, Submit"
-        cancelText="Cancel"
-        variant="warning"
+        feedback={submitFeedback}
+        onFeedbackChange={setSubmitFeedback}
+        title={t("selfAssessment.submitFeedback.title")}
+        description={t("selfAssessment.submitFeedback.description")}
+        placeholder={t("selfAssessment.submitFeedback.placeholder")}
+        optionalHint={t("selfAssessment.submitFeedback.optionalHint")}
+        wordLimitText={t("selfAssessment.submitFeedback.wordLimit", {
+          count: countFeedbackWords(submitFeedback),
+          max: 250,
+        })}
+        confirmText={t("selfAssessment.submitFeedback.confirm")}
+        cancelText={t("selfAssessment.submitFeedback.cancel")}
         isLoading={
           isFetchingDomains || submitAssessmentMutation.isPending
         }

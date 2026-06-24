@@ -18,6 +18,9 @@ const SchoolDetails = lazy(() =>
 const SelfAssessment = lazy(() =>
   import("../pages/school-dashboard/self-assessment/SelfAssessment")
 );
+const ReportGeneration = lazy(() =>
+  import("../pages/school-dashboard/report-generation/ReportGeneration")
+);
 const ParentDashboard = lazy(() =>
   import("../pages/parent-dashboard/parent-dashboard")
 );
@@ -107,6 +110,16 @@ export const schoolRoutes = [
           <ProtectedRoute requiredRole="school">
             <Suspense fallback={<LazyLoad />}>
               <SelfAssessment />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTE_URLS.SCHOOL_REPORT_GENERATION_URL,
+        element: (
+          <ProtectedRoute requiredRole="school">
+            <Suspense fallback={<LazyLoad />}>
+              <ReportGeneration />
             </Suspense>
           </ProtectedRoute>
         ),
@@ -232,6 +245,16 @@ export const adminRoutes = [
       },
       {
         path: ROUTE_URLS.ADMIN_SCHOOL_ALLOCATION_URL,
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <Suspense fallback={<LazyLoad />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTE_URLS.ADMIN_SCHOOL_ASSESSMENT_STATUS_URL,
         element: (
           <ProtectedRoute requiredRole="admin">
             <Suspense fallback={<LazyLoad />}>

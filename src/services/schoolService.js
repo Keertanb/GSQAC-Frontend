@@ -295,7 +295,7 @@ export const useSubmitSubdomainWiseAnswersMutation = (options = {}) => {
 
 /**
  * Submit assessment
- * @param {Object} payload - { assessmentId, sessionId, userId, roleId, schoolId, isSubmitted }
+ * @param {Object} payload - { assessmentId, sessionId, userId, roleId, schoolId, isSubmitted, feedback? }
  * @returns {Promise} API response
  */
 export const submitAssessment = async (payload) => {
@@ -459,5 +459,28 @@ export const useUpdateSchoolInfrastructureMutation = (options = {}) => {
       }
     },
     ...options,
+  });
+};
+
+export const getAssessmentReport = async ({ schoolId, assessmentId, languageCode = "GU" }) => {
+  const response = await axiosInstance.get("/school/assessment-report", {
+    params: { schoolId, assessmentId, languageCode },
+    timeout: 90000,
+  });
+  return response.data;
+};
+
+export const useGetAssessmentReportQuery = ({
+  schoolId,
+  assessmentId,
+  languageCode = "GU",
+  enabled = true,
+}) => {
+  return useQuery({
+    queryKey: queryKeys.school.assessmentReport(schoolId, assessmentId, languageCode),
+    queryFn: () => getAssessmentReport({ schoolId, assessmentId, languageCode }),
+    enabled: enabled && !!schoolId && !!assessmentId,
+    staleTime: 2 * 60 * 1000,
+    retry: false,
   });
 };

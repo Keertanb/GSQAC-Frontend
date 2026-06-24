@@ -43,6 +43,13 @@ export const queryKeys = {
     deleteQuestion: () => ["admin", "delete-question"],
     deleteQuestionOption: () => ["admin", "delete-question-option"],
     assessments: (academicYear) => ["admin", "assessments", academicYear],
+    schoolAssessmentReport: (schoolId, assessmentId, languageCode) => [
+      "admin",
+      "school-assessment-report",
+      schoolId,
+      assessmentId,
+      languageCode,
+    ],
   },
   school: {
     domains: (roleId, languageCode, userId) => ["school", "domains", roleId, languageCode, userId],
@@ -52,6 +59,13 @@ export const queryKeys = {
     submitSubdomainWiseAnswers: () => ["school", "submit-subdomain-wise-answers"],
     infrastructure: (schoolId) => ["school", "infrastructure", schoolId],
     updateInfrastructure: () => ["school", "update-infrastructure"],
+    assessmentReport: (schoolId, assessmentId, languageCode) => [
+      "school",
+      "assessment-report",
+      schoolId,
+      assessmentId,
+      languageCode,
+    ],
   },
   inspector: {
     allocatedSchools: (districtId) => ["inspector", "allocated-schools", districtId],

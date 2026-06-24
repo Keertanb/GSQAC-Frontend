@@ -53,6 +53,7 @@ import { SelfAssessmentMobileStepper } from "../../../school-dashboard/self-asse
 import { AssessmentOverallProgress } from "../../../../components/AssessmentOverallProgress/AssessmentOverallProgress";
 import { useAssessmentMobileLayout } from "../../../../hooks/useAssessmentMobileLayout";
 import { renderAssessmentOptionLabel } from "../../../../utils/assessmentOptionLabel";
+import { AssessmentNavProgressBar } from "../../../../components/AssessmentNavProgressBar/AssessmentNavProgressBar";
 import {
   BarChart,
   Bar,
@@ -795,18 +796,11 @@ export function CRCAssessmentPageView({ c }) {
                           >
                             {subdomainNumber}. {getSubdomainName(subdomain)}
                           </Typography>
-                          <LinearProgress
-                            variant="determinate"
-                            value={subdomainProgress}
-                            sx={{
-                              height: 6,
-                              borderRadius: 3,
-                              bgcolor: colors.neutral.gray200,
-                              "& .MuiLinearProgress-bar": {
-                                borderRadius: 3,
-                                bgcolor: getProgressColor(subdomainProgress),
-                              },
-                            }}
+                          <AssessmentNavProgressBar
+                            progress={subdomainProgress}
+                            getProgressColor={getProgressColor}
+                            label={t("selfAssessment.progress")}
+                            mobile
                           />
                         </CardContent>
                       </Card>

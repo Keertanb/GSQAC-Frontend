@@ -175,8 +175,18 @@
       "selectSubdomain": "Select a sub-domain to answer questions"
     },
     "overallProgress": "Assessment Progress",
+    "progress": "Progress",
     "questionsAnswered": "{{answered}} of {{total}} questions answered",
     "level": "Level {{level}}",
+    "submitFeedback": {
+      "title": "Submit Assessment",
+      "description": "Share your feedback about this self-assessment experience. If you leave this blank, we will record it as NA. You will not be able to edit your responses after submission.",
+      "placeholder": "Write your feedback here (optional)...",
+      "optionalHint": "Optional — empty feedback will be submitted as NA",
+      "wordLimit": "{{count}} / {{max}} words",
+      "confirm": "Submit Assessment",
+      "cancel": "Cancel"
+    },
     "tabs": {
       "generalQuestions": "General Questions",
       "classroomObservation": "Classroom Observation",

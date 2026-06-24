@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
@@ -18,6 +18,8 @@ import { DRAWER_WIDTH } from "../../constants/menuItems";
 import AssessmentManagement from "./assessment-management/AssessmentManagement";
 import Verifier from "./verifier/Verifier";
 import SchoolAllocation from "./school-allocation/SchoolAllocation";
+import SchoolAssessmentStatus from "./school-assessment-status/SchoolAssessmentStatus";
+import AdminOverview from "./overview/AdminOverview";
 import DistrictNodalOfficers from "./district-nodal-officers/DistrictNodalOfficers";
 import RoleManagement from "./role-management/RoleManagement";
 import {
@@ -25,6 +27,7 @@ import {
   ADMIN_VERIFIER_URL,
   ADMIN_ASSESSMENT_MANAGEMENT_URL,
   ADMIN_SCHOOL_ALLOCATION_URL,
+  ADMIN_SCHOOL_ASSESSMENT_STATUS_URL,
   ADMIN_ROLE_MANAGEMENT_URL,
   ADMIN_DISTRICT_NODAL_OFFICERS_URL,
 } from "../../routes/routeUrls";
@@ -73,6 +76,8 @@ const AdminDashboard = () => {
       return "assessment";
     } else if (location.pathname === ADMIN_SCHOOL_ALLOCATION_URL) {
       return "allocation";
+    } else if (location.pathname === ADMIN_SCHOOL_ASSESSMENT_STATUS_URL) {
+      return "school-assessment-status";
     } else if (location.pathname === ADMIN_DISTRICT_NODAL_OFFICERS_URL) {
       return "district-nodal-officers";
     } else if (location.pathname === ADMIN_ROLE_MANAGEMENT_URL) {
@@ -82,13 +87,6 @@ const AdminDashboard = () => {
   };
 
   const currentView = getCurrentView();
-
-  // Redirect to assessment management if on base admin dashboard
-  useEffect(() => {
-    if (location.pathname === ADMIN_DASHBOARD_URL) {
-      navigate(ADMIN_ASSESSMENT_MANAGEMENT_URL, { replace: true });
-    }
-  }, [location.pathname, navigate]);
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
@@ -364,24 +362,14 @@ const AdminDashboard = () => {
             {currentView === "verifier" && <Verifier />}
             {currentView === "assessment" && <AssessmentManagement />}
             {currentView === "allocation" && <SchoolAllocation />}
+            {currentView === "school-assessment-status" && (
+              <SchoolAssessmentStatus />
+            )}
             {currentView === "district-nodal-officers" && (
               <DistrictNodalOfficers />
             )}
             {currentView === "role-management" && <RoleManagement />}
-            {currentView === "dashboard" && (
-              <Box>
-                <Typography
-                  variant="h4"
-                  gutterBottom
-                  sx={{ fontWeight: 700, mb: 3 }}
-                >
-                  Welcome{user?.name ? `, ${user.name}` : ""} to Admin Dashboard
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Please select a section from the sidebar menu.
-                </Typography>
-              </Box>
-            )}
+            {currentView === "dashboard" && <AdminOverview />}
           </Box>
         </Box>
       </Box>

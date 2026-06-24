@@ -1312,3 +1312,105 @@ export const useDeleteAssessmentMutation = (options = {}) => {
     ...options,
   });
 };
+
+/**
+ * Get school assessment status list by block
+ * @param {Object} params - { blockId: number, page?: number, limit?: number, search?: string }
+ */
+export const getSchoolAssessmentStatusList = async (params = {}) => {
+  const response = await axiosInstance.get("/admin/school-assessment-status", {
+    params,
+  });
+  return response.data;
+};
+
+/**
+ * React Query hook for school assessment status list
+ */
+export const useGetSchoolAssessmentStatusListQuery = (params = {}, enabled = true) => {
+  return useQuery({
+    queryKey: [
+      "admin",
+      "school-assessment-status",
+      params.blockId,
+      params.page,
+      params.limit,
+      params.search,
+    ],
+    queryFn: () => getSchoolAssessmentStatusList(params),
+    enabled: enabled && !!params.blockId,
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+/**
+ * Get school assessment status detail
+ * @param {string} schoolId
+ */
+export const getSchoolAssessmentStatusDetail = async (schoolId) => {
+  const response = await axiosInstance.get(
+    "/admin/school-assessment-status/detail",
+    { params: { schoolId } },
+  );
+  return response.data;
+};
+
+/**
+ * React Query hook for school assessment status detail
+ */
+export const useGetSchoolAssessmentStatusDetailQuery = (schoolId, enabled = true) => {
+  return useQuery({
+    queryKey: ["admin", "school-assessment-status-detail", schoolId],
+    queryFn: () => getSchoolAssessmentStatusDetail(schoolId),
+    enabled: enabled && !!schoolId,
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+export const getAdminSchoolAssessmentReport = async ({
+  schoolId,
+  assessmentId,
+  languageCode = "GU",
+}) => {
+  const response = await axiosInstance.get("/admin/school-assessment-report", {
+    params: { schoolId, assessmentId, languageCode },
+    timeout: 90000,
+  });
+  return response.data;
+};
+
+export const useGetAdminSchoolAssessmentReportQuery = ({
+  schoolId,
+  assessmentId,
+  languageCode = "GU",
+  enabled = true,
+}) => {
+  return useQuery({
+    queryKey: queryKeys.admin.schoolAssessmentReport(schoolId, assessmentId, languageCode),
+    queryFn: () => getAdminSchoolAssessmentReport({ schoolId, assessmentId, languageCode }),
+    enabled: enabled && !!schoolId && !!assessmentId,
+    staleTime: 2 * 60 * 1000,
+    retry: false,
+  });
+};
+
+/**
+ * Get admin dashboard overview data
+ * @param {Object} params - { districtId?: number }
+ */
+export const getAdminDashboard = async (params = {}) => {
+  const response = await axiosInstance.get("/admin/dashboard", { params });
+  return response.data;
+};
+
+/**
+ * React Query hook for admin dashboard
+ */
+export const useGetAdminDashboardQuery = (params = {}, enabled = true) => {
+  return useQuery({
+    queryKey: ["admin", "dashboard", params.districtId ?? "all"],
+    queryFn: () => getAdminDashboard(params),
+    enabled,
+    staleTime: 2 * 60 * 1000,
+  });
+};

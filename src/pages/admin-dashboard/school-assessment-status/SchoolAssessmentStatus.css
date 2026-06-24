@@ -1,0 +1,546 @@
+.school-assessment-status-container {
+  padding: 0.5rem;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sas-header {
+  background: white;
+  border-radius: 1rem;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.sas-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem;
+}
+
+.sas-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.sas-filters {
+  background: white;
+  border-radius: 1rem;
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.sas-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.sas-search-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sas-search-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.sas-search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  background: #f9fafb;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.sas-search-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  background: white;
+}
+
+.sas-search-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sas-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sas-stat-card {
+  background: white;
+  border-radius: 0.875rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sas-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.sas-stat-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sas-stat-total .sas-stat-value { color: #111827; }
+.sas-stat-completed .sas-stat-value { color: #059669; }
+.sas-stat-progress .sas-stat-value { color: #d97706; }
+.sas-stat-pending .sas-stat-value { color: #6b7280; }
+.sas-stat-not-allocated .sas-stat-value { color: #dc2626; }
+
+.sas-content {
+  width: 100%;
+}
+
+.sas-content-full {
+  display: block;
+}
+
+.sas-main-panel {
+  background: white;
+  border-radius: 1rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  width: 100%;
+}
+
+.sas-school-list-panel {
+  min-height: 420px;
+}
+
+.sas-detail-panel-full {
+  min-height: 420px;
+}
+
+.sas-detail-toolbar {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
+  background: #fafafa;
+}
+
+.sas-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.625rem;
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #4f46e5;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.sas-back-btn:hover {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.sas-back-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.sas-detail-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem 2rem;
+}
+
+@media (max-width: 900px) {
+  .sas-detail-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sas-empty-panel,
+.sas-loading-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 420px;
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.sas-empty-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  color: #d1d5db;
+  margin-bottom: 1rem;
+}
+
+.sas-empty-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.sas-empty-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.5rem;
+}
+
+.sas-empty-subtitle {
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.sas-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid #e5e7eb;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: sas-spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes sas-spin {
+  to { transform: rotate(360deg); }
+}
+
+.sas-school-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.sas-school-name {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.875rem;
+}
+
+.sas-school-id {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-chip-completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-chip-in-progress {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-chip-pending {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.status-chip-not-allocated {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.sas-view-btn {
+  padding: 0.375rem 0.875rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #4f46e5;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sas-view-btn:hover {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.sas-detail-content {
+  padding: 1.5rem;
+}
+
+.sas-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.sas-detail-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.25rem;
+}
+
+.sas-detail-udise {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.sas-detail-section {
+  margin-bottom: 1.5rem;
+}
+
+.sas-section-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.875rem;
+}
+
+.sas-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem 1.5rem;
+}
+
+@media (max-width: 600px) {
+  .sas-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sas-detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.sas-detail-label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.sas-detail-value {
+  font-size: 0.875rem;
+  color: #111827;
+  font-weight: 500;
+}
+
+.sas-progress-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sas-role-progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.375rem;
+}
+
+.sas-progress-track {
+  height: 0.5rem;
+  background: #f3f4f6;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.sas-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.sas-no-assessments {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.sas-role-group {
+  margin-bottom: 1.25rem;
+}
+
+.sas-role-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #4f46e5;
+  margin: 0 0 0.625rem;
+}
+
+.sas-assessment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.sas-assessment-card {
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+}
+
+.sas-assessment-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.375rem;
+}
+
+.sas-assessment-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.sas-assessment-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.sas-school-list-panel .app-table-container {
+  border: none;
+  box-shadow: none;
+}
+
+.sas-report-panel {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid #dbeafe;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+}
+
+.sas-report-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sas-report-panel-subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.sas-report-download-btn,
+.sas-report-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sas-report-download-btn {
+  color: #fff;
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+}
+
+.sas-report-download-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.3);
+}
+
+.sas-report-download-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.sas-report-retry-btn {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.sas-report-preview {
+  overflow: auto;
+  max-height: 70vh;
+  padding: 1rem;
+  border-radius: 0.875rem;
+  background: #e2e8f0;
+}
+
+.sas-report-panel--loading,
+.sas-report-panel--error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 180px;
+  text-align: center;
+  color: #64748b;
+}
+
+.sas-report-panel--error p {
+  margin: 0;
+  color: #b91c1c;
+}
+
+@media (max-width: 768px) {
+  .sas-report-panel-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sas-report-download-btn {
+    justify-content: center;
+  }
+}

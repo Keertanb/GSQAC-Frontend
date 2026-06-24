@@ -76,6 +76,7 @@ export function useSelfAssessment() {
   const [textAnswers, setTextAnswers] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
+  const [submitFeedback, setSubmitFeedback] = useState("");
   const [selectedQuestionTab, setSelectedQuestionTab] = useState(0);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
   const [chartDrilldownAssessmentId, setChartDrilldownAssessmentId] =
@@ -1476,8 +1477,9 @@ export function useSelfAssessment() {
         //   variant: "success",
         // });
       } else {
-        // Final submission - close the confirmation modal
+        // Final submission - close the feedback modal
         setShowSubmitConfirmation(false);
+        setSubmitFeedback("");
 
         // Refetch domains to update progress and isSubmitted status
         refetchDomains();
@@ -1512,8 +1514,8 @@ export function useSelfAssessment() {
     },
     onError: (error) => {
       console.error("Error submitting assessment:", error);
-      // Close the confirmation modal
       setShowSubmitConfirmation(false);
+      setSubmitFeedback("");
       enqueueSnackbar(
         error?.response?.data?.message ||
           "Failed to submit assessment. Please try again.",
@@ -1524,7 +1526,7 @@ export function useSelfAssessment() {
     },
   });
 
-  // Handler to open confirmation modal for final submit
+  // Handler to open feedback modal for final submit
   const handleOpenSubmitConfirmation = () => {
     if (!userId) {
       enqueueSnackbar("User ID is missing. Please login again.", {
@@ -1532,10 +1534,17 @@ export function useSelfAssessment() {
       });
       return;
     }
+    setSubmitFeedback("");
     setShowSubmitConfirmation(true);
   };
 
-  // Handler to confirm final submit
+  const handleCloseSubmitFeedback = () => {
+    if (submitAssessmentMutation.isPending || isFetchingDomains) return;
+    setShowSubmitConfirmation(false);
+    setSubmitFeedback("");
+  };
+
+  // Handler to confirm final submit with optional feedback (empty → "NA")
   const handleConfirmSubmit = async () => {
     if (!userId) {
       enqueueSnackbar("User ID is missing. Please login again.", {
@@ -1562,6 +1571,7 @@ export function useSelfAssessment() {
         roleId: Number(roleId),
         schoolId: userName || undefined,
         isSubmitted: 1,
+        feedback: submitFeedback.trim() || "NA",
       };
       submitAssessmentMutation.mutate(payload);
     } catch (error) {
@@ -2048,6 +2058,9 @@ export function useSelfAssessment() {
     setExpandedQuestions,
     showSubmitConfirmation,
     setShowSubmitConfirmation,
+    submitFeedback,
+    setSubmitFeedback,
+    handleCloseSubmitFeedback,
     selectedQuestionTab,
     setSelectedQuestionTab,
     sessionId,

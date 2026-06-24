@@ -42,6 +42,13 @@ export const schoolMenuItems = [
     url: "/school-dashboard/self-assessment",
     activeFinder: ["/school-dashboard/self-assessment"],
   },
+  {
+    id: "report-generation",
+    label: "Report Generation",
+    icon: Assignment,
+    url: "/school-dashboard/report-generation",
+    activeFinder: ["/school-dashboard/report-generation"],
+  },
   //   {
   //     id: "students",
   //     label: "Student Management",
@@ -124,13 +131,13 @@ export const inspectorMenuItems = [
 
 // Admin Menu Items
 export const adminMenuItems = [
-  // {
-  //   id: "dashboard",
-  //   label: "Dashboard",
-  //   icon: Dashboard,
-  //   url: "/admin-dashboard",
-  //   activeFinder: ["/admin-dashboard"],
-  // },
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: Dashboard,
+    url: "/admin-dashboard",
+    activeFinder: ["/admin-dashboard"],
+  },
   {
     id: "assessment-management",
     label: "Assessment Management",
@@ -159,6 +166,13 @@ export const adminMenuItems = [
     icon: Business,
     url: "/admin-dashboard/school-allocation",
     activeFinder: ["/admin-dashboard/school-allocation"],
+  },
+  {
+    id: "school-assessment-status",
+    label: "School Assessment Status",
+    icon: Assignment,
+    url: "/admin-dashboard/school-assessment-status",
+    activeFinder: ["/admin-dashboard/school-assessment-status"],
   },
   {
     id: "role-management",
