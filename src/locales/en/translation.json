@@ -181,7 +181,8 @@
     "submitFeedback": {
       "title": "Submit Assessment",
       "description": "Share your feedback about this self-assessment experience. If you leave this blank, we will record it as NA. You will not be able to edit your responses after submission.",
-      "placeholder": "Write your feedback here (optional)...",
+      "testingNotice": "Note: This data is collected for testing purposes only. The answers you submit will not be used in the actual evaluation. If you have suggestions regarding question types, evaluation criteria, domains, or any other input from your school's perspective, please share them below.",
+      "placeholder": "Share your feedback, suggestions on questions, domains, evaluation, or any other school-related inputs (optional)...",
       "optionalHint": "Optional — empty feedback will be submitted as NA",
       "wordLimit": "{{count}} / {{max}} words",
       "confirm": "Submit Assessment",

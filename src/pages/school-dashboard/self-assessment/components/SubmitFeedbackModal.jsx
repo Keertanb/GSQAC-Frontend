@@ -46,6 +46,7 @@ export function SubmitFeedbackModal({
   wordLimitText,
   confirmText,
   cancelText,
+  testingNotice,
   isLoading = false,
 }) {
   const wordCount = useMemo(() => countFeedbackWords(feedback), [feedback]);
@@ -145,6 +146,30 @@ export function SubmitFeedbackModal({
         >
           {description}
         </Typography>
+
+        {testingNotice && (
+          <Box
+            sx={{
+              mb: 2,
+              p: 1.75,
+              borderRadius: 2,
+              bgcolor: `${colors.semantic.warning}14`,
+              border: `1px solid ${colors.semantic.warning}40`,
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{
+                color: colors.text.primary,
+                lineHeight: 1.65,
+                fontSize: "0.875rem",
+                fontWeight: 500,
+              }}
+            >
+              {testingNotice}
+            </Typography>
+          </Box>
+        )}
 
         <TextField
           fullWidth

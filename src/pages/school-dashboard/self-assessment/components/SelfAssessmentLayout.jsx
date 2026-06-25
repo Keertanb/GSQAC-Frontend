@@ -5077,6 +5077,7 @@ export function SelfAssessmentLayout({ c }) {
         onFeedbackChange={setSubmitFeedback}
         title={t("selfAssessment.submitFeedback.title")}
         description={t("selfAssessment.submitFeedback.description")}
+        testingNotice={t("selfAssessment.submitFeedback.testingNotice")}
         placeholder={t("selfAssessment.submitFeedback.placeholder")}
         optionalHint={t("selfAssessment.submitFeedback.optionalHint")}
         wordLimitText={t("selfAssessment.submitFeedback.wordLimit", {
