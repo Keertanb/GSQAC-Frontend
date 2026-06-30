@@ -2,6 +2,7 @@ import React from "react";
 import { CircularProgress } from "@mui/material";
 import { Download, Refresh } from "@mui/icons-material";
 import { ReportDocument } from "../../../school-dashboard/report-generation/components/ReportDocument";
+import { ReportPdfCaptureHost } from "../../../school-dashboard/report-generation/components/ReportPdfCaptureHost";
 import "../../../school-dashboard/report-generation/ReportGeneration.css";
 
 export function SchoolAssessmentReportPanel({
@@ -10,7 +11,8 @@ export function SchoolAssessmentReportPanel({
   isError,
   reportError,
   onRetry,
-  previewRefs,
+  pdfCaptureRefs,
+  pdfCaptureActive,
   isGeneratingPdf,
   onDownloadPdf,
 }) {
@@ -40,7 +42,21 @@ export function SchoolAssessmentReportPanel({
   }
 
   if (!report?.isSubmitted) {
-    return null;
+    return (
+      <div className="sas-report-panel sas-report-panel--empty">
+        <div className="sas-report-panel-header">
+          <div>
+            <h3 className="sas-section-title">School Accreditation Report</h3>
+            <p className="sas-report-panel-subtitle">
+              Submitted self-assessment report card
+            </p>
+          </div>
+        </div>
+        <div className="sas-report-empty-state">
+          <p>Report will appear here once the school submits self-assessment.</p>
+        </div>
+      </div>
+    );
   }
 
   const safeName = (report.school?.schoolName || "school-report")
@@ -73,9 +89,15 @@ export function SchoolAssessmentReportPanel({
         </button>
       </div>
 
-      <div className="sas-report-preview">
-        <ReportDocument report={report} pageRefs={previewRefs} />
+      <div className="sas-report-preview report-screen-preview">
+        <ReportDocument report={report} screenPreview />
       </div>
+
+      <ReportPdfCaptureHost
+        report={report}
+        pageRefs={pdfCaptureRefs}
+        active={pdfCaptureActive}
+      />
     </div>
   );
 }

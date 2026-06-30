@@ -10,7 +10,12 @@ import {
   useGetSchoolDataQuery,
 } from "../../../../services/schoolService";
 import { useLogoutMutation } from "../../../../services/authService";
-import { generateReportPdf, ensureReportFontsLoaded } from "../utils/generateReportPdf";
+import {
+  generateReportPdf,
+  ensureReportFontsLoaded,
+  waitForPdfCapturePages,
+} from "../utils/generateReportPdf";
+import { buildReportPageList } from "../utils/reportPageUtils";
 import studentsBanner from "../../../../assets/students_image.jpeg";
 
 export function useReportGeneration() {
@@ -19,7 +24,8 @@ export function useReportGeneration() {
   const matchDownMD = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const previewRefs = useRef([]);
+  const [pdfCaptureActive, setPdfCaptureActive] = useState(false);
+  const pdfCaptureRefs = useRef([]);
 
   const { logout, userName, userId } = useAuthStore();
   const roleId = getRoleId("school");
@@ -133,6 +139,11 @@ export function useReportGeneration() {
     };
   }, [reportResponse, schoolData, userName]);
 
+  const pdfPageCount = useMemo(
+    () => (report?.isSubmitted ? buildReportPageList(report).length : 0),
+    [report],
+  );
+
   useEffect(() => {
     if (report?.isSubmitted) {
       ensureReportFontsLoaded().catch(() => undefined);
@@ -148,20 +159,31 @@ export function useReportGeneration() {
     }
 
     setIsGeneratingPdf(true);
+    pdfCaptureRefs.current = [];
+
     try {
       await ensureReportFontsLoaded();
-      const pages = previewRefs.current.filter(Boolean);
+      setPdfCaptureActive(true);
+
+      await new Promise((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(resolve));
+      });
+
+      const pages = await waitForPdfCapturePages(pdfCaptureRefs, pdfPageCount);
       const safeName = (report.school?.schoolName || "school-report")
         .replace(/[^\w\s-]/g, "")
         .trim()
         .replace(/\s+/g, "-")
         .toLowerCase();
+
       await generateReportPdf(pages, `${safeName || "school-report"}.pdf`);
       enqueueSnackbar("Report downloaded successfully.", { variant: "success" });
     } catch (error) {
       enqueueSnackbar(error?.message || "Failed to generate PDF.", { variant: "error" });
     } finally {
+      setPdfCaptureActive(false);
       setIsGeneratingPdf(false);
+      pdfCaptureRefs.current = [];
     }
   };
 
@@ -180,7 +202,8 @@ export function useReportGeneration() {
     isSubmitted,
     assessmentId,
     report,
-    previewRefs,
+    pdfCaptureRefs,
+    pdfCaptureActive,
     isGeneratingPdf,
     handleDownloadPdf,
     selectedAssessment,

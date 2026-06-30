@@ -283,6 +283,16 @@ export const adminRoutes = [
           </ProtectedRoute>
         ),
       },
+      {
+        path: ROUTE_URLS.ADMIN_PARENT_FEEDBACK_URL,
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <Suspense fallback={<LazyLoad />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
   {

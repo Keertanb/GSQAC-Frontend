@@ -33,6 +33,7 @@ import {
   useGetClassWiseSubjectsQuery,
   useSubmitAnswerMutation,
 } from "../../../../services/adminService";
+import { buildSubmitPreviewData } from "../utils/buildSubmitPreviewData";
 
 const getSessionIdFromDomainsResponse = (domainsResponse, assessmentId) => {
   if (!domainsResponse) return null;
@@ -76,6 +77,10 @@ export function useSelfAssessment() {
   const [textAnswers, setTextAnswers] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
+  const [showSubmitPreview, setShowSubmitPreview] = useState(false);
+  const [submitPreviewData, setSubmitPreviewData] = useState([]);
+  const [isLoadingSubmitPreview, setIsLoadingSubmitPreview] = useState(false);
+  const [submitPreviewError, setSubmitPreviewError] = useState(null);
   const [submitFeedback, setSubmitFeedback] = useState("");
   const [selectedQuestionTab, setSelectedQuestionTab] = useState(0);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
@@ -1526,14 +1531,50 @@ export function useSelfAssessment() {
     },
   });
 
-  // Handler to open feedback modal for final submit
-  const handleOpenSubmitConfirmation = () => {
+  // Handler to open answer preview, then feedback modal for final submit
+  const handleOpenSubmitConfirmation = async () => {
     if (!userId) {
       enqueueSnackbar("User ID is missing. Please login again.", {
         variant: "error",
       });
       return;
     }
+
+    setSubmitPreviewError(null);
+    setSubmitPreviewData([]);
+    setShowSubmitPreview(true);
+    setIsLoadingSubmitPreview(true);
+
+    try {
+      const preview = await buildSubmitPreviewData({
+        domains,
+        roleId,
+        languageCode,
+        userId: Number(userId),
+        getDomainName,
+        getSubdomainName,
+      });
+      setSubmitPreviewData(preview);
+    } catch (error) {
+      console.error("Error loading submit preview:", error);
+      setSubmitPreviewError(
+        "Failed to load your submitted answers. Please try again.",
+      );
+    } finally {
+      setIsLoadingSubmitPreview(false);
+    }
+  };
+
+  const handleCloseSubmitPreview = () => {
+    if (submitAssessmentMutation.isPending || isFetchingDomains) return;
+    setShowSubmitPreview(false);
+    setSubmitPreviewData([]);
+    setSubmitPreviewError(null);
+  };
+
+  const handleConfirmSubmitPreview = () => {
+    setShowSubmitPreview(false);
+    setSubmitPreviewError(null);
     setSubmitFeedback("");
     setShowSubmitConfirmation(true);
   };
@@ -1582,6 +1623,20 @@ export function useSelfAssessment() {
       );
     }
   };
+
+  const submitPreviewAnswerCount = useMemo(() => {
+    if (!Array.isArray(submitPreviewData)) return 0;
+    return submitPreviewData.reduce(
+      (total, domain) =>
+        total +
+        (domain.subdomains || []).reduce(
+          (subTotal, subdomain) =>
+            subTotal + (subdomain.questions?.length || 0),
+          0,
+        ),
+      0,
+    );
+  }, [submitPreviewData]);
 
   const allDomainsComplete = useMemo(() => {
     if (!domains || domains.length === 0) return false;
@@ -2058,6 +2113,13 @@ export function useSelfAssessment() {
     setExpandedQuestions,
     showSubmitConfirmation,
     setShowSubmitConfirmation,
+    showSubmitPreview,
+    submitPreviewData,
+    isLoadingSubmitPreview,
+    submitPreviewError,
+    submitPreviewAnswerCount,
+    handleCloseSubmitPreview,
+    handleConfirmSubmitPreview,
     submitFeedback,
     setSubmitFeedback,
     handleCloseSubmitFeedback,

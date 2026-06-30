@@ -19,6 +19,7 @@ import AssessmentManagement from "./assessment-management/AssessmentManagement";
 import Verifier from "./verifier/Verifier";
 import SchoolAllocation from "./school-allocation/SchoolAllocation";
 import SchoolAssessmentStatus from "./school-assessment-status/SchoolAssessmentStatus";
+import ParentFeedback from "./parent-feedback/ParentFeedback";
 import AdminOverview from "./overview/AdminOverview";
 import DistrictNodalOfficers from "./district-nodal-officers/DistrictNodalOfficers";
 import RoleManagement from "./role-management/RoleManagement";
@@ -30,6 +31,7 @@ import {
   ADMIN_SCHOOL_ASSESSMENT_STATUS_URL,
   ADMIN_ROLE_MANAGEMENT_URL,
   ADMIN_DISTRICT_NODAL_OFFICERS_URL,
+  ADMIN_PARENT_FEEDBACK_URL,
 } from "../../routes/routeUrls";
 import ConfirmationModal from "../../components/ConfirmationModal/ConfirmationModal";
 import "./admin-dashboard.css";
@@ -82,6 +84,8 @@ const AdminDashboard = () => {
       return "district-nodal-officers";
     } else if (location.pathname === ADMIN_ROLE_MANAGEMENT_URL) {
       return "role-management";
+    } else if (location.pathname === ADMIN_PARENT_FEEDBACK_URL) {
+      return "parent-feedback";
     }
     return "dashboard";
   };
@@ -369,6 +373,7 @@ const AdminDashboard = () => {
               <DistrictNodalOfficers />
             )}
             {currentView === "role-management" && <RoleManagement />}
+            {currentView === "parent-feedback" && <ParentFeedback />}
             {currentView === "dashboard" && <AdminOverview />}
           </Box>
         </Box>

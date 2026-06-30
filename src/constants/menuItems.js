@@ -175,6 +175,13 @@ export const adminMenuItems = [
     activeFinder: ["/admin-dashboard/school-assessment-status"],
   },
   {
+    id: "parent-feedback",
+    label: "Parent Feedback",
+    icon: Feedback,
+    url: "/admin-dashboard/parent-feedback",
+    activeFinder: ["/admin-dashboard/parent-feedback"],
+  },
+  {
     id: "role-management",
     label: "Role Management",
     icon: ManageAccounts,

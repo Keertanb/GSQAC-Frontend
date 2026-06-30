@@ -65,7 +65,8 @@ function SchoolDetailView({
   isReportError,
   reportError,
   refetchReport,
-  previewRefs,
+  pdfCaptureRefs,
+  pdfCaptureActive,
   isGeneratingPdf,
   onDownloadPdf,
   onBack,
@@ -123,9 +124,9 @@ function SchoolDetailView({
           />
         </div>
 
-        <div className="sas-detail-columns">
-          <div className="sas-detail-col">
-            <div className="sas-detail-section">
+        <div className="sas-detail-layout">
+          <div className="sas-detail-card">
+            <div className="sas-detail-section sas-detail-section--flush">
               <h3 className="sas-section-title">Basic Information</h3>
               <div className="sas-detail-grid">
                 <DetailRow
@@ -155,7 +156,7 @@ function SchoolDetailView({
               </div>
             </div>
 
-            <div className="sas-detail-section">
+            <div className="sas-detail-section sas-detail-section--flush sas-detail-section--divider">
               <h3 className="sas-section-title">Verifier Allocation</h3>
               <div className="sas-detail-grid">
                 <DetailRow
@@ -179,7 +180,7 @@ function SchoolDetailView({
 
             {(schoolDetail?.drinkingWater != null ||
               schoolDetail?.puccaBuilding != null) && (
-              <div className="sas-detail-section">
+              <div className="sas-detail-section sas-detail-section--flush sas-detail-section--divider">
                 <h3 className="sas-section-title">Infrastructure Details</h3>
                 <div className="sas-detail-grid">
                   <DetailRow
@@ -205,8 +206,8 @@ function SchoolDetailView({
             )}
           </div>
 
-          <div className="sas-detail-col">
-            <div className="sas-detail-section">
+          <div className="sas-detail-card">
+            <div className="sas-detail-section sas-detail-section--flush">
               <h3 className="sas-section-title">Progress Overview</h3>
               <div className="sas-progress-overview">
                 <RoleProgress
@@ -219,26 +220,31 @@ function SchoolDetailView({
                   completed={progressOverview.verifier.completed}
                   total={progressOverview.verifier.total}
                 />
-                <RoleProgress
+                {/* <RoleProgress
                   label="CRC Assessment"
                   completed={progressOverview.crc.completed}
                   total={progressOverview.crc.total}
-                />
+                /> */}
               </div>
             </div>
+          </div>
 
+          <div className="sas-detail-card sas-detail-card--report">
             <SchoolAssessmentReportPanel
               report={report}
               isLoading={isReportLoading}
               isError={isReportError}
               reportError={reportError}
               onRetry={refetchReport}
-              previewRefs={previewRefs}
+              pdfCaptureRefs={pdfCaptureRefs}
+              pdfCaptureActive={pdfCaptureActive}
               isGeneratingPdf={isGeneratingPdf}
               onDownloadPdf={onDownloadPdf}
             />
+          </div>
 
-            <div className="sas-detail-section">
+          <div className="sas-detail-card">
+            <div className="sas-detail-section sas-detail-section--flush">
               <h3 className="sas-section-title">Assessment Breakdown</h3>
               {assessments.length === 0 ? (
                 <p className="sas-no-assessments">
@@ -308,7 +314,8 @@ export function SchoolAssessmentStatusPageView({ c }) {
     isReportError,
     reportError,
     refetchReport,
-    previewRefs,
+    pdfCaptureRefs,
+    pdfCaptureActive,
     isGeneratingPdf,
     handleDownloadPdf,
   } = c;
@@ -408,7 +415,8 @@ export function SchoolAssessmentStatusPageView({ c }) {
             isReportError={isReportError}
             reportError={reportError}
             refetchReport={refetchReport}
-            previewRefs={previewRefs}
+            pdfCaptureRefs={pdfCaptureRefs}
+            pdfCaptureActive={pdfCaptureActive}
             isGeneratingPdf={isGeneratingPdf}
             onDownloadPdf={handleDownloadPdf}
             onBack={handleBackToList}

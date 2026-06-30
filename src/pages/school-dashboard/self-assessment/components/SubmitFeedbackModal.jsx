@@ -47,6 +47,8 @@ export function SubmitFeedbackModal({
   confirmText,
   cancelText,
   testingNotice,
+  testingNoticeTitle,
+  testingNoticePoints,
   isLoading = false,
 }) {
   const wordCount = useMemo(() => countFeedbackWords(feedback), [feedback]);
@@ -147,7 +149,9 @@ export function SubmitFeedbackModal({
           {description}
         </Typography>
 
-        {testingNotice && (
+        {(testingNotice ||
+          testingNoticeTitle ||
+          (Array.isArray(testingNoticePoints) && testingNoticePoints.length > 0)) && (
           <Box
             sx={{
               mb: 2,
@@ -157,17 +161,54 @@ export function SubmitFeedbackModal({
               border: `1px solid ${colors.semantic.warning}40`,
             }}
           >
-            <Typography
-              variant="body2"
-              sx={{
-                color: colors.text.primary,
-                lineHeight: 1.65,
-                fontSize: "0.875rem",
-                fontWeight: 500,
-              }}
-            >
-              {testingNotice}
-            </Typography>
+            {testingNoticeTitle && (
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: colors.semantic.warning,
+                  fontWeight: 700,
+                  fontSize: "0.8125rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  mb: 1,
+                }}
+              >
+                {testingNoticeTitle}
+              </Typography>
+            )}
+            {Array.isArray(testingNoticePoints) && testingNoticePoints.length > 0 ? (
+              <Box component="ul" sx={{ m: 0, pl: 2.25 }}>
+                {testingNoticePoints.map((point, index) => (
+                  <Typography
+                    key={`${index}-${point}`}
+                    component="li"
+                    variant="body2"
+                    sx={{
+                      color: colors.text.primary,
+                      lineHeight: 1.65,
+                      fontSize: "0.875rem",
+                      fontWeight: 500,
+                      mb: 0.5,
+                      "&:last-child": { mb: 0 },
+                    }}
+                  >
+                    {point}
+                  </Typography>
+                ))}
+              </Box>
+            ) : (
+              <Typography
+                variant="body2"
+                sx={{
+                  color: colors.text.primary,
+                  lineHeight: 1.65,
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                }}
+              >
+                {testingNotice}
+              </Typography>
+            )}
           </Box>
         )}
 

@@ -17,6 +17,7 @@ import AppDrawer from "../../../../components/AppDrawer/AppDrawer";
 import { DRAWER_WIDTH } from "../../../../constants/menuItems";
 import { colors } from "../../../../constants/colors";
 import { ReportDocument } from "./ReportDocument";
+import { ReportPdfCaptureHost } from "./ReportPdfCaptureHost";
 import "../ReportGeneration.css";
 
 export function ReportGenerationPageView({ c }) {
@@ -33,7 +34,8 @@ export function ReportGenerationPageView({ c }) {
     refetchReport,
     isSubmitted,
     report,
-    previewRefs,
+    pdfCaptureRefs,
+    pdfCaptureActive,
     isGeneratingPdf,
     handleDownloadPdf,
   } = c;
@@ -202,7 +204,7 @@ export function ReportGenerationPageView({ c }) {
         </AppBar>
 
         <Box
-          sx={{ mt: 8 }}
+          sx={{ mt: { xs: 7, sm: 8 } }}
           className="report-generation-page-content"
           style={{ position: "relative", zIndex: 1, backgroundColor: "#f8fafc" }}
         >
@@ -267,9 +269,10 @@ export function ReportGenerationPageView({ c }) {
             <Paper
               elevation={0}
               sx={{
-                p: { xs: 2, md: 3 },
-                borderRadius: 3,
+                p: { xs: 1.25, sm: 2, md: 3 },
+                borderRadius: { xs: 2, md: 3 },
                 border: `1px solid ${colors.neutral.gray200}`,
+                overflow: "hidden",
               }}
             >
               {showLoading && (
@@ -307,14 +310,20 @@ export function ReportGenerationPageView({ c }) {
               )}
 
               {showReport && (
-                <Box className="report-generation-preview">
-                  <ReportDocument report={report} pageRefs={previewRefs} />
+                <Box className="report-generation-preview report-screen-preview">
+                  <ReportDocument report={report} screenPreview />
                 </Box>
               )}
             </Paper>
           </Box>
         </Box>
       </Box>
+
+      <ReportPdfCaptureHost
+        report={report}
+        pageRefs={pdfCaptureRefs}
+        active={pdfCaptureActive}
+      />
     </Box>
   );
 }

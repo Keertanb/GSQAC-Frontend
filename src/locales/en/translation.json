@@ -178,11 +178,25 @@
     "progress": "Progress",
     "questionsAnswered": "{{answered}} of {{total}} questions answered",
     "level": "Level {{level}}",
+    "submitPreview": {
+      "title": "Review Submitted Answers",
+      "description": "Please review your submitted responses by domain and question before continuing to feedback.",
+      "emptyMessage": "No submitted answers were found to preview.",
+      "confirm": "OK, Continue",
+      "cancel": "Go Back"
+    },
     "submitFeedback": {
       "title": "Submit Assessment",
       "description": "Share your feedback about this self-assessment experience. If you leave this blank, we will record it as NA. You will not be able to edit your responses after submission.",
+      "testingNoticeTitle": "Important — testing phase",
+      "testingNoticePoints": [
+        "This data is collected for testing purposes only.",
+        "The answers you submit will not be used in the actual evaluation.",
+        "If you have suggestions on question types, evaluation criteria, or domains, please let us know below.",
+        "You may also share any other input or observations from your school's perspective."
+      ],
       "testingNotice": "Note: This data is collected for testing purposes only. The answers you submit will not be used in the actual evaluation. If you have suggestions regarding question types, evaluation criteria, domains, or any other input from your school's perspective, please share them below.",
-      "placeholder": "Share your feedback, suggestions on questions, domains, evaluation, or any other school-related inputs (optional)...",
+      "placeholder": "Share feedback on questions, domains, evaluation, question types, or any other suggestions from your school role (optional)...",
       "optionalHint": "Optional — empty feedback will be submitted as NA",
       "wordLimit": "{{count}} / {{max}} words",
       "confirm": "Submit Assessment",

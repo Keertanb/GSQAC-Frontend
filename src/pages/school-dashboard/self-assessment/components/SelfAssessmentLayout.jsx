@@ -15,13 +15,14 @@ import { colors } from "../../../../constants/colors";
 import AppDrawer from "../../../../components/AppDrawer/AppDrawer";
 import { DRAWER_WIDTH } from "../../../../constants/menuItems";
 import { SubmitFeedbackModal, countFeedbackWords } from "./SubmitFeedbackModal";
+import { SubmitPreviewModal } from "./SubmitPreviewModal";
 import { AssessmentNavProgressBar } from "../../../../components/AssessmentNavProgressBar/AssessmentNavProgressBar";
 import { SelfAssessmentMobileStepper } from "./SelfAssessmentMobileStepper";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import "../SelfAssessment.css";
 
 export function SelfAssessmentLayout({ c }) {
-  const { navigate, theme, matchDownMD, drawerOpen, setDrawerOpen, logout, user, userId, userName, t, i18n, currentLanguage, setCurrentLanguage, selectedDomain, setSelectedDomain, selectedSubdomain, setSelectedSubdomain, answers, setAnswers, subdomainAnswers, setSubdomainAnswers, subdomainTextAnswers, setSubdomainTextAnswers, classWiseAnswers, setClassWiseAnswers, classWiseTextAnswers, setClassWiseTextAnswers, selectedClassGroup, setSelectedClassGroup, selectedClass, setSelectedClass, selectedSection, setSelectedSection, selectedSubject, setSelectedSubject, textAnswers, setTextAnswers, expandedQuestions, setExpandedQuestions, showSubmitConfirmation, setShowSubmitConfirmation, submitFeedback, setSubmitFeedback, handleCloseSubmitFeedback, selectedQuestionTab, setSelectedQuestionTab, sessionId, selectedAssessmentId, setSelectedAssessmentId, chartDrilldownAssessmentId, setChartDrilldownAssessmentId, mcqQuestionImages, setMcqQuestionImages, mcqImageInputRef, pendingMcqImageSlot, setPendingMcqImageSlot, logoutMutation, handleDrawerToggle, handleLogout, languageCodeMap, languageCode, roleId, queryClient, domainsData, isLoadingDomains, isFetchingDomains, isErrorDomains, refetchDomains, allQuestionsData, hasSubjectWiseQuestions, questionsData, isLoadingQuestions, isErrorQuestions, refetchQuestions, schoolDataResponse, isLoadingSchoolData, schoolData, gradesData, isLoadingGrades, gradesCounts, lowerClass, upperClass, classOptions, filteredClassOptions, sectionsData, isLoadingSections, subjectsData, isLoadingSubjects, sections, subjects, assessments, selectedAssessment, domains, isPublished, endDate, isSubmitted, isEndDatePassed, isReadOnly, assessmentProgress, mapGroupRangeToApiFormat, getGroupFlagColor, getFlagColorValue, getTotalQuestionsFromGroupWise, getTotalQuestionsCount, allQuestionsForCount, allQuestions, singleChoiceQuestionsForCount, classroomObservationQuestionsForCount, subjectObservationQuestionsForCount, flnQuestionsForCount, generalQuestionsForCount, singleChoiceQuestions, classroomObservationQuestions, subjectObservationQuestions, flnQuestions, classBasedQuestions, generalQuestions, generalQuestionsTotalCount, classroomObservationQuestionsTotalCount, subjectObservationQuestionsTotalCount, flnQuestionsTotalCount, questionTabs, currentTab, getSubdomainProgress, getDomainProgress, getDomainName, getSubdomainName, getProgressColor, getQuestionText, getOptionText, shouldShowApiAnswer, getDomainIcon, toggleQuestionExpansion, parseOptions, handleDomainSelect, handleSubdomainSelect, handleAssessmentSelect, handleAnswerChange, questionAllowsImageUpload, getMcqImagesForQuestion, getMcqImagePreviewSrc, getMcqImageLocation, getMcqImageFilesForQuestion, buildAttachedImagesForQuestion, uploadImagesToPresignedUrls, handleMcqImageCaptureClick, getAddressFromCoords, handleMcqImageFileChange, handleMcqImageRemove, handleTextAnswerChange, submitAnswerMutation, submitSubdomainWiseAnswersMutation, submitAssessmentMutation, handleOpenSubmitConfirmation, handleConfirmSubmit, allDomainsComplete, domainChartData, assessmentChartData, currentChartData, totalAnswered, totalQuestions, domainNumber, subdomainNumber, handleSubmitQuestion, handleSubmit } = c;
+  const { navigate, theme, matchDownMD, drawerOpen, setDrawerOpen, logout, user, userId, userName, t, i18n, currentLanguage, setCurrentLanguage, selectedDomain, setSelectedDomain, selectedSubdomain, setSelectedSubdomain, answers, setAnswers, subdomainAnswers, setSubdomainAnswers, subdomainTextAnswers, setSubdomainTextAnswers, classWiseAnswers, setClassWiseAnswers, classWiseTextAnswers, setClassWiseTextAnswers, selectedClassGroup, setSelectedClassGroup, selectedClass, setSelectedClass, selectedSection, setSelectedSection, selectedSubject, setSelectedSubject, textAnswers, setTextAnswers, expandedQuestions, setExpandedQuestions, showSubmitConfirmation, setShowSubmitConfirmation, showSubmitPreview, submitPreviewData, isLoadingSubmitPreview, submitPreviewError, submitPreviewAnswerCount, handleCloseSubmitPreview, handleConfirmSubmitPreview, submitFeedback, setSubmitFeedback, handleCloseSubmitFeedback, selectedQuestionTab, setSelectedQuestionTab, sessionId, selectedAssessmentId, setSelectedAssessmentId, chartDrilldownAssessmentId, setChartDrilldownAssessmentId, mcqQuestionImages, setMcqQuestionImages, mcqImageInputRef, pendingMcqImageSlot, setPendingMcqImageSlot, logoutMutation, handleDrawerToggle, handleLogout, languageCodeMap, languageCode, roleId, queryClient, domainsData, isLoadingDomains, isFetchingDomains, isErrorDomains, refetchDomains, allQuestionsData, hasSubjectWiseQuestions, questionsData, isLoadingQuestions, isErrorQuestions, refetchQuestions, schoolDataResponse, isLoadingSchoolData, schoolData, gradesData, isLoadingGrades, gradesCounts, lowerClass, upperClass, classOptions, filteredClassOptions, sectionsData, isLoadingSections, subjectsData, isLoadingSubjects, sections, subjects, assessments, selectedAssessment, domains, isPublished, endDate, isSubmitted, isEndDatePassed, isReadOnly, assessmentProgress, mapGroupRangeToApiFormat, getGroupFlagColor, getFlagColorValue, getTotalQuestionsFromGroupWise, getTotalQuestionsCount, allQuestionsForCount, allQuestions, singleChoiceQuestionsForCount, classroomObservationQuestionsForCount, subjectObservationQuestionsForCount, flnQuestionsForCount, generalQuestionsForCount, singleChoiceQuestions, classroomObservationQuestions, subjectObservationQuestions, flnQuestions, classBasedQuestions, generalQuestions, generalQuestionsTotalCount, classroomObservationQuestionsTotalCount, subjectObservationQuestionsTotalCount, flnQuestionsTotalCount, questionTabs, currentTab, getSubdomainProgress, getDomainProgress, getDomainName, getSubdomainName, getProgressColor, getQuestionText, getOptionText, shouldShowApiAnswer, getDomainIcon, toggleQuestionExpansion, parseOptions, handleDomainSelect, handleSubdomainSelect, handleAssessmentSelect, handleAnswerChange, questionAllowsImageUpload, getMcqImagesForQuestion, getMcqImagePreviewSrc, getMcqImageLocation, getMcqImageFilesForQuestion, buildAttachedImagesForQuestion, uploadImagesToPresignedUrls, handleMcqImageCaptureClick, getAddressFromCoords, handleMcqImageFileChange, handleMcqImageRemove, handleTextAnswerChange, submitAnswerMutation, submitSubdomainWiseAnswersMutation, submitAssessmentMutation, handleOpenSubmitConfirmation, handleConfirmSubmit, allDomainsComplete, domainChartData, assessmentChartData, currentChartData, totalAnswered, totalQuestions, domainNumber, subdomainNumber, handleSubmitQuestion, handleSubmit } = c;
 
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const [mobileStep, setMobileStep] = useState(0);
@@ -5068,6 +5069,22 @@ export function SelfAssessmentLayout({ c }) {
         </Box>
       </Box>
 
+      {/* Answer preview before final submit feedback */}
+      <SubmitPreviewModal
+        open={showSubmitPreview}
+        onClose={handleCloseSubmitPreview}
+        onConfirm={handleConfirmSubmitPreview}
+        previewData={submitPreviewData}
+        isLoading={isLoadingSubmitPreview}
+        error={submitPreviewError}
+        totalAnswered={submitPreviewAnswerCount}
+        title={t("selfAssessment.submitPreview.title")}
+        description={t("selfAssessment.submitPreview.description")}
+        emptyMessage={t("selfAssessment.submitPreview.emptyMessage")}
+        confirmText={t("selfAssessment.submitPreview.confirm")}
+        cancelText={t("selfAssessment.submitPreview.cancel")}
+      />
+
       {/* Confirmation Modal for Final Submit */}
       <SubmitFeedbackModal
         open={showSubmitConfirmation}
@@ -5078,6 +5095,10 @@ export function SelfAssessmentLayout({ c }) {
         title={t("selfAssessment.submitFeedback.title")}
         description={t("selfAssessment.submitFeedback.description")}
         testingNotice={t("selfAssessment.submitFeedback.testingNotice")}
+        testingNoticeTitle={t("selfAssessment.submitFeedback.testingNoticeTitle")}
+        testingNoticePoints={t("selfAssessment.submitFeedback.testingNoticePoints", {
+          returnObjects: true,
+        })}
         placeholder={t("selfAssessment.submitFeedback.placeholder")}
         optionalHint={t("selfAssessment.submitFeedback.optionalHint")}
         wordLimitText={t("selfAssessment.submitFeedback.wordLimit", {

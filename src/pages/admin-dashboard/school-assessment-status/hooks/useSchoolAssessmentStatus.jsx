@@ -10,7 +10,9 @@ import {
 import {
   ensureReportFontsLoaded,
   generateReportPdf,
+  waitForPdfCapturePages,
 } from "../../../school-dashboard/report-generation/utils/generateReportPdf";
+import { buildReportPageList } from "../../../school-dashboard/report-generation/utils/reportPageUtils";
 import studentsBanner from "../../../../assets/students_image.jpeg";
 import {
   getRoleAssessmentProgress,
@@ -27,7 +29,8 @@ export function useSchoolAssessmentStatus() {
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const previewRefs = useRef([]);
+  const [pdfCaptureActive, setPdfCaptureActive] = useState(false);
+  const pdfCaptureRefs = useRef([]);
 
   const { data: districtsData } = useGetAllDistrictsQuery();
   const districts = districtsData?.data || [];
@@ -113,6 +116,11 @@ export function useSchoolAssessmentStatus() {
     };
   }, [schoolDetail?.assessments, selectedSchool]);
 
+  const pdfPageCount = useMemo(
+    () => (report?.isSubmitted ? buildReportPageList(report).length : 0),
+    [report],
+  );
+
   useEffect(() => {
     if (submittedSelfAssessment?.assessmentId) {
       ensureReportFontsLoaded().catch(() => undefined);
@@ -158,15 +166,25 @@ export function useSchoolAssessmentStatus() {
     }
 
     setIsGeneratingPdf(true);
+    pdfCaptureRefs.current = [];
+
     try {
       await ensureReportFontsLoaded();
-      const pages = previewRefs.current.filter(Boolean);
+      setPdfCaptureActive(true);
+
+      await new Promise((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(resolve));
+      });
+
+      const pages = await waitForPdfCapturePages(pdfCaptureRefs, pdfPageCount);
       await generateReportPdf(pages, fileName);
       enqueueSnackbar("Report downloaded successfully.", { variant: "success" });
     } catch (error) {
       enqueueSnackbar(error?.message || "Failed to generate PDF.", { variant: "error" });
     } finally {
+      setPdfCaptureActive(false);
       setIsGeneratingPdf(false);
+      pdfCaptureRefs.current = [];
     }
   };
 
@@ -196,7 +214,8 @@ export function useSchoolAssessmentStatus() {
     isReportError,
     reportError,
     refetchReport,
-    previewRefs,
+    pdfCaptureRefs,
+    pdfCaptureActive,
     isGeneratingPdf,
     handleDownloadPdf,
   };

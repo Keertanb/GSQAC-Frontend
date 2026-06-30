@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, IconButton } from "@mui/material";
 import {
@@ -14,8 +14,10 @@ import {
   EmojiEvents as EmojiEventsIcon,
   School as SchoolIcon,
   Place as PlaceIcon,
+  RateReview as RateReviewIcon,
 } from "@mui/icons-material";
 import useAuthStore from "../../store/useAuthStore";
+import { GrievanceFeedbackPanel } from "./components/GrievanceFeedbackPanel";
 import "./dashboard.css";
 
 import LogoImg from "../../assets/logo_image.png";
@@ -49,11 +51,21 @@ const STATS = [
 
 const CAROUSEL_INTERVAL_MS = 4500;
 
+const NAV_ITEMS = [
+  { id: "home", label: "Home" },
+  { id: "schools", label: "Schools" },
+  { id: "about", label: "About" },
+  { id: "grievance", label: "Grievance" },
+];
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, token, role } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [activeNav, setActiveNav] = useState("home");
+  const [grievanceTab, setGrievanceTab] = useState("feedback");
+  const grievanceRef = useRef(null);
 
   const heroCarouselSlides = useMemo(
     () => [
@@ -120,6 +132,23 @@ const Dashboard = () => {
     setCarouselIndex((i) => (i + 1) % heroCarouselSlides.length);
   };
 
+  const handleNavClick = (event, navId) => {
+    event.preventDefault();
+    setActiveNav(navId);
+    closeMobileMenu();
+
+    if (navId === "grievance") {
+      window.setTimeout(() => {
+        grievanceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+      return;
+    }
+
+    if (navId === "home") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
@@ -140,18 +169,16 @@ const Dashboard = () => {
 
           <div className="header-right">
             <nav className="header-nav" aria-label="Primary">
-              <a href="#" className="nav-link">
-                Home
-              </a>
-              <a href="#" className="nav-link">
-                Schools
-              </a>
-              <a href="#" className="nav-link">
-                About
-              </a>
-              <a href="#" className="nav-link">
-                Grievance
-              </a>
+              {NAV_ITEMS.map((item) => (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  className={`nav-link${activeNav === item.id ? " nav-link--active" : ""}`}
+                  onClick={(e) => handleNavClick(e, item.id)}
+                >
+                  {item.label}
+                </a>
+              ))}
             </nav>
 
             <Button
@@ -201,14 +228,14 @@ const Dashboard = () => {
           </IconButton>
         </div>
         <nav className="mobile-nav-links">
-          {["Home", "Schools", "About", "Grievance"].map((label) => (
+          {NAV_ITEMS.map((item) => (
             <a
-              key={label}
-              href="#"
-              className="mobile-nav-link"
-              onClick={closeMobileMenu}
+              key={item.id}
+              href={`#${item.id}`}
+              className={`mobile-nav-link${activeNav === item.id ? " mobile-nav-link--active" : ""}`}
+              onClick={(e) => handleNavClick(e, item.id)}
             >
-              {label}
+              {item.label}
             </a>
           ))}
         </nav>
@@ -390,6 +417,51 @@ const Dashboard = () => {
                 </div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="grievance"
+        ref={grievanceRef}
+        className="grievance-section"
+        aria-labelledby="grievance-heading"
+      >
+        <div className="grievance-section-inner">
+          <div className="grievance-section-head">
+            <p className="grievance-kicker">Grievance & Feedback</p>
+            <h2 id="grievance-heading" className="grievance-title">
+              Parent & Community Feedback
+            </h2>
+            <p className="grievance-lede">
+              Share your complete feedback about school quality, accreditation,
+              or any concern. Your voice helps GSQAC improve education across Gujarat.
+            </p>
+          </div>
+
+          <div className="grievance-panel">
+            <div className="grievance-tabs" role="tablist" aria-label="Grievance sections">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={grievanceTab === "feedback"}
+                className={`grievance-tab${grievanceTab === "feedback" ? " is-active" : ""}`}
+                onClick={() => setGrievanceTab("feedback")}
+              >
+                <RateReviewIcon fontSize="small" />
+                Parent Feedback
+              </button>
+            </div>
+
+            <div
+              className="grievance-tab-panel"
+              role="tabpanel"
+              aria-label="Parent Feedback"
+            >
+              {grievanceTab === "feedback" && (
+                <GrievanceFeedbackPanel feedbackSource="grievance" />
+              )}
+            </div>
           </div>
         </div>
       </section>

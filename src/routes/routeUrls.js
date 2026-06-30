@@ -25,6 +25,7 @@ export const ADMIN_SCHOOL_ASSESSMENT_STATUS_URL =
   "/admin-dashboard/school-assessment-status";
 export const ADMIN_DISTRICT_NODAL_OFFICERS_URL = "/admin-dashboard/district-nodal-officers";
 export const ADMIN_ROLE_MANAGEMENT_URL = "/admin-dashboard/role-management";
+export const ADMIN_PARENT_FEEDBACK_URL = "/admin-dashboard/parent-feedback";
 
 // CRC Dashboard Routes
 export const CRC_DASHBOARD_URL = "/crc-dashboard";

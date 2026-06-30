@@ -1,8 +1,8 @@
 export const A4_WIDTH_PX = 794;
 export const A4_HEIGHT_PX = 1123;
 
-const SUMMARY_ROWS_PER_PAGE = 16;
-const DOMAIN_QUESTIONS_PER_PAGE = 22;
+const SUMMARY_ROWS_PER_PAGE = 14;
+const DOMAIN_QUESTIONS_PER_PAGE = 18;
 
 export function splitDomainsForSummary(domains = []) {
   if (!domains.length) return [[]];
@@ -42,6 +42,11 @@ export function splitDomainForDetailPages(domain) {
     domainOrder: domain.domainOrder,
     domainName: domain.domainName,
     percentage: domain.percentage,
+    weightage: domain.weightage,
+    obtainedMarks: domain.obtainedMarks,
+    maxMarks: domain.maxMarks,
+    questionCount: domain.questionCount,
+    weightedScore: domain.weightedScore,
     subDomains: [],
   };
   let questionCount = 0;
@@ -55,6 +60,11 @@ export function splitDomainForDetailPages(domain) {
       domainOrder: domain.domainOrder,
       domainName: domain.domainName,
       percentage: domain.percentage,
+      weightage: domain.weightage,
+      obtainedMarks: domain.obtainedMarks,
+      maxMarks: domain.maxMarks,
+      questionCount: domain.questionCount,
+      weightedScore: domain.weightedScore,
       subDomains: [],
     };
     questionCount = 0;
@@ -66,6 +76,9 @@ export function splitDomainForDetailPages(domain) {
       subDomainOrder: sub.subDomainOrder,
       subDomainName: sub.subDomainName,
       percentage: sub.percentage,
+      obtainedMarks: sub.obtainedMarks,
+      maxMarks: sub.maxMarks,
+      questionCount: sub.questionCount,
       questions: [],
     };
 
@@ -78,6 +91,9 @@ export function splitDomainForDetailPages(domain) {
           subDomainOrder: sub.subDomainOrder,
           subDomainName: sub.subDomainName,
           percentage: sub.percentage,
+          obtainedMarks: sub.obtainedMarks,
+          maxMarks: sub.maxMarks,
+          questionCount: sub.questionCount,
           questions: [],
         };
       }
@@ -103,6 +119,11 @@ export function splitDomainForDetailPages(domain) {
           domainOrder: domain.domainOrder,
           domainName: domain.domainName,
           percentage: domain.percentage,
+          weightage: domain.weightage,
+          obtainedMarks: domain.obtainedMarks,
+          maxMarks: domain.maxMarks,
+          questionCount: domain.questionCount,
+          weightedScore: domain.weightedScore,
           subDomains: [],
         },
       ];
@@ -122,6 +143,7 @@ export function buildReportPageList(report) {
       pageIndex: index,
       pageCount: summaryChunks.length,
       showTotal: index === summaryChunks.length - 1,
+      showOverview: index === 0,
     });
   });
 
@@ -139,5 +161,10 @@ export function buildReportPageList(report) {
     });
   });
 
-  return pages;
+  const totalPages = pages.length;
+  return pages.map((page, index) => ({
+    ...page,
+    pageNumber: index + 1,
+    totalPages,
+  }));
 }

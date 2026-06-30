@@ -169,6 +169,43 @@
   height: 1rem;
 }
 
+.sas-detail-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+@media (max-width: 1024px) {
+  .sas-detail-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sas-detail-card {
+  background: #fafafa;
+  border: 1px solid #eef2f7;
+  border-radius: 0.875rem;
+  padding: 1.25rem;
+  min-height: 0;
+}
+
+.sas-detail-card--report {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.sas-detail-section--flush {
+  margin-bottom: 0;
+}
+
+.sas-detail-section--divider {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e5e7eb;
+}
+
 .sas-detail-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -452,11 +489,15 @@
 }
 
 .sas-report-panel {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
   padding: 1.25rem;
-  border-radius: 1rem;
+  border-radius: 0.875rem;
   border: 1px solid #dbeafe;
   background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .sas-report-panel-header {
@@ -510,8 +551,10 @@
 }
 
 .sas-report-preview {
+  flex: 1 1 auto;
+  min-height: 280px;
   overflow: auto;
-  max-height: 70vh;
+  max-height: min(58vh, 640px);
   padding: 1rem;
   border-radius: 0.875rem;
   background: #e2e8f0;
@@ -527,6 +570,27 @@
   min-height: 180px;
   text-align: center;
   color: #64748b;
+}
+
+.sas-report-panel--empty .sas-report-empty-state {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 1.5rem;
+  border-radius: 0.875rem;
+  background: #f1f5f9;
+  border: 1px dashed #cbd5e1;
+  text-align: center;
+}
+
+.sas-report-panel--empty .sas-report-empty-state p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #64748b;
+  max-width: 28ch;
+  line-height: 1.5;
 }
 
 .sas-report-panel--error p {
