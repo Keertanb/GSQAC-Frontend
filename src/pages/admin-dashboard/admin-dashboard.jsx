@@ -353,12 +353,13 @@ const AdminDashboard = () => {
           </Toolbar>
         </AppBar>
 
-        <Box sx={{ mt: 9 }}>
+        <Box sx={{ mt: { xs: 8, sm: 9 } }}>
           <Box
             sx={{
               pl: drawerOpen && !matchDownMD ? 0 : { xs: 2, sm: 2, md: 3 },
               pr: { xs: 2, sm: 2, md: 3 },
-              py: 3,
+              pt: currentView === "dashboard" ? { xs: 1.5, sm: 2 } : 3,
+              pb: 3,
               maxWidth: "xl",
               mx: "auto",
             }}

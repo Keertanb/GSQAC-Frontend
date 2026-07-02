@@ -33,7 +33,7 @@ export const schoolMenuItems = [
     label: "School Details",
     icon: School,
     url: "/school-dashboard/school-details",
-    activeFinder: ["/school-dashboard/school-details"],
+    activeFinder: ["/school-dashboard/school-details", "/school-dashboard"],
   },
   {
     id: "self-assessment",

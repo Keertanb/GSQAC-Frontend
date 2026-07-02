@@ -27,6 +27,35 @@ import { roles } from "../../constants/roles";
 import DrawerWrapper from "./AppDrawer.style";
 import "./AppDrawer.css";
 
+function isRouteActive(pathname, pattern) {
+  return pathname === pattern || pathname.startsWith(`${pattern}/`);
+}
+
+function findActiveMenuId(menuItems, pathname) {
+  let activeId = null;
+  let longestMatch = -1;
+
+  const consider = (id, patterns) => {
+    for (const pattern of patterns || []) {
+      if (isRouteActive(pathname, pattern) && pattern.length > longestMatch) {
+        longestMatch = pattern.length;
+        activeId = id;
+      }
+    }
+  };
+
+  for (const item of menuItems) {
+    consider(item.id, item.activeFinder);
+    if (item.subMenu) {
+      for (const sub of item.subMenu) {
+        consider(sub.id, sub.activeFinder);
+      }
+    }
+  }
+
+  return activeId;
+}
+
 const closedMixin = (theme) => ({
   width: 0,
   overflowX: "hidden",
@@ -111,6 +140,11 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
   }, [role]);
 
   const primaryColor = roleData?.color || theme.palette.primary.main;
+
+  const activeMenuId = useMemo(
+    () => findActiveMenuId(menuItems, location.pathname),
+    [menuItems, location.pathname],
+  );
 
   const drawer = (
     <Box
@@ -266,9 +300,7 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
       >
         <List sx={{ py: 0 }}>
           {menuItems.map((item) => {
-            const isActive = item?.activeFinder?.some((path) =>
-              location.pathname.includes(path)
-            );
+            const isActive = activeMenuId === item.id;
             const IconComponent = item.icon;
 
             return (
@@ -427,9 +459,7 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
                     >
                       <List component="div" sx={{ py: 1 }}>
                         {item.subMenu?.map((menuItem) => {
-                          const isMenuItemActive = menuItem?.activeFinder?.some(
-                            (path) => location.pathname.includes(path)
-                          );
+                          const isMenuItemActive = activeMenuId === menuItem.id;
                           const SubIconComponent = menuItem.icon;
 
                           return (

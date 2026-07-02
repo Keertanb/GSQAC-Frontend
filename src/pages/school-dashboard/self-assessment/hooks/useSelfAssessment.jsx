@@ -83,6 +83,7 @@ export function useSelfAssessment() {
   const [submitPreviewError, setSubmitPreviewError] = useState(null);
   const [submitFeedback, setSubmitFeedback] = useState("");
   const [selectedQuestionTab, setSelectedQuestionTab] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
   const [chartDrilldownAssessmentId, setChartDrilldownAssessmentId] =
     useState(null);
@@ -693,6 +694,77 @@ export function useSelfAssessment() {
     }
   }, [questionTabs.length, selectedQuestionTab]);
 
+  const flattenedQuestions = useMemo(() => {
+    const items = [];
+    questionTabs.forEach((tab, tabIndex) => {
+      tab.questions.forEach((question, questionIndexInTab) => {
+        items.push({
+          question,
+          tabId: tab.id,
+          tabIndex,
+          tabLabel: tab.label,
+          tabColor: tab.color,
+          questionIndexInTab,
+        });
+      });
+    });
+    return items;
+  }, [questionTabs]);
+
+  useEffect(() => {
+    if (currentQuestionIndex >= flattenedQuestions.length) {
+      setCurrentQuestionIndex(0);
+    }
+  }, [flattenedQuestions.length, currentQuestionIndex]);
+
+  useEffect(() => {
+    const entry = flattenedQuestions[currentQuestionIndex];
+    if (entry && entry.tabIndex !== selectedQuestionTab) {
+      setSelectedQuestionTab(entry.tabIndex);
+    }
+  }, [currentQuestionIndex, flattenedQuestions, selectedQuestionTab]);
+
+  const currentQuestionEntry =
+    flattenedQuestions[currentQuestionIndex] || null;
+
+  const isFirstQuestionInSubdomain = currentQuestionIndex === 0;
+  const isLastQuestionInSubdomain =
+    flattenedQuestions.length > 0 &&
+    currentQuestionIndex === flattenedQuestions.length - 1;
+
+  const nextSubdomainInfo = useMemo(() => {
+    if (!selectedDomain || !selectedSubdomain || !domains?.length) return null;
+
+    const domainIdx = domains.findIndex(
+      (d) => d.domainId === selectedDomain.domainId,
+    );
+    const subdomains = selectedDomain.subDomain || [];
+    const currentSubId =
+      selectedSubdomain.subDomainId || selectedSubdomain.id;
+    const subIdx = subdomains.findIndex(
+      (sd) => (sd.subDomainId || sd.id) === currentSubId,
+    );
+
+    if (subIdx >= 0 && subIdx < subdomains.length - 1) {
+      return {
+        domain: selectedDomain,
+        subdomain: subdomains[subIdx + 1],
+      };
+    }
+
+    if (domainIdx >= 0 && domainIdx < domains.length - 1) {
+      const nextDomain = domains[domainIdx + 1];
+      const firstSub = nextDomain.subDomain?.[0];
+      if (firstSub) {
+        return { domain: nextDomain, subdomain: firstSub };
+      }
+    }
+
+    return null;
+  }, [domains, selectedDomain, selectedSubdomain]);
+
+  const getNextSubdomain = () => nextSubdomainInfo;
+
   // Get current tab
   const currentTab = questionTabs[selectedQuestionTab] || null;
 
@@ -969,8 +1041,9 @@ export function useSelfAssessment() {
     setSelectedClass(null);
     setSelectedSection(null);
     setSelectedSubject(null);
-    // Reset question tab to first
+    // Reset question tab and wizard index to first
     setSelectedQuestionTab(0);
+    setCurrentQuestionIndex(0);
   };
 
   const handleAssessmentSelect = (assessment) => {
@@ -985,6 +1058,7 @@ export function useSelfAssessment() {
     setSelectedSection(null);
     setSelectedSubject(null);
     setSelectedQuestionTab(0);
+    setCurrentQuestionIndex(0);
     setChartDrilldownAssessmentId(null);
   };
 
@@ -2071,6 +2145,102 @@ export function useSelfAssessment() {
     submitSubdomainWiseAnswersMutation.mutate(payload);
   };
 
+  const handleNextQuestion = () => {
+    if (!isLastQuestionInSubdomain) {
+      setCurrentQuestionIndex((prev) =>
+        Math.min(prev + 1, flattenedQuestions.length - 1),
+      );
+    }
+  };
+
+  const handlePreviousQuestion = () => {
+    if (!isFirstQuestionInSubdomain) {
+      setCurrentQuestionIndex((prev) => Math.max(prev - 1, 0));
+    }
+  };
+
+  const handleGoToNextSubdomain = () => {
+    const next = getNextSubdomain();
+    if (!next) {
+      enqueueSnackbar("You have reached the last subdomain.", {
+        variant: "info",
+      });
+      return;
+    }
+
+    if (selectedSubdomain) {
+      const currentSubdomainId =
+        selectedSubdomain.subDomainId || selectedSubdomain.id;
+      const activeClassKey = selectedClass ? String(selectedClass) : "general";
+
+      setSubdomainAnswers((prev) => ({
+        ...prev,
+        [currentSubdomainId]: { ...answers },
+      }));
+      setSubdomainTextAnswers((prev) => ({
+        ...prev,
+        [currentSubdomainId]: { ...textAnswers },
+      }));
+
+      const storageKey = `${currentSubdomainId}_${activeClassKey}`;
+      setClassWiseAnswers((prev) => ({
+        ...prev,
+        [storageKey]: { ...answers },
+      }));
+      setClassWiseTextAnswers((prev) => ({
+        ...prev,
+        [storageKey]: { ...textAnswers },
+      }));
+    }
+
+    if (next.domain.domainId !== selectedDomain?.domainId) {
+      setSelectedDomain(next.domain);
+    }
+
+    const nextSubId = next.subdomain.subDomainId || next.subdomain.id;
+    const savedAnswers = subdomainAnswers[nextSubId] || {};
+    const nextStorageKey = `${nextSubId}_general`;
+    const savedTextAnswers =
+      subdomainTextAnswers[nextSubId] ||
+      classWiseTextAnswers[nextStorageKey] ||
+      {};
+
+    setSelectedSubdomain(next.subdomain);
+    setAnswers(savedAnswers);
+    setTextAnswers(savedTextAnswers);
+    setSelectedClassGroup(null);
+    setSelectedClass(null);
+    setSelectedSection(null);
+    setSelectedSubject(null);
+    setSelectedQuestionTab(0);
+    setCurrentQuestionIndex(0);
+  };
+
+  const isSaveAssessmentDisabled = () => {
+    if (submitSubdomainWiseAnswersMutation.isPending) return true;
+
+    const hasAnswers =
+      (answers && Object.keys(answers).length > 0) ||
+      (textAnswers && Object.keys(textAnswers).length > 0);
+
+    if (!hasAnswers) return true;
+
+    const hasAnsweredClassBasedQuestions = classBasedQuestions.some(
+      (q) => answers[q.questionId] || textAnswers[q.questionId],
+    );
+
+    const hasAnsweredSubjectQuestions = subjectObservationQuestions.some(
+      (q) => answers[q.questionId] || textAnswers[q.questionId],
+    );
+
+    if (hasAnsweredClassBasedQuestions) {
+      if (!selectedClass || !selectedSection) return true;
+      if (hasAnsweredSubjectQuestions && !selectedSubject) return true;
+    }
+
+    return false;
+  };
+
   return {
     navigate,
     theme,
@@ -2125,6 +2295,18 @@ export function useSelfAssessment() {
     handleCloseSubmitFeedback,
     selectedQuestionTab,
     setSelectedQuestionTab,
+    currentQuestionIndex,
+    setCurrentQuestionIndex,
+    flattenedQuestions,
+    currentQuestionEntry,
+    isFirstQuestionInSubdomain,
+    isLastQuestionInSubdomain,
+    nextSubdomainInfo,
+    getNextSubdomain,
+    handleNextQuestion,
+    handlePreviousQuestion,
+    handleGoToNextSubdomain,
+    isSaveAssessmentDisabled,
     sessionId,
     selectedAssessmentId,
     setSelectedAssessmentId,

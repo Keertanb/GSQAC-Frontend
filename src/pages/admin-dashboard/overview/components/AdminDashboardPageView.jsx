@@ -1,5 +1,4 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import {
   BarChart,
   Bar,
@@ -14,8 +13,11 @@ import {
   CartesianGrid,
   Area,
   AreaChart,
+  ComposedChart,
+  Line,
 } from "recharts";
 import AppDropdown from "../../../../components/AppDropdown/AppDropdown";
+import { GujaratDistrictMap } from "./GujaratDistrictMap";
 
 const STATUS_COLORS = {
   Completed: "#10b981",
@@ -73,6 +75,7 @@ function StatCard({ label, value, sub, tone, icon, progress, badge }) {
 
   return (
     <div className={`ado-stat-card ado-stat-${tone}`}>
+      <div className="ado-stat-accent" aria-hidden />
       <div className="ado-stat-header">
         <div className="ado-stat-icon-wrap">{icon}</div>
         <div className="ado-stat-content">
@@ -99,13 +102,16 @@ function StatCard({ label, value, sub, tone, icon, progress, badge }) {
   );
 }
 
-function ChartCard({ title, subtitle, badge, children, className = "" }) {
+function ChartCard({ title, subtitle, badge, children, className = "", accent = "indigo", icon }) {
   return (
-    <div className={`ado-chart-card ${className}`}>
+    <div className={`ado-chart-card ado-chart-accent-${accent} ${className}`}>
       <div className="ado-chart-header">
-        <div>
-          <h3 className="ado-chart-title">{title}</h3>
-          {subtitle && <p className="ado-chart-subtitle">{subtitle}</p>}
+        <div className="ado-chart-header-main">
+          {icon ? <span className={`ado-chart-icon ado-chart-icon--${accent}`}>{icon}</span> : null}
+          <div>
+            <h3 className="ado-chart-title">{title}</h3>
+            {subtitle && <p className="ado-chart-subtitle">{subtitle}</p>}
+          </div>
         </div>
         {badge && <span className="ado-chart-badge">{badge}</span>}
       </div>
@@ -140,8 +146,63 @@ function DonutCenter({ total, label }) {
   );
 }
 
+function getRateColor(rate) {
+  if (rate >= 80) return "#059669";
+  if (rate >= 60) return "#22c55e";
+  if (rate >= 30) return "#eab308";
+  return "#ef4444";
+}
+
+function InsightCard({ label, value, sub, tone = "indigo", icon }) {
+  return (
+    <div className={`ado-insight-card ado-insight-${tone}`}>
+      <span className="ado-insight-icon" aria-hidden>{icon}</span>
+      <div>
+        <p className="ado-insight-label">{label}</p>
+        <p className="ado-insight-value">{value}</p>
+        {sub ? <p className="ado-insight-sub">{sub}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+function FunnelStep({ label, value, rate, color, isLast }) {
+  return (
+    <div className={`ado-funnel-step ${isLast ? "ado-funnel-step--last" : ""}`}>
+      <div className="ado-funnel-step-bar" style={{ background: color, width: `${Math.max(rate, 8)}%` }} />
+      <div className="ado-funnel-step-meta">
+        <span className="ado-funnel-step-label">{label}</span>
+        <strong className="ado-funnel-step-value">{value}</strong>
+        <span className="ado-funnel-step-rate">{rate}%</span>
+      </div>
+    </div>
+  );
+}
+
+const RateTooltip = ({ active, payload }) => {
+  if (!active || !payload?.length) return null;
+  const data = payload[0]?.payload;
+  return (
+    <div className="ado-tooltip">
+      <p className="ado-tooltip-label">{data?.fullName}</p>
+      <div className="ado-tooltip-row">
+        <span className="ado-tooltip-dot" style={{ background: getRateColor(data?.rate) }} />
+        <span>Completion</span>
+        <strong>{data?.rate}%</strong>
+      </div>
+      <div className="ado-tooltip-row">
+        <span>Completed</span>
+        <strong>{data?.completed}</strong>
+      </div>
+      <div className="ado-tooltip-row">
+        <span>Pending</span>
+        <strong>{data?.pending}</strong>
+      </div>
+    </div>
+  );
+};
+
 export function AdminDashboardPageView({ c }) {
-  const navigate = useNavigate();
   const {
     districtId,
     districts,
@@ -152,8 +213,17 @@ export function AdminDashboardPageView({ c }) {
     districtChartData,
     blockChartData,
     blockBreakdown,
+    statewideDistrictBreakdown,
     verifierChartData,
     verifierWorkload,
+    completionRateChartData,
+    laggingDistricts,
+    verifierStatusChart,
+    allocationFunnel,
+    comparisonChartData,
+    workloadBuckets,
+    districtPerformanceData,
+    insightCards,
     insights,
     isLoading,
     isError,
@@ -161,7 +231,8 @@ export function AdminDashboardPageView({ c }) {
     lastUpdated,
     refetch,
     handleDistrictChange,
-    quickLinks,
+    handleDistrictSelect,
+    handleClearDistrict,
   } = c;
 
   if (isLoading) {
@@ -202,18 +273,23 @@ export function AdminDashboardPageView({ c }) {
   return (
     <div className="admin-dashboard-overview">
       {/* Hero */}
-      <section className="ado-hero">
-        <div className="ado-hero-bg" aria-hidden />
+      <section className={`ado-hero ${districtId ? "ado-hero--district" : "ado-hero--state"}`}>
+        <div className="ado-hero-accent-bar" aria-hidden />
         <div className="ado-hero-content">
           <div className="ado-hero-text">
             <div className="ado-hero-eyebrow">
               <span className={`ado-live-dot ${isFetching ? "ado-live-pulse" : ""}`} />
-              GSQAC Command Center
+              <span>GSQAC Command Center</span>
               {lastUpdated && <span className="ado-updated">Updated {lastUpdated}</span>}
             </div>
-            <h1 className="ado-hero-title">
-              {selectedDistrict ? selectedDistrict.name : "Statewide Overview"}
-            </h1>
+            <div className="ado-hero-title-row">
+              <h1 className="ado-hero-title">
+                {selectedDistrict ? selectedDistrict.name : "Statewide Overview"}
+              </h1>
+              <span className={`ado-scope-badge ${districtId ? "ado-scope-badge--district" : ""}`}>
+                {selectedDistrict ? "District view" : "All districts"}
+              </span>
+            </div>
             <p className="ado-hero-desc">
               {selectedDistrict
                 ? `Monitoring ${insights.blocksWithData} blocks · ${overview.totalSchools ?? 0} schools · ${overview.activeVerifiers ?? 0} active verifiers`
@@ -221,7 +297,7 @@ export function AdminDashboardPageView({ c }) {
             </p>
           </div>
           <div className="ado-hero-actions">
-            <div className="ado-filter-wrap">
+            <div className="ado-filter-wrap ado-filter-wrap--hero">
               <label className="ado-filter-label">Filter by district</label>
               <AppDropdown
                 label=""
@@ -256,11 +332,13 @@ export function AdminDashboardPageView({ c }) {
 
         {/* KPI strip inside hero */}
         <div className="ado-kpi-strip">
-          <div className="ado-kpi">
+          <div className="ado-kpi ado-kpi--green">
+            <span className="ado-kpi-icon">✓</span>
             <span className="ado-kpi-value">{insights.verificationRate}%</span>
             <span className="ado-kpi-label">Verification completion</span>
           </div>
-          <div className="ado-kpi">
+          <div className="ado-kpi ado-kpi--blue">
+            <span className="ado-kpi-icon">◎</span>
             <span className="ado-kpi-value">
               {districtId ? `${insights.assessmentRate}%` : insights.districtsWithData}
             </span>
@@ -268,11 +346,13 @@ export function AdminDashboardPageView({ c }) {
               {districtId ? "Assessment completion" : "Districts tracked"}
             </span>
           </div>
-          <div className="ado-kpi">
+          <div className="ado-kpi ado-kpi--violet">
+            <span className="ado-kpi-icon">⚖</span>
             <span className="ado-kpi-value">{insights.avgSchoolsPerVerifier}</span>
             <span className="ado-kpi-label">Avg schools / verifier</span>
           </div>
-          <div className="ado-kpi">
+          <div className="ado-kpi ado-kpi--amber">
+            <span className="ado-kpi-icon">👥</span>
             <span className="ado-kpi-value">{verifierWorkload.length}</span>
             <span className="ado-kpi-label">Verifiers with allocations</span>
           </div>
@@ -280,7 +360,8 @@ export function AdminDashboardPageView({ c }) {
       </section>
 
       {/* Stat cards */}
-      <div className="ado-stats-grid">
+      <section className="ado-metrics-band" aria-label="Key metrics">
+        <div className="ado-stats-grid">
         <StatCard
           label="Total Verifiers"
           value={overview.totalVerifiers}
@@ -335,41 +416,102 @@ export function AdminDashboardPageView({ c }) {
             </svg>
           }
         />
-      </div>
+        </div>
+      </section>
+
+      <GujaratDistrictMap
+        districts={districts}
+        districtBreakdown={statewideDistrictBreakdown}
+        selectedDistrictId={districtId}
+        onDistrictSelect={handleDistrictSelect}
+        onClearSelection={handleClearDistrict}
+      />
+
+      {/* Quick insight cards */}
+      <section className="ado-insights-band" aria-label="Key insights">
+        <InsightCard
+          tone="blue"
+          icon="📌"
+          label="Allocation coverage"
+          value={`${insightCards.allocationCoverage}%`}
+          sub={
+            insightCards.unallocatedSchools > 0
+              ? `${insightCards.unallocatedSchools} schools not yet allocated`
+              : "All tracked schools allocated"
+          }
+        />
+        <InsightCard
+          tone="amber"
+          icon="⏳"
+          label="Verification backlog"
+          value={insightCards.totalPending}
+          sub={`~${insightCards.avgPendingPerVerifier} pending per active verifier`}
+        />
+        {!districtId ? (
+          <InsightCard
+            tone="red"
+            icon="⚠️"
+            label="Districts below 50%"
+            value={insightCards.districtsBelow50}
+            sub="Need focused verification push"
+          />
+        ) : (
+          <InsightCard
+            tone="green"
+            icon="📋"
+            label="Assessment completion"
+            value={`${insights.assessmentRate}%`}
+            sub={`${insights.assessmentTotal} schools in scope`}
+          />
+        )}
+        <InsightCard
+          tone="violet"
+          icon="👥"
+          label="Verifier capacity"
+          value={overview.activeVerifiers ?? 0}
+          sub={`${overview.inactiveVerifiers ?? 0} inactive · ${insights.avgSchoolsPerVerifier} schools each`}
+        />
+      </section>
+
+      <section className="ado-analytics-section ado-analytics-section--card">
+        <div className="ado-section-intro">
+          <div className="ado-section-intro-badge">Live data</div>
+          <div>
+            <p className="ado-section-eyebrow">Analytics</p>
+            <h2 className="ado-section-title">
+              {districtId && selectedDistrict
+                ? `${selectedDistrict.name} insights`
+                : "Performance overview"}
+            </h2>
+            <p className="ado-section-desc">
+              {districtId
+                ? "Verification, assessment, blocks, and verifier workload for the selected district."
+                : "Statewide verification trends, district comparisons, and priority items."}
+            </p>
+          </div>
+        </div>
 
       <div className="ado-main-grid">
-        {/* Left column */}
-        <div className="ado-main-col">
-          {/* Quick actions */}
-          <div className="ado-quick-section">
-            <h2 className="ado-section-heading">Quick Actions</h2>
-            <div className="ado-quick-links">
-              {quickLinks.map((link) => (
-                <button
-                  key={link.url}
-                  type="button"
-                  className={`ado-quick-card ado-quick-${link.tone}`}
-                  onClick={() => navigate(link.url)}
-                >
-                  <div className="ado-quick-card-top">
-                    <span className="ado-quick-stat">{link.stat}</span>
-                    <svg className="ado-quick-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <span className="ado-quick-label">{link.label}</span>
-                  <span className="ado-quick-desc">{link.description}</span>
-                </button>
-              ))}
+        {districtId && selectedDistrict ? (
+          <div className="ado-district-drill-banner">
+            <span className="ado-district-drill-icon" aria-hidden>📍</span>
+            <div>
+              <h3>{selectedDistrict.name} drill-down</h3>
+              <p>Charts and rankings below reflect this district only.</p>
             </div>
           </div>
+        ) : null}
 
+        {/* Left column */}
+        <div className="ado-main-col">
           {/* Charts row */}
           <div className="ado-charts-row">
             <ChartCard
               title="Verification Status"
               subtitle="Physical verification (PC) breakdown"
               badge={`${verificationTotal} schools`}
+              accent="green"
+              icon="🛡️"
             >
               {hasVerificationData ? (
                 <div className="ado-donut-wrap">
@@ -418,8 +560,10 @@ export function AdminDashboardPageView({ c }) {
             {(districtId || hasAssessmentData) && (
               <ChartCard
                 title="Assessment Progress"
-                subtitle={districtId ? "District-wide assessment status" : "Select a district to view"}
+                subtitle={districtId ? "District-wide assessment status" : "Select a district on the map"}
                 badge={hasAssessmentData ? `${assessmentTotal} schools` : null}
+                accent="blue"
+                icon="📋"
               >
                 {hasAssessmentData ? (
                   <div className="ado-donut-wrap">
@@ -457,9 +601,203 @@ export function AdminDashboardPageView({ c }) {
                 ) : (
                   <div className="ado-chart-empty">
                     <span className="ado-empty-icon">🎯</span>
-                    Select a district to see assessment breakdown
+                    Select a district on the map to see assessment breakdown
                   </div>
                 )}
+              </ChartCard>
+            )}
+          </div>
+
+          {/* Allocation pipeline + completion rates */}
+          {!districtId && (
+            <div className="ado-charts-row">
+              <ChartCard
+                title="Allocation Pipeline"
+                subtitle="Schools tracked → allocated → verified"
+                accent="cyan"
+                icon="🔀"
+              >
+                {allocationFunnel.tracked > 0 ? (
+                  <div className="ado-funnel">
+                    <FunnelStep
+                      label="Tracked schools"
+                      value={allocationFunnel.tracked}
+                      rate={100}
+                      color="#6366f1"
+                    />
+                    <FunnelStep
+                      label="Allocated to verifiers"
+                      value={allocationFunnel.allocated}
+                      rate={allocationFunnel.allocationRate}
+                      color="#3b82f6"
+                    />
+                    <FunnelStep
+                      label="PC verified"
+                      value={allocationFunnel.verified}
+                      rate={allocationFunnel.verificationRate}
+                      color="#10b981"
+                      isLast
+                    />
+                    {allocationFunnel.pending > 0 ? (
+                      <p className="ado-funnel-note">
+                        {allocationFunnel.pending} schools still awaiting verification
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="ado-chart-empty">
+                    <span className="ado-empty-icon">📈</span>
+                    No allocation data yet
+                  </div>
+                )}
+              </ChartCard>
+
+              <ChartCard
+                title="District Completion Rates"
+                subtitle="Sorted highest to lowest"
+                badge={`${completionRateChartData.length} districts`}
+                accent="green"
+                icon="📊"
+              >
+                {completionRateChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={Math.min(320, completionRateChartData.length * 28 + 40)}>
+                    <BarChart
+                      data={completionRateChartData.slice(0, 12)}
+                      layout="vertical"
+                      margin={{ top: 4, right: 24, left: 4, bottom: 4 }}
+                      barCategoryGap="18%"
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                      <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} unit="%" />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        width={88}
+                        tick={{ fontSize: 10, fill: "#475569", fontWeight: 500 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip content={<RateTooltip />} cursor={{ fill: "rgba(16,185,129,0.06)" }} />
+                      <Bar dataKey="rate" name="Completion %" radius={[0, 6, 6, 0]} maxBarSize={16}>
+                        {completionRateChartData.slice(0, 12).map((entry) => (
+                          <Cell key={entry.fullName} fill={getRateColor(entry.rate)} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="ado-chart-empty">
+                    <span className="ado-empty-icon">📍</span>
+                    No district completion data
+                  </div>
+                )}
+              </ChartCard>
+            </div>
+          )}
+
+          {/* District view: verification vs assessment */}
+          {districtId && (hasVerificationData || hasAssessmentData) && (
+            <ChartCard
+              title="Verification vs Assessment"
+              subtitle="Side-by-side progress comparison for this district"
+              accent="violet"
+              icon="⚖️"
+              className="ado-chart-full"
+            >
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart
+                  data={comparisonChartData}
+                  margin={{ top: 12, right: 12, left: -8, bottom: 8 }}
+                  barCategoryGap="30%"
+                  barGap={4}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} allowDecimals={false} axisLine={false} tickLine={false} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(99,102,241,0.06)" }} />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                  <Bar dataKey="completed" name="Completed" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={56} />
+                  <Bar dataKey="inProgress" name="In Progress" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={56} />
+                  <Bar dataKey="pending" name="Pending" fill="#f59e0b" radius={[6, 6, 0, 0]} maxBarSize={56} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          )}
+
+          {/* Verifier capacity row */}
+          <div className="ado-charts-row">
+            {verifierStatusChart.length > 0 && (
+              <ChartCard
+                title="Verifier Accounts"
+                subtitle="Active vs inactive verifiers"
+                badge={`${overview.totalVerifiers ?? 0} total`}
+                accent="indigo"
+                icon="🛡️"
+              >
+                <div className="ado-donut-wrap ado-donut-wrap--compact">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={verifierStatusChart}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={72}
+                        paddingAngle={3}
+                        strokeWidth={0}
+                      >
+                        {verifierStatusChart.map((entry) => (
+                          <Cell key={entry.name} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <DonutCenter total={overview.totalVerifiers ?? 0} label="Verifiers" />
+                  <div className="ado-legend-list">
+                    {verifierStatusChart.map((s) => (
+                      <div key={s.name} className="ado-legend-item">
+                        <span className="ado-legend-dot" style={{ background: s.color }} />
+                        <span>{s.name}</span>
+                        <strong>{s.value}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </ChartCard>
+            )}
+
+            {workloadBuckets.length > 0 && (
+              <ChartCard
+                title="Workload Distribution"
+                subtitle="Verifier backlog health"
+                accent="amber"
+                icon="📦"
+              >
+                <div className="ado-workload-buckets">
+                  {workloadBuckets.map((bucket) => {
+                    const total = workloadBuckets.reduce((s, b) => s + b.value, 0);
+                    const share = total > 0 ? Math.round((bucket.value / total) * 100) : 0;
+                    return (
+                      <div key={bucket.name} className="ado-workload-bucket">
+                        <div className="ado-workload-bucket-head">
+                          <span className="ado-workload-dot" style={{ background: bucket.color }} />
+                          <span className="ado-workload-name">{bucket.name}</span>
+                          <strong>{bucket.value}</strong>
+                          <span className="ado-workload-pct">{share}%</span>
+                        </div>
+                        <div className="ado-workload-track">
+                          <div
+                            className="ado-workload-fill"
+                            style={{ width: `${share}%`, background: bucket.color }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </ChartCard>
             )}
           </div>
@@ -470,45 +808,66 @@ export function AdminDashboardPageView({ c }) {
             subtitle={
               districtId
                 ? "Stacked assessment status across blocks"
-                : "Completed vs pending verifications by district"
+                : "Completed vs pending verifications with completion rate trend"
             }
             className="ado-chart-full"
+            accent="indigo"
+            icon="📊"
           >
-            {(districtId ? blockChartData : districtChartData).length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart
-                  data={districtId ? blockChartData : districtChartData}
-                  margin={{ top: 12, right: 12, left: -8, bottom: 56 }}
-                  barCategoryGap="20%"
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 11, fill: "#94a3b8" }}
-                    angle={-30}
-                    textAnchor="end"
-                    height={56}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} allowDecimals={false} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(99,102,241,0.06)" }} />
-                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-                  {districtId ? (
-                    <>
-                      <Bar dataKey="completed" name="Completed" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
-                      <Bar dataKey="inProgress" name="In Progress" stackId="a" fill="#3b82f6" />
-                      <Bar dataKey="pending" name="Pending" stackId="a" fill="#f59e0b" />
-                      <Bar dataKey="notAllocated" name="Not Allocated" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                    </>
-                  ) : (
-                    <>
-                      <Bar dataKey="completed" name="Completed" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={48} />
-                      <Bar dataKey="pending" name="Pending" fill="#f59e0b" radius={[6, 6, 0, 0]} maxBarSize={48} />
-                    </>
-                  )}
-                </BarChart>
-              </ResponsiveContainer>
+            {(districtId ? blockChartData : districtPerformanceData).length > 0 ? (
+              districtId ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={blockChartData}
+                    margin={{ top: 12, right: 12, left: -8, bottom: 56 }}
+                    barCategoryGap="20%"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 11, fill: "#94a3b8" }}
+                      angle={-30}
+                      textAnchor="end"
+                      height={56}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} allowDecimals={false} axisLine={false} tickLine={false} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(99,102,241,0.06)" }} />
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                    <Bar dataKey="completed" name="Completed" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="inProgress" name="In Progress" stackId="a" fill="#3b82f6" />
+                    <Bar dataKey="pending" name="Pending" stackId="a" fill="#f59e0b" />
+                    <Bar dataKey="notAllocated" name="Not Allocated" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <ResponsiveContainer width="100%" height={320}>
+                  <ComposedChart
+                    data={districtPerformanceData}
+                    margin={{ top: 12, right: 12, left: -8, bottom: 56 }}
+                    barCategoryGap="20%"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 11, fill: "#94a3b8" }}
+                      angle={-30}
+                      textAnchor="end"
+                      height={56}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#94a3b8" }} allowDecimals={false} axisLine={false} tickLine={false} />
+                    <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fontSize: 11, fill: "#6366f1" }} axisLine={false} tickLine={false} unit="%" />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(99,102,241,0.06)" }} />
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                    <Bar yAxisId="left" dataKey="completed" name="Completed" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={40} />
+                    <Bar yAxisId="left" dataKey="pending" name="Pending" fill="#f59e0b" radius={[6, 6, 0, 0]} maxBarSize={40} />
+                    <Line yAxisId="right" type="monotone" dataKey="rate" name="Completion %" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 3, fill: "#6366f1" }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              )
             ) : (
               <div className="ado-chart-empty">
                 <span className="ado-empty-icon">📍</span>
@@ -524,6 +883,8 @@ export function AdminDashboardPageView({ c }) {
               subtitle="Completed vs pending schools per verifier"
               badge={`Top ${verifierChartData.length}`}
               className="ado-chart-full"
+              accent="amber"
+              icon="👤"
             >
               <ResponsiveContainer width="100%" height={Math.max(220, verifierChartData.length * 44)}>
                 <BarChart
@@ -557,7 +918,7 @@ export function AdminDashboardPageView({ c }) {
           {/* Attention panel */}
           <div className="ado-panel ado-panel-attention">
             <h2 className="ado-panel-title">
-              <span className="ado-panel-icon">⚡</span>
+              <span className="ado-panel-icon ado-panel-icon--warn">⚡</span>
               Needs Attention
             </h2>
             {insights.attentionItems.length > 0 ? (
@@ -578,9 +939,9 @@ export function AdminDashboardPageView({ c }) {
           </div>
 
           {/* Top performers / districts */}
-          <div className="ado-panel">
+          <div className="ado-panel ado-panel-rank">
             <h2 className="ado-panel-title">
-              <span className="ado-panel-icon">🏆</span>
+              <span className="ado-panel-icon ado-panel-icon--gold">🏆</span>
               {districtId ? "Blocks Needing Focus" : "Top Districts"}
             </h2>
             <ul className="ado-rank-list">
@@ -598,7 +959,7 @@ export function AdminDashboardPageView({ c }) {
                         <span className="ado-rank-pct">{rate}%</span>
                       </div>
                       <div className="ado-rank-track">
-                        <div className="ado-rank-fill" style={{ width: `${rate}%` }} />
+                        <div className="ado-rank-fill" style={{ width: `${rate}%`, background: getRateColor(rate) }} />
                       </div>
                       <span className="ado-rank-meta">{done}/{total} completed</span>
                     </div>
@@ -611,11 +972,46 @@ export function AdminDashboardPageView({ c }) {
             </ul>
           </div>
 
+          {/* Lagging districts (statewide) */}
+          {!districtId && laggingDistricts.length > 0 && (
+            <div className="ado-panel ado-panel-rank ado-panel-lagging">
+              <h2 className="ado-panel-title">
+                <span className="ado-panel-icon ado-panel-icon--warn">📉</span>
+                Needs Improvement
+              </h2>
+              <ul className="ado-rank-list">
+                {laggingDistricts.map((item, i) => (
+                  <li key={item.districtId || i} className="ado-rank-item">
+                    <span className="ado-rank-num ado-rank-num--warn">{i + 1}</span>
+                    <div className="ado-rank-body">
+                      <div className="ado-rank-row">
+                        <span className="ado-rank-name">{item.districtName}</span>
+                        <span className="ado-rank-pct ado-rank-pct--low">{item.completionRate}%</span>
+                      </div>
+                      <div className="ado-rank-track">
+                        <div
+                          className="ado-rank-fill"
+                          style={{
+                            width: `${item.completionRate}%`,
+                            background: getRateColor(item.completionRate),
+                          }}
+                        />
+                      </div>
+                      <span className="ado-rank-meta">
+                        {item.completedVerification}/{item.allocatedSchools} · {item.pendingVerification} pending
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Top verifiers */}
           {insights.topVerifiers.length > 0 && (
-            <div className="ado-panel">
+            <div className="ado-panel ado-panel-verifiers">
               <h2 className="ado-panel-title">
-                <span className="ado-panel-icon">👤</span>
+                <span className="ado-panel-icon ado-panel-icon--indigo">👤</span>
                 Top Verifiers
               </h2>
               <ul className="ado-verifier-list">
@@ -641,9 +1037,9 @@ export function AdminDashboardPageView({ c }) {
 
           {/* District completion trend */}
           {!districtId && verificationTrend.length > 1 && (
-            <div className="ado-panel">
+            <div className="ado-panel ado-panel-trend">
               <h2 className="ado-panel-title">
-                <span className="ado-panel-icon">📈</span>
+                <span className="ado-panel-icon ado-panel-icon--blue">📈</span>
                 Completion Trend
               </h2>
               <ResponsiveContainer width="100%" height={140}>
@@ -664,6 +1060,7 @@ export function AdminDashboardPageView({ c }) {
           )}
         </aside>
       </div>
+      </section>
 
       {/* Block cards grid (district view) */}
       {districtId && blockBreakdown.length > 0 && (
