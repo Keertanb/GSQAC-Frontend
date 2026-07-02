@@ -33,6 +33,7 @@ import {
 import {
   CheckCircle,
   ArrowForward,
+  ArrowBack,
   Menu,
   Assessment,
   Class,
@@ -318,7 +319,8 @@ export function SelfAssessmentLayout({ c }) {
     }
   };
 
-  const showMobileNavigation = matchDownMD;
+  const showMobileStepper = matchDownMD && mobileStep < 2;
+  const showMobileOverallProgress = matchDownMD && mobileStep < 2;
   const showMobileSubdomainsPanel =
     matchDownMD && mobileStep === 1 && !!selectedDomain;
   const showMobileQuestionsPanel =
@@ -355,21 +357,30 @@ export function SelfAssessmentLayout({ c }) {
     </Box>
   );
 
-  const renderOverallProgress = (compact = false) => {
+  const renderOverallProgress = (compact = false, variant = "default") => {
     if (assessmentProgress.totalQuestions <= 0) return null;
+
+    const isInline = variant === "inline";
 
     return (
       <Box
-        className="sa-overall-progress"
+        className={`sa-overall-progress${
+          isInline ? " sa-overall-progress--inline" : ""
+        }`}
         sx={{
-          p: compact ? { xs: 1.5, md: 2 } : { xs: 2, md: 2.5 },
+          p: isInline
+            ? { xs: 1, sm: 1.25 }
+            : compact
+              ? { xs: 1.5, md: 2 }
+              : { xs: 2, md: 2.5 },
           borderRadius: 2,
           bgcolor: "white",
           border: `1px solid ${colors.neutral.gray200}`,
-          boxShadow: compact ? "none" : "0 2px 12px rgba(0,0,0,0.04)",
-          minWidth: compact ? { xs: "100%", md: 260 } : undefined,
-          maxWidth: compact ? { md: 300 } : undefined,
-          flex: compact ? { md: "0 0 280px" } : undefined,
+          boxShadow: isInline ? "none" : compact ? "none" : "0 2px 12px rgba(0,0,0,0.04)",
+          minWidth: isInline ? 0 : compact ? { xs: "100%", md: 260 } : undefined,
+          maxWidth: isInline ? "none" : compact ? { md: 300 } : undefined,
+          flex: isInline ? "1 1 0" : compact ? { md: "0 0 280px" } : undefined,
+          width: isInline ? "100%" : undefined,
         }}
       >
         <Box
@@ -377,28 +388,32 @@ export function SelfAssessmentLayout({ c }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            gap: 1.5,
-            mb: 1,
-            flexWrap: "wrap",
+            gap: 1,
+            mb: isInline ? 0.5 : 1,
+            flexWrap: "nowrap",
           }}
         >
           <Typography
-            variant={compact ? "caption" : "subtitle2"}
+            variant={isInline || compact ? "caption" : "subtitle2"}
             sx={{
               fontWeight: 700,
               color: colors.text.primary,
-              fontSize: compact ? "0.75rem" : "0.9375rem",
+              fontSize: isInline ? "0.6875rem" : compact ? "0.75rem" : "0.9375rem",
               lineHeight: 1.3,
+              whiteSpace: isInline ? "nowrap" : undefined,
+              overflow: isInline ? "hidden" : undefined,
+              textOverflow: isInline ? "ellipsis" : undefined,
             }}
           >
             {t("selfAssessment.overallProgress")}
           </Typography>
           <Typography
-            variant={compact ? "caption" : "subtitle2"}
+            variant={isInline || compact ? "caption" : "subtitle2"}
             sx={{
               fontWeight: 700,
               color: getProgressColor(assessmentProgress.answerPercentage),
-              fontSize: compact ? "0.8125rem" : "0.9375rem",
+              fontSize: isInline ? "0.75rem" : compact ? "0.8125rem" : "0.9375rem",
+              flexShrink: 0,
             }}
           >
             {assessmentProgress.displayPercentage}%
@@ -408,7 +423,7 @@ export function SelfAssessmentLayout({ c }) {
           variant="determinate"
           value={assessmentProgress.answerPercentage}
           sx={{
-            height: compact ? 8 : 10,
+            height: isInline ? 6 : compact ? 8 : 10,
             borderRadius: 5,
             bgcolor: colors.neutral.gray200,
             "& .MuiLinearProgress-bar": {
@@ -421,10 +436,13 @@ export function SelfAssessmentLayout({ c }) {
           variant="caption"
           sx={{
             display: "block",
-            mt: 0.75,
+            mt: isInline ? 0.5 : 0.75,
             color: colors.text.secondary,
             fontWeight: 500,
-            fontSize: compact ? "0.6875rem" : "0.75rem",
+            fontSize: isInline ? "0.625rem" : compact ? "0.6875rem" : "0.75rem",
+            whiteSpace: isInline ? "nowrap" : undefined,
+            overflow: isInline ? "hidden" : undefined,
+            textOverflow: isInline ? "ellipsis" : undefined,
           }}
         >
           {t("selfAssessment.questionsAnswered", {
@@ -671,12 +689,16 @@ export function SelfAssessmentLayout({ c }) {
             sx={{
               pl: drawerOpen && !matchDownMD ? 0 : { xs: 1.5, sm: 2, md: 3 },
               pr: { xs: 1.5, sm: 2, md: 3 },
-              py: { xs: 2, md: 3 },
-              height: "calc(100dvh - var(--app-header-offset, 72px))",
+              py: { xs: mobileStep === 2 ? 1 : 2, md: 3 },
+              flex: 1,
               minHeight: 0,
               display: "flex",
               flexDirection: "column",
-              overflow: "hidden",
+              overflow: {
+                xs: mobileStep < 2 ? "auto" : "hidden",
+                md: "hidden",
+              },
+              WebkitOverflowScrolling: "touch",
             }}
           >
             {/* Header */}
@@ -780,7 +802,7 @@ export function SelfAssessmentLayout({ c }) {
             </Box>
 
             {/* Mobile: language + deadline only (title lives in AppBar) */}
-            {matchDownMD && (
+            {matchDownMD && mobileStep < 2 && (
               <Box
                 className="sa-mobile-page-toolbar"
                 sx={{
@@ -858,11 +880,11 @@ export function SelfAssessmentLayout({ c }) {
               </Alert>
             )}
 
-            {showMobileNavigation && (
-              <Box sx={{ mb: 2 }}>{renderOverallProgress(true)}</Box>
+            {showMobileOverallProgress && (
+              <Box sx={{ mb: 2, flexShrink: 0 }}>{renderOverallProgress(true)}</Box>
             )}
 
-            {showMobileNavigation && (
+            {showMobileStepper && (
               <SelfAssessmentMobileStepper
                 activeStep={mobileStep}
                 onStepChange={handleMobileStepChange}
@@ -881,10 +903,13 @@ export function SelfAssessmentLayout({ c }) {
                 display: "flex",
                 flexDirection: { xs: "column", md: "row" },
                 gap: { xs: 2, md: 0 },
-                flex: 1,
+                flex: {
+                  xs: showMobileNavPanel ? "0 1 auto" : 1,
+                  md: 1,
+                },
                 minHeight: 0,
                 minWidth: 0,
-                overflow: "hidden",
+                overflow: { xs: showMobileNavPanel ? "visible" : "hidden", md: "hidden" },
                 alignItems: "stretch",
               }}
             >
@@ -892,9 +917,14 @@ export function SelfAssessmentLayout({ c }) {
               <Box
                 className={`sa-left-panel-shell${
                   isLeftPanelCollapsed ? " sa-left-panel-shell--collapsed" : ""
-                }`}
+                }${showMobileNavPanel ? " sa-left-panel-shell--mobile-nav" : ""}`}
                 sx={{
                   flexShrink: 0,
+                  flex: {
+                    xs: showMobileNavPanel ? "0 1 auto" : undefined,
+                    md: undefined,
+                  },
+                  minHeight: { xs: showMobileNavPanel ? "auto" : 0, md: undefined },
                   width: {
                     xs: "100%",
                     md: isLeftPanelCollapsed ? 0 : leftPanelWidth,
@@ -911,24 +941,33 @@ export function SelfAssessmentLayout({ c }) {
                   transition:
                     "width 0.28s ease, min-width 0.28s ease, max-width 0.28s ease",
                   display: {
-                    xs: showMobileNavPanel ? "block" : "none",
+                    xs: showMobileNavPanel ? "flex" : "none",
                     md: "block",
                   },
+                  flexDirection: { xs: "column", md: "row" },
                 }}
               >
                 <Paper
-                  className="sa-domains-panel"
+                  className={`sa-domains-panel${
+                    showMobileNavPanel ? " sa-domains-panel--mobile-nav" : ""
+                  }`}
                   sx={{
                     width: { xs: "100%", md: leftPanelWidth },
                     minWidth: { xs: 0, md: leftPanelWidth },
+                    flex: { xs: showMobileNavPanel ? "0 1 auto" : "1 1 0", md: "none" },
                     borderRadius: 3,
                     bgcolor: "white",
                     display: "flex",
                     flexDirection: "column",
                     overflow: "hidden",
-                    maxHeight: { xs: "none", md: "calc(100vh - 200px)" },
+                    maxHeight: {
+                      xs: showMobileNavPanel
+                        ? "calc(100dvh - 280px)"
+                        : "100%",
+                      md: "calc(100vh - 200px)",
+                    },
                     minHeight: { xs: "auto", md: "auto" },
-                    height: { md: "100%" },
+                    height: { xs: showMobileNavPanel ? "auto" : "100%", md: "100%" },
                     boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
                   }}
                 >
@@ -1031,8 +1070,14 @@ export function SelfAssessmentLayout({ c }) {
                   <Box
                     className="sa-nav-list"
                     sx={{
-                      flex: 1,
+                      flex: showMobileNavPanel ? "0 1 auto" : "1 1 0",
+                      minHeight: 0,
+                      maxHeight: showMobileNavPanel
+                        ? "calc(100dvh - 420px)"
+                        : undefined,
                       overflowY: "auto",
+                      overflowX: "hidden",
+                      WebkitOverflowScrolling: "touch",
                       p: { xs: 2.5, md: 2.5 },
                     }}
                   >
@@ -1551,15 +1596,16 @@ export function SelfAssessmentLayout({ c }) {
                     )}
                   </Box>
 
-                  {/* Final Submit Button (desktop / mobile steps 0–1) */}
+                  {/* Final Submit Button — desktop + mobile domains tab only */}
                   {isPublished &&
                     !isReadOnly &&
-                    (!matchDownMD || mobileStep < 2) && (
+                    (!matchDownMD || mobileStep === 0) && (
                       <Box
                         sx={{
                           p: 2.5,
                           borderTop: `2px solid ${colors.neutral.gray200}`,
                           bgcolor: colors.background.secondary,
+                          flexShrink: 0,
                         }}
                       >
                         <Button
@@ -1654,21 +1700,82 @@ export function SelfAssessmentLayout({ c }) {
               )}
 
               <Box
-                className="sa-main-workspace"
+                className={`sa-main-workspace${
+                  matchDownMD && mobileStep === 2
+                    ? " sa-main-workspace--questions-mobile"
+                    : ""
+                }`}
                 sx={{
                   flex: 1,
                   minWidth: 0,
                   minHeight: 0,
                   display: "flex",
                   flexDirection: "column",
-                  gap: { xs: 2, md: 0 },
+                  gap: { xs: mobileStep === 2 ? 0 : 2, md: 0 },
                   overflow: "hidden",
                 }}
               >
                 {/* Right Panel - Questions */}
                 {showMobileQuestionsPanel && (
+                  <Box
+                    sx={{
+                      flex: "1 1 0",
+                      minHeight: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {matchDownMD && mobileStep === 2 ? (
+                      <Box
+                        className="sa-mobile-questions-toolbar"
+                        sx={{
+                          display: "flex",
+                          alignItems: "stretch",
+                          gap: 1,
+                          mb: 1,
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Box
+                          className="sa-mobile-questions-back"
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                            flexShrink: 0,
+                            alignSelf: "center",
+                          }}
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={handleMobileStepBack}
+                            aria-label={t("selfAssessment.mobileStep.back")}
+                            sx={{
+                              color: colors.primary.blue,
+                              bgcolor: colors.primary.blue + "10",
+                            }}
+                          >
+                            <ArrowBack fontSize="small" />
+                          </IconButton>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 600,
+                              color: colors.text.secondary,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {t("selfAssessment.mobileStep.subdomains")}
+                          </Typography>
+                        </Box>
+                        {renderOverallProgress(false, "inline")}
+                      </Box>
+                    ) : null}
                   <Paper
-                    className="sa-questions-panel"
+                    className={`sa-questions-panel${
+                      matchDownMD ? " sa-questions-panel--mobile-full" : ""
+                    }`}
                     sx={{
                       flex: "1 1 0",
                       minHeight: 0,
@@ -1706,7 +1813,7 @@ export function SelfAssessmentLayout({ c }) {
                         flex: "1 1 0",
                         minHeight: 0,
                         overflow: "hidden",
-                        p: { xs: 1.5, sm: 2, md: 3 },
+                        p: { xs: matchDownMD ? 1 : 1.5, sm: 2, md: 3 },
                         display: "flex",
                         flexDirection: "column",
                       }}
@@ -1778,47 +1885,8 @@ export function SelfAssessmentLayout({ c }) {
                           </Box>
                         )}
                     </Box>
-
-                    {matchDownMD && isPublished && !isReadOnly && (
-                      <Box
-                        sx={{
-                          p: 2,
-                          borderTop: `2px solid ${colors.neutral.gray200}`,
-                          bgcolor: colors.background.secondary,
-                          flexShrink: 0,
-                        }}
-                      >
-                        <Button
-                          variant="contained"
-                          fullWidth
-                          onClick={handleOpenSubmitConfirmation}
-                          disabled={
-                            submitAssessmentMutation.isPending ||
-                            !allDomainsComplete ||
-                            isReadOnly
-                          }
-                          sx={{
-                            bgcolor: colors.accent.green,
-                            textTransform: "none",
-                            fontWeight: 600,
-                            py: 1.5,
-                            borderRadius: 2,
-                            "&:hover": { bgcolor: colors.accent.greenDark },
-                            "&:disabled": {
-                              bgcolor: colors.neutral.gray300,
-                              color: colors.neutral.gray600,
-                            },
-                          }}
-                        >
-                          {submitAssessmentMutation.isPending
-                            ? "Submitting..."
-                            : allDomainsComplete
-                              ? "Submit Assessment"
-                              : "Final Submit"}
-                        </Button>
-                      </Box>
-                    )}
                   </Paper>
+                  </Box>
                 )}
 
                 {/* Domain View - When Domain Selected but No Subdomain (desktop) */}

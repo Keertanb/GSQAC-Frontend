@@ -1311,6 +1311,25 @@
   line-height: 1.5;
 }
 
+.ado-map-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+  font-size: 0.78rem;
+  color: var(--ado-slate-500);
+}
+
+.ado-map-breadcrumb-sep {
+  color: var(--ado-slate-400);
+}
+
+.ado-map-breadcrumb-item--active {
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
 .ado-map-header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1420,6 +1439,164 @@
 
 .ado-map-region--selected {
   filter: brightness(1.04) saturate(1.12);
+}
+
+.ado-map-block-cell {
+  cursor: pointer;
+  transition: filter 0.15s ease, stroke-width 0.15s ease;
+}
+
+.ado-map-block-cell--hover {
+  filter: brightness(1.08) saturate(1.05);
+}
+
+.ado-map-block-label {
+  font-size: 8px;
+  font-weight: 700;
+  fill: #0f172a;
+  pointer-events: none;
+}
+
+.ado-map-block-rate {
+  font-size: 7px;
+  font-weight: 800;
+  fill: #1e3a8a;
+  pointer-events: none;
+}
+
+.ado-map-school-dot {
+  cursor: pointer;
+  transition: r 0.15s ease, stroke-width 0.15s ease;
+}
+
+.ado-map-loading-label {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #475569;
+}
+
+.ado-map-legend-bar-fill--schools {
+  background: linear-gradient(90deg, #94a3b8 0%, #f59e0b 35%, #3b82f6 65%, #059669 100%);
+}
+
+.ado-map-tooltip-verifier {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: var(--ado-slate-600);
+}
+
+.ado-map-tooltip-verifier strong {
+  color: var(--ado-slate-800);
+}
+
+.ado-map-focus-meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  color: var(--ado-slate-500);
+  line-height: 1.4;
+}
+
+.ado-map-school-panel {
+  margin-top: 0.85rem;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--ado-radius-md);
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.ado-map-school-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  background: linear-gradient(180deg, #eff6ff 0%, #f8fbff 100%);
+  border-bottom: 1px solid #dbeafe;
+}
+
+.ado-map-school-panel-header h4 {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ado-slate-800);
+}
+
+.ado-map-school-panel-header span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ado-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ado-map-school-list {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0.35rem;
+}
+
+.ado-map-school-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: var(--ado-radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: default;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.ado-map-school-row:hover,
+.ado-map-school-row--active {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.ado-map-school-row-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+  flex-shrink: 0;
+}
+
+.ado-map-school-row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.ado-map-school-row-body strong {
+  font-size: 0.8rem;
+  color: var(--ado-slate-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ado-map-school-row-body small {
+  font-size: 0.68rem;
+  color: var(--ado-slate-500);
+}
+
+.ado-map-school-row-status {
+  font-size: 0.62rem !important;
+  padding: 0.2rem 0.45rem !important;
+  white-space: nowrap;
+}
+
+.ado-map-school-list-empty {
+  margin: 0;
+  padding: 1rem 0.85rem;
+  font-size: 0.82rem;
+  color: var(--ado-slate-500);
+  text-align: center;
 }
 
 .ado-map-label {

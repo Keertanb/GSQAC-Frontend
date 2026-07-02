@@ -90,23 +90,72 @@
     line-height: 1.2;
   }
 
+  .sa-left-panel-shell--mobile-nav {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: calc(100dvh - 280px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sa-domains-panel--mobile-nav {
+    flex: 0 1 auto !important;
+    height: auto !important;
+    max-height: calc(100dvh - 280px);
+  }
+
+  .sa-domains-panel--mobile-nav .sa-nav-list {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: calc(100dvh - 420px);
+    overflow-y: auto !important;
+  }
+
   .sa-main-workspace {
     width: 100%;
     flex: 1 1 0;
     min-height: 0;
   }
 
+  .sa-main-workspace--questions-mobile {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .sa-domains-panel {
-    max-height: none !important;
+    min-height: 0;
+    max-height: 100% !important;
+  }
+
+  .sa-domains-panel:not(.sa-domains-panel--mobile-nav) {
+    flex: 1 1 0;
+    height: 100%;
+  }
+
+  .sa-nav-list {
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 16px 14px 20px !important;
+  }
+
+  .sa-domains-panel:not(.sa-domains-panel--mobile-nav) .sa-nav-list {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .sa-questions-panel--mobile-full {
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: 100%;
+    border-radius: 12px !important;
   }
 
   .sa-domains-panel .sa-panel-header,
   .sa-questions-panel .sa-panel-header {
     padding: 20px 18px !important;
-  }
-
-  .sa-nav-list {
-    padding: 20px 16px 24px !important;
   }
 
   .sa-nav-card {
@@ -141,6 +190,17 @@
   .sa-overall-progress {
     margin-left: 0;
     margin-right: 0;
+  }
+
+  .sa-mobile-questions-toolbar {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .sa-overall-progress--inline {
+    min-width: 0;
+    border-radius: 10px !important;
+    background: #ffffff !important;
   }
 
   .self-assessment-page-content .MuiFormControlLabel-root {
@@ -294,8 +354,15 @@
     padding: 0.75rem 0.85rem;
   }
 
+  .sa-wizard-context--compact {
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0;
+  }
+
   .sa-wizard-footer {
-    padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
+    padding-top: 0.75rem;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
   }
 
   .sa-wizard-footer .MuiButton-root {
@@ -303,11 +370,17 @@
   }
 
   .sa-questions-content--wizard {
-    padding: 10px 12px 12px !important;
+    padding: 8px 10px 10px !important;
   }
 
-  /* Shrink stepper area on mobile when answering questions */
-  .sa-mobile-stepper {
-    margin-bottom: 0.5rem !important;
+  .sa-wizard-question-scroll {
+    flex: 1 1 0;
+    min-height: 120px;
+    max-height: 100%;
+  }
+
+  .sa-question-wizard {
+    height: 100%;
+    max-height: 100%;
   }
 }

@@ -422,6 +422,7 @@ export function AdminDashboardPageView({ c }) {
       <GujaratDistrictMap
         districts={districts}
         districtBreakdown={statewideDistrictBreakdown}
+        blockBreakdown={blockBreakdown}
         selectedDistrictId={districtId}
         onDistrictSelect={handleDistrictSelect}
         onClearSelection={handleClearDistrict}

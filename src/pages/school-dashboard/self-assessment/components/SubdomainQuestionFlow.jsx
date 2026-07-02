@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Box,
   Typography,
@@ -537,6 +537,14 @@ export function SubdomainQuestionFlow({
       ? ((currentQuestionIndex + 1) / flattenedQuestions.length) * 100
       : 0;
 
+  const questionScrollRef = useRef(null);
+
+  useEffect(() => {
+    if (questionScrollRef.current) {
+      questionScrollRef.current.scrollTop = 0;
+    }
+  }, [currentQuestionIndex, selectedSubdomain?.subDomainId, selectedSubdomain?.id]);
+
   const handleCancel = () => {
     setSelectedDomain(null);
     setSelectedSubdomain(null);
@@ -582,15 +590,21 @@ export function SubdomainQuestionFlow({
       />
 
       {/* Domain / subdomain context */}
-      <Box className="sa-wizard-context">
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <AccountTree sx={{ fontSize: 18, color: colors.primary.blue }} />
-          <Typography variant="caption" sx={{ fontWeight: 700, color: colors.text.secondary }}>
-            {domainNumber}. {getDomainName(selectedDomain)}
-            <ChevronRight sx={{ fontSize: 14, mx: 0.25, verticalAlign: "middle" }} />
-            {domainNumber}.{subdomainNumber}. {getSubdomainName(selectedSubdomain)}
-          </Typography>
-        </Box>
+      <Box
+        className={`sa-wizard-context${
+          matchDownMD ? " sa-wizard-context--compact" : ""
+        }`}
+      >
+        {!matchDownMD ? (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+            <AccountTree sx={{ fontSize: 18, color: colors.primary.blue }} />
+            <Typography variant="caption" sx={{ fontWeight: 700, color: colors.text.secondary }}>
+              {domainNumber}. {getDomainName(selectedDomain)}
+              <ChevronRight sx={{ fontSize: 14, mx: 0.25, verticalAlign: "middle" }} />
+              {domainNumber}.{subdomainNumber}. {getSubdomainName(selectedSubdomain)}
+            </Typography>
+          </Box>
+        ) : null}
         <Box
           sx={{
             display: "flex",
@@ -600,11 +614,19 @@ export function SubdomainQuestionFlow({
             flexWrap: "wrap",
           }}
         >
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.25 }}>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography
+              variant="h6"
+              className="sa-wizard-context-title"
+              sx={{
+                fontWeight: 800,
+                lineHeight: 1.25,
+                fontSize: { xs: "1rem", sm: "1.25rem" },
+              }}
+            >
               {getSubdomainName(selectedSubdomain)}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
               Question {currentQuestionIndex + 1} of {flattenedQuestions.length}
             </Typography>
           </Box>
@@ -616,6 +638,7 @@ export function SubdomainQuestionFlow({
               bgcolor: `${tabColor}18`,
               color: tabColor,
               border: `1px solid ${tabColor}40`,
+              flexShrink: 0,
             }}
           />
         </Box>
@@ -623,8 +646,8 @@ export function SubdomainQuestionFlow({
           variant="determinate"
           value={progressValue}
           sx={{
-            mt: 1.5,
-            height: 8,
+            mt: { xs: 1, sm: 1.5 },
+            height: { xs: 6, sm: 8 },
             borderRadius: 99,
             bgcolor: colors.neutral.gray200,
             "& .MuiLinearProgress-bar": {
@@ -636,6 +659,7 @@ export function SubdomainQuestionFlow({
       </Box>
 
       <Box
+        ref={questionScrollRef}
         className="sa-wizard-question-scroll"
         sx={{
           flex: "1 1 0",
