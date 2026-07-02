@@ -162,7 +162,7 @@ function ClassroomSubjectFilters({ c, tabId }) {
             disabled={
               isLoadingSchoolData ||
               filteredClassOptions.length === 0 ||
-              isReadOnly
+              (!isPublished && !isReadOnly)
             }
           >
             {filteredClassOptions.map((cls) => (
@@ -179,7 +179,7 @@ function ClassroomSubjectFilters({ c, tabId }) {
             value={selectedSection || ""}
             onChange={(e) => setSelectedSection(e.target.value)}
             label="Section"
-            disabled={!selectedClass || isLoadingSections || isReadOnly}
+            disabled={!selectedClass || isLoadingSections || !isPublished}
           >
             {sections.map((section) => (
               <MenuItem key={section} value={section}>
@@ -196,7 +196,7 @@ function ClassroomSubjectFilters({ c, tabId }) {
               value={selectedSubject || ""}
               onChange={(e) => setSelectedSubject(e.target.value)}
               label="Subject"
-              disabled={!selectedSection || isLoadingSubjects || isReadOnly}
+              disabled={!selectedSection || isLoadingSubjects || !isPublished}
             >
               {subjects.map((subject) => (
                 <MenuItem
@@ -687,7 +687,7 @@ export function SubdomainQuestionFlow({
           </Alert>
         ) : null}
 
-        {needsClassFilters && !filtersReady ? (
+        {needsClassFilters && !filtersReady && !isReadOnly ? (
           <Alert severity="info" sx={{ mb: 2 }}>
             Please select the required class filters above to view this question.
           </Alert>
@@ -711,13 +711,13 @@ export function SubdomainQuestionFlow({
         )}
       </Box>
 
-      {/* Navigation footer */}
-      {isPublished && !isReadOnly ? (
+      {/* Navigation footer — show prev/next in read-only too */}
+      {isPublished ? (
         <Box className="sa-wizard-footer">
           <Box
             className={`sa-wizard-footer-actions${
               matchDownMD ? " sa-wizard-footer-actions--mobile" : ""
-            }`}
+            }${isReadOnly ? " sa-wizard-footer-actions--readonly" : ""}`}
           >
             {matchDownMD ? (
               <>
@@ -738,26 +738,28 @@ export function SubdomainQuestionFlow({
                   </Button>
                 ) : null}
 
-                <Button
-                  variant="outlined"
-                  color="success"
-                  className="sa-wizard-footer-btn sa-wizard-footer-btn--save"
-                  onClick={handleSubmit}
-                  disabled={isSaveAssessmentDisabled()}
-                  sx={{ textTransform: "none", fontWeight: 600 }}
-                >
-                  {submitSubdomainWiseAnswersMutation.isPending ? (
-                    <CircularProgress size={14} color="inherit" />
-                  ) : (
-                    <span className="sa-wizard-btn-inline">
-                      <Save sx={{ fontSize: 15 }} />
-                      <span className="sa-wizard-btn-stacked">
-                        <span>Save</span>
-                        <span>Assessment</span>
+                {!isReadOnly ? (
+                  <Button
+                    variant="outlined"
+                    color="success"
+                    className="sa-wizard-footer-btn sa-wizard-footer-btn--save"
+                    onClick={handleSubmit}
+                    disabled={isSaveAssessmentDisabled()}
+                    sx={{ textTransform: "none", fontWeight: 600 }}
+                  >
+                    {submitSubdomainWiseAnswersMutation.isPending ? (
+                      <CircularProgress size={14} color="inherit" />
+                    ) : (
+                      <span className="sa-wizard-btn-inline">
+                        <Save sx={{ fontSize: 15 }} />
+                        <span className="sa-wizard-btn-stacked">
+                          <span>Save</span>
+                          <span>Assessment</span>
+                        </span>
                       </span>
-                    </span>
-                  )}
-                </Button>
+                    )}
+                  </Button>
+                ) : null}
 
                 {!isLastQuestionInSubdomain ? (
                   <Button
@@ -767,7 +769,7 @@ export function SubdomainQuestionFlow({
                       handleNextQuestion();
                       scrollMobileToTop?.();
                     }}
-                    disabled={needsClassFilters && !filtersReady}
+                    disabled={!isReadOnly && needsClassFilters && !filtersReady}
                     sx={{
                       textTransform: "none",
                       fontWeight: 600,
@@ -806,24 +808,30 @@ export function SubdomainQuestionFlow({
                   </Button>
                 ) : null}
 
-                <Button
-                  variant="outlined"
-                  className="sa-wizard-footer-btn sa-wizard-footer-btn--cancel"
-                  onClick={handleCancel}
-                  sx={{ textTransform: "none", fontWeight: 600 }}
-                >
-                  Cancel
-                </Button>
+                {!isReadOnly ? (
+                  <Button
+                    variant="outlined"
+                    className="sa-wizard-footer-btn sa-wizard-footer-btn--cancel"
+                    onClick={handleCancel}
+                    sx={{ textTransform: "none", fontWeight: 600 }}
+                  >
+                    Cancel
+                  </Button>
+                ) : null}
               </>
             ) : (
               <>
-                <Button
-                  variant="outlined"
-                  onClick={handleCancel}
-                  sx={{ textTransform: "none", fontWeight: 600 }}
-                >
-                  Cancel
-                </Button>
+                {!isReadOnly ? (
+                  <Button
+                    variant="outlined"
+                    onClick={handleCancel}
+                    sx={{ textTransform: "none", fontWeight: 600 }}
+                  >
+                    Cancel
+                  </Button>
+                ) : (
+                  <Box />
+                )}
 
                 <Stack direction="row" spacing={1.5}>
                   {!isFirstQuestionInSubdomain ? (
@@ -848,7 +856,7 @@ export function SubdomainQuestionFlow({
                         handleNextQuestion();
                         scrollMobileToTop?.();
                       }}
-                      disabled={needsClassFilters && !filtersReady}
+                      disabled={!isReadOnly && needsClassFilters && !filtersReady}
                       sx={{
                         textTransform: "none",
                         fontWeight: 600,
@@ -872,26 +880,28 @@ export function SubdomainQuestionFlow({
                           Next subdomain
                         </Button>
                       ) : null}
-                      <Button
-                        variant="contained"
-                        onClick={handleSubmit}
-                        disabled={isSaveAssessmentDisabled()}
-                        startIcon={
-                          submitSubdomainWiseAnswersMutation.isPending ? (
-                            <CircularProgress size={18} color="inherit" />
-                          ) : null
-                        }
-                        sx={{
-                          textTransform: "none",
-                          fontWeight: 600,
-                          bgcolor: colors.accent.green,
-                          "&:hover": { bgcolor: colors.accent.greenDark },
-                        }}
-                      >
-                        {submitSubdomainWiseAnswersMutation.isPending
-                          ? "Saving..."
-                          : "Save assessment"}
-                      </Button>
+                      {!isReadOnly ? (
+                        <Button
+                          variant="contained"
+                          onClick={handleSubmit}
+                          disabled={isSaveAssessmentDisabled()}
+                          startIcon={
+                            submitSubdomainWiseAnswersMutation.isPending ? (
+                              <CircularProgress size={18} color="inherit" />
+                            ) : null
+                          }
+                          sx={{
+                            textTransform: "none",
+                            fontWeight: 600,
+                            bgcolor: colors.accent.green,
+                            "&:hover": { bgcolor: colors.accent.greenDark },
+                          }}
+                        >
+                          {submitSubdomainWiseAnswersMutation.isPending
+                            ? "Saving..."
+                            : "Save assessment"}
+                        </Button>
+                      ) : null}
                     </>
                   )}
                 </Stack>

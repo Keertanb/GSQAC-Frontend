@@ -389,6 +389,10 @@
   border: 1px solid #e2e8f0;
 }
 
+.sa-wizard-footer-actions--readonly:not(.sa-wizard-footer-actions--mobile) {
+  justify-content: flex-end;
+}
+
 @media (max-width: 960px) {
   .sa-wizard-context {
     padding: 0.75rem 0.85rem;
@@ -469,6 +473,17 @@
 
   .sa-mcq-option .MuiRadio-root {
     padding: 8px;
+  }
+
+  .sa-wizard-footer-actions--mobile.sa-wizard-footer-actions--readonly {
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .sa-wizard-footer-actions--mobile.sa-wizard-footer-actions--readonly .MuiButton-root {
+    flex: 1 1 0;
+    min-height: 44px;
+    font-size: 0.75rem;
   }
 
   .sa-questions-content--wizard {
