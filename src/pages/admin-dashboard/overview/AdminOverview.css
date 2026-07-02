@@ -193,6 +193,23 @@
   align-items: flex-end;
   gap: 0.75rem;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.ado-hero-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.ado-scope-filter {
+  min-width: 180px;
+}
+
+.ado-scope-filter--school {
+  min-width: 220px;
 }
 
 .ado-filter-wrap {
@@ -1271,6 +1288,21 @@
   .ado-hero-content { padding: 1.25rem; }
   .ado-hero-title { font-size: 1.5rem; }
   .ado-kpi-strip { padding: 0.75rem 1rem 1rem; }
+  .ado-hero-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ado-hero-filters {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ado-scope-filter,
+  .ado-scope-filter--school {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 /* ─── Gujarat district map ─── */
@@ -1467,6 +1499,44 @@
 .ado-map-school-dot {
   cursor: pointer;
   transition: r 0.15s ease, stroke-width 0.15s ease;
+}
+
+.ado-map-zoom-layer {
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ado-map-canvas-wrap--satellite {
+  padding: 0.5rem;
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  border-color: #334155;
+}
+
+.ado-leaflet-map {
+  width: 100%;
+  min-height: 520px;
+  height: 520px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.ado-map-section--satellite .ado-map-canvas-wrap {
+  position: relative;
+}
+
+.ado-map-chip--satellite {
+  background: #0f172a !important;
+  color: #93c5fd !important;
+  border-color: #334155 !important;
+}
+
+.ado-map-section--satellite .leaflet-control-zoom a {
+  color: #0f172a;
+}
+
+.ado-map-section--satellite .leaflet-control-attribution {
+  font-size: 0.625rem;
+  background: rgba(255, 255, 255, 0.82) !important;
 }
 
 .ado-map-loading-label {

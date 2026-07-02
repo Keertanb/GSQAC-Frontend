@@ -2,15 +2,34 @@ import { useState, useMemo } from "react";
 import {
   useGetAdminDashboardQuery,
   useGetAllDistrictsQuery,
+  useGetDistrictWiseBlocksQuery,
+  useGetSchoolListQuery,
 } from "../../../../services/adminService";
 
 const pct = (num, den) => (den > 0 ? Math.round((num / den) * 100) : 0);
 
 export function useAdminDashboard() {
   const [districtId, setDistrictId] = useState("");
+  const [blockId, setBlockId] = useState("");
+  const [schoolId, setSchoolId] = useState("");
 
   const { data: districtsData } = useGetAllDistrictsQuery();
   const districts = districtsData?.data || [];
+
+  const { data: blocksData } = useGetDistrictWiseBlocksQuery(
+    districtId ? Number(districtId) : undefined,
+  );
+  const blocks = blocksData?.data || [];
+
+  const { data: schoolsData } = useGetSchoolListQuery(
+    {
+      blockId: blockId ? Number(blockId) : undefined,
+      page: 0,
+      limit: 500,
+    },
+    Boolean(blockId),
+  );
+  const schools = schoolsData?.data?.rows || [];
 
   const { data, isLoading, isError, refetch, isFetching, dataUpdatedAt } =
     useGetAdminDashboardQuery(
@@ -37,6 +56,16 @@ export function useAdminDashboard() {
     if (!districtId) return null;
     return districts.find((d) => String(d.value) === String(districtId));
   }, [districtId, districts]);
+
+  const selectedBlock = useMemo(() => {
+    if (!blockId) return null;
+    return blocks.find((b) => String(b.value ?? b.blockId) === String(blockId));
+  }, [blockId, blocks]);
+
+  const selectedSchool = useMemo(() => {
+    if (!schoolId) return null;
+    return schools.find((s) => String(s.schoolId) === String(schoolId));
+  }, [schoolId, schools]);
 
   const insights = useMemo(() => {
     const allocated = overview.allocatedSchools ?? 0;
@@ -332,14 +361,43 @@ export function useAdminDashboard() {
 
   const handleDistrictChange = (value) => {
     setDistrictId(value);
+    setBlockId("");
+    setSchoolId("");
   };
 
   const handleDistrictSelect = (value) => {
     setDistrictId(value);
+    setBlockId("");
+    setSchoolId("");
   };
 
   const handleClearDistrict = () => {
     setDistrictId("");
+    setBlockId("");
+    setSchoolId("");
+  };
+
+  const handleBlockChange = (value) => {
+    setBlockId(value);
+    setSchoolId("");
+  };
+
+  const handleBlockSelect = (value) => {
+    setBlockId(value);
+    setSchoolId("");
+  };
+
+  const handleClearBlock = () => {
+    setBlockId("");
+    setSchoolId("");
+  };
+
+  const handleSchoolChange = (value) => {
+    setSchoolId(value);
+  };
+
+  const handleSchoolSelect = (value) => {
+    setSchoolId(value);
   };
 
   const lastUpdated = dataUpdatedAt
@@ -352,8 +410,14 @@ export function useAdminDashboard() {
 
   return {
     districtId,
+    blockId,
+    schoolId,
     districts,
+    blocks,
+    schools,
     selectedDistrict,
+    selectedBlock,
+    selectedSchool,
     dashboard,
     overview,
     verificationStatus,
@@ -382,5 +446,10 @@ export function useAdminDashboard() {
     handleDistrictChange,
     handleDistrictSelect,
     handleClearDistrict,
+    handleBlockChange,
+    handleBlockSelect,
+    handleClearBlock,
+    handleSchoolChange,
+    handleSchoolSelect,
   };
 }

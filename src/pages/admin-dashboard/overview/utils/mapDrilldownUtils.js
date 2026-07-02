@@ -1,3 +1,12 @@
+import { Delaunay } from "d3-delaunay";
+import {
+  geoBounds,
+  geoCentroid,
+  geoContains,
+  geoMercator,
+  geoPath,
+} from "d3-geo";
+import polygonClipping from "polygon-clipping";
 import { getCompletionColor, getCompletionTone, pct } from "./gujaratDistrictUtils";
 
 export function getBlockCompletionRate(block) {
@@ -61,6 +70,49 @@ function getBoundsSize(bounds) {
     y: y0,
     width: Math.max(0, x1 - x0),
     height: Math.max(0, y1 - y0),
+  };
+}
+
+export function getBlockBounds(block) {
+  if (!block) return null;
+  return [
+    [block.x, block.y],
+    [block.x + block.width, block.y + block.height],
+  ];
+}
+
+/**
+ * Scale + translate so a block cell fills the map viewport (zoom mode).
+ */
+export function computeBlockZoomTransform(
+  block,
+  viewportWidth,
+  viewportHeight,
+  inset = 18,
+  maxScale = 10,
+) {
+  if (!block?.width || !block?.height) {
+    return { scale: 1, tx: 0, ty: 0 };
+  }
+
+  const padding = 28;
+  const availableWidth = viewportWidth - padding * 2;
+  const availableHeight = viewportHeight - padding * 2;
+  const scale = Math.min(
+    availableWidth / block.width,
+    availableHeight / block.height,
+    maxScale,
+  );
+
+  const blockCenterX = block.x + block.width / 2;
+  const blockCenterY = block.y + block.height / 2;
+  const viewportCenterX = viewportWidth / 2;
+  const viewportCenterY = viewportHeight / 2;
+
+  return {
+    scale,
+    tx: viewportCenterX - blockCenterX * scale,
+    ty: viewportCenterY - blockCenterY * scale,
   };
 }
 
@@ -155,6 +207,8 @@ export function layoutSchoolMarkers(items, bounds, padding = 14, gap = 3) {
       y: innerY + row * (cellHeight + gap),
       width: Math.max(0, cellWidth),
       height: Math.max(0, cellHeight),
+      cx: innerX + col * (cellWidth + gap) + cellWidth / 2,
+      cy: innerY + row * (cellHeight + gap) + cellHeight / 2,
     };
   });
 }
@@ -238,3 +292,286 @@ export const SCHOOL_LEGEND_STOPS = [
   { label: "Pending", color: "#f59e0b" },
   { label: "Not allocated", color: "#94a3b8" },
 ];
+
+const NORMALIZED_BOUNDS = [
+  [0, 0],
+  [1, 1],
+];
+
+function normalizedToLatLng(x, y, geoFeature) {
+  const [[minLng, minLat], [maxLng, maxLat]] = geoBounds(geoFeature);
+  const lat = maxLat - y * (maxLat - minLat);
+  const lng = minLng + x * (maxLng - minLng);
+  return [lat, lng];
+}
+
+function ensureInside(feature, lng, lat) {
+  if (geoContains(feature, [lng, lat])) {
+    return [lng, lat];
+  }
+
+  const centroid = geoCentroid(feature);
+  for (let step = 0.05; step <= 1; step += 0.05) {
+    const nextLng = centroid[0] + (lng - centroid[0]) * (1 - step);
+    const nextLat = centroid[1] + (lat - centroid[1]) * (1 - step);
+    if (geoContains(feature, [nextLng, nextLat])) {
+      return [nextLng, nextLat];
+    }
+  }
+
+  return centroid;
+}
+
+function getDistrictClipGeometry(geoFeature) {
+  const geometry = geoFeature?.geometry;
+  if (!geometry) return null;
+
+  if (geometry.type === "Polygon") {
+    return [geometry.coordinates];
+  }
+
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates;
+  }
+
+  return null;
+}
+
+function pickLargestClipRing(clipped) {
+  let largest = null;
+
+  clipped.forEach((polygon) => {
+    const ring = polygon?.[0];
+    if (!ring || ring.length < 3) return;
+    if (!largest || ring.length > largest.length) {
+      largest = ring;
+    }
+  });
+
+  return largest;
+}
+
+function ringToLatLngBounds(ring) {
+  const lats = ring.map((point) => point[0]);
+  const lngs = ring.map((point) => point[1]);
+  return [
+    [Math.min(...lats), Math.min(...lngs)],
+    [Math.max(...lats), Math.max(...lngs)],
+  ];
+}
+
+const BLOCK_PROJECT_SIZE = 720;
+
+/**
+ * Voronoi tessellation clipped to the district polygon — blocks fill the real district shape.
+ */
+function layoutGeoBlockRectangles(items, geoFeature, padding = 0.04, gap = 0.006) {
+  const cells = layoutTreemapCells(items, NORMALIZED_BOUNDS, padding, gap);
+
+  return cells.map((cell) => {
+    const nw = normalizedToLatLng(cell.x, cell.y, geoFeature);
+    const se = normalizedToLatLng(cell.x + cell.width, cell.y + cell.height, geoFeature);
+    const south = Math.min(nw[0], se[0]);
+    const north = Math.max(nw[0], se[0]);
+    const west = Math.min(nw[1], se[1]);
+    const east = Math.max(nw[1], se[1]);
+    const polygon = [
+      [south, west],
+      [south, east],
+      [north, east],
+      [north, west],
+    ];
+
+    return {
+      ...cell,
+      polygon,
+      latLngBounds: [
+        [south, west],
+        [north, east],
+      ],
+      center: [(south + north) / 2, (west + east) / 2],
+    };
+  });
+}
+
+export function layoutGeoBlockPolygons(items, geoFeature, padding = 0.06, gap = 0.01) {
+  if (!items.length || !geoFeature) return [];
+
+  const districtClipGeom = getDistrictClipGeometry(geoFeature);
+  if (!districtClipGeom) {
+    return layoutGeoBlockRectangles(items, geoFeature, padding, gap);
+  }
+
+  const projection = geoMercator().fitExtent(
+    [
+      [24, 24],
+      [BLOCK_PROJECT_SIZE - 24, BLOCK_PROJECT_SIZE - 24],
+    ],
+    geoFeature,
+  );
+  const path = geoPath(projection);
+  const [[x0, y0], [x1, y1]] = path.bounds(geoFeature);
+
+  const treemapCells = layoutTreemapCells(items, NORMALIZED_BOUNDS, padding, gap);
+  const seeds = treemapCells.map((cell) => {
+    const centerX = cell.x + cell.width / 2;
+    const centerY = cell.y + cell.height / 2;
+    let [lat, lng] = normalizedToLatLng(centerX, centerY, geoFeature);
+    [lng, lat] = ensureInside(geoFeature, lng, lat);
+    const projected = projection([lng, lat]);
+
+    return {
+      ...cell,
+      lng,
+      lat,
+      x: projected?.[0] ?? 0,
+      y: projected?.[1] ?? 0,
+    };
+  });
+
+  if (seeds.length === 1) {
+    const outerRing = districtClipGeom[0]?.[0] || [];
+    const ring = outerRing.map(([lng, lat]) => [lat, lng]);
+    const latLngBounds = ringToLatLngBounds(ring);
+
+    return [
+      {
+        ...seeds[0],
+        polygon: ring,
+        latLngBounds,
+        center: [
+          (latLngBounds[0][0] + latLngBounds[1][0]) / 2,
+          (latLngBounds[0][1] + latLngBounds[1][1]) / 2,
+        ],
+      },
+    ];
+  }
+
+  const delaunay = Delaunay.from(seeds.map((seed) => [seed.x, seed.y]));
+  const voronoi = delaunay.voronoi([x0, y0, x1, y1]);
+
+  return seeds
+    .map((seed, index) => {
+      const cellPolygon = voronoi.cellPolygon(index);
+      if (!cellPolygon || cellPolygon.length < 3) return null;
+
+      const voronoiRingLngLat = cellPolygon
+        .map(([x, y]) => projection.invert([x, y]))
+        .filter(Boolean);
+
+      if (voronoiRingLngLat.length < 3) return null;
+
+      const closedVoronoiRing = [...voronoiRingLngLat, voronoiRingLngLat[0]];
+      let clipped;
+
+      try {
+        clipped = polygonClipping.intersection(districtClipGeom, [
+          closedVoronoiRing,
+        ]);
+      } catch {
+        return null;
+      }
+
+      const clippedRing = pickLargestClipRing(clipped);
+      if (!clippedRing) return null;
+
+      const ring = clippedRing.map(([lng, lat]) => [lat, lng]);
+      if (ring.length < 3) return null;
+
+      const latLngBounds = ringToLatLngBounds(ring);
+
+      return {
+        ...seed,
+        polygon: ring,
+        latLngBounds,
+        center: [(latLngBounds[0][0] + latLngBounds[1][0]) / 2, (latLngBounds[0][1] + latLngBounds[1][1]) / 2],
+      };
+    })
+    .filter(Boolean);
+}
+
+export function layoutGeoBlockCells(items, geoFeature, padding = 0.04, gap = 0.006) {
+  return layoutGeoBlockPolygons(items, geoFeature, padding, gap);
+}
+
+export function layoutGeoSchoolMarkers(items, blockCell, padding = 0.08, gap = 0.015) {
+  if (!items.length || !blockCell?.latLngBounds) return [];
+
+  const [[south, west], [north, east]] = blockCell.latLngBounds;
+  const polygon = blockCell.polygon || null;
+
+  const markers = layoutSchoolMarkers(
+    items,
+    NORMALIZED_BOUNDS,
+    padding,
+    gap,
+  );
+
+  const pointInsideBlock = (lat, lng) => {
+    if (!polygon || polygon.length < 3) return true;
+    const feature = {
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        coordinates: [polygon.map(([plat, plng]) => [plng, plat])],
+      },
+    };
+    return geoContains(feature, [lng, lat]);
+  };
+
+  return markers
+    .map((marker) => {
+      const normX = marker.cx ?? marker.x + marker.width / 2;
+      const normY = marker.cy ?? marker.y + marker.height / 2;
+      let lat = north - normY * (north - south);
+      let lng = west + normX * (east - west);
+
+      if (!pointInsideBlock(lat, lng) && blockCell.center) {
+        lat = blockCell.center[0];
+        lng = blockCell.center[1];
+      }
+
+      return {
+        ...marker,
+        latLng: [lat, lng],
+      };
+    })
+    .filter((marker) => pointInsideBlock(marker.latLng[0], marker.latLng[1]));
+}
+
+export function getFeatureLatLngBounds(geoFeature) {
+  if (!geoFeature) return null;
+  const [[minLng, minLat], [maxLng, maxLat]] = geoBounds(geoFeature);
+  return [
+    [minLat, minLng],
+    [maxLat, maxLng],
+  ];
+}
+
+export function getGujaratFitBounds(geoJson) {
+  const features = geoJson?.features || [];
+  if (!features.length) {
+    return [
+      [20.1, 68.2],
+      [24.7, 74.4],
+    ];
+  }
+
+  let minLat = Infinity;
+  let minLng = Infinity;
+  let maxLat = -Infinity;
+  let maxLng = -Infinity;
+
+  features.forEach((feature) => {
+    const [[lng0, lat0], [lng1, lat1]] = geoBounds(feature);
+    minLat = Math.min(minLat, lat0);
+    minLng = Math.min(minLng, lng0);
+    maxLat = Math.max(maxLat, lat1);
+    maxLng = Math.max(maxLng, lng1);
+  });
+
+  return [
+    [minLat, minLng],
+    [maxLat, maxLng],
+  ];
+}

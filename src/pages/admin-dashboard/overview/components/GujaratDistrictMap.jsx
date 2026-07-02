@@ -12,6 +12,8 @@ import {
 import {
   buildBlockStats,
   buildSchoolStats,
+  computeBlockZoomTransform,
+  getBlockBounds,
   layoutSchoolMarkers,
   layoutTreemapCells,
   mergeBlockBreakdown,
@@ -55,10 +57,10 @@ function formatDistrictName(name) {
 
 function getMapSubtitle(mapLevel, districtName, blockName) {
   if (mapLevel === "schools") {
-    return `Schools in ${blockName || "block"} — click a school for details`;
+    return `Zoomed into ${blockName || "block"} — each dot is a school`;
   }
   if (mapLevel === "blocks") {
-    return `Blocks in ${districtName || "district"} — click a block to view schools`;
+    return `Blocks in ${districtName || "district"} — click a block to zoom in`;
   }
   return "District colors show verification completion — click a district to drill down";
 }
@@ -207,10 +209,21 @@ export function GujaratDistrictMap({
       (cell) => String(cell.blockId) === String(selectedBlockId),
     );
 
+    const blockBounds = getBlockBounds(selectedBlockCell);
     const schoolCells =
-      selectedRegion && mapLevel === "schools"
-        ? layoutSchoolMarkers(schoolItems, selectedRegion.bounds, 16, 4)
+      mapLevel === "schools" && blockBounds
+        ? layoutSchoolMarkers(schoolItems, blockBounds, 8, 2)
         : [];
+
+    const zoomTransform =
+      mapLevel === "schools" && selectedBlockCell
+        ? computeBlockZoomTransform(
+            selectedBlockCell,
+            MAP_WIDTH,
+            MAP_HEIGHT,
+            MAP_INSET,
+          )
+        : null;
 
     return {
       regions,
@@ -218,6 +231,8 @@ export function GujaratDistrictMap({
       blockCells,
       schoolCells,
       selectedBlockCell,
+      blockBounds,
+      zoomTransform,
       generator,
     };
   }, [statsByKey, mergedBlocks, schools, selectedKey, selectedBlockId, mapLevel]);
@@ -319,6 +334,10 @@ export function GujaratDistrictMap({
     ? `ado-map-district-clip-${selectedKey}`
     : "ado-map-district-clip";
 
+  const zoomTransformString = mapModel.zoomTransform
+    ? `translate(${mapModel.zoomTransform.tx} ${mapModel.zoomTransform.ty}) scale(${mapModel.zoomTransform.scale})`
+    : undefined;
+
   return (
     <div className="ado-map-section">
       <div className="ado-map-header">
@@ -362,7 +381,7 @@ export function GujaratDistrictMap({
       </div>
 
       <div className="ado-map-layout">
-        <div className="ado-map-canvas-wrap">
+        <div className={`ado-map-canvas-wrap${showSchoolDrill ? " ado-map-canvas-wrap--zoomed" : ""}`}>
           <svg
             viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
             className="ado-map-svg"
@@ -416,8 +435,11 @@ export function GujaratDistrictMap({
                   isHovered,
                   region.stats.hasData,
                 );
-                const dimmed =
-                  !showStateDistricts && !isSelected
+                const dimmed = showSchoolDrill
+                  ? isSelected
+                    ? 0.35
+                    : 0.1
+                  : !showStateDistricts && !isSelected
                     ? 0.18
                     : showStateDistricts && selectedKey && !isSelected && !isHovered
                       ? 0.62
@@ -575,133 +597,196 @@ export function GujaratDistrictMap({
               </g>
             ) : null}
 
-            {showSchoolDrill ? (
-              <g clipPath={`url(#${clipId})`}>
-                <path
-                  d={mapModel.selectedRegion.path}
-                  fill="#f8fbff"
-                  stroke="none"
-                  pointerEvents="none"
-                />
+            {showSchoolDrill && mapModel.selectedBlockCell ? (
+              <g
+                className="ado-map-zoom-layer"
+                transform={zoomTransformString}
+              >
+                <g clipPath={`url(#${clipId})`}>
+                  <path
+                    d={mapModel.selectedRegion.path}
+                    fill="#eef4ff"
+                    stroke="#93c5fd"
+                    strokeWidth={1.2}
+                    pointerEvents="none"
+                  />
 
-                {mapModel.blockCells.map((block) => {
-                  const isSelected = String(block.blockId) === String(selectedBlockId);
-                  return (
-                    <rect
-                      key={`bg-${block.blockId}`}
-                      x={block.x}
-                      y={block.y}
-                      width={block.width}
-                      height={block.height}
-                      rx={4}
-                      fill={isSelected ? block.fill : "#e2e8f0"}
-                      opacity={isSelected ? 0.42 : 0.22}
-                      stroke={isSelected ? "#1e3a8a" : "#ffffff"}
-                      strokeWidth={isSelected ? 2 : 0.8}
-                      pointerEvents="none"
-                    />
-                  );
-                })}
-
-                {isLoadingSchools ? (
-                  <text
-                    x={mapModel.selectedRegion.x}
-                    y={mapModel.selectedRegion.y}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    className="ado-map-loading-label"
-                  >
-                    Loading schools…
-                  </text>
-                ) : mapModel.schoolCells.length > 0 ? (
-                  mapModel.schoolCells.map((school) => {
-                    const radius = Math.max(
-                      4,
-                      Math.min(8, Math.min(school.width, school.height) / 2.4),
-                    );
-                    const cx = school.x + school.width / 2;
-                    const cy = school.y + school.height / 2;
-                    const isHovered = String(school.schoolId) === String(hoveredSchoolId);
+                  {mapModel.blockCells.map((block) => {
+                    const isSelected =
+                      String(block.blockId) === String(selectedBlockId);
+                    if (!isSelected) {
+                      return (
+                        <rect
+                          key={`ghost-${block.blockId}`}
+                          x={block.x}
+                          y={block.y}
+                          width={block.width}
+                          height={block.height}
+                          rx={4}
+                          fill="#e2e8f0"
+                          opacity={0.35}
+                          stroke="#ffffff"
+                          strokeWidth={0.8}
+                          pointerEvents="none"
+                        />
+                      );
+                    }
 
                     return (
-                      <circle
-                        key={school.schoolId}
-                        cx={cx}
-                        cy={cy}
-                        r={isHovered ? radius + 2 : radius}
-                        fill={school.fill}
-                        stroke={isHovered ? "#0f172a" : "#ffffff"}
-                        strokeWidth={isHovered ? 2 : 1.2}
-                        className="ado-map-school-dot"
-                        onMouseEnter={(event) => {
-                          setHoveredSchoolId(String(school.schoolId));
-                          setTooltip({
-                            type: "school",
-                            name: school.schoolName,
-                            status: school.status,
-                            tone: school.tone,
-                            verifier: school.verifierUserName,
-                            x: event.clientX,
-                            y: event.clientY,
-                          });
-                        }}
-                        onMouseMove={(event) => {
-                          setTooltip((prev) =>
-                            prev ? { ...prev, x: event.clientX, y: event.clientY } : prev,
-                          );
-                        }}
-                        onMouseLeave={() => {
-                          setHoveredSchoolId(null);
-                          setTooltip(null);
-                        }}
-                      />
+                      <g key={`zoom-block-${block.blockId}`}>
+                        <rect
+                          x={block.x}
+                          y={block.y}
+                          width={block.width}
+                          height={block.height}
+                          rx={8}
+                          fill={block.fill}
+                          opacity={0.28}
+                          stroke="#1e3a8a"
+                          strokeWidth={2.5}
+                          pointerEvents="none"
+                        />
+                        <rect
+                          x={block.x + 2}
+                          y={block.y + 2}
+                          width={Math.max(0, block.width - 4)}
+                          height={Math.max(0, block.height - 4)}
+                          rx={6}
+                          fill="#ffffff"
+                          opacity={0.92}
+                          stroke="#bfdbfe"
+                          strokeWidth={1}
+                          pointerEvents="none"
+                        />
+                      </g>
                     );
-                  })
-                ) : (
-                  <text
-                    x={mapModel.selectedRegion.x}
-                    y={mapModel.selectedRegion.y}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    className="ado-map-loading-label"
-                  >
-                    No schools found in this block
-                  </text>
-                )}
+                  })}
+                </g>
+
+                <g>
+                  {isLoadingSchools ? (
+                    <text
+                      x={
+                        mapModel.selectedBlockCell.x +
+                        mapModel.selectedBlockCell.width / 2
+                      }
+                      y={
+                        mapModel.selectedBlockCell.y +
+                        mapModel.selectedBlockCell.height / 2
+                      }
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      className="ado-map-loading-label"
+                    >
+                      Loading schools…
+                    </text>
+                  ) : mapModel.schoolCells.length > 0 ? (
+                    mapModel.schoolCells.map((school) => {
+                      const radius = Math.max(
+                        1.8,
+                        Math.min(
+                          3.2,
+                          Math.min(school.width || 4, school.height || 4) / 3,
+                        ),
+                      );
+                      const cx = school.cx ?? school.x + school.width / 2;
+                      const cy = school.cy ?? school.y + school.height / 2;
+                      const isHovered =
+                        String(school.schoolId) === String(hoveredSchoolId);
+
+                      return (
+                        <circle
+                          key={school.schoolId}
+                          cx={cx}
+                          cy={cy}
+                          r={isHovered ? radius + 1 : radius}
+                          fill={school.fill}
+                          stroke={isHovered ? "#0f172a" : "#ffffff"}
+                          strokeWidth={isHovered ? 1.2 : 0.7}
+                          className="ado-map-school-dot"
+                          onMouseEnter={(event) => {
+                            setHoveredSchoolId(String(school.schoolId));
+                            setTooltip({
+                              type: "school",
+                              name: school.schoolName,
+                              status: school.status,
+                              tone: school.tone,
+                              verifier: school.verifierUserName,
+                              x: event.clientX,
+                              y: event.clientY,
+                            });
+                          }}
+                          onMouseMove={(event) => {
+                            setTooltip((prev) =>
+                              prev ? { ...prev, x: event.clientX, y: event.clientY } : prev,
+                            );
+                          }}
+                          onMouseLeave={() => {
+                            setHoveredSchoolId(null);
+                            setTooltip(null);
+                          }}
+                        />
+                      );
+                    })
+                  ) : (
+                    <text
+                      x={
+                        mapModel.selectedBlockCell.x +
+                        mapModel.selectedBlockCell.width / 2
+                      }
+                      y={
+                        mapModel.selectedBlockCell.y +
+                        mapModel.selectedBlockCell.height / 2
+                      }
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      className="ado-map-loading-label"
+                    >
+                      No schools in this block
+                    </text>
+                  )}
+                </g>
+
+                <text
+                  x={
+                    mapModel.selectedBlockCell.x +
+                    mapModel.selectedBlockCell.width / 2
+                  }
+                  y={mapModel.selectedBlockCell.y - 6}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  className="ado-map-label ado-map-label--active"
+                  pointerEvents="none"
+                >
+                  {truncateMapLabel(selectedBlockName, 28)}
+                </text>
               </g>
             ) : null}
 
             {(showStateDistricts && (hoveredDistrictKey || selectedKey) && activeDistrictRegion?.path) ||
-            (showBlockDrill && activeBlock) ||
-            (showSchoolDrill && activeSchool) ? (
+            (showBlockDrill && activeBlock) ? (
               <text
                 x={
-                  showSchoolDrill
-                    ? mapModel.selectedRegion.x
-                    : showBlockDrill
-                      ? activeBlock.x + activeBlock.width / 2
-                      : activeDistrictRegion.x
+                  showBlockDrill
+                    ? activeBlock.x + activeBlock.width / 2
+                    : activeDistrictRegion.x
                 }
                 y={
-                  showSchoolDrill
-                    ? MAP_INSET + 12
-                    : showBlockDrill
-                      ? activeBlock.y - 8
-                      : activeDistrictRegion.y
+                  showBlockDrill
+                    ? activeBlock.y - 8
+                    : activeDistrictRegion.y
                 }
                 textAnchor="middle"
                 dominantBaseline="middle"
                 className="ado-map-label ado-map-label--active"
                 pointerEvents="none"
               >
-                {showSchoolDrill
-                  ? truncateMapLabel(selectedBlockName, 24)
-                  : showBlockDrill
-                    ? truncateMapLabel(activeBlock.blockName, 20)
-                    : formatDistrictName(
-                        activeDistrictRegion.stats.districtName ||
-                          activeDistrictRegion.feature.properties?.name,
-                      )}
+                {showBlockDrill
+                  ? truncateMapLabel(activeBlock.blockName, 20)
+                  : formatDistrictName(
+                      activeDistrictRegion.stats.districtName ||
+                        activeDistrictRegion.feature.properties?.name,
+                    )}
               </text>
             ) : null}
           </svg>
@@ -904,7 +989,7 @@ export function GujaratDistrictMap({
                 className="ado-map-drill-btn"
                 onClick={() => handleBlockClick(activeBlock)}
               >
-                View schools in block
+                View schools (zoom)
               </button>
             </div>
           ) : activeDistrictRegion ? (

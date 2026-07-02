@@ -17,7 +17,7 @@ import {
   Line,
 } from "recharts";
 import AppDropdown from "../../../../components/AppDropdown/AppDropdown";
-import { GujaratDistrictMap } from "./GujaratDistrictMap";
+import { GujaratSatelliteMap } from "./GujaratSatelliteMap";
 
 const STATUS_COLORS = {
   Completed: "#10b981",
@@ -205,8 +205,14 @@ const RateTooltip = ({ active, payload }) => {
 export function AdminDashboardPageView({ c }) {
   const {
     districtId,
+    blockId,
+    schoolId,
     districts,
+    blocks,
+    schools,
     selectedDistrict,
+    selectedBlock,
+    selectedSchool,
     overview,
     verificationStatus,
     assessmentStatus,
@@ -233,6 +239,11 @@ export function AdminDashboardPageView({ c }) {
     handleDistrictChange,
     handleDistrictSelect,
     handleClearDistrict,
+    handleBlockChange,
+    handleBlockSelect,
+    handleClearBlock,
+    handleSchoolChange,
+    handleSchoolSelect,
   } = c;
 
   if (isLoading) {
@@ -270,6 +281,30 @@ export function AdminDashboardPageView({ c }) {
     completed: d.completed,
   }));
 
+  const heroTitle = selectedSchool
+    ? selectedSchool.schoolName
+    : selectedBlock
+      ? selectedBlock.name || selectedBlock.blockName
+      : selectedDistrict
+        ? selectedDistrict.name
+        : "Statewide Overview";
+
+  const scopeLabel = selectedSchool
+    ? "School view"
+    : selectedBlock
+      ? "Block view"
+      : selectedDistrict
+        ? "District view"
+        : "All districts";
+
+  const heroDesc = selectedSchool
+    ? `${selectedBlock?.name || selectedBlock?.blockName || "Block"} · ${selectedDistrict?.name || "District"}`
+    : selectedBlock
+      ? `Monitoring schools in ${selectedBlock.name || selectedBlock.blockName} · ${selectedDistrict?.name || "district"}`
+      : selectedDistrict
+        ? `Monitoring ${insights.blocksWithData} blocks · ${overview.totalSchools ?? 0} schools · ${overview.activeVerifiers ?? 0} active verifiers`
+        : `Tracking ${insights.districtsWithData} districts · ${overview.allocatedSchools ?? 0} allocated schools · ${overview.totalVerifiers ?? 0} verifiers`;
+
   return (
     <div className="admin-dashboard-overview">
       {/* Hero */}
@@ -283,38 +318,74 @@ export function AdminDashboardPageView({ c }) {
               {lastUpdated && <span className="ado-updated">Updated {lastUpdated}</span>}
             </div>
             <div className="ado-hero-title-row">
-              <h1 className="ado-hero-title">
-                {selectedDistrict ? selectedDistrict.name : "Statewide Overview"}
-              </h1>
+              <h1 className="ado-hero-title">{heroTitle}</h1>
               <span className={`ado-scope-badge ${districtId ? "ado-scope-badge--district" : ""}`}>
-                {selectedDistrict ? "District view" : "All districts"}
+                {scopeLabel}
               </span>
             </div>
-            <p className="ado-hero-desc">
-              {selectedDistrict
-                ? `Monitoring ${insights.blocksWithData} blocks · ${overview.totalSchools ?? 0} schools · ${overview.activeVerifiers ?? 0} active verifiers`
-                : `Tracking ${insights.districtsWithData} districts · ${overview.allocatedSchools ?? 0} allocated schools · ${overview.totalVerifiers ?? 0} verifiers`}
-            </p>
+            <p className="ado-hero-desc">{heroDesc}</p>
           </div>
           <div className="ado-hero-actions">
-            <div className="ado-filter-wrap ado-filter-wrap--hero">
-              <label className="ado-filter-label">Filter by district</label>
-              <AppDropdown
-                label=""
-                options={[
-                  { value: "", label: "All Districts (Statewide)" },
-                  ...districts.map((d) => ({
-                    value: String(d.value),
-                    label: d.name,
-                  })),
-                ]}
-                value={districtId}
-                onChange={handleDistrictChange}
-                placeholder="All Districts"
-                valueKey="value"
-                labelKey="label"
-                className="ado-district-filter"
-              />
+            <div className="ado-hero-filters">
+              <div className="ado-filter-wrap ado-filter-wrap--hero">
+                <label className="ado-filter-label">Filter by district</label>
+                <AppDropdown
+                  label=""
+                  options={[
+                    { value: "", label: "All Districts (Statewide)" },
+                    ...districts.map((d) => ({
+                      value: String(d.value),
+                      label: d.name,
+                    })),
+                  ]}
+                  value={districtId}
+                  onChange={handleDistrictChange}
+                  placeholder="All Districts"
+                  valueKey="value"
+                  labelKey="label"
+                  className="ado-scope-filter"
+                />
+              </div>
+              <div className="ado-filter-wrap ado-filter-wrap--hero">
+                <label className="ado-filter-label">Filter by block</label>
+                <AppDropdown
+                  label=""
+                  options={[
+                    { value: "", label: "All Blocks" },
+                    ...blocks.map((b) => ({
+                      value: String(b.value ?? b.blockId),
+                      label: b.name || b.blockName,
+                    })),
+                  ]}
+                  value={blockId}
+                  onChange={handleBlockChange}
+                  placeholder="All Blocks"
+                  disabled={!districtId}
+                  valueKey="value"
+                  labelKey="label"
+                  className="ado-scope-filter"
+                />
+              </div>
+              <div className="ado-filter-wrap ado-filter-wrap--hero">
+                <label className="ado-filter-label">Filter by school</label>
+                <AppDropdown
+                  label=""
+                  options={[
+                    { value: "", label: "All Schools" },
+                    ...schools.map((s) => ({
+                      value: String(s.schoolId),
+                      label: s.schoolName || s.schoolId,
+                    })),
+                  ]}
+                  value={schoolId}
+                  onChange={handleSchoolChange}
+                  placeholder="All Schools"
+                  disabled={!blockId}
+                  valueKey="value"
+                  labelKey="label"
+                  className="ado-scope-filter ado-scope-filter--school"
+                />
+              </div>
             </div>
             <button
               type="button"
@@ -419,13 +490,18 @@ export function AdminDashboardPageView({ c }) {
         </div>
       </section>
 
-      <GujaratDistrictMap
+      <GujaratSatelliteMap
         districts={districts}
         districtBreakdown={statewideDistrictBreakdown}
         blockBreakdown={blockBreakdown}
         selectedDistrictId={districtId}
+        selectedBlockId={blockId}
+        selectedSchoolId={schoolId}
         onDistrictSelect={handleDistrictSelect}
+        onBlockSelect={handleBlockSelect}
+        onSchoolSelect={handleSchoolSelect}
         onClearSelection={handleClearDistrict}
+        onClearBlock={handleClearBlock}
       />
 
       {/* Quick insight cards */}

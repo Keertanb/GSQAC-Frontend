@@ -26,18 +26,16 @@ import {
   PhotoCamera,
   Close,
   AccountTree,
+  Save,
 } from "@mui/icons-material";
 import { colors } from "../../../../constants/colors";
 
-function renderOptionLabel(option, optIndex, getOptionText, t) {
+function renderOptionLabel(option, optIndex, getOptionText, t, isMobile = false) {
   return (
     <Box
-      sx={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 1.25,
-        width: "100%",
-      }}
+      className={`sa-mcq-option-label${
+        isMobile ? " sa-mcq-option-label--stacked" : ""
+      }`}
     >
       <Chip
         label={t("selfAssessment.level", { level: optIndex })}
@@ -50,10 +48,13 @@ function renderOptionLabel(option, optIndex, getOptionText, t) {
           color: colors.primary.blue,
           border: `1px solid ${colors.primary.blue}30`,
           flexShrink: 0,
-          mt: 0.125,
         }}
       />
-      <Typography variant="body2" sx={{ lineHeight: 1.5, flex: 1 }}>
+      <Typography
+        variant="body2"
+        className="sa-mcq-option-text"
+        sx={{ lineHeight: 1.5, width: "100%" }}
+      >
         {getOptionText(option)}
       </Typography>
     </Box>
@@ -213,7 +214,7 @@ function ClassroomSubjectFilters({ c, tabId }) {
   );
 }
 
-function McqQuestionBody({ question, c, questionNumber }) {
+function McqQuestionBody({ question, c, questionNumber, isMobile = false }) {
   const {
     answers,
     handleAnswerChange,
@@ -281,6 +282,7 @@ function McqQuestionBody({ question, c, questionNumber }) {
               {options.map((option, optIndex) => (
                 <FormControlLabel
                   key={option.optionId || optIndex}
+                  className="sa-mcq-option"
                   value={String(option.optionId)}
                   disabled={!isPublished || isReadOnly}
                   control={
@@ -288,10 +290,18 @@ function McqQuestionBody({ question, c, questionNumber }) {
                       sx={{
                         color: colors.primary.blue,
                         "&.Mui-checked": { color: colors.primary.blue },
+                        alignSelf: "flex-start",
+                        mt: 0.25,
                       }}
                     />
                   }
-                  label={renderOptionLabel(option, optIndex, getOptionText, t)}
+                  label={renderOptionLabel(
+                    option,
+                    optIndex,
+                    getOptionText,
+                    t,
+                    isMobile,
+                  )}
                   sx={{
                     mb: 1.25,
                     mx: 0,
@@ -694,6 +704,7 @@ export function SubdomainQuestionFlow({
                 question={question}
                 c={c}
                 questionNumber={questionNumber}
+                isMobile={matchDownMD}
               />
             )}
           </>
@@ -703,91 +714,190 @@ export function SubdomainQuestionFlow({
       {/* Navigation footer */}
       {isPublished && !isReadOnly ? (
         <Box className="sa-wizard-footer">
-          <Stack
-            direction={{ xs: "column-reverse", sm: "row" }}
-            spacing={1.5}
-            justifyContent="space-between"
-            alignItems={{ xs: "stretch", sm: "center" }}
+          <Box
+            className={`sa-wizard-footer-actions${
+              matchDownMD ? " sa-wizard-footer-actions--mobile" : ""
+            }`}
           >
-            <Button
-              variant="outlined"
-              onClick={handleCancel}
-              sx={{ textTransform: "none", fontWeight: 600 }}
-            >
-              Cancel
-            </Button>
+            {matchDownMD ? (
+              <>
+                {!isFirstQuestionInSubdomain ? (
+                  <Button
+                    variant="outlined"
+                    className="sa-wizard-footer-btn sa-wizard-footer-btn--prev"
+                    onClick={() => {
+                      handlePreviousQuestion();
+                      scrollMobileToTop?.();
+                    }}
+                    sx={{ textTransform: "none", fontWeight: 600 }}
+                  >
+                    <span className="sa-wizard-btn-inline">
+                      <ArrowBack sx={{ fontSize: 15 }} />
+                      <span>Previous</span>
+                    </span>
+                  </Button>
+                ) : null}
 
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-              {!isFirstQuestionInSubdomain ? (
                 <Button
                   variant="outlined"
-                  startIcon={<ArrowBack />}
-                  onClick={() => {
-                    handlePreviousQuestion();
-                    scrollMobileToTop?.();
-                  }}
+                  color="success"
+                  className="sa-wizard-footer-btn sa-wizard-footer-btn--save"
+                  onClick={handleSubmit}
+                  disabled={isSaveAssessmentDisabled()}
                   sx={{ textTransform: "none", fontWeight: 600 }}
                 >
-                  Previous
+                  {submitSubdomainWiseAnswersMutation.isPending ? (
+                    <CircularProgress size={14} color="inherit" />
+                  ) : (
+                    <span className="sa-wizard-btn-inline">
+                      <Save sx={{ fontSize: 15 }} />
+                      <span className="sa-wizard-btn-stacked">
+                        <span>Save</span>
+                        <span>Assessment</span>
+                      </span>
+                    </span>
+                  )}
                 </Button>
-              ) : null}
 
-              {!isLastQuestionInSubdomain ? (
+                {!isLastQuestionInSubdomain ? (
+                  <Button
+                    variant="contained"
+                    className="sa-wizard-footer-btn sa-wizard-footer-btn--next"
+                    onClick={() => {
+                      handleNextQuestion();
+                      scrollMobileToTop?.();
+                    }}
+                    disabled={needsClassFilters && !filtersReady}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 600,
+                      bgcolor: colors.primary.blue,
+                    }}
+                  >
+                    <span className="sa-wizard-btn-inline">
+                      <span className="sa-wizard-btn-stacked">
+                        <span>Next</span>
+                        <span>Question</span>
+                      </span>
+                      <ArrowForward sx={{ fontSize: 15 }} />
+                    </span>
+                  </Button>
+                ) : nextSubdomainInfo ? (
+                  <Button
+                    variant="contained"
+                    className="sa-wizard-footer-btn sa-wizard-footer-btn--next"
+                    onClick={() => {
+                      handleGoToNextSubdomain();
+                      scrollMobileToTop?.();
+                    }}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 600,
+                      bgcolor: colors.primary.blue,
+                    }}
+                  >
+                    <span className="sa-wizard-btn-inline">
+                      <span className="sa-wizard-btn-stacked">
+                        <span>Next</span>
+                        <span>Subdomain</span>
+                      </span>
+                      <ArrowForward sx={{ fontSize: 15 }} />
+                    </span>
+                  </Button>
+                ) : null}
+
                 <Button
-                  variant="contained"
-                  endIcon={<ArrowForward />}
-                  onClick={() => {
-                    handleNextQuestion();
-                    scrollMobileToTop?.();
-                  }}
-                  disabled={needsClassFilters && !filtersReady}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 600,
-                    bgcolor: colors.primary.blue,
-                  }}
+                  variant="outlined"
+                  className="sa-wizard-footer-btn sa-wizard-footer-btn--cancel"
+                  onClick={handleCancel}
+                  sx={{ textTransform: "none", fontWeight: 600 }}
                 >
-                  Next question
+                  Cancel
                 </Button>
-              ) : (
-                <>
-                  {nextSubdomainInfo ? (
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outlined"
+                  onClick={handleCancel}
+                  sx={{ textTransform: "none", fontWeight: 600 }}
+                >
+                  Cancel
+                </Button>
+
+                <Stack direction="row" spacing={1.5}>
+                  {!isFirstQuestionInSubdomain ? (
                     <Button
                       variant="outlined"
-                      endIcon={<ArrowForward />}
+                      startIcon={<ArrowBack />}
                       onClick={() => {
-                        handleGoToNextSubdomain();
+                        handlePreviousQuestion();
                         scrollMobileToTop?.();
                       }}
                       sx={{ textTransform: "none", fontWeight: 600 }}
                     >
-                      Next subdomain
+                      Previous
                     </Button>
                   ) : null}
-                  <Button
-                    variant="contained"
-                    onClick={handleSubmit}
-                    disabled={isSaveAssessmentDisabled()}
-                    startIcon={
-                      submitSubdomainWiseAnswersMutation.isPending ? (
-                        <CircularProgress size={18} color="inherit" />
-                      ) : null
-                    }
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 600,
-                      bgcolor: colors.accent.green,
-                      "&:hover": { bgcolor: colors.accent.greenDark },
-                    }}
-                  >
-                    {submitSubdomainWiseAnswersMutation.isPending
-                      ? "Saving..."
-                      : "Save assessment"}
-                  </Button>
-                </>
-              )}
-            </Stack>
-          </Stack>
+
+                  {!isLastQuestionInSubdomain ? (
+                    <Button
+                      variant="contained"
+                      endIcon={<ArrowForward />}
+                      onClick={() => {
+                        handleNextQuestion();
+                        scrollMobileToTop?.();
+                      }}
+                      disabled={needsClassFilters && !filtersReady}
+                      sx={{
+                        textTransform: "none",
+                        fontWeight: 600,
+                        bgcolor: colors.primary.blue,
+                      }}
+                    >
+                      Next question
+                    </Button>
+                  ) : (
+                    <>
+                      {nextSubdomainInfo ? (
+                        <Button
+                          variant="outlined"
+                          endIcon={<ArrowForward />}
+                          onClick={() => {
+                            handleGoToNextSubdomain();
+                            scrollMobileToTop?.();
+                          }}
+                          sx={{ textTransform: "none", fontWeight: 600 }}
+                        >
+                          Next subdomain
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="contained"
+                        onClick={handleSubmit}
+                        disabled={isSaveAssessmentDisabled()}
+                        startIcon={
+                          submitSubdomainWiseAnswersMutation.isPending ? (
+                            <CircularProgress size={18} color="inherit" />
+                          ) : null
+                        }
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 600,
+                          bgcolor: colors.accent.green,
+                          "&:hover": { bgcolor: colors.accent.greenDark },
+                        }}
+                      >
+                        {submitSubdomainWiseAnswersMutation.isPending
+                          ? "Saving..."
+                          : "Save assessment"}
+                      </Button>
+                    </>
+                  )}
+                </Stack>
+              </>
+            )}
+          </Box>
         </Box>
       ) : null}
     </Box>
