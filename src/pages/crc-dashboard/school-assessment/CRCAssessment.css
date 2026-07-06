@@ -7,6 +7,17 @@
   box-sizing: border-box;
 }
 
+.crc-assessment-page-content .crc-subdomain-evidence {
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .crc-assessment-page-content .crc-subdomain-evidence,
+  .verifier-subdomain-evidence {
+    width: 100%;
+  }
+}
+
 @media (max-width: 960px) {
   .crc-assessment-page-content .sa-mobile-stepper .MuiStepLabel-label {
     font-size: 0.625rem !important;

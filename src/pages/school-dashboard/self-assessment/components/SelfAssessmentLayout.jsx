@@ -16,7 +16,6 @@ import {
   AppBar,
   Toolbar,
   IconButton,
-  useTheme,
   useMediaQuery,
   Divider,
   LinearProgress,
@@ -52,8 +51,6 @@ import {
   Create,
   LocationOn,
   AccountTree,
-  PhotoCamera,
-  Close,
 } from "@mui/icons-material";
 import { colors } from "../../../../constants/colors";
 import AppDrawer from "../../../../components/AppDrawer/AppDrawer";
@@ -134,11 +131,6 @@ export function SelfAssessmentLayout({ c }) {
     setSelectedAssessmentId,
     chartDrilldownAssessmentId,
     setChartDrilldownAssessmentId,
-    mcqQuestionImages,
-    setMcqQuestionImages,
-    mcqImageInputRef,
-    pendingMcqImageSlot,
-    setPendingMcqImageSlot,
     logoutMutation,
     handleDrawerToggle,
     handleLogout,
@@ -222,17 +214,6 @@ export function SelfAssessmentLayout({ c }) {
     handleSubdomainSelect,
     handleAssessmentSelect,
     handleAnswerChange,
-    questionAllowsImageUpload,
-    getMcqImagesForQuestion,
-    getMcqImagePreviewSrc,
-    getMcqImageLocation,
-    getMcqImageFilesForQuestion,
-    buildAttachedImagesForQuestion,
-    uploadImagesToPresignedUrls,
-    handleMcqImageCaptureClick,
-    getAddressFromCoords,
-    handleMcqImageFileChange,
-    handleMcqImageRemove,
     handleTextAnswerChange,
     submitAnswerMutation,
     submitSubdomainWiseAnswersMutation,
@@ -319,8 +300,11 @@ export function SelfAssessmentLayout({ c }) {
     }
   };
 
+  const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
+
   const showMobileStepper = matchDownMD && mobileStep < 2;
-  const showMobileOverallProgress = matchDownMD && mobileStep < 2;
+  const showMobileOverallProgress =
+    matchDownMD && (mobileStep < 2 || (mobileStep === 2 && isTablet));
   const showMobileSubdomainsPanel =
     matchDownMD && mobileStep === 1 && !!selectedDomain;
   const showMobileQuestionsPanel =
@@ -376,8 +360,16 @@ export function SelfAssessmentLayout({ c }) {
           borderRadius: 2,
           bgcolor: "white",
           border: `1px solid ${colors.neutral.gray200}`,
-          boxShadow: isInline ? "none" : compact ? "none" : "0 2px 12px rgba(0,0,0,0.04)",
-          minWidth: isInline ? 0 : compact ? { xs: "100%", md: 260 } : undefined,
+          boxShadow: isInline
+            ? "none"
+            : compact
+              ? "none"
+              : "0 2px 12px rgba(0,0,0,0.04)",
+          minWidth: isInline
+            ? 0
+            : compact
+              ? { xs: "100%", md: 260 }
+              : undefined,
           maxWidth: isInline ? "none" : compact ? { md: 300 } : undefined,
           flex: isInline ? "1 1 0" : compact ? { md: "0 0 280px" } : undefined,
           width: isInline ? "100%" : undefined,
@@ -398,7 +390,11 @@ export function SelfAssessmentLayout({ c }) {
             sx={{
               fontWeight: 700,
               color: colors.text.primary,
-              fontSize: isInline ? "0.6875rem" : compact ? "0.75rem" : "0.9375rem",
+              fontSize: isInline
+                ? "0.6875rem"
+                : compact
+                  ? "0.75rem"
+                  : "0.9375rem",
               lineHeight: 1.3,
               whiteSpace: isInline ? "nowrap" : undefined,
               overflow: isInline ? "hidden" : undefined,
@@ -412,7 +408,11 @@ export function SelfAssessmentLayout({ c }) {
             sx={{
               fontWeight: 700,
               color: getProgressColor(assessmentProgress.answerPercentage),
-              fontSize: isInline ? "0.75rem" : compact ? "0.8125rem" : "0.9375rem",
+              fontSize: isInline
+                ? "0.75rem"
+                : compact
+                  ? "0.8125rem"
+                  : "0.9375rem",
               flexShrink: 0,
             }}
           >
@@ -456,14 +456,6 @@ export function SelfAssessmentLayout({ c }) {
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
-      <input
-        type="file"
-        accept="image/*"
-        capture="environment"
-        ref={mcqImageInputRef}
-        onChange={handleMcqImageFileChange}
-        style={{ display: "none" }}
-      />
       <AppDrawer open={drawerOpen} handleDrawerToggle={handleDrawerToggle} />
       <Box
         component="main"
@@ -881,7 +873,16 @@ export function SelfAssessmentLayout({ c }) {
             )}
 
             {showMobileOverallProgress && (
-              <Box sx={{ mb: 2, flexShrink: 0 }}>{renderOverallProgress(true)}</Box>
+              <Box
+                className={`sa-overall-progress-shell${
+                  isTablet && mobileStep === 2
+                    ? " sa-overall-progress-shell--tablet-questions"
+                    : ""
+                }`}
+                sx={{ mb: 2, flexShrink: 0 }}
+              >
+                {renderOverallProgress(true)}
+              </Box>
             )}
 
             {showMobileStepper && (
@@ -909,7 +910,10 @@ export function SelfAssessmentLayout({ c }) {
                 },
                 minHeight: 0,
                 minWidth: 0,
-                overflow: { xs: showMobileNavPanel ? "visible" : "hidden", md: "hidden" },
+                overflow: {
+                  xs: showMobileNavPanel ? "visible" : "hidden",
+                  md: "hidden",
+                },
                 alignItems: "stretch",
               }}
             >
@@ -924,7 +928,10 @@ export function SelfAssessmentLayout({ c }) {
                     xs: showMobileNavPanel ? "0 1 auto" : undefined,
                     md: undefined,
                   },
-                  minHeight: { xs: showMobileNavPanel ? "auto" : 0, md: undefined },
+                  minHeight: {
+                    xs: showMobileNavPanel ? "auto" : 0,
+                    md: undefined,
+                  },
                   width: {
                     xs: "100%",
                     md: isLeftPanelCollapsed ? 0 : leftPanelWidth,
@@ -954,20 +961,24 @@ export function SelfAssessmentLayout({ c }) {
                   sx={{
                     width: { xs: "100%", md: leftPanelWidth },
                     minWidth: { xs: 0, md: leftPanelWidth },
-                    flex: { xs: showMobileNavPanel ? "0 1 auto" : "1 1 0", md: "none" },
+                    flex: {
+                      xs: showMobileNavPanel ? "0 1 auto" : "1 1 0",
+                      md: "none",
+                    },
                     borderRadius: 3,
                     bgcolor: "white",
                     display: "flex",
                     flexDirection: "column",
                     overflow: "hidden",
                     maxHeight: {
-                      xs: showMobileNavPanel
-                        ? "calc(100dvh - 280px)"
-                        : "100%",
+                      xs: showMobileNavPanel ? "calc(100dvh - 280px)" : "100%",
                       md: "calc(100vh - 200px)",
                     },
                     minHeight: { xs: "auto", md: "auto" },
-                    height: { xs: showMobileNavPanel ? "auto" : "100%", md: "100%" },
+                    height: {
+                      xs: showMobileNavPanel ? "auto" : "100%",
+                      md: "100%",
+                    },
                     boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
                   }}
                 >
@@ -1012,20 +1023,21 @@ export function SelfAssessmentLayout({ c }) {
                         </Typography>
                       </Box>
                       {!matchDownMD && (
-                        <IconButton
-                          type="button"
-                          size="small"
-                          onClick={() => setIsLeftPanelCollapsed(true)}
-                          aria-label="Collapse assessment domains panel"
-                          sx={{
-                            flexShrink: 0,
-                            color: colors.primary.blue,
-                            bgcolor: colors.primary.blue + "12",
-                            "&:hover": { bgcolor: colors.primary.blue + "22" },
-                          }}
-                        >
-                          <ChevronLeft fontSize="small" />
-                        </IconButton>
+                        // <IconButton
+                        //   type="button"
+                        //   size="small"
+                        //   onClick={() => setIsLeftPanelCollapsed(true)}
+                        //   aria-label="Collapse assessment domains panel"
+                        //   sx={{
+                        //     flexShrink: 0,
+                        //     color: colors.primary.blue,
+                        //     bgcolor: colors.primary.blue + "12",
+                        //     "&:hover": { bgcolor: colors.primary.blue + "22" },
+                        //   }}
+                        // >
+                        //   <ChevronLeft fontSize="small" />
+                        // </IconButton>
+                        <></>
                       )}
                     </Box>
                     {assessments.length > 1 && (
@@ -1151,30 +1163,6 @@ export function SelfAssessmentLayout({ c }) {
                                         mb: 1,
                                       }}
                                     >
-                                      <Box
-                                        sx={{
-                                          width: 32,
-                                          height: 32,
-                                          borderRadius: 1,
-                                          bgcolor: colors.accent.green,
-                                          display: "flex",
-                                          alignItems: "center",
-                                          justifyContent: "center",
-                                          flexShrink: 0,
-                                        }}
-                                      >
-                                        <Typography
-                                          sx={{
-                                            color: "white",
-                                            fontWeight: 700,
-                                            fontSize: "0.75rem",
-                                          }}
-                                        >
-                                          {String.fromCharCode(
-                                            65 + (subdomainIndex % 26),
-                                          )}
-                                        </Typography>
-                                      </Box>
                                       <Typography
                                         variant="body1"
                                         sx={{
@@ -1182,6 +1170,8 @@ export function SelfAssessmentLayout({ c }) {
                                           color: colors.text.primary,
                                           fontSize: "0.9375rem",
                                           lineHeight: 1.35,
+                                          flex: 1,
+                                          minWidth: 0,
                                         }}
                                       >
                                         {subdomainNumber}.{" "}
@@ -1442,34 +1432,6 @@ export function SelfAssessmentLayout({ c }) {
                                                 }}
                                               >
                                                 <Box
-                                                  sx={{
-                                                    width: 24,
-                                                    height: 24,
-                                                    borderRadius: 0.8,
-                                                    bgcolor: isSubdomainSelected
-                                                      ? colors.accent.green
-                                                      : colors.accent.green +
-                                                        "80",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                    flexShrink: 0,
-                                                  }}
-                                                >
-                                                  <Typography
-                                                    sx={{
-                                                      color: "white",
-                                                      fontWeight: 700,
-                                                      fontSize: "0.6875rem",
-                                                    }}
-                                                  >
-                                                    {String.fromCharCode(
-                                                      65 +
-                                                        (subdomainIndex % 26),
-                                                    )}
-                                                  </Typography>
-                                                </Box>
-                                                <Box
                                                   sx={{ flex: 1, minWidth: 0 }}
                                                 >
                                                   <Typography
@@ -1644,7 +1606,7 @@ export function SelfAssessmentLayout({ c }) {
                           {submitAssessmentMutation.isPending
                             ? "Submitting..."
                             : !allDomainsComplete
-                              ? "Final Submit"
+                              ? "Preview & Submit"
                               : "Submit Assessment"}
                         </Button>
                       </Box>
@@ -1735,6 +1697,7 @@ export function SelfAssessmentLayout({ c }) {
                           gap: 1,
                           mb: 1,
                           flexShrink: 0,
+                          flexWrap: { xs: "wrap", sm: "nowrap" },
                         }}
                       >
                         <Box
@@ -1769,27 +1732,29 @@ export function SelfAssessmentLayout({ c }) {
                             {t("selfAssessment.mobileStep.subdomains")}
                           </Typography>
                         </Box>
-                        {renderOverallProgress(false, "inline")}
+                        {!isTablet
+                          ? renderOverallProgress(false, "inline")
+                          : null}
                       </Box>
                     ) : null}
-                  <Paper
-                    className={`sa-questions-panel${
-                      matchDownMD ? " sa-questions-panel--mobile-full" : ""
-                    }`}
-                    sx={{
-                      flex: "1 1 0",
-                      minHeight: 0,
-                      height: { md: "100%" },
-                      borderRadius: 3,
-                      bgcolor: "white",
-                      display: "flex",
-                      flexDirection: "column",
-                      overflow: "hidden",
-                      minWidth: 0,
-                      boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                    }}
-                  >
-                    {/* <Box
+                    <Paper
+                      className={`sa-questions-panel${
+                        matchDownMD ? " sa-questions-panel--mobile-full" : ""
+                      }`}
+                      sx={{
+                        flex: "1 1 0",
+                        minHeight: 0,
+                        height: { md: "100%" },
+                        borderRadius: 3,
+                        bgcolor: "white",
+                        display: "flex",
+                        flexDirection: "column",
+                        overflow: "hidden",
+                        minWidth: 0,
+                        boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                      }}
+                    >
+                      {/* <Box
                       className="sa-panel-header sa-panel-header--compact"
                       sx={{
                         p: { xs: 1.5, md: 2 },
@@ -1806,86 +1771,86 @@ export function SelfAssessmentLayout({ c }) {
                       </Typography>
                     </Box> */}
 
-                    {/* Questions Content */}
-                    <Box
-                      className="sa-questions-content sa-questions-content--wizard"
-                      sx={{
-                        flex: "1 1 0",
-                        minHeight: 0,
-                        overflow: "hidden",
-                        p: { xs: matchDownMD ? 1 : 1.5, sm: 2, md: 3 },
-                        display: "flex",
-                        flexDirection: "column",
-                      }}
-                    >
-                      {/* Loading State */}
-                      {isLoadingQuestions && (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            minHeight: "400px",
-                          }}
-                        >
-                          <CircularProgress />
-                        </Box>
-                      )}
-
-                      {/* No Questions Message */}
-                      {!isLoadingQuestions && allQuestions.length === 0 && (
-                        <Box sx={{ textAlign: "center", py: 8, px: 3 }}>
-                          <Assignment
-                            sx={{
-                              fontSize: 80,
-                              color: colors.neutral.gray400,
-                              mb: 3,
-                            }}
-                          />
-                          <Typography
-                            variant="h5"
-                            sx={{
-                              fontWeight: 700,
-                              color: colors.text.primary,
-                              mb: 1.5,
-                            }}
-                          >
-                            No Questions Added
-                          </Typography>
-                          <Typography
-                            variant="body1"
-                            color="text.secondary"
-                            sx={{ maxWidth: 400, mx: "auto" }}
-                          >
-                            There are no questions available for this subdomain
-                            yet. Please contact your administrator to add
-                            questions.
-                          </Typography>
-                        </Box>
-                      )}
-
-                      {!isLoadingQuestions &&
-                        allQuestions.length > 0 &&
-                        flattenedQuestions.length > 0 && (
+                      {/* Questions Content */}
+                      <Box
+                        className="sa-questions-content sa-questions-content--wizard"
+                        sx={{
+                          flex: "1 1 0",
+                          minHeight: 0,
+                          overflow: "hidden",
+                          p: { xs: matchDownMD ? 1 : 1.5, sm: 2, md: 3 },
+                          display: "flex",
+                          flexDirection: "column",
+                        }}
+                      >
+                        {/* Loading State */}
+                        {isLoadingQuestions && (
                           <Box
                             sx={{
-                              flex: "1 1 0",
-                              minHeight: 0,
                               display: "flex",
-                              flexDirection: "column",
-                              overflow: "hidden",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              minHeight: "400px",
                             }}
                           >
-                            <SubdomainQuestionFlow
-                              c={c}
-                              matchDownMD={matchDownMD}
-                              setMobileStep={setMobileStep}
-                              scrollMobileToTop={scrollMobileToTop}
-                            />
+                            <CircularProgress />
                           </Box>
                         )}
-                    </Box>
-                  </Paper>
+
+                        {/* No Questions Message */}
+                        {!isLoadingQuestions && allQuestions.length === 0 && (
+                          <Box sx={{ textAlign: "center", py: 8, px: 3 }}>
+                            <Assignment
+                              sx={{
+                                fontSize: 80,
+                                color: colors.neutral.gray400,
+                                mb: 3,
+                              }}
+                            />
+                            <Typography
+                              variant="h5"
+                              sx={{
+                                fontWeight: 700,
+                                color: colors.text.primary,
+                                mb: 1.5,
+                              }}
+                            >
+                              No Questions Added
+                            </Typography>
+                            <Typography
+                              variant="body1"
+                              color="text.secondary"
+                              sx={{ maxWidth: 400, mx: "auto" }}
+                            >
+                              There are no questions available for this
+                              subdomain yet. Please contact your administrator
+                              to add questions.
+                            </Typography>
+                          </Box>
+                        )}
+
+                        {!isLoadingQuestions &&
+                          allQuestions.length > 0 &&
+                          flattenedQuestions.length > 0 && (
+                            <Box
+                              sx={{
+                                flex: "1 1 0",
+                                minHeight: 0,
+                                display: "flex",
+                                flexDirection: "column",
+                                overflow: "hidden",
+                              }}
+                            >
+                              <SubdomainQuestionFlow
+                                c={c}
+                                matchDownMD={matchDownMD}
+                                setMobileStep={setMobileStep}
+                                scrollMobileToTop={scrollMobileToTop}
+                              />
+                            </Box>
+                          )}
+                      </Box>
+                    </Paper>
                   </Box>
                 )}
 
@@ -2080,45 +2045,20 @@ export function SelfAssessmentLayout({ c }) {
                                               alignItems: "center",
                                               gap: 2,
                                               flex: 1,
+                                              minWidth: 0,
                                             }}
                                           >
-                                            <Box
+                                            <Typography
+                                              variant="body1"
                                               sx={{
-                                                width: 36,
-                                                height: 36,
-                                                borderRadius: 1.5,
-                                                bgcolor: colors.accent.green,
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                flexShrink: 0,
+                                                fontWeight: 600,
+                                                color: colors.text.primary,
+                                                fontSize: "0.9375rem",
                                               }}
                                             >
-                                              <Typography
-                                                sx={{
-                                                  color: "white",
-                                                  fontWeight: 700,
-                                                  fontSize: "0.875rem",
-                                                }}
-                                              >
-                                                {String.fromCharCode(
-                                                  65 + (index % 26),
-                                                )}
-                                              </Typography>
-                                            </Box>
-                                            <Box sx={{ flex: 1 }}>
-                                              <Typography
-                                                variant="body1"
-                                                sx={{
-                                                  fontWeight: 600,
-                                                  color: colors.text.primary,
-                                                  fontSize: "0.9375rem",
-                                                }}
-                                              >
-                                                {subdomainNumber}.{" "}
-                                                {getSubdomainName(subdomain)}
-                                              </Typography>
-                                            </Box>
+                                              {subdomainNumber}.{" "}
+                                              {getSubdomainName(subdomain)}
+                                            </Typography>
                                           </Box>
                                           <Box
                                             sx={{

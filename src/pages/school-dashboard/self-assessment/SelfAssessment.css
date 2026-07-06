@@ -403,6 +403,83 @@
     margin-bottom: 0;
   }
 
+  .sa-wizard-context__meta-row {
+    width: 100%;
+  }
+
+  .sa-wizard-context__meta-row .sa-subdomain-evidence {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .sa-wizard-context__title-block {
+    width: 100%;
+  }
+
+  .sa-overall-progress-shell--tablet-questions {
+    width: 100%;
+  }
+
+  .sa-overall-progress-shell--tablet-questions .sa-overall-progress {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 959.95px) {
+  .sa-wizard-context__main-row {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .sa-wizard-context__title-block {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sa-wizard-context__meta-row {
+    width: auto;
+    flex: 0 1 auto;
+    max-width: 42%;
+  }
+
+  .sa-wizard-context__meta-row .sa-subdomain-evidence {
+    width: auto;
+    max-width: 100%;
+  }
+
+  .sa-mobile-questions-toolbar {
+    align-items: center;
+  }
+
+  .sa-mobile-questions-toolbar .sa-overall-progress--inline {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .sa-overall-progress-shell .sa-overall-progress {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 599.95px) {
+  .sa-wizard-context__meta-row {
+    width: 100%;
+  }
+
+  .sa-wizard-context__meta-row .sa-subdomain-evidence {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .sa-wizard-context__title-block {
+    width: 100%;
+  }
+}
+
+@media (max-width: 960px) {
   .sa-wizard-footer {
     padding-top: 0.75rem;
     padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));

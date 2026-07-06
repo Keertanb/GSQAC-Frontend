@@ -55,7 +55,7 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => {
     // Check for "Invalid token" message in successful responses
-    if (response?.data?.message && typeof response.data.message === 'string') {
+    if (response?.data?.message && typeof response.data.message === "string") {
       const message = response.data.message.toLowerCase();
       if (message.includes("invalid token")) {
         useAuthStore.getState().logout();
@@ -84,9 +84,9 @@ axiosInstance.interceptors.response.use(
     }
 
     const errorMessage = error.response?.data?.message;
-    
+
     // Check for "Invalid token" message in error responses
-    if (errorMessage && typeof errorMessage === 'string') {
+    if (errorMessage && typeof errorMessage === "string") {
       const message = errorMessage.toLowerCase();
       if (message.includes("invalid token")) {
         useAuthStore.getState().logout();

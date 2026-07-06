@@ -23,12 +23,11 @@ import {
   ArrowForward,
   ArrowBack,
   ChevronRight,
-  PhotoCamera,
-  Close,
   AccountTree,
   Save,
 } from "@mui/icons-material";
 import { colors } from "../../../../constants/colors";
+import { SubdomainEvidencePanel } from "../../../../components/SubdomainEvidencePanel/SubdomainEvidencePanel";
 
 function renderOptionLabel(option, optIndex, getOptionText, t, isMobile = false) {
   return (
@@ -223,12 +222,6 @@ function McqQuestionBody({ question, c, questionNumber, isMobile = false }) {
     shouldShowApiAnswer,
     isPublished,
     isReadOnly,
-    questionAllowsImageUpload,
-    getMcqImagesForQuestion,
-    getMcqImagePreviewSrc,
-    getMcqImageLocation,
-    handleMcqImageCaptureClick,
-    handleMcqImageRemove,
     t,
     getOptionText,
   } = c;
@@ -322,70 +315,6 @@ function McqQuestionBody({ question, c, questionNumber, isMobile = false }) {
               ))}
             </RadioGroup>
           </FormControl>
-        ) : null}
-
-        {questionAllowsImageUpload(question) ? (
-          <Box sx={{ mt: 2.5, pt: 2, borderTop: `1px solid ${colors.neutral.gray200}` }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
-              Add photos (up to 2)
-            </Typography>
-            <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
-              {[0, 1].map((idx) => {
-                const imgs = getMcqImagesForQuestion(question.questionId);
-                const item = imgs[idx];
-                const src = getMcqImagePreviewSrc(item);
-                const location = getMcqImageLocation(item);
-                return (
-                  <Box key={idx} className="sa-mcq-image-slot">
-                    {src ? (
-                      <Box sx={{ position: "relative" }}>
-                        <Box
-                          component="img"
-                          src={src}
-                          alt=""
-                          sx={{
-                            width: 120,
-                            height: 120,
-                            objectFit: "cover",
-                            borderRadius: 2,
-                            border: `1px solid ${colors.neutral.gray200}`,
-                          }}
-                        />
-                        {!isReadOnly ? (
-                          <Button
-                            size="small"
-                            onClick={() =>
-                              handleMcqImageRemove(question.questionId, idx)
-                            }
-                            sx={{ mt: 0.5, minWidth: 0, p: 0.5 }}
-                          >
-                            <Close fontSize="small" />
-                          </Button>
-                        ) : null}
-                        {location ? (
-                          <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-                            {location.address}
-                          </Typography>
-                        ) : null}
-                      </Box>
-                    ) : (
-                      <Button
-                        variant="outlined"
-                        disabled={!isPublished || isReadOnly}
-                        onClick={() =>
-                          handleMcqImageCaptureClick(question.questionId, idx)
-                        }
-                        startIcon={<PhotoCamera />}
-                        sx={{ textTransform: "none" }}
-                      >
-                        Capture image
-                      </Button>
-                    )}
-                  </Box>
-                );
-              })}
-            </Box>
-          </Box>
         ) : null}
       </CardContent>
     </Card>
@@ -522,11 +451,12 @@ export function SubdomainQuestionFlow({
     submitSubdomainWiseAnswersMutation,
     isPublished,
     isReadOnly,
+    userName,
+    selectedAssessmentId,
+    selectedAssessment,
     selectedClass,
     selectedSection,
     selectedSubject,
-    mcqImageInputRef,
-    handleMcqImageFileChange,
   } = c;
 
   const needsClassFilters =
@@ -590,15 +520,6 @@ export function SubdomainQuestionFlow({
         overflow: "hidden",
       }}
     >
-      <input
-        ref={mcqImageInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        style={{ display: "none" }}
-        onChange={handleMcqImageFileChange}
-      />
-
       {/* Domain / subdomain context */}
       <Box
         className={`sa-wizard-context${
@@ -614,43 +535,113 @@ export function SubdomainQuestionFlow({
               {domainNumber}.{subdomainNumber}. {getSubdomainName(selectedSubdomain)}
             </Typography>
           </Box>
-        ) : null}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: { xs: "flex-start", sm: "center" },
-            justifyContent: "space-between",
-            gap: 1.5,
-            flexWrap: "wrap",
-          }}
-        >
-          <Box sx={{ minWidth: 0, flex: 1 }}>
+        ) : (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.75 }}>
+            <AccountTree sx={{ fontSize: 16, color: colors.primary.blue, flexShrink: 0 }} />
             <Typography
-              variant="h6"
-              className="sa-wizard-context-title"
+              variant="caption"
               sx={{
-                fontWeight: 800,
-                lineHeight: 1.25,
-                fontSize: { xs: "1rem", sm: "1.25rem" },
+                fontWeight: 700,
+                color: colors.text.secondary,
+                fontSize: "0.6875rem",
+                lineHeight: 1.35,
               }}
             >
-              {getSubdomainName(selectedSubdomain)}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-              Question {currentQuestionIndex + 1} of {flattenedQuestions.length}
+              {domainNumber}. {getDomainName(selectedDomain)}
+              <ChevronRight sx={{ fontSize: 12, mx: 0.2, verticalAlign: "middle" }} />
+              {domainNumber}.{subdomainNumber}. {getSubdomainName(selectedSubdomain)}
             </Typography>
           </Box>
-          <Chip
-            label={tabLabel}
-            size="small"
+        )}
+        <Box
+          className="sa-wizard-context__main-row"
+          sx={{
+            display: "flex",
+            alignItems: { xs: "stretch", sm: "center" },
+            justifyContent: "space-between",
+            gap: { xs: 0.75, sm: 1.5 },
+            flexDirection: { xs: "column", sm: "row" },
+          }}
+        >
+          <Box
+            className="sa-wizard-context__title-block"
             sx={{
-              fontWeight: 700,
-              bgcolor: `${tabColor}18`,
-              color: tabColor,
-              border: `1px solid ${tabColor}40`,
-              flexShrink: 0,
+              minWidth: 0,
+              flex: 1,
+              display: "flex",
+              alignItems: { xs: "flex-start", sm: "center" },
+              justifyContent: "space-between",
+              gap: 1,
             }}
-          />
+          >
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography
+                variant="h6"
+                className="sa-wizard-context-title"
+                sx={{
+                  fontWeight: 800,
+                  lineHeight: 1.25,
+                  fontSize: { xs: "1rem", sm: "1.25rem" },
+                }}
+              >
+                {getSubdomainName(selectedSubdomain)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                Question {currentQuestionIndex + 1} of {flattenedQuestions.length}
+              </Typography>
+            </Box>
+            {matchDownMD ? (
+              <Chip
+                label={tabLabel}
+                size="small"
+                sx={{
+                  fontWeight: 700,
+                  bgcolor: `${tabColor}18`,
+                  color: tabColor,
+                  border: `1px solid ${tabColor}40`,
+                  flexShrink: 0,
+                  mt: 0.25,
+                }}
+              />
+            ) : null}
+          </Box>
+          <Box
+            className="sa-wizard-context__meta-row"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.75,
+              flexShrink: 0,
+              width: { xs: "100%", sm: "auto" },
+              maxWidth: { sm: "100%", md: "none" },
+              justifyContent: { xs: "stretch", sm: "flex-end" },
+            }}
+          >
+            <SubdomainEvidencePanel
+              subDomainId={selectedSubdomain?.subDomainId || selectedSubdomain?.id}
+              schoolId={userName}
+              assessmentId={
+                selectedAssessment?.assessmentId ?? selectedAssessmentId ?? null
+              }
+              subdomain={selectedSubdomain}
+              domainName={getDomainName(selectedDomain)}
+              readOnly={isReadOnly}
+              className="sa-subdomain-evidence"
+            />
+            {!matchDownMD ? (
+              <Chip
+                label={tabLabel}
+                size="small"
+                sx={{
+                  fontWeight: 700,
+                  bgcolor: `${tabColor}18`,
+                  color: tabColor,
+                  border: `1px solid ${tabColor}40`,
+                  flexShrink: 0,
+                }}
+              />
+            ) : null}
+          </Box>
         </Box>
         <LinearProgress
           variant="determinate"

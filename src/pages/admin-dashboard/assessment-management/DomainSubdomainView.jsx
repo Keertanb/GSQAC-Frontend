@@ -16,12 +16,17 @@ import {
   TextField,
   Fade,
   Card,
+  Chip,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   ToggleButtonGroup,
   ToggleButton,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from "@mui/material";
 import {
   Visibility,
@@ -76,6 +81,7 @@ const DomainSubdomainView = ({
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [subdomainToDelete, setSubdomainToDelete] = useState(null);
   const [translationId, setTranslationId] = useState(null);
+  const [requireEvidence, setRequireEvidence] = useState("no");
 
   const upsertSubdomainMutation = useUpsertSubdomainMutation({
     onSuccess: (data, variables) => {
@@ -91,6 +97,7 @@ const DomainSubdomainView = ({
       setShowAddSubdomain(false);
       setEditingSubdomain(null);
       setTranslationId(null);
+      setRequireEvidence("no");
       if (onSubdomainAdded) {
         onSubdomainAdded();
       }
@@ -193,6 +200,7 @@ const DomainSubdomainView = ({
       subDomainNameEn: newSubdomainName.en.trim(),
       subDomainNameHi: newSubdomainName.hi.trim(),
       subDomainNameGu: newSubdomainName.gu.trim(),
+      requireEvidence: requireEvidence === "yes" ? 1 : 0,
     };
 
     // If editing, include subDomainId
@@ -211,6 +219,13 @@ const DomainSubdomainView = ({
       hi: subdomain.subDomainNameHi || subdomain.subDomainName || "",
       gu: subdomain.subDomainNameGu || subdomain.subDomainName || "",
     });
+    setRequireEvidence(
+      subdomain.requireEvidence === 1 ||
+        subdomain.requireEvidence === "1" ||
+        subdomain.requireEvidence === true
+        ? "yes"
+        : "no",
+    );
 
     // Set selected role based on domain's roleId
     const subdomainRole = Object.keys(roleIdMap).find(
@@ -387,6 +402,35 @@ const DomainSubdomainView = ({
                   size="small"
                 />
               </Box>
+              <FormControl component="fieldset" fullWidth size="small">
+                <FormLabel
+                  component="legend"
+                  sx={{
+                    fontSize: "0.875rem",
+                    fontWeight: 600,
+                    color: "text.primary",
+                    mb: 1,
+                  }}
+                >
+                  Require evidence upload for this subdomain?
+                </FormLabel>
+                <RadioGroup
+                  row
+                  value={requireEvidence}
+                  onChange={(e) => setRequireEvidence(e.target.value)}
+                >
+                  <FormControlLabel
+                    value="yes"
+                    control={<Radio size="small" />}
+                    label="Yes"
+                  />
+                  <FormControlLabel
+                    value="no"
+                    control={<Radio size="small" />}
+                    label="No"
+                  />
+                </RadioGroup>
+              </FormControl>
             </Box>
             <Box sx={{ display: "flex", gap: 2 }}>
               <Button
@@ -404,6 +448,7 @@ const DomainSubdomainView = ({
                   setNewSubdomainName({ en: "", hi: "", gu: "" });
                   setEditingSubdomain(null);
                   setTranslationId(null);
+                  setRequireEvidence("no");
                 }}
                 disabled={upsertSubdomainMutation.isPending}
               >
@@ -425,6 +470,9 @@ const DomainSubdomainView = ({
                 <TableCell sx={{ fontWeight: 700 }}>
                   {t("assessment.subdomain.title")}
                 </TableCell>
+                <TableCell sx={{ fontWeight: 700 }} align="center">
+                  Evidence
+                </TableCell>
                 <TableCell align="center" sx={{ fontWeight: 700 }}>
                   {t("common.actions")}
                 </TableCell>
@@ -442,6 +490,33 @@ const DomainSubdomainView = ({
                     <Typography fontWeight={500}>
                       {getSubdomainName(subdomain)}
                     </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Chip
+                      size="small"
+                      label={
+                        subdomain.requireEvidence === 1 ||
+                        subdomain.requireEvidence === "1" ||
+                        subdomain.requireEvidence === true
+                          ? "Required"
+                          : "Not required"
+                      }
+                      sx={{
+                        fontWeight: 600,
+                        bgcolor:
+                          subdomain.requireEvidence === 1 ||
+                          subdomain.requireEvidence === "1" ||
+                          subdomain.requireEvidence === true
+                            ? colors.accent.green + "20"
+                            : colors.neutral.gray200,
+                        color:
+                          subdomain.requireEvidence === 1 ||
+                          subdomain.requireEvidence === "1" ||
+                          subdomain.requireEvidence === true
+                            ? colors.accent.green
+                            : colors.text.secondary,
+                      }}
+                    />
                   </TableCell>
                   <TableCell align="center">
                     <Box

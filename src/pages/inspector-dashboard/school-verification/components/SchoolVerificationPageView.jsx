@@ -19,6 +19,7 @@ import { AssessmentOverallProgress } from "../../../../components/AssessmentOver
 import { useAssessmentMobileLayout } from "../../../../hooks/useAssessmentMobileLayout";
 import { renderAssessmentOptionLabel } from "../../../../utils/assessmentOptionLabel";
 import { AssessmentNavProgressBar } from "../../../../components/AssessmentNavProgressBar/AssessmentNavProgressBar";
+import { SubdomainEvidencePanel } from "../../../../components/SubdomainEvidencePanel/SubdomainEvidencePanel";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import "../../../school-dashboard/self-assessment/SelfAssessment.css";
 
@@ -751,32 +752,6 @@ export function SchoolVerificationPageView({ c }) {
                                         mb: 0.8,
                                       }}
                                     >
-                                      <Box
-                                        sx={{
-                                          width: 24,
-                                          height: 24,
-                                          borderRadius: 0.8,
-                                          bgcolor: isSubdomainSelected
-                                            ? colors.accent.green
-                                            : colors.accent.green + "80",
-                                          display: "flex",
-                                          alignItems: "center",
-                                          justifyContent: "center",
-                                          flexShrink: 0,
-                                        }}
-                                      >
-                                        <Typography
-                                          sx={{
-                                            color: "white",
-                                            fontWeight: 700,
-                                            fontSize: "0.6875rem",
-                                          }}
-                                        >
-                                          {String.fromCharCode(
-                                            65 + (index % 26)
-                                          )}
-                                        </Typography>
-                                      </Box>
                                       <Box sx={{ flex: 1, minWidth: 0 }}>
                                         <Typography
                                           variant="body2"
@@ -967,26 +942,52 @@ export function SchoolVerificationPageView({ c }) {
                     : ""}
                 </Typography>
 
-                <Box sx={{ mb: 2 }}>
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontWeight: 700,
-                      color: colors.text.primary,
-                      mb: 0.5,
-                    }}
-                  >
-                    {domainNumber}.{subdomainNumber}.{" "}
-                    {getSubdomainName(selectedSubdomain)}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ fontSize: "0.875rem" }}
-                  >
-                    Assessment of{" "}
-                    {getSubdomainName(selectedSubdomain).toLowerCase()}
-                  </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: { xs: "stretch", sm: "flex-start" },
+                    justifyContent: "space-between",
+                    gap: { xs: 1, sm: 2 },
+                    mb: 2,
+                    flexDirection: { xs: "column", sm: "row" },
+                  }}
+                >
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontWeight: 700,
+                        color: colors.text.primary,
+                        mb: 0.5,
+                      }}
+                    >
+                      {domainNumber}.{subdomainNumber}.{" "}
+                      {getSubdomainName(selectedSubdomain)}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontSize: "0.875rem" }}
+                    >
+                      Assessment of{" "}
+                      {getSubdomainName(selectedSubdomain).toLowerCase()}
+                    </Typography>
+                  </Box>
+                  <SubdomainEvidencePanel
+                    subDomainId={
+                      selectedSubdomain?.subDomainId || selectedSubdomain?.id
+                    }
+                    schoolId={schoolId}
+                    assessmentId={
+                      selectedAssessment?.assessmentId ??
+                      selectedAssessmentId ??
+                      null
+                    }
+                    subdomain={selectedSubdomain}
+                    domainName={getDomainName(selectedDomain)}
+                    readOnly={isSubmitted === 1 || isSubmitted === true}
+                    className="verifier-subdomain-evidence"
+                  />
                 </Box>
               </Box>
 
@@ -3182,43 +3183,20 @@ export function SchoolVerificationPageView({ c }) {
                                 alignItems: "center",
                                 gap: 2,
                                 flex: 1,
+                                minWidth: 0,
                               }}
                             >
-                              <Box
+                              <Typography
+                                variant="body1"
                                 sx={{
-                                  width: 36,
-                                  height: 36,
-                                  borderRadius: 1.5,
-                                  bgcolor: colors.accent.green,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  flexShrink: 0,
+                                  fontWeight: 600,
+                                  color: colors.text.primary,
+                                  fontSize: "0.9375rem",
                                 }}
                               >
-                                <Typography
-                                  sx={{
-                                    color: "white",
-                                    fontWeight: 700,
-                                    fontSize: "0.875rem",
-                                  }}
-                                >
-                                  {String.fromCharCode(65 + (index % 26))}
-                                </Typography>
-                              </Box>
-                              <Box sx={{ flex: 1 }}>
-                                <Typography
-                                  variant="body1"
-                                  sx={{
-                                    fontWeight: 600,
-                                    color: colors.text.primary,
-                                    fontSize: "0.9375rem",
-                                  }}
-                                >
-                                  {subdomainNumber}.{" "}
-                                  {getSubdomainName(subdomain)}
-                                </Typography>
-                              </Box>
+                                {subdomainNumber}.{" "}
+                                {getSubdomainName(subdomain)}
+                              </Typography>
                             </Box>
                             <Box
                               sx={{

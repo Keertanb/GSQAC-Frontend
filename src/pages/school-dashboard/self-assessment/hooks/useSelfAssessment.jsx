@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -87,10 +87,6 @@ export function useSelfAssessment() {
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
   const [chartDrilldownAssessmentId, setChartDrilldownAssessmentId] =
     useState(null);
-  // MCQ image upload: { [questionId]: [base64OrNull, base64OrNull] }, max 2 per question
-  const [mcqQuestionImages, setMcqQuestionImages] = useState({});
-  const mcqImageInputRef = useRef(null);
-  const [pendingMcqImageSlot, setPendingMcqImageSlot] = useState(null);
 
   const logoutMutation = useLogoutMutation({
     onSuccess: () => {
@@ -1266,189 +1262,6 @@ export function useSelfAssessment() {
     }
   };
 
-  // MCQ image upload: show for all General/MCQ questions (type 1); optionally restrict by question.allowImageUpload when API sends it
-  const questionAllowsImageUpload = (question) => {
-    const qt =
-      question?.questionType ??
-      (question?.isClassroomObservation === 1 ? 2 : 1);
-    if (qt !== 1 && qt !== "1") return false;
-    const allow = question?.allowImageUpload;
-    return allow === 1 || allow === "1" || allow === true || allow === "yes";
-  };
-
-  const getMcqImagesForQuestion = (questionId) => {
-    const arr = mcqQuestionImages[questionId];
-    if (!arr) return [null, null];
-    return [arr[0] ?? null, arr[1] ?? null];
-  };
-
-  /** Returns dataUrl for preview (img src). Handles both { dataUrl, file } and legacy base64. */
-  const getMcqImagePreviewSrc = (item) => {
-    if (!item) return null;
-    return typeof item === "string" ? item : (item?.dataUrl ?? null);
-  };
-
-  /** Returns location for display: { latitude, longitude, address } or null. */
-  const getMcqImageLocation = (item) => {
-    if (!item || typeof item !== "object") return null;
-    if (item.latitude != null && item.longitude != null) {
-      return {
-        latitude: item.latitude,
-        longitude: item.longitude,
-        address: item.address || "",
-      };
-    }
-    return null;
-  };
-
-  /** Returns File[] for the given question for upload. */
-  const getMcqImageFilesForQuestion = (questionId) => {
-    const arr = mcqQuestionImages[questionId];
-    if (!arr) return [];
-    return arr
-      .filter((item) => item && (typeof item === "object" ? item?.file : false))
-      .map((item) => item.file);
-  };
-
-  /**
-   * Build attachedImages for submit payload: each image as { extension, contentType, fileName } only.
-   * Sent inside the answer object to sub-domain-wise-submit-answers.
-   */
-  const buildAttachedImagesForQuestion = (questionId) => {
-    const arr = mcqQuestionImages[questionId];
-    if (!arr) return [];
-    const out = [];
-    arr.forEach((item, index) => {
-      if (!item || typeof item !== "object" || !item.file || !item.dataUrl)
-        return;
-      const file = item.file;
-      const extension =
-        file.name?.split(".").pop()?.toLowerCase() ||
-        file.type?.split("/")[1] ||
-        "png";
-      const contentType = file.type || "image/png";
-      const fileName =
-        file.name || `answer_${questionId}_${index}.${extension}`;
-      out.push({ extension, contentType, fileName });
-    });
-    return out;
-  };
-
-  /**
-   * After submit-answers returns uploadUrls, PUT each image file (blob) to its corresponding uploadURL.
-   * Response shape: data.uploadUrls = [ { questionId, images: [ { fileName, uploadURL } ] } ]
-   * Uses XMLHttpRequest so the PUT method is explicitly set and sent.
-   */
-  const uploadImagesToPresignedUrls = async (
-    uploadUrls,
-    imagesByQuestionId,
-  ) => {
-    if (!uploadUrls?.length || !imagesByQuestionId) return;
-
-    for (const entry of uploadUrls) {
-      const arr = imagesByQuestionId[entry.questionId];
-      if (!Array.isArray(arr)) continue;
-
-      for (let i = 0; i < (entry.images?.length ?? 0); i++) {
-        const { uploadURL } = entry.images[i];
-        const item = arr[i];
-        const file = item?.file;
-
-        if (!file || !uploadURL) continue;
-
-        try {
-          const res = await fetch(uploadURL, {
-            method: "PUT",
-            headers: {
-              "Content-Type": file.type || "application/octet-stream",
-            },
-            body: file,
-          });
-
-          if (!res.ok) {
-            throw new Error(`Upload failed ${res.status}`);
-          }
-        } catch (err) {
-          console.error("Failed to upload image:", err);
-        }
-      }
-    }
-  };
-  const handleMcqImageCaptureClick = (questionId, index) => {
-    setPendingMcqImageSlot({ questionId, index });
-    setTimeout(() => mcqImageInputRef.current?.click(), 0);
-  };
-
-  const getAddressFromCoords = async (lat, lon) => {
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
-        { headers: { "User-Agent": "GSQAC-SelfAssessment-Web" } },
-      );
-      const data = await res.json();
-      return data?.display_name || `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-    } catch {
-      return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-    }
-  };
-
-  const handleMcqImageFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || !pendingMcqImageSlot) {
-      setPendingMcqImageSlot(null);
-      return;
-    }
-    let latitude = null;
-    let longitude = null;
-    let address = "";
-    if (navigator.geolocation) {
-      try {
-        const position = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0,
-          });
-        });
-        latitude = position.coords.latitude;
-        longitude = position.coords.longitude;
-        address = await getAddressFromCoords(latitude, longitude);
-      } catch {
-        address = "Location unavailable";
-      }
-    } else {
-      address = "Location unavailable";
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
-      setMcqQuestionImages((prev) => {
-        const arr = [...(prev[pendingMcqImageSlot.questionId] || [null, null])];
-        arr[pendingMcqImageSlot.index] = {
-          dataUrl,
-          file,
-          latitude,
-          longitude,
-          address,
-        };
-        return { ...prev, [pendingMcqImageSlot.questionId]: arr };
-      });
-      setPendingMcqImageSlot(null);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleMcqImageRemove = (questionId, index) => {
-    setMcqQuestionImages((prev) => {
-      const arr = [...(prev[questionId] || [null, null])];
-      arr[index] = null;
-      const next = { ...prev, [questionId]: arr };
-      if (arr.every((x) => x == null)) delete next[questionId];
-      return next;
-    });
-  };
-
   // Handle text answer change for FLN questions
   const handleTextAnswerChange = (questionId, text) => {
     const newTextAnswers = {
@@ -1498,11 +1311,6 @@ export function useSelfAssessment() {
   const submitSubdomainWiseAnswersMutation =
     useSubmitSubdomainWiseAnswersMutation({
       onSuccess: async (data) => {
-        // If API returned presigned upload URLs, PUT each image file to its URL
-        const uploadUrls = data?.data?.uploadUrls;
-        if (uploadUrls?.length) {
-          await uploadImagesToPresignedUrls(uploadUrls, mcqQuestionImages);
-        }
         // Save current answers to subdomainAnswers before clearing
         if (selectedSubdomain) {
           const subdomainId =
@@ -1956,12 +1764,6 @@ export function useSelfAssessment() {
       section: sectionValue,
       schoolId: userName || undefined,
     };
-    if (questionType === 1 || questionType === "1") {
-      const attachedImages = buildAttachedImagesForQuestion(
-        question.questionId,
-      );
-      if (attachedImages.length > 0) payload.attachedImages = attachedImages;
-    }
 
     submitAnswerMutation.mutate(payload);
   };
@@ -2054,7 +1856,7 @@ export function useSelfAssessment() {
       ? questionTypeByTabId[currentTab.id] || null
       : null;
 
-    // Format answers array from current answers state (with image data in attachedImages for MCQ)
+    // Format answers array from current answers state
     const answersArray = [];
 
     for (const question of allQuestions) {
@@ -2096,20 +1898,12 @@ export function useSelfAssessment() {
         const selectedOptionId = userSelectedAnswer || apiSelectedAnswer;
 
         if (selectedOptionId) {
-          const answerEntry = {
+          answersArray.push({
             answerId: question.answerId || null,
             questionId: question.questionId,
             optionId: Number(selectedOptionId),
             obtainedMarks: null,
-          };
-          if (questionType === 1 || questionType === "1") {
-            const attachedImages = buildAttachedImagesForQuestion(
-              question.questionId,
-            );
-            if (attachedImages.length > 0)
-              answerEntry.attachedImages = attachedImages;
-          }
-          answersArray.push(answerEntry);
+          });
         }
       }
     }
@@ -2312,11 +2106,6 @@ export function useSelfAssessment() {
     setSelectedAssessmentId,
     chartDrilldownAssessmentId,
     setChartDrilldownAssessmentId,
-    mcqQuestionImages,
-    setMcqQuestionImages,
-    mcqImageInputRef,
-    pendingMcqImageSlot,
-    setPendingMcqImageSlot,
     logoutMutation,
     handleDrawerToggle,
     handleLogout,
@@ -2399,17 +2188,6 @@ export function useSelfAssessment() {
     handleSubdomainSelect,
     handleAssessmentSelect,
     handleAnswerChange,
-    questionAllowsImageUpload,
-    getMcqImagesForQuestion,
-    getMcqImagePreviewSrc,
-    getMcqImageLocation,
-    getMcqImageFilesForQuestion,
-    buildAttachedImagesForQuestion,
-    uploadImagesToPresignedUrls,
-    handleMcqImageCaptureClick,
-    getAddressFromCoords,
-    handleMcqImageFileChange,
-    handleMcqImageRemove,
     handleTextAnswerChange,
     submitAnswerMutation,
     submitSubdomainWiseAnswersMutation,
