@@ -3,9 +3,10 @@ import { enqueueSnackbar } from "notistack";
 import useAuthStore from "../store/useAuthStore";
 
 // Base URL for API
-const BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api/v1`
-  : "https://clement-untrammed-nonburdensomely.ngrok-free.app/api/v1";
+const BASE_URL = "https://gsqac-api.gujaratvsk.org/api/v1";
+// import.meta.env.VITE_API_URL
+//   ? `${import.meta.env.VITE_API_URL}/api/v1`
+//   : "https://clement-untrammed-nonburdensomely.ngrok-free.app/api/v1";
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
