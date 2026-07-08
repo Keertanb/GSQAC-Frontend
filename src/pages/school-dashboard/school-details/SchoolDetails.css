@@ -1,49 +1,280 @@
-/* School Details Page Styles */
+/* School Details — GSQAC themed layout */
 
-.school-details-container {
+.school-details-page {
   min-height: 100vh;
-  background-color: #f9fafb;
-}
-
-/* Smooth transitions for cards */
-.MuiCard-root {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Custom scrollbar for better UX */
-.school-details-container::-webkit-scrollbar {
-  width: 8px;
-}
-
-.school-details-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-.school-details-container::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
-}
-
-.school-details-container::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* Mobile responsive */
-.school-details-container {
   width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.school-details-page__content {
+  padding-top: 1rem;
+  padding-bottom: 2.5rem;
+}
+
+/* Hero */
+.sd-hero {
+  border-radius: 20px !important;
+  overflow: hidden;
+  border: 1px solid rgba(30, 58, 138, 0.12) !important;
+  box-shadow: 0 12px 40px rgba(30, 58, 138, 0.1) !important;
+  margin-bottom: 1.25rem;
+}
+
+.sd-hero__inner {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 48%, #2563eb 100%);
+  color: #fff;
+  padding: 1.5rem 1.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.sd-hero__inner::after {
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -8%;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.sd-hero__title {
+  font-weight: 800 !important;
+  letter-spacing: -0.02em;
+  line-height: 1.25 !important;
+  word-break: break-word;
+}
+
+.sd-hero__subtitle {
+  opacity: 0.88;
+  font-weight: 500 !important;
+  margin-top: 0.35rem !important;
+}
+
+.sd-hero__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.sd-hero__chip {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  font-weight: 700 !important;
+  backdrop-filter: blur(4px);
+}
+
+/* Hostel highlight — shown near top */
+.sd-hostel-banner {
+  border-radius: 16px !important;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 153, 51, 0.28) !important;
+  box-shadow: 0 8px 28px rgba(255, 153, 51, 0.12) !important;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffffff 55%, #fffbeb 100%) !important;
+}
+
+.sd-hostel-banner--yes {
+  border-color: rgba(16, 185, 129, 0.28) !important;
+  box-shadow: 0 8px 28px rgba(16, 185, 129, 0.1) !important;
+  background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 55%, #f0fdf4 100%) !important;
+}
+
+.sd-hostel-banner--no {
+  border-color: rgba(30, 58, 138, 0.2) !important;
+  box-shadow: 0 8px 28px rgba(30, 58, 138, 0.08) !important;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 55%, #f8fafc 100%) !important;
+}
+
+.sd-hostel-banner__body {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.15rem 1.35rem;
+}
+
+.sd-hostel-banner__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(255, 153, 51, 0.18);
+  color: #ea580c;
+}
+
+.sd-hostel-banner--yes .sd-hostel-banner__icon {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+
+.sd-hostel-banner--no .sd-hostel-banner__icon {
+  background: rgba(30, 58, 138, 0.12);
+  color: #1e3a8a;
+}
+
+.sd-hostel-banner__value {
+  font-weight: 800 !important;
+  font-size: 1.125rem !important;
+  line-height: 1.3 !important;
+}
+
+.sd-hostel-banner__hint {
+  margin-top: 0.25rem !important;
+  color: #64748b !important;
+  font-size: 0.8125rem !important;
+  line-height: 1.45 !important;
+}
+
+/* Section cards */
+.sd-section {
+  border-radius: 16px !important;
+  overflow: hidden;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04) !important;
+  margin-bottom: 1.25rem;
+  background: #fff !important;
+}
+
+.sd-section__header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1.1rem 1.35rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.sd-section__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+.sd-section__title {
+  font-weight: 800 !important;
+  font-size: 1.05rem !important;
+  letter-spacing: -0.01em;
+  color: #0f172a !important;
+}
+
+.sd-section__body {
+  padding: 1.35rem;
+}
+
+/* Stat cards */
+.sd-stat-card {
+  border-radius: 14px;
+  padding: 1.15rem 1.25rem;
+  height: 100%;
+  border: 1px solid transparent;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.sd-stat-card:hover {
+  transform: translateY(-3px);
+}
+
+.sd-stat-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+/* Facility cards */
+.sd-facility-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  height: 100%;
+  background: #fafbfc;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sd-facility-card:hover {
+  border-color: rgba(30, 58, 138, 0.25);
+  box-shadow: 0 6px 18px rgba(30, 58, 138, 0.06);
+}
+
+.sd-facility-card__label-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.sd-facility-card__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(30, 58, 138, 0.1);
+  color: #1e3a8a;
+}
+
+/* Info fields */
+.sd-info-field__label {
+  font-weight: 700 !important;
+  color: #64748b !important;
+  font-size: 0.6875rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem !important;
+  display: block;
+}
+
+.sd-info-field__value {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+  font-size: 0.9375rem !important;
+  line-height: 1.45 !important;
+  word-break: break-word;
 }
 
 @media (max-width: 600px) {
-  .school-details-container .MuiCard-root,
-  .school-details-container .MuiPaper-root {
-    border-radius: 12px;
+  .school-details-page__content {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
   }
 
-  .school-details-container .MuiGrid-container {
-    padding: 0 8px;
+  .sd-hero__inner {
+    padding: 1.15rem 1.1rem;
+  }
+
+  .sd-hero__title {
+    font-size: 1.25rem !important;
+  }
+
+  .sd-hostel-banner__body {
+    padding: 1rem;
+  }
+
+  .sd-section__body {
+    padding: 1rem;
+  }
+
+  .sd-section__header {
+    padding: 0.9rem 1rem;
   }
 }
-

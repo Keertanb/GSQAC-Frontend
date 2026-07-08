@@ -29,37 +29,7 @@ import {
 import { colors } from "../../../../constants/colors";
 import { SubdomainEvidencePanel } from "../../../../components/SubdomainEvidencePanel/SubdomainEvidencePanel";
 import { subdomainRequiresEvidence } from "../../../../services/evidenceService";
-
-function renderOptionLabel(option, optIndex, getOptionText, t, isMobile = false) {
-  return (
-    <Box
-      className={`sa-mcq-option-label${
-        isMobile ? " sa-mcq-option-label--stacked" : ""
-      }`}
-    >
-      <Chip
-        label={t("selfAssessment.level", { level: optIndex })}
-        size="small"
-        sx={{
-          height: 26,
-          fontWeight: 700,
-          fontSize: "0.6875rem",
-          bgcolor: `${colors.primary.blue}14`,
-          color: colors.primary.blue,
-          border: `1px solid ${colors.primary.blue}30`,
-          flexShrink: 0,
-        }}
-      />
-      <Typography
-        variant="body2"
-        className="sa-mcq-option-text"
-        sx={{ lineHeight: 1.5, width: "100%" }}
-      >
-        {getOptionText(option)}
-      </Typography>
-    </Box>
-  );
-}
+import { renderAssessmentOptionLabel } from "../../../../utils/assessmentOptionLabel";
 
 function ClassroomSubjectFilters({ c, tabId }) {
   const {
@@ -225,7 +195,14 @@ function McqQuestionBody({ question, c, questionNumber, isMobile = false }) {
     isReadOnly,
     t,
     getOptionText,
+    assessmentTheme,
   } = c;
+
+  const at = assessmentTheme || {
+    primary: colors.primary.blue,
+    dark: colors.primary.dark,
+    lightest: colors.primary.lightest,
+  };
 
   const options = parseOptions(question.options);
   const userSelectedAnswer = answers[question.questionId];
@@ -240,10 +217,10 @@ function McqQuestionBody({ question, c, questionNumber, isMobile = false }) {
       <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
         <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 2 }}>
           <Chip
-            label={`Q ${questionNumber}`}
+            label={t("selfAssessment.criterionLabel")}
             size="small"
             sx={{
-              bgcolor: colors.primary.dark,
+              bgcolor: at.dark,
               color: "white",
               fontWeight: 700,
               flexShrink: 0,
@@ -282,19 +259,19 @@ function McqQuestionBody({ question, c, questionNumber, isMobile = false }) {
                   control={
                     <Radio
                       sx={{
-                        color: colors.primary.blue,
-                        "&.Mui-checked": { color: colors.primary.blue },
+                        color: at.primary,
+                        "&.Mui-checked": { color: at.primary },
                         alignSelf: "flex-start",
                         mt: 0.25,
                       }}
                     />
                   }
-                  label={renderOptionLabel(
+                  label={renderAssessmentOptionLabel(
+                    t,
+                    getOptionText,
                     option,
                     optIndex,
-                    getOptionText,
-                    t,
-                    isMobile,
+                    { assessmentTheme, isMobile },
                   )}
                   sx={{
                     mb: 1.25,
@@ -305,11 +282,11 @@ function McqQuestionBody({ question, c, questionNumber, isMobile = false }) {
                     border: "1.5px solid",
                     borderColor:
                       selectedAnswer === String(option.optionId)
-                        ? colors.primary.blue
+                        ? at.primary
                         : colors.neutral.gray200,
                     bgcolor:
                       selectedAnswer === String(option.optionId)
-                        ? colors.primary.lightest
+                        ? at.lightest
                         : "transparent",
                   }}
                 />
@@ -345,7 +322,7 @@ function FlnQuestionBody({ question, c, questionNumber }) {
       <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
         <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 2 }}>
           <Chip
-            label={`Q ${questionNumber}`}
+            label={t("selfAssessment.criterionLabel")}
             size="small"
             sx={{
               bgcolor: colors.semantic.warning,
@@ -455,6 +432,7 @@ export function SubdomainQuestionFlow({
     userName,
     selectedAssessmentId,
     selectedAssessment,
+    assessmentTheme,
     selectedClass,
     selectedSection,
     selectedSubject,
@@ -467,6 +445,12 @@ export function SubdomainQuestionFlow({
     remaining: 0,
     percentage: 100,
   });
+
+  const at = assessmentTheme || {
+    primary: colors.primary.blue,
+    dark: colors.primary.dark,
+    lightest: colors.primary.lightest,
+  };
 
   const needsClassFilters =
     currentQuestionEntry?.tabId === "classroom" ||
@@ -537,16 +521,16 @@ export function SubdomainQuestionFlow({
       >
         {!matchDownMD ? (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-            <AccountTree sx={{ fontSize: 18, color: colors.primary.blue }} />
+            <AccountTree sx={{ fontSize: 18, color: at.primary }} />
             <Typography variant="caption" sx={{ fontWeight: 700, color: colors.text.secondary }}>
-              {domainNumber}. {getDomainName(selectedDomain)}
+              {getDomainName(selectedDomain)}
               <ChevronRight sx={{ fontSize: 14, mx: 0.25, verticalAlign: "middle" }} />
-              {domainNumber}.{subdomainNumber}. {getSubdomainName(selectedSubdomain)}
+              {getSubdomainName(selectedSubdomain)}
             </Typography>
           </Box>
         ) : (
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.75 }}>
-            <AccountTree sx={{ fontSize: 16, color: colors.primary.blue, flexShrink: 0 }} />
+            <AccountTree sx={{ fontSize: 16, color: at.primary, flexShrink: 0 }} />
             <Typography
               variant="caption"
               sx={{
@@ -556,9 +540,9 @@ export function SubdomainQuestionFlow({
                 lineHeight: 1.35,
               }}
             >
-              {domainNumber}. {getDomainName(selectedDomain)}
+              {getDomainName(selectedDomain)}
               <ChevronRight sx={{ fontSize: 12, mx: 0.2, verticalAlign: "middle" }} />
-              {domainNumber}.{subdomainNumber}. {getSubdomainName(selectedSubdomain)}
+              {getSubdomainName(selectedSubdomain)}
             </Typography>
           </Box>
         )}
@@ -596,7 +580,10 @@ export function SubdomainQuestionFlow({
                 {getSubdomainName(selectedSubdomain)}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-                Question {currentQuestionIndex + 1} of {flattenedQuestions.length}
+                {t("selfAssessment.criterionProgress", {
+                  current: currentQuestionIndex + 1,
+                  total: flattenedQuestions.length,
+                })}
               </Typography>
             </Box>
             {matchDownMD ? (
@@ -632,6 +619,8 @@ export function SubdomainQuestionFlow({
               assessmentId={
                 selectedAssessment?.assessmentId ?? selectedAssessmentId ?? null
               }
+              selectedAssessment={selectedAssessment}
+              assessmentTheme={assessmentTheme}
               subdomain={selectedSubdomain}
               domainName={getDomainName(selectedDomain)}
               readOnly={isReadOnly}
@@ -664,7 +653,7 @@ export function SubdomainQuestionFlow({
             bgcolor: colors.neutral.gray200,
             "& .MuiLinearProgress-bar": {
               borderRadius: 99,
-              bgcolor: tabColor || colors.primary.blue,
+              bgcolor: tabColor || at.primary,
             },
           }}
         />
@@ -705,7 +694,7 @@ export function SubdomainQuestionFlow({
                   bgcolor:
                     evidenceProgress.percentage === 100
                       ? colors.accent.green
-                      : colors.primary.blue,
+                      : at.primary,
                 },
               }}
             />
@@ -815,7 +804,8 @@ export function SubdomainQuestionFlow({
                     sx={{
                       textTransform: "none",
                       fontWeight: 600,
-                      bgcolor: colors.primary.blue,
+                      bgcolor: at.primary,
+                      "&:hover": { bgcolor: at.dark },
                     }}
                   >
                     <span className="sa-wizard-btn-inline">
@@ -834,7 +824,8 @@ export function SubdomainQuestionFlow({
                     sx={{
                       textTransform: "none",
                       fontWeight: 600,
-                      bgcolor: colors.primary.blue,
+                      bgcolor: at.primary,
+                      "&:hover": { bgcolor: at.dark },
                     }}
                   >
                     <span className="sa-wizard-btn-inline">
@@ -896,7 +887,8 @@ export function SubdomainQuestionFlow({
                       sx={{
                         textTransform: "none",
                         fontWeight: 600,
-                        bgcolor: colors.primary.blue,
+                        bgcolor: at.primary,
+                        "&:hover": { bgcolor: at.dark },
                       }}
                     >
                       Next question

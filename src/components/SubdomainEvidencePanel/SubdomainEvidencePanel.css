@@ -5,18 +5,36 @@
   gap: 0.5rem;
   padding: 0.4rem 0.55rem;
   border-radius: 10px;
-  border: 1px solid #bfdbfe;
-  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+  border: 1px solid var(--evidence-border, #bfdbfe);
+  background: var(
+    --evidence-gradient,
+    linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)
+  );
+  box-shadow: 0 2px 8px var(--evidence-shadow, rgba(37, 99, 235, 0.08));
   flex-shrink: 0;
   max-width: 100%;
   box-sizing: border-box;
   cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.subdomain-evidence-compact:hover {
+  border-color: var(--evidence-primary, #2563eb);
+  box-shadow: 0 4px 14px var(--evidence-shadow, rgba(37, 99, 235, 0.14));
+  transform: translateY(-1px);
 }
 
 .subdomain-evidence-compact--done {
   border-color: #86efac;
   background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.subdomain-evidence-compact--done:hover {
+  border-color: #4ade80;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.12);
 }
 
 .subdomain-evidence-compact__lead {
@@ -48,7 +66,7 @@
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: rgba(37, 99, 235, 0.1);
+  background: var(--evidence-icon-bg, rgba(37, 99, 235, 0.1));
   flex-shrink: 0;
 }
 
@@ -58,7 +76,7 @@
 
 .subdomain-evidence-compact__icon {
   font-size: 1rem !important;
-  color: #2563eb;
+  color: var(--evidence-primary, #2563eb);
 }
 
 .subdomain-evidence-compact__icon--done {
@@ -97,7 +115,7 @@
 
 .subdomain-evidence-compact__file-icon {
   font-size: 2rem !important;
-  color: #2563eb;
+  color: var(--evidence-primary, #2563eb);
 }
 
 /* Mobile: single row — status text with icon actions on the right */
@@ -177,21 +195,21 @@
 }
 
 .subdomain-evidence-compact__icon-btn--view {
-  color: #2563eb !important;
-  background: rgba(37, 99, 235, 0.08) !important;
+  color: var(--evidence-primary, #2563eb) !important;
+  background: var(--evidence-soft, rgba(37, 99, 235, 0.08)) !important;
 }
 
 .subdomain-evidence-compact__icon-btn--upload {
   color: #ffffff !important;
-  background: #2563eb !important;
+  background: var(--evidence-primary, #2563eb) !important;
 }
 
 .subdomain-evidence-compact__icon-btn--upload:hover {
-  background: #1d4ed8 !important;
+  background: var(--evidence-dark, #1d4ed8) !important;
 }
 
 .subdomain-evidence-compact__icon-btn--upload.Mui-disabled {
-  background: #93c5fd !important;
+  opacity: 0.55;
   color: #ffffff !important;
 }
 
@@ -207,7 +225,11 @@
   justify-content: space-between !important;
   gap: 0.75rem;
   padding: 1rem 1.15rem !important;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--evidence-border, #e2e8f0);
+  background: var(
+    --evidence-gradient,
+    linear-gradient(180deg, #eff6ff 0%, #ffffff 100%)
+  );
 }
 
 .subdomain-evidence-dialog__content {
@@ -300,11 +322,14 @@
 /* Legacy full panel */
 .subdomain-evidence-panel {
   margin-bottom: 1.25rem;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--evidence-border, #dbeafe);
   border-radius: 1rem;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(
+    --evidence-gradient,
+    linear-gradient(180deg, #f8fbff 0%, #ffffff 100%)
+  );
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(30, 64, 175, 0.06);
+  box-shadow: 0 8px 24px var(--evidence-shadow, rgba(30, 64, 175, 0.06));
 }
 
 .subdomain-evidence-panel__body {
@@ -322,37 +347,47 @@
 
 .subdomain-evidence-panel__file-icon {
   font-size: 2.5rem !important;
-  color: #2563eb;
+  color: var(--evidence-primary, #2563eb);
 }
 
 .subdomain-evidence-upload-modal__paper {
   border-radius: 16px !important;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.subdomain-evidence-upload-modal--mobile .subdomain-evidence-upload-modal__paper {
+  border-radius: 0 !important;
 }
 
 .subdomain-evidence-upload-modal__title {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 0.75rem;
   padding-bottom: 0.5rem !important;
+  min-width: 0;
 }
 
 .subdomain-evidence-upload-modal__content {
   padding-top: 0.75rem !important;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 .subdomain-evidence-upload-modal__summary {
   margin-bottom: 1rem;
   padding: 0.85rem 1rem;
   border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .subdomain-evidence-upload-modal__slots {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .subdomain-evidence-slot-card {
@@ -360,7 +395,11 @@
   border-radius: 12px;
   padding: 0.85rem 1rem;
   background: #fff;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  min-width: 0;
+  overflow: hidden;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .subdomain-evidence-slot-card--done {
@@ -374,6 +413,39 @@
   justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
+  min-width: 0;
+}
+
+.subdomain-evidence-slot-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.subdomain-evidence-slot-card__name {
+  display: block;
+  line-height: 1.35 !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+.subdomain-evidence-slot-card__filename {
+  display: block !important;
+  margin-top: 0.2rem;
+  line-height: 1.35 !important;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+.subdomain-evidence-slot-card__chip {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.subdomain-evidence-slot-card__chip .MuiChip-label {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .subdomain-evidence-slot-card__actions {
@@ -381,4 +453,40 @@
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .subdomain-evidence-upload-modal__content {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .subdomain-evidence-upload-modal__summary {
+    padding: 0.75rem 0.85rem;
+  }
+
+  .subdomain-evidence-slot-card {
+    padding: 0.75rem 0.85rem;
+  }
+
+  .subdomain-evidence-slot-card__header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .subdomain-evidence-slot-card__chip {
+    align-self: flex-start;
+  }
+
+  .subdomain-evidence-slot-card__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .subdomain-evidence-slot-card__actions .MuiButton-root {
+    width: 100%;
+    justify-content: center;
+    min-height: 40px;
+  }
 }

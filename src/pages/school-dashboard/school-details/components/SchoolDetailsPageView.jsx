@@ -3,8 +3,6 @@ import {
   Box,
   Container,
   Typography,
-  Card,
-  CardContent,
   Grid,
   TextField,
   Button,
@@ -13,7 +11,6 @@ import {
   FormControl,
   Chip,
   Paper,
-  Divider,
   AppBar,
   Toolbar,
   IconButton,
@@ -21,8 +18,6 @@ import {
   Alert,
 } from "@mui/material";
 import {
-  ArrowBack,
-  Save,
   School,
   Business,
   BarChart,
@@ -32,15 +27,80 @@ import {
   Home,
   Bolt,
   Wc,
-  Phone,
-  Email,
-  Badge,
+  Hotel,
   Menu,
 } from "@mui/icons-material";
 import { colors } from "../../../../constants/colors";
 import AppDrawer from "../../../../components/AppDrawer/AppDrawer";
 import { DRAWER_WIDTH } from "../../../../constants/menuItems";
+import { SchoolHostelFacilityModalGate } from "../../components/SchoolHostelFacilityModalGate";
 import "../SchoolDetails.css";
+
+const THEME = {
+  primary: colors.primary.blue,
+  dark: colors.primary.dark,
+  lightest: colors.primary.lightest,
+  accent: colors.saffron.main,
+  accentDark: colors.saffron.dark,
+};
+
+function SectionCard({ title, icon: Icon, iconColor = THEME.primary, children }) {
+  return (
+    <Paper elevation={0} className="sd-section">
+      <Box className="sd-section__header">
+        <Box className="sd-section__icon" sx={{ bgcolor: iconColor }}>
+          {Icon ? <Icon sx={{ fontSize: 20 }} /> : null}
+        </Box>
+        <Typography className="sd-section__title">{title}</Typography>
+      </Box>
+      <Box className="sd-section__body">{children}</Box>
+    </Paper>
+  );
+}
+
+function HostelFacilityBanner({ value }) {
+  const normalized = String(value || "Not set").trim();
+  const isYes = normalized === "Yes";
+  const isNo = normalized === "No";
+  const bannerClass = isYes
+    ? "sd-hostel-banner sd-hostel-banner--yes"
+    : isNo
+      ? "sd-hostel-banner sd-hostel-banner--no"
+      : "sd-hostel-banner";
+
+  const description = isYes
+    ? "This school has a hostel facility. Hostel-related assessment domains are included."
+    : isNo
+      ? "This school does not have a hostel facility. Hostel domain is hidden in assessment."
+      : "Not configured yet. This is set once during your first self-assessment.";
+
+  return (
+    <Paper elevation={0} className={bannerClass}>
+      <Box className="sd-hostel-banner__body">
+        <Box className="sd-hostel-banner__icon">
+          <Hotel sx={{ fontSize: 26 }} />
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              color: colors.text.secondary,
+            }}
+          >
+            Hostel Facility
+          </Typography>
+          <Typography className="sd-hostel-banner__value" sx={{ color: colors.text.primary }}>
+            {normalized}
+          </Typography>
+          {/* <Typography className="sd-hostel-banner__hint">{description}</Typography> */}
+        </Box>
+      </Box>
+    </Paper>
+  );
+}
 
 // Helper Components - defined outside to avoid recreation on each render
 const InfoField = ({
@@ -52,25 +112,8 @@ const InfoField = ({
   options = [],
   onChange,
 }) => (
-  <Box
-    sx={{
-      height: "100%",
-    }}
-  >
-    <Typography
-      variant="caption"
-      sx={{
-        fontWeight: 600,
-        color: colors.text.secondary,
-        fontSize: "0.6875rem",
-        textTransform: "uppercase",
-        letterSpacing: "0.08em",
-        mb: 0.75,
-        display: "block",
-      }}
-    >
-      {label}
-    </Typography>
+  <Box sx={{ height: "100%" }}>
+    <Typography className="sd-info-field__label">{label}</Typography>
     {editable ? (
       type === "select" ? (
         <FormControl fullWidth size="small">
@@ -82,13 +125,12 @@ const InfoField = ({
               borderRadius: 1.5,
               "& .MuiOutlinedInput-notchedOutline": {
                 borderColor: colors.neutral.gray200,
-                borderWidth: "1px",
               },
               "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: colors.primary.blue,
+                borderColor: THEME.primary,
               },
               "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderColor: colors.primary.blue,
+                borderColor: THEME.primary,
                 borderWidth: "2px",
               },
               "& .MuiSelect-select": {
@@ -117,13 +159,12 @@ const InfoField = ({
             borderRadius: 1.5,
             "& .MuiOutlinedInput-notchedOutline": {
               borderColor: colors.neutral.gray200,
-              borderWidth: "1px",
             },
             "&:hover .MuiOutlinedInput-notchedOutline": {
-              borderColor: colors.primary.blue,
+              borderColor: THEME.primary,
             },
             "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-              borderColor: colors.primary.blue,
+              borderColor: THEME.primary,
               borderWidth: "2px",
             },
             "& .MuiInputBase-input": {
@@ -135,77 +176,47 @@ const InfoField = ({
         />
       )
     ) : (
-      <Typography
-        variant="body1"
-        sx={{
-          color: colors.text.primary,
-          fontWeight: 600,
-          fontSize: "0.9375rem",
-          lineHeight: 1.5,
-          wordBreak: "break-word",
-          overflowWrap: "break-word",
-        }}
-      >
-        {value || "—"}
-      </Typography>
+      <Typography className="sd-info-field__value">{value || "—"}</Typography>
     )}
   </Box>
 );
 
 const StatCard = ({ label, value, icon: Icon, color }) => (
   <Box
+    className="sd-stat-card"
     sx={{
       bgcolor: `${color}08`,
-      borderRadius: 2,
-      p: 2.5,
-      height: "100%",
-      position: "relative",
-      overflow: "hidden",
-      border: `1px solid ${color}20`,
-      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-      "&:hover": {
-        transform: "translateY(-4px)",
-        boxShadow: `0 12px 24px ${color}25`,
-        bgcolor: `${color}12`,
-      },
+      borderColor: `${color}22`,
+      border: `1px solid ${color}22`,
+      "&:hover": { boxShadow: `0 10px 24px ${color}18` },
     }}
   >
-    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-      <Box
-        sx={{
-          bgcolor: color,
-          borderRadius: 1.5,
-          p: 1.5,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minWidth: 48,
-          minHeight: 48,
-        }}
-      >
-        {Icon && <Icon sx={{ fontSize: 24, color: "white" }} />}
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+      <Box className="sd-stat-card__icon" sx={{ bgcolor: color }}>
+        {Icon && <Icon sx={{ fontSize: 22 }} />}
       </Box>
-      <Box sx={{ flex: 1 }}>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography
-          variant="body2"
+          variant="caption"
           sx={{
             color: colors.text.secondary,
-            mb: 0.25,
-            fontWeight: 600,
+            fontWeight: 700,
             fontSize: "0.6875rem",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
+            display: "block",
+            mb: 0.25,
           }}
         >
           {label}
         </Typography>
         <Typography
-          variant="h4"
+          variant="h5"
           sx={{
             color: colors.text.primary,
-            fontWeight: 700,
-            fontSize: "1.75rem",
-            lineHeight: 1.2,
+            fontWeight: 800,
+            fontSize: "1.625rem",
+            lineHeight: 1.15,
             letterSpacing: "-0.02em",
           }}
         >
@@ -216,46 +227,20 @@ const StatCard = ({ label, value, icon: Icon, color }) => (
   </Box>
 );
 
-const FacilityCard = ({ label, value, icon: Icon, onChange }) => (
-  <Box
-    sx={{
-      display: "flex",
-      flexDirection: "column",
-      gap: 1.5,
-      height: "100%",
-    }}
-  >
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 1.5,
-      }}
-    >
-      <Box
-        sx={{
-          bgcolor: `${colors.accent.green}15`,
-          borderRadius: 1.5,
-          p: 1.25,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minWidth: 40,
-          minHeight: 40,
-          flexShrink: 0,
-        }}
-      >
-        {Icon && <Icon sx={{ fontSize: 20, color: colors.accent.green }} />}
+const FacilityCard = ({ label, value, icon: Icon, onChange, disabled = false }) => (
+  <Box className="sd-facility-card">
+    <Box className="sd-facility-card__label-row">
+      <Box className="sd-facility-card__icon">
+        {Icon && <Icon sx={{ fontSize: 18 }} />}
       </Box>
       <Typography
         variant="body2"
         sx={{
           color: colors.text.primary,
-          fontWeight: 600,
+          fontWeight: 700,
           fontSize: "0.875rem",
           lineHeight: 1.4,
           wordBreak: "break-word",
-          overflowWrap: "break-word",
         }}
       >
         {label}
@@ -270,13 +255,12 @@ const FacilityCard = ({ label, value, icon: Icon, onChange }) => (
           bgcolor: "white",
           "& .MuiOutlinedInput-notchedOutline": {
             borderColor: colors.neutral.gray200,
-            borderWidth: "1px",
           },
           "&:hover .MuiOutlinedInput-notchedOutline": {
-            borderColor: colors.accent.green,
+            borderColor: THEME.primary,
           },
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-            borderColor: colors.accent.green,
+            borderColor: THEME.primary,
             borderWidth: "2px",
           },
         },
@@ -285,15 +269,11 @@ const FacilityCard = ({ label, value, icon: Icon, onChange }) => (
       <Select
         value={value}
         onChange={(e) => onChange && onChange(e.target.value)}
+        disabled={disabled}
         sx={{
           fontWeight: 600,
           fontSize: "0.8125rem",
-          "& .MuiSelect-select": {
-            py: 0.875,
-            whiteSpace: "normal",
-            overflow: "visible",
-            textOverflow: "clip",
-          },
+          "& .MuiSelect-select": { py: 0.875 },
         }}
       >
         <MenuItem value="Yes">Yes</MenuItem>
@@ -359,12 +339,12 @@ export function SchoolDetailsPageView({ c }) {
         <AppBar
           position="fixed"
           sx={{
-            backgroundColor: "rgba(255, 255, 255, 0.98)",
-            backdropFilter: "blur(10px)",
+            background: "rgba(255, 255, 255, 0.92)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
             zIndex: theme.zIndex.drawer + 1,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
             borderBottom: `1px solid ${colors.neutral.gray200}`,
-            minHeight: "72px",
             width:
               drawerOpen && !matchDownMD
                 ? `calc(100% - ${DRAWER_WIDTH.xs}px)`
@@ -381,42 +361,50 @@ export function SchoolDetailsPageView({ c }) {
             }),
           }}
         >
-          <Toolbar sx={{ height: "72px", px: 3 }}>
+          <Toolbar
+            sx={{
+              height: { xs: 56, md: 72 },
+              minHeight: { xs: "56px !important", md: "72px !important" },
+              px: { xs: 1.5, md: 3 },
+            }}
+          >
             <IconButton
               onClick={handleDrawerToggle}
               edge="start"
               sx={{
                 color: colors.text.secondary,
                 borderRadius: 2,
-                mr: 2,
+                mr: 1.5,
                 "&:hover": {
-                  bgcolor: colors.primary.lightest,
-                  color: colors.primary.blue,
+                  bgcolor: THEME.lightest,
+                  color: THEME.primary,
                 },
               }}
             >
               <Menu />
             </IconButton>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0 }}>
               <Box
                 sx={{
                   width: 40,
                   height: 40,
                   borderRadius: 2,
-                  bgcolor: colors.primary.blue,
+                  background: `linear-gradient(135deg, ${THEME.primary} 0%, ${THEME.dark} 100%)`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  flexShrink: 0,
+                  boxShadow: `0 4px 12px ${THEME.primary}30`,
                 }}
               >
                 <School sx={{ fontSize: 22, color: "white" }} />
               </Box>
-              <Box>
+              <Box sx={{ minWidth: 0 }}>
                 <Typography
                   variant="h6"
                   sx={{
-                    fontSize: "1rem",
-                    fontWeight: 700,
+                    fontSize: { xs: "0.9375rem", md: "1rem" },
+                    fontWeight: 800,
                     color: colors.text.primary,
                     lineHeight: 1.2,
                   }}
@@ -428,10 +416,10 @@ export function SchoolDetailsPageView({ c }) {
                   sx={{
                     fontSize: "0.75rem",
                     color: colors.text.secondary,
-                    fontWeight: 500,
+                    fontWeight: 600,
                   }}
                 >
-                  Manage Information
+                  GSQAC school profile
                 </Typography>
               </Box>
             </Box>
@@ -441,11 +429,10 @@ export function SchoolDetailsPageView({ c }) {
               sx={{
                 color: colors.text.secondary,
                 textTransform: "none",
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: "0.875rem",
                 borderRadius: 2,
-                px: 3,
-                py: 1,
+                px: { xs: 1.5, md: 3 },
                 "&:hover": {
                   bgcolor: `${colors.semantic.error}10`,
                   color: colors.semantic.error,
@@ -457,14 +444,8 @@ export function SchoolDetailsPageView({ c }) {
           </Toolbar>
         </AppBar>
 
-        <Box
-          sx={{
-            mt: 8,
-            minHeight: "100vh",
-            bgcolor: colors.background.secondary,
-          }}
-        >
-          <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Box className="school-details-page" sx={{ mt: { xs: 7, md: 9 } }}>
+          <Container maxWidth="xl" className="school-details-page__content" sx={{ py: { xs: 2, md: 3 } }}>
             {/* Loading State */}
             {isLoading && (
               <Box
@@ -490,684 +471,186 @@ export function SchoolDetailsPageView({ c }) {
             {/* Content - only show if not loading */}
             {!isLoading && (
               <>
-                {/* Basic Identification Section */}
-                <Paper
-                  elevation={0}
-                  sx={{
-                    mb: 3,
-                    bgcolor: "white",
-                    borderRadius: 2.5,
-                    overflow: "hidden",
-                    border: `1px solid ${colors.neutral.gray200}`,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      bgcolor: `${colors.primary.blue}08`,
-                      p: 3,
-                      borderBottom: `1px solid ${colors.neutral.gray200}`,
-                    }}
-                  >
-                    <Box
-                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
+                {/* Hero */}
+                <Paper elevation={0} className="sd-hero">
+                  <Box className="sd-hero__inner">
+                    <Typography
+                      variant="h4"
+                      className="sd-hero__title"
+                      sx={{ fontSize: { xs: "1.35rem", md: "1.75rem" }, pr: 2 }}
                     >
-                      <Box
-                        sx={{
-                          bgcolor: colors.primary.blue,
-                          borderRadius: 1.5,
-                          p: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <School sx={{ fontSize: 20, color: "white" }} />
-                      </Box>
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: "1.125rem",
-                          letterSpacing: "-0.01em",
-                          color: colors.text.primary,
-                        }}
-                      >
-                        Basic Identification
-                      </Typography>
+                      {schoolData.schoolName || "School Profile"}
+                    </Typography>
+                    <Typography className="sd-hero__subtitle" variant="body2">
+                      UDISE {schoolData.udiseCode || "—"}
+                      {schoolData.district ? ` · ${schoolData.district}` : ""}
+                      {schoolData.block ? ` · ${schoolData.block}` : ""}
+                    </Typography>
+                    <Box className="sd-hero__chips">
+                      {schoolData.category ? (
+                        <Chip size="small" label={schoolData.category} className="sd-hero__chip" />
+                      ) : null}
+                      {schoolData.managementType ? (
+                        <Chip
+                          size="small"
+                          label={schoolData.managementType}
+                          className="sd-hero__chip"
+                        />
+                      ) : null}
+                      {schoolData.schoolType ? (
+                        <Chip size="small" label={schoolData.schoolType} className="sd-hero__chip" />
+                      ) : null}
+                      {schoolData.classesFrom && schoolData.classesTo ? (
+                        <Chip
+                          size="small"
+                          label={`Class ${schoolData.classesFrom}–${schoolData.classesTo}`}
+                          className="sd-hero__chip"
+                        />
+                      ) : null}
                     </Box>
-                  </Box>
-                  <Box sx={{ p: 3 }}>
-                    <Grid container spacing={3}>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="SCHOOL NAME"
-                          value={schoolData.schoolName}
-                          icon={School}
-                        />
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="UDISE CODE"
-                          value={schoolData.udiseCode}
-                          icon={Badge}
-                        />
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="DISTRICT"
-                          value={schoolData.district}
-                        />
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField label="BLOCK" value={schoolData.block} />
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField label="STATE" value={schoolData.state} />
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="CATEGORY"
-                          value={schoolData.category}
-                        />
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        {/* <Box>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              fontWeight: 600,
-                              color: colors.text.secondary,
-                              mb: 0.75,
-                              fontSize: "0.6875rem",
-                              textTransform: "uppercase",
-                              letterSpacing: "0.08em",
-                              display: "block",
-                            }}
-                          >
-                            CURRENT APPLICATION STATUS
-                          </Typography>
-                          <Chip
-                            label={schoolData.applicationStatus}
-                            sx={{
-                              bgcolor: colors.semantic.warning + "15",
-                              color: colors.semantic.warning,
-                              fontWeight: 700,
-                              fontSize: "0.875rem",
-                              border: `1px solid ${colors.semantic.warning}30`,
-                              borderRadius: 1.5,
-                              px: 1.5,
-                              height: 32,
-                            }}
-                          />
-                        </Box> */}
-                      </Grid>
-                    </Grid>
                   </Box>
                 </Paper>
 
-                {/* School Profile */}
-                <Paper
-                  elevation={0}
-                  sx={{
-                    mb: 3,
-                    bgcolor: "white",
-                    borderRadius: 2.5,
-                    overflow: "hidden",
-                    border: `1px solid ${colors.neutral.gray200}`,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      bgcolor: `${colors.neutral.gray700}06`,
-                      p: 3,
-                      borderBottom: `1px solid ${colors.neutral.gray200}`,
-                    }}
-                  >
-                    <Box
-                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
-                    >
-                      <Box
-                        sx={{
-                          bgcolor: colors.neutral.gray700,
-                          borderRadius: 1.5,
-                          p: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Business sx={{ fontSize: 20, color: "white" }} />
-                      </Box>
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: "1.125rem",
-                          letterSpacing: "-0.01em",
-                          color: colors.text.primary,
-                        }}
-                      >
-                        School Profile
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ p: 3 }}>
-                    <Grid container spacing={3}>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="Management Type"
-                          value={schoolData.managementType}
-                          icon={Business}
-                        />
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="School Type"
-                          value={schoolData.schoolType}
-                        />
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="Medium of Instruction"
-                          value={schoolData.mediumOfInstruction}
-                        />
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="Location Type (Rural/Urban)"
-                          value={schoolData.locationType}
-                        />
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="Students (Boys & Girls)"
-                          value={schoolData.studentsType}
-                        />
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="Classes (Range) From"
-                          value={schoolData.classesFrom}
-                        />
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="Classes (Range) To"
-                          value={schoolData.classesTo}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Box>
-                </Paper>
+                {/* Hostel Facility — prominent, near top */}
+                <HostelFacilityBanner value={schoolData.hostelFacility} />
 
-                {/* Statistics */}
-                <Paper
-                  elevation={0}
-                  sx={{
-                    mb: 3,
-                    bgcolor: "white",
-                    borderRadius: 2.5,
-                    overflow: "hidden",
-                    border: `1px solid ${colors.neutral.gray200}`,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      bgcolor: `${colors.semantic.warning}08`,
-                      p: 3,
-                      borderBottom: `1px solid ${colors.neutral.gray200}`,
-                    }}
-                  >
-                    <Box
-                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
-                    >
-                      <Box
-                        sx={{
-                          bgcolor: colors.semantic.warning,
-                          borderRadius: 1.5,
-                          p: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <BarChart sx={{ fontSize: 20, color: "white" }} />
-                      </Box>
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: "1.125rem",
-                          letterSpacing: "-0.01em",
-                          color: colors.text.primary,
-                        }}
-                      >
-                        Statistics
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ p: 3 }}>
-                    <Grid container spacing={2.5}>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <StatCard
-                          label="TOTAL TEACHERS"
-                          value={schoolData.totalTeachers}
-                          icon={Person}
-                          color={colors.primary.blue}
-                        />
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <StatCard
-                          label="TOTAL STUDENTS"
-                          value={schoolData.totalStudents}
-                          icon={Person}
-                          color={colors.accent.green}
-                        />
-                      </Grid>
+                <SectionCard title="Basic Identification" icon={School} iconColor={THEME.primary}>
+                  <Grid container spacing={2.5}>
+                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
+                      <InfoField label="School Name" value={schoolData.schoolName} />
                     </Grid>
-                  </Box>
-                </Paper>
-
-                {/* Infrastructure & Facilities */}
-                <Paper
-                  elevation={0}
-                  sx={{
-                    mb: 3,
-                    bgcolor: "white",
-                    borderRadius: 2.5,
-                    overflow: "hidden",
-                    border: `1px solid ${colors.neutral.gray200}`,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      bgcolor: `${colors.accent.green}08`,
-                      p: 3,
-                      borderBottom: `1px solid ${colors.neutral.gray200}`,
-                    }}
-                  >
-                    <Box
-                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
-                    >
-                      <Box
-                        sx={{
-                          bgcolor: colors.accent.green,
-                          borderRadius: 1.5,
-                          p: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Build sx={{ fontSize: 20, color: "white" }} />
-                      </Box>
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: "1.125rem",
-                          letterSpacing: "-0.01em",
-                          color: colors.text.primary,
-                        }}
-                      >
-                        Infrastructure & Facilities
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ p: 3 }}>
-                    <Grid container spacing={2.5}>
-                      <Grid item xs={12} sm={6} md={6} lg={6}>
-                        <FacilityCard
-                          label="Drinking Water"
-                          value={schoolData.drinkingWater}
-                          icon={WaterDrop}
-                          onChange={(value) =>
-                            handleFacilityChange(
-                              getFieldName("Drinking Water"),
-                              value,
-                            )
-                          }
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6} md={6} lg={6}>
-                        <FacilityCard
-                          label="Pucca Building"
-                          value={schoolData.puccaBuilding}
-                          icon={Home}
-                          onChange={(value) =>
-                            handleFacilityChange(
-                              getFieldName("Pucca Building"),
-                              value,
-                            )
-                          }
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6} md={6} lg={6}>
-                        <FacilityCard
-                          label="Electricity"
-                          value={schoolData.electricity}
-                          icon={Bolt}
-                          onChange={(value) =>
-                            handleFacilityChange(
-                              getFieldName("Electricity"),
-                              value,
-                            )
-                          }
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6} md={6} lg={6}>
-                        <FacilityCard
-                          label="Functional Toilets"
-                          value={schoolData.functionalToilets}
-                          icon={Wc}
-                          onChange={(value) =>
-                            handleFacilityChange(
-                              getFieldName("Functional Toilets"),
-                              value,
-                            )
-                          }
-                        />
-                      </Grid>
+                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
+                      <InfoField label="UDISE Code" value={schoolData.udiseCode} />
                     </Grid>
-                  </Box>
-                </Paper>
-
-                {/* Contact Information */}
-                <Paper
-                  elevation={0}
-                  sx={{
-                    mb: 3,
-                    bgcolor: "white",
-                    borderRadius: 2.5,
-                    overflow: "hidden",
-                    border: `1px solid ${colors.neutral.gray200}`,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      bgcolor: `${colors.primary.blue}08`,
-                      p: 3,
-                      borderBottom: `1px solid ${colors.neutral.gray200}`,
-                    }}
-                  >
-                    <Box
-                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
-                    >
-                      <Box
-                        sx={{
-                          bgcolor: colors.primary.blue,
-                          borderRadius: 1.5,
-                          p: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Person sx={{ fontSize: 20, color: "white" }} />
-                      </Box>
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: "1.125rem",
-                          letterSpacing: "-0.01em",
-                          color: colors.text.primary,
-                        }}
-                      >
-                        Contact Information
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ p: 3 }}>
-                    <Grid container spacing={3}>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="Principal/Head Name"
-                          value={schoolData.principalName}
-                          icon={Person}
-                        />
-                      </Grid>
-                      {/* <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="Designation"
-                          value={schoolData.designation}
-                          icon={Badge}
-                        />
-                      </Grid> */}
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="Mobile Number"
-                          value={schoolData.mobileNumber}
-                          icon={Phone}
-                        />
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={3}
-                        lg={3}
-                        sx={gridItemStyles}
-                      >
-                        <InfoField
-                          label="Email Address"
-                          value={schoolData.emailAddress}
-                          icon={Email}
-                        />
-                      </Grid>
+                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
+                      <InfoField label="District" value={schoolData.district} />
                     </Grid>
-                  </Box>
-                </Paper>
+                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
+                      <InfoField label="Block" value={schoolData.block} />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
+                      <InfoField label="State" value={schoolData.state} />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
+                      <InfoField label="Category" value={schoolData.category} />
+                    </Grid>
+                  </Grid>
+                </SectionCard>
 
-                {/* Info Banner */}
-                {/* <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    bgcolor: `${colors.primary.blue}08`,
-                    border: `1px solid ${colors.primary.blue}20`,
-                    borderRadius: 2,
-                    p: 2.5,
-                    mt: 4,
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                    <Box
-                      sx={{
-                        bgcolor: colors.primary.blue,
-                        borderRadius: 1.5,
-                        p: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Save sx={{ fontSize: 18, color: "white" }} />
-                    </Box>
-                    <Box>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontWeight: 600,
-                          color: colors.text.primary,
-                          fontSize: "0.875rem",
-                          mb: 0.25,
-                        }}
-                      >
-                        Infrastructure & Facilities
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          color: colors.text.secondary,
-                          fontSize: "0.75rem",
-                        }}
-                      >
-                        Changes are automatically saved when you update facility values
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Button
-                    variant="outlined"
-                    onClick={() => navigate("/school-dashboard")}
-                    sx={{
-                      borderColor: colors.primary.blue,
-                      color: colors.primary.blue,
-                      borderRadius: 2,
-                      px: 3,
-                      py: 1,
-                      fontWeight: 600,
-                      fontSize: "0.875rem",
-                      textTransform: "none",
-                      transition: "all 0.25s ease",
-                      "&:hover": {
-                        borderColor: colors.primary.dark,
-                        bgcolor: `${colors.primary.blue}10`,
-                      },
-                    }}
-                  >
-                    Back to Dashboard
-                  </Button>
-                </Box> */}
+                <SectionCard title="School Profile" icon={Business} iconColor={colors.neutral.gray700}>
+                  <Grid container spacing={2.5}>
+                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
+                      <InfoField label="Management Type" value={schoolData.managementType} />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
+                      <InfoField label="School Type" value={schoolData.schoolType} />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
+                      <InfoField
+                        label="Medium of Instruction"
+                        value={schoolData.mediumOfInstruction}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
+                      <InfoField label="Location Type" value={schoolData.locationType} />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
+                      <InfoField label="Students (Boys & Girls)" value={schoolData.studentsType} />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
+                      <InfoField label="Classes From" value={schoolData.classesFrom} />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
+                      <InfoField label="Classes To" value={schoolData.classesTo} />
+                    </Grid>
+                  </Grid>
+                </SectionCard>
+
+                <SectionCard title="Statistics" icon={BarChart} iconColor={colors.semantic.warning}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6} md={6} lg={4} sx={gridItemStyles}>
+                      <StatCard
+                        label="Total Teachers"
+                        value={schoolData.totalTeachers}
+                        icon={Person}
+                        color={THEME.primary}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={6} lg={4} sx={gridItemStyles}>
+                      <StatCard
+                        label="Total Students"
+                        value={schoolData.totalStudents}
+                        icon={Person}
+                        color={colors.accent.green}
+                      />
+                    </Grid>
+                  </Grid>
+                </SectionCard>
+
+                <SectionCard title="Infrastructure & Facilities" icon={Build} iconColor={colors.accent.green}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6} md={6}>
+                      <FacilityCard
+                        label="Drinking Water"
+                        value={schoolData.drinkingWater}
+                        icon={WaterDrop}
+                        onChange={(value) =>
+                          handleFacilityChange(getFieldName("Drinking Water"), value)
+                        }
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={6}>
+                      <FacilityCard
+                        label="Pucca Building"
+                        value={schoolData.puccaBuilding}
+                        icon={Home}
+                        onChange={(value) =>
+                          handleFacilityChange(getFieldName("Pucca Building"), value)
+                        }
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={6}>
+                      <FacilityCard
+                        label="Electricity"
+                        value={schoolData.electricity}
+                        icon={Bolt}
+                        onChange={(value) =>
+                          handleFacilityChange(getFieldName("Electricity"), value)
+                        }
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={6}>
+                      <FacilityCard
+                        label="Functional Toilets"
+                        value={schoolData.functionalToilets}
+                        icon={Wc}
+                        onChange={(value) =>
+                          handleFacilityChange(getFieldName("Functional Toilets"), value)
+                        }
+                      />
+                    </Grid>
+                  </Grid>
+                </SectionCard>
+
+                <SectionCard title="Contact Information" icon={Person} iconColor={THEME.primary}>
+                  <Grid container spacing={2.5}>
+                    <Grid item xs={12} sm={6} md={4} sx={gridItemStyles}>
+                      <InfoField label="Principal / Head Name" value={schoolData.principalName} />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4} sx={gridItemStyles}>
+                      <InfoField label="Mobile Number" value={schoolData.mobileNumber} />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4} sx={gridItemStyles}>
+                      <InfoField label="Email Address" value={schoolData.emailAddress} />
+                    </Grid>
+                  </Grid>
+                </SectionCard>
               </>
             )}
           </Container>
         </Box>
       </Box>
+      <SchoolHostelFacilityModalGate />
     </Box>
   );
 }

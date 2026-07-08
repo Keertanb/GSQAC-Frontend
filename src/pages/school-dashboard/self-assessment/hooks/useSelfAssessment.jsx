@@ -34,6 +34,8 @@ import {
   useSubmitAnswerMutation,
 } from "../../../../services/adminService";
 import { buildSubmitPreviewData } from "../utils/buildSubmitPreviewData";
+import { filterDomainsByHostelFacility } from "../../../../utils/hostelDomain";
+import { getAssessmentTheme } from "../../../../utils/assessmentTheme";
 
 const getSessionIdFromDomainsResponse = (domainsResponse, assessmentId) => {
   if (!domainsResponse) return null;
@@ -119,6 +121,13 @@ export function useSelfAssessment() {
 
   const queryClient = useQueryClient();
 
+  const { data: schoolDataResponse, isLoading: isLoadingSchoolData, refetch: refetchSchoolData } =
+    useGetSchoolDataQuery({
+      schoolId: userName || undefined,
+    });
+
+  const schoolData = schoolDataResponse?.data || {};
+
   const {
     data: domainsData,
     isLoading: isLoadingDomains,
@@ -129,7 +138,11 @@ export function useSelfAssessment() {
     roleId,
     languageCode,
     userId: userId ? Number(userId) : undefined,
-    enabled: true,
+    enabled:
+      !isLoadingSchoolData &&
+      !!userName &&
+      schoolData.hostel !== null &&
+      schoolData.hostel !== undefined,
   });
 
   // Fetch all questions (without class filter) for counting purposes
@@ -170,13 +183,6 @@ export function useSelfAssessment() {
     userId: userId ? Number(userId) : undefined,
     enabled: !!selectedSubdomain,
   });
-
-  const { data: schoolDataResponse, isLoading: isLoadingSchoolData } =
-    useGetSchoolDataQuery({
-      schoolId: userName || undefined,
-    });
-
-  const schoolData = schoolDataResponse?.data || {};
 
   // Fetch school grades for FLN questions
   const { data: gradesData, isLoading: isLoadingGrades } =
@@ -341,7 +347,19 @@ export function useSelfAssessment() {
     );
   }, [assessments, selectedAssessmentId]);
 
-  const domains = selectedAssessment?.domains || [];
+  const assessmentTheme = useMemo(
+    () => getAssessmentTheme(selectedAssessment),
+    [selectedAssessment],
+  );
+
+  const domains = useMemo(() => {
+    const rawDomains = selectedAssessment?.domains || [];
+    const hostelValue =
+      schoolData.hostel === null || schoolData.hostel === undefined
+        ? null
+        : Number(schoolData.hostel);
+    return filterDomainsByHostelFacility(rawDomains, hostelValue);
+  }, [selectedAssessment?.domains, schoolData.hostel]);
   const isPublished =
     selectedAssessment?.isPublished ?? domainsData?.isPublished ?? false;
   const endDate = selectedAssessment?.endDate ?? domainsData?.endDate ?? null;
@@ -633,7 +651,7 @@ export function useSelfAssessment() {
         id: "classroom",
         label: t("selfAssessment.tabs.classroomObservation"),
         icon: <Class sx={{ fontSize: 20 }} />,
-        color: colors.primary.blue,
+        color: assessmentTheme.primary,
         questions: classroomObservationQuestions,
         questionsForCount: classroomObservationQuestionsForCount,
         totalCount: classroomObservationQuestionsTotalCount,
@@ -681,6 +699,7 @@ export function useSelfAssessment() {
     subjectObservationQuestionsTotalCount,
     flnQuestionsTotalCount,
     currentLanguage,
+    assessmentTheme.primary,
   ]);
 
   // Reset tab to first when questions change
@@ -2142,6 +2161,7 @@ export function useSelfAssessment() {
     subjects,
     assessments,
     selectedAssessment,
+    assessmentTheme,
     domains,
     isPublished,
     endDate,

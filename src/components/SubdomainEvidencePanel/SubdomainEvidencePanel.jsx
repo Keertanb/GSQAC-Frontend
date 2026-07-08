@@ -26,6 +26,7 @@ import {
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import { colors } from "../../constants/colors";
+import { getAssessmentTheme } from "../../utils/assessmentTheme";
 import {
   computeMandatoryEvidenceProgress,
   EVIDENCE_ACCEPT,
@@ -38,6 +39,28 @@ import {
 } from "../../services/evidenceService";
 import { enqueueSnackbar } from "notistack";
 import "./SubdomainEvidencePanel.css";
+
+const DEFAULT_EVIDENCE_THEME = getAssessmentTheme(null);
+
+function getEvidenceThemeVars(assessmentTheme) {
+  const at = assessmentTheme || DEFAULT_EVIDENCE_THEME;
+  return {
+    "--evidence-primary": at.primary,
+    "--evidence-dark": at.dark,
+    "--evidence-lightest": at.lightest,
+    "--evidence-soft": `${at.primary}14`,
+    "--evidence-border": `${at.primary}40`,
+    "--evidence-icon-bg": `${at.primary}1a`,
+    "--evidence-shadow": `${at.primary}14`,
+    "--evidence-gradient": at.panelGradient,
+  };
+}
+
+function resolveEvidenceTheme({ assessmentTheme, selectedAssessment }) {
+  if (assessmentTheme) return assessmentTheme;
+  if (selectedAssessment) return getAssessmentTheme(selectedAssessment);
+  return DEFAULT_EVIDENCE_THEME;
+}
 
 function formatFileSize(bytes) {
   if (!bytes) return "";
@@ -55,7 +78,9 @@ function EvidenceViewDialog({
   isMobile,
   isTabletView = false,
   title,
+  assessmentTheme,
 }) {
+  const at = assessmentTheme || DEFAULT_EVIDENCE_THEME;
   const handleOpenExternal = () => {
     if (viewUrl) {
       window.open(viewUrl, "_blank", "noopener,noreferrer");
@@ -69,8 +94,11 @@ function EvidenceViewDialog({
       fullWidth
       fullScreen={isMobile && !isTabletView}
       maxWidth="md"
-      className="subdomain-evidence-dialog"
-      PaperProps={{ className: "subdomain-evidence-dialog__paper" }}
+      className={`subdomain-evidence-dialog subdomain-evidence-dialog--${at.kind}`}
+      PaperProps={{
+        className: "subdomain-evidence-dialog__paper",
+        style: getEvidenceThemeVars(at),
+      }}
     >
       <DialogTitle className="subdomain-evidence-dialog__title">
         <Box>
@@ -131,10 +159,10 @@ function EvidenceViewDialog({
             startIcon={<OpenInNewIcon />}
             onClick={handleOpenExternal}
             sx={{
-              bgcolor: colors.primary.blue,
+              bgcolor: at.primary,
               textTransform: "none",
               fontWeight: 700,
-              "&:hover": { bgcolor: colors.primary.dark },
+              "&:hover": { bgcolor: at.dark },
             }}
           >
             Open in new tab
@@ -156,7 +184,11 @@ function EvidenceUploadModal({
   onUploadClick,
   onViewClick,
   evidenceLabel,
+  assessmentTheme,
 }) {
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
+  const at = assessmentTheme || DEFAULT_EVIDENCE_THEME;
   const progress = computeMandatoryEvidenceProgress(slots, summary);
 
   return (
@@ -164,38 +196,81 @@ function EvidenceUploadModal({
       open={open}
       onClose={onClose}
       fullWidth
+      fullScreen={isPhone}
       maxWidth="sm"
-      className="subdomain-evidence-upload-modal"
-      PaperProps={{ className: "subdomain-evidence-upload-modal__paper" }}
+      className={`subdomain-evidence-upload-modal subdomain-evidence-upload-modal--${at.kind}${
+        isPhone ? " subdomain-evidence-upload-modal--mobile" : ""
+      }`}
+      PaperProps={{
+        className: "subdomain-evidence-upload-modal__paper",
+        style: getEvidenceThemeVars(at),
+      }}
     >
-      <DialogTitle className="subdomain-evidence-upload-modal__title">
-        <Box>
-          <Typography variant="h6" fontWeight={800}>
+      <DialogTitle
+        className="subdomain-evidence-upload-modal__title"
+        sx={{
+          background: at.panelGradient,
+          borderBottom: `1px solid ${at.primary}22`,
+        }}
+      >
+        <Box sx={{ minWidth: 0, flex: 1, pr: 1 }}>
+          <Typography
+            variant="h6"
+            fontWeight={800}
+            sx={{
+              lineHeight: 1.3,
+              wordBreak: "break-word",
+              overflowWrap: "anywhere",
+            }}
+          >
             {evidenceLabel} upload
           </Typography>
           <Typography variant="caption" color="text.secondary">
             JPG, PNG, PDF · Max 5 MB per file
           </Typography>
         </Box>
-        <IconButton size="small" onClick={onClose} aria-label="Close">
+        <IconButton
+          size="small"
+          onClick={onClose}
+          aria-label="Close"
+          sx={{ flexShrink: 0, mt: 0.25 }}
+        >
           <CloseIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
 
       <DialogContent dividers className="subdomain-evidence-upload-modal__content">
-        <Box className="subdomain-evidence-upload-modal__summary">
+        <Box
+          className="subdomain-evidence-upload-modal__summary"
+          sx={{
+            background: `${at.primary}08`,
+            border: `1px solid ${at.primary}22`,
+          }}
+        >
           <Box
+            className="subdomain-evidence-upload-modal__summary-row"
             sx={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center",
+              alignItems: { xs: "flex-start", sm: "center" },
+              flexDirection: { xs: "column", sm: "row" },
+              gap: { xs: 0.35, sm: 0.75 },
               mb: 0.75,
             }}
           >
-            <Typography variant="body2" fontWeight={700}>
+            <Typography variant="body2" fontWeight={700} sx={{ lineHeight: 1.4 }}>
               Mandatory {evidenceLabel}
             </Typography>
-            <Typography variant="body2" fontWeight={800} color="primary">
+            <Typography
+              variant="body2"
+              fontWeight={800}
+              sx={{
+                color: at.primary,
+                lineHeight: 1.4,
+                wordBreak: "break-word",
+                overflowWrap: "anywhere",
+              }}
+            >
               {progress.uploaded}/{progress.total} uploaded
               {progress.remaining > 0 ? ` · ${progress.remaining} left` : ""}
             </Typography>
@@ -206,13 +281,13 @@ function EvidenceUploadModal({
             sx={{
               height: 8,
               borderRadius: 99,
-              bgcolor: colors.neutral.gray200,
+              bgcolor: `${at.primary}18`,
               "& .MuiLinearProgress-bar": {
                 borderRadius: 99,
                 bgcolor:
                   progress.percentage === 100
                     ? colors.accent.green
-                    : colors.primary.blue,
+                    : at.primary,
               },
             }}
           />
@@ -239,13 +314,31 @@ function EvidenceUploadModal({
                 className={`subdomain-evidence-slot-card${
                   hasFile ? " subdomain-evidence-slot-card--done" : ""
                 }`}
+                sx={
+                  !hasFile
+                    ? {
+                        "&:hover": {
+                          borderColor: `${at.primary}55`,
+                          boxShadow: `0 4px 14px ${at.primary}12`,
+                        },
+                      }
+                    : undefined
+                }
               >
                 <Box className="subdomain-evidence-slot-card__header">
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={800}>
+                  <Box className="subdomain-evidence-slot-card__info">
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight={800}
+                      className="subdomain-evidence-slot-card__name"
+                    >
                       {slot.slotName || getEvidenceSlotName(slot)}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      className="subdomain-evidence-slot-card__filename"
+                    >
                       {hasFile
                         ? slot.evidence?.fileName || "Uploaded"
                         : "Not uploaded yet"}
@@ -256,7 +349,8 @@ function EvidenceUploadModal({
                     label={isMandatory ? "Mandatory" : "Optional"}
                     color={isMandatory ? "error" : "default"}
                     variant="outlined"
-                    sx={{ fontWeight: 700 }}
+                    className="subdomain-evidence-slot-card__chip"
+                    sx={{ fontWeight: 700, flexShrink: 0 }}
                   />
                 </Box>
 
@@ -288,9 +382,9 @@ function EvidenceUploadModal({
                       sx={{
                         textTransform: "none",
                         fontWeight: 700,
-                        bgcolor: colors.primary.blue,
+                        bgcolor: at.primary,
                         boxShadow: "none",
-                        "&:hover": { bgcolor: colors.primary.dark, boxShadow: "none" },
+                        "&:hover": { bgcolor: at.dark, boxShadow: "none" },
                       }}
                     >
                       {hasFile ? "Replace" : "Upload"}
@@ -324,7 +418,15 @@ export function SubdomainEvidencePanel({
   variant = "compact",
   languageCode = "en",
   onProgressChange,
+  assessmentTheme: assessmentThemeProp,
+  selectedAssessment,
 }) {
+  const resolvedTheme = resolveEvidenceTheme({
+    assessmentTheme: assessmentThemeProp,
+    selectedAssessment,
+  });
+  const themeVars = getEvidenceThemeVars(resolvedTheme);
+  const at = resolvedTheme;
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
@@ -452,11 +554,12 @@ export function SubdomainEvidencePanel({
   if (variant === "compact") {
     const compactContent = (
       <Box
-        className={`subdomain-evidence-compact ${
+        className={`subdomain-evidence-compact subdomain-evidence-compact--${at.kind} ${
           progress.percentage === 100 ? "subdomain-evidence-compact--done" : ""
         } ${isPhone ? "subdomain-evidence-compact--mobile" : ""} ${
           isTablet ? "subdomain-evidence-compact--tablet" : ""
         } ${className}`.trim()}
+        style={themeVars}
         onClick={handleOpenUploadModal}
         role="button"
         tabIndex={0}
@@ -506,7 +609,7 @@ export function SubdomainEvidencePanel({
                   startIcon={<CloudUploadIcon sx={{ fontSize: "0.95rem !important" }} />}
                   onClick={handleOpenUploadModal}
                   sx={{
-                    bgcolor: colors.primary.blue,
+                    bgcolor: at.primary,
                     textTransform: "none",
                     fontWeight: 700,
                     fontSize: "0.7rem",
@@ -514,7 +617,7 @@ export function SubdomainEvidencePanel({
                     px: 1,
                     py: 0.35,
                     boxShadow: "none",
-                    "&:hover": { bgcolor: colors.primary.dark, boxShadow: "none" },
+                    "&:hover": { bgcolor: at.dark, boxShadow: "none" },
                   }}
                 >
                   Upload
@@ -559,6 +662,7 @@ export function SubdomainEvidencePanel({
           onUploadClick={handleUploadClick}
           onViewClick={handleViewClick}
           evidenceLabel={evidenceLabel}
+          assessmentTheme={at}
         />
 
         <EvidenceViewDialog
@@ -574,13 +678,17 @@ export function SubdomainEvidencePanel({
           isMobile={isPhone}
           isTabletView={isTablet}
           title={viewingSlot ? getEvidenceSlotName(viewingSlot, lang) : evidenceLabel}
+          assessmentTheme={at}
         />
       </>
     );
   }
 
   return (
-    <Box className={`subdomain-evidence-panel ${className}`.trim()}>
+    <Box
+      className={`subdomain-evidence-panel subdomain-evidence-panel--${at.kind} ${className}`.trim()}
+      style={themeVars}
+    >
       <Box className="subdomain-evidence-panel__body">
         {isLoading ? (
           <Box className="subdomain-evidence-panel__loading">
@@ -592,10 +700,11 @@ export function SubdomainEvidencePanel({
             startIcon={<CloudUploadIcon />}
             onClick={handleOpenUploadModal}
             sx={{
-              bgcolor: colors.primary.blue,
+              bgcolor: at.primary,
               textTransform: "none",
               fontWeight: 700,
               borderRadius: 2,
+              "&:hover": { bgcolor: at.dark },
             }}
           >
             Manage {evidenceLabel} ({statusText})
@@ -622,6 +731,7 @@ export function SubdomainEvidencePanel({
         onUploadClick={handleUploadClick}
         onViewClick={handleViewClick}
         evidenceLabel={evidenceLabel}
+        assessmentTheme={at}
       />
 
       <EvidenceViewDialog
@@ -637,6 +747,7 @@ export function SubdomainEvidencePanel({
         isMobile={isPhone}
         isTabletView={isTablet}
         title={viewingSlot ? getEvidenceSlotName(viewingSlot, lang) : evidenceLabel}
+        assessmentTheme={at}
       />
     </Box>
   );

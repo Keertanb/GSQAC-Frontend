@@ -1,10 +1,23 @@
 import React from "react";
-import { Box, Chip, Typography } from "@mui/material";
+import { Box, Chip } from "@mui/material";
 import { colors } from "../constants/colors";
+import { AssessmentOptionText } from "./assessmentOptionText";
 
-export function renderAssessmentOptionLabel(t, getOptionText, option, optIndex) {
+export function renderAssessmentOptionLabel(
+  t,
+  getOptionText,
+  option,
+  optIndex,
+  options = {},
+) {
+  const { assessmentTheme, isMobile = false } = options;
+  const at = assessmentTheme || { primary: colors.primary.blue };
+
   return (
     <Box
+      className={`sa-mcq-option-label${
+        isMobile ? " sa-mcq-option-label--stacked" : ""
+      }`}
       sx={{
         display: "flex",
         alignItems: "flex-start",
@@ -19,16 +32,14 @@ export function renderAssessmentOptionLabel(t, getOptionText, option, optIndex) 
           height: 26,
           fontWeight: 700,
           fontSize: "0.6875rem",
-          bgcolor: `${colors.primary.blue}14`,
-          color: colors.primary.blue,
-          border: `1px solid ${colors.primary.blue}30`,
+          bgcolor: `${at.primary}14`,
+          color: at.primary,
+          border: `1px solid ${at.primary}30`,
           flexShrink: 0,
           mt: 0.125,
         }}
       />
-      <Typography variant="body2" sx={{ lineHeight: 1.5, flex: 1 }}>
-        {getOptionText(option)}
-      </Typography>
+      <AssessmentOptionText text={getOptionText(option)} />
     </Box>
   );
 }

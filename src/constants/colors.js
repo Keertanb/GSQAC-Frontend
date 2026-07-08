@@ -8,6 +8,15 @@ export const colors = {
     lightest: "#dbeafe",
   },
 
+  // Saffron (Administrative assessment theme)
+  saffron: {
+    main: "#FF9933",
+    dark: "#EA580C",
+    light: "#FB923C",
+    lighter: "#FDBA74",
+    lightest: "#FFF7ED",
+  },
+
   // Accent Colors
   accent: {
     orange: "#f97316",

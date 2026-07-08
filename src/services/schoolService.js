@@ -360,6 +360,11 @@ export const updateSchoolInfrastructure = async (payload) => {
   return response.data;
 };
 
+export const setSchoolHostelFacility = async (payload) => {
+  const response = await axiosInstance.post("/school/hostel-facility", payload);
+  return response.data;
+};
+
 /**
  * React Query hook for getting school infrastructure details
  * @param {Object} options - Query options
@@ -459,6 +464,32 @@ export const useUpdateSchoolInfrastructureMutation = (options = {}) => {
       }
     },
     ...options,
+  });
+};
+
+export const useSetSchoolHostelFacilityMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => setSchoolHostelFacility(data),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.school.schoolData(variables.schoolId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.school.domains(roleId, languageCode),
+      });
+      queryClient.invalidateQueries({ queryKey: ["school", "domains"] });
+      enqueueSnackbar(data?.message || "Hostel facility saved successfully.", {
+        variant: "success",
+      });
+      options.onSuccess?.(data, variables);
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to save hostel facility.",
+        { variant: "error" },
+      );
+      options.onError?.(error);
+    },
   });
 };
 

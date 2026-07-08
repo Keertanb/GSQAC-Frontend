@@ -1,0 +1,33 @@
+.assessment-chip-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.assessment-chip-selector__label {
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 0.7rem !important;
+}
+
+.assessment-chip-selector__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.assessment-chip-selector__chip {
+  max-width: 100%;
+}
+
+@media (max-width: 960px) {
+  .assessment-chip-selector {
+    margin-top: 0.85rem;
+  }
+
+  .assessment-chip-selector__chips {
+    gap: 0.4rem;
+  }
+}

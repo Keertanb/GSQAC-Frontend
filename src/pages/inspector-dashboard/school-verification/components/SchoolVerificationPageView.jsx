@@ -19,6 +19,7 @@ import { AssessmentOverallProgress } from "../../../../components/AssessmentOver
 import { useAssessmentMobileLayout } from "../../../../hooks/useAssessmentMobileLayout";
 import { renderAssessmentOptionLabel } from "../../../../utils/assessmentOptionLabel";
 import { AssessmentNavProgressBar } from "../../../../components/AssessmentNavProgressBar/AssessmentNavProgressBar";
+import { AssessmentChipSelector } from "../../../../components/AssessmentChipSelector/AssessmentChipSelector";
 import { SubdomainEvidencePanel } from "../../../../components/SubdomainEvidencePanel/SubdomainEvidencePanel";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import "../../../school-dashboard/self-assessment/SelfAssessment.css";
@@ -413,42 +414,18 @@ export function SchoolVerificationPageView({ c }) {
                 ? getDomainName(selectedDomain)
                 : t("selfAssessment.navigateSubtitle")}
             </Typography>
-            {assessments.length > 1 && (
-              <Box sx={{ mt: 2 }}>
-                <Typography
-                  variant="caption"
-                  sx={{ color: colors.text.secondary, fontWeight: 600 }}
-                >
-                  {t("selfAssessment.selectAssessment")}
-                </Typography>
-                <FormControl size="small" fullWidth sx={{ mt: 0.75 }}>
-                  <Select
-                    value={selectedAssessment?.assessmentId ?? ""}
-                    onChange={(e) => {
-                      const selectedId = Number(e.target.value);
-                      const assessment = assessments.find(
-                        (a) => Number(a.assessmentId) === selectedId
-                      );
-                      if (assessment) {
-                        handleAssessmentSelect(assessment);
-                      }
-                    }}
-                  >
-                    {assessments.map((assessment) => (
-                      <MenuItem
-                        key={assessment.assessmentId}
-                        value={assessment.assessmentId}
-                      >
-                        {assessment.assessmentName ||
-                          t("selfAssessment.assessmentNameFallback", {
-                            id: assessment.assessmentId,
-                          })}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-            )}
+            <AssessmentChipSelector
+              assessments={assessments}
+              selectedAssessmentId={selectedAssessment?.assessmentId}
+              label={t("selfAssessment.selectAssessment")}
+              onSelect={handleAssessmentSelect}
+              getAssessmentLabel={(assessment) =>
+                assessment.assessmentName ||
+                t("selfAssessment.assessmentNameFallback", {
+                  id: assessment.assessmentId,
+                })
+              }
+            />
           </Box>
 
           {/* Domains/Subdomains List */}
@@ -524,7 +501,7 @@ export function SchoolVerificationPageView({ c }) {
                               mb: 1,
                             }}
                           >
-                            {subdomainNumber}. {getSubdomainName(subdomain)}
+                            {getSubdomainName(subdomain)}
                           </Typography>
                           <AssessmentNavProgressBar
                             progress={subdomainProgress}
@@ -630,7 +607,7 @@ export function SchoolVerificationPageView({ c }) {
                                   mb: 0.25,
                                 }}
                               >
-                                {domainNumber}. {getDomainName(domain)}
+                                {getDomainName(domain)}
                               </Typography>
                             </Box>
                             {progress === 100 && (
@@ -764,7 +741,6 @@ export function SchoolVerificationPageView({ c }) {
                                             lineHeight: 1.3,
                                           }}
                                         >
-                                          {subdomainNumber}.{" "}
                                           {getSubdomainName(subdomain)}
                                         </Typography>
                                       </Box>
@@ -934,11 +910,7 @@ export function SchoolVerificationPageView({ c }) {
                   }}
                 >
                   {selectedDomain && selectedSubdomain
-                    ? `${domainNumber}. ${getDomainName(
-                        selectedDomain
-                      )} / ${domainNumber}.${subdomainNumber}. ${getSubdomainName(
-                        selectedSubdomain
-                      )}`
+                    ? `${getDomainName(selectedDomain)} / ${getSubdomainName(selectedSubdomain)}`
                     : ""}
                 </Typography>
 
@@ -961,7 +933,6 @@ export function SchoolVerificationPageView({ c }) {
                         mb: 0.5,
                       }}
                     >
-                      {domainNumber}.{subdomainNumber}.{" "}
                       {getSubdomainName(selectedSubdomain)}
                     </Typography>
                     <Typography
@@ -983,6 +954,7 @@ export function SchoolVerificationPageView({ c }) {
                       selectedAssessmentId ??
                       null
                     }
+                    selectedAssessment={selectedAssessment}
                     subdomain={selectedSubdomain}
                     domainName={getDomainName(selectedDomain)}
                     readOnly={isSubmitted === 1 || isSubmitted === true}
@@ -1523,7 +1495,7 @@ export function SchoolVerificationPageView({ c }) {
                                         }}
                                       >
                                         <Chip
-                                          label={`Q ${questionNumber}`}
+                                          label={t("selfAssessment.criterionLabel")}
                                           size="small"
                                           sx={{
                                             bgcolor: colors.neutral.gray800,
@@ -2151,7 +2123,7 @@ export function SchoolVerificationPageView({ c }) {
                                         }}
                                       >
                                         <Chip
-                                          label={`Q ${questionNumber}`}
+                                          label={t("selfAssessment.criterionLabel")}
                                           size="small"
                                           sx={{
                                             bgcolor: colors.neutral.gray800,
@@ -2412,7 +2384,7 @@ export function SchoolVerificationPageView({ c }) {
                                       }}
                                     >
                                       <Chip
-                                        label={`Q ${questionNumber}`}
+                                        label={t("selfAssessment.criterionLabel")}
                                         size="small"
                                         sx={{
                                           bgcolor: colors.neutral.gray800,
@@ -2786,7 +2758,7 @@ export function SchoolVerificationPageView({ c }) {
                                       }}
                                     >
                                       <Chip
-                                        label={`Q ${questionNumber}`}
+                                        label={t("selfAssessment.criterionLabel")}
                                         size="small"
                                         sx={{
                                           bgcolor: colors.neutral.gray800,
@@ -3194,7 +3166,6 @@ export function SchoolVerificationPageView({ c }) {
                                   fontSize: "0.9375rem",
                                 }}
                               >
-                                {subdomainNumber}.{" "}
                                 {getSubdomainName(subdomain)}
                               </Typography>
                             </Box>

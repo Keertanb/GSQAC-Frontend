@@ -54,6 +54,7 @@ import { AssessmentOverallProgress } from "../../../../components/AssessmentOver
 import { useAssessmentMobileLayout } from "../../../../hooks/useAssessmentMobileLayout";
 import { renderAssessmentOptionLabel } from "../../../../utils/assessmentOptionLabel";
 import { AssessmentNavProgressBar } from "../../../../components/AssessmentNavProgressBar/AssessmentNavProgressBar";
+import { AssessmentChipSelector } from "../../../../components/AssessmentChipSelector/AssessmentChipSelector";
 import { SubdomainEvidencePanel } from "../../../../components/SubdomainEvidencePanel/SubdomainEvidencePanel";
 import {
   BarChart,
@@ -684,42 +685,18 @@ export function CRCAssessmentPageView({ c }) {
                 ? getDomainName(selectedDomain)
                 : t("selfAssessment.navigateSubtitle")}
             </Typography>
-            {assessments.length > 1 && (
-              <Box sx={{ mt: 2 }}>
-                <Typography
-                  variant="caption"
-                  sx={{ color: colors.text.secondary, fontWeight: 600 }}
-                >
-                  {t("selfAssessment.selectAssessment")}
-                </Typography>
-                <FormControl size="small" fullWidth sx={{ mt: 0.75 }}>
-                  <Select
-                    value={selectedAssessment?.assessmentId ?? ""}
-                    onChange={(e) => {
-                      const selectedId = Number(e.target.value);
-                      const assessment = assessments.find(
-                        (a) => Number(a.assessmentId) === selectedId,
-                      );
-                      if (assessment) {
-                        handleAssessmentSelect(assessment);
-                      }
-                    }}
-                  >
-                    {assessments.map((assessment) => (
-                      <MenuItem
-                        key={assessment.assessmentId}
-                        value={assessment.assessmentId}
-                      >
-                        {assessment.assessmentName ||
-                          t("selfAssessment.assessmentNameFallback", {
-                            id: assessment.assessmentId,
-                          })}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-            )}
+            <AssessmentChipSelector
+              assessments={assessments}
+              selectedAssessmentId={selectedAssessment?.assessmentId}
+              label={t("selfAssessment.selectAssessment")}
+              onSelect={handleAssessmentSelect}
+              getAssessmentLabel={(assessment) =>
+                assessment.assessmentName ||
+                t("selfAssessment.assessmentNameFallback", {
+                  id: assessment.assessmentId,
+                })
+              }
+            />
           </Box>
 
           {/* Domains/Subdomains List */}
@@ -795,7 +772,7 @@ export function CRCAssessmentPageView({ c }) {
                               mb: 1,
                             }}
                           >
-                            {subdomainNumber}. {getSubdomainName(subdomain)}
+                            {getSubdomainName(subdomain)}
                           </Typography>
                           <AssessmentNavProgressBar
                             progress={subdomainProgress}
@@ -901,7 +878,7 @@ export function CRCAssessmentPageView({ c }) {
                                   mb: 0.25,
                                 }}
                               >
-                                {domainNumber}. {getDomainName(domain)}
+                                {getDomainName(domain)}
                               </Typography>
                             </Box>
                             {progress === 100 && (
@@ -1042,7 +1019,6 @@ export function CRCAssessmentPageView({ c }) {
                                               lineHeight: 1.3,
                                             }}
                                           >
-                                            {subdomainNumber}.{" "}
                                             {getSubdomainName(subdomain)}
                                           </Typography>
                                         </Box>
@@ -1231,9 +1207,7 @@ export function CRCAssessmentPageView({ c }) {
                 }}
               >
                 {selectedDomain && selectedSubdomain
-                  ? `${domainNumber}. ${getDomainName(
-                      selectedDomain,
-                    )} / ${domainNumber}.${subdomainNumber}. ${getSubdomainName(
+                  ? `${getDomainName(selectedDomain)} / ${getSubdomainName(
                       selectedSubdomain,
                     )}`
                   : ""}
@@ -1258,7 +1232,6 @@ export function CRCAssessmentPageView({ c }) {
                       mb: 0.5,
                     }}
                   >
-                    {domainNumber}.{subdomainNumber}.{" "}
                     {getSubdomainName(selectedSubdomain)}
                   </Typography>
                   <Typography
@@ -1278,6 +1251,7 @@ export function CRCAssessmentPageView({ c }) {
                   assessmentId={
                     selectedAssessment?.assessmentId ?? selectedAssessmentId ?? null
                   }
+                  selectedAssessment={selectedAssessment}
                   subdomain={selectedSubdomain}
                   domainName={getDomainName(selectedDomain)}
                   readOnly={
@@ -1817,7 +1791,7 @@ export function CRCAssessmentPageView({ c }) {
                                     }}
                                   >
                                     <Chip
-                                      label={`Q ${questionNumber}`}
+                                      label={t("selfAssessment.criterionLabel")}
                                       size="small"
                                       sx={{
                                         bgcolor: "#1e40af",
@@ -2419,7 +2393,7 @@ export function CRCAssessmentPageView({ c }) {
                                     }}
                                   >
                                     <Chip
-                                      label={`Q ${questionNumber}`}
+                                      label={t("selfAssessment.criterionLabel")}
                                       size="small"
                                       sx={{
                                         bgcolor: "#1e40af",
@@ -2677,7 +2651,7 @@ export function CRCAssessmentPageView({ c }) {
                                   }}
                                 >
                                   <Chip
-                                    label={`Q ${questionNumber}`}
+                                    label={t("selfAssessment.criterionLabel")}
                                     size="small"
                                     sx={{
                                       bgcolor: "#2563eb",
@@ -3031,7 +3005,7 @@ export function CRCAssessmentPageView({ c }) {
                                   }}
                                 >
                                   <Chip
-                                    label={`Q ${questionNumber}`}
+                                    label={t("selfAssessment.criterionLabel")}
                                     size="small"
                                     sx={{
                                       bgcolor: "#2563eb",
@@ -3418,7 +3392,6 @@ export function CRCAssessmentPageView({ c }) {
                                       fontSize: "0.9375rem",
                                     }}
                                   >
-                                    {subdomainNumber}.{" "}
                                     {getSubdomainName(subdomain)}
                                   </Typography>
                                 </Box>

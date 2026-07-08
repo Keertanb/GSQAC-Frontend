@@ -58,21 +58,14 @@ import { DRAWER_WIDTH } from "../../../../constants/menuItems";
 import { SubmitFeedbackModal, countFeedbackWords } from "./SubmitFeedbackModal";
 import { SubmitPreviewModal } from "./SubmitPreviewModal";
 import { AssessmentNavProgressBar } from "../../../../components/AssessmentNavProgressBar/AssessmentNavProgressBar";
+import { AssessmentChipSelector } from "../../../../components/AssessmentChipSelector/AssessmentChipSelector";
 import {
   getSubdomainEvidenceProgress,
   subdomainRequiresEvidence,
 } from "../../../../services/evidenceService";
 import { SelfAssessmentMobileStepper } from "./SelfAssessmentMobileStepper";
 import { SubdomainQuestionFlow } from "./SubdomainQuestionFlow";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from "recharts";
+import { AssessmentProgressOverview } from "./AssessmentProgressOverview";
 import "../SelfAssessment.css";
 
 function SubdomainEvidenceProgressBar({
@@ -195,6 +188,7 @@ export function SelfAssessmentLayout({ c }) {
     subjects,
     assessments,
     selectedAssessment,
+    assessmentTheme,
     domains,
     isPublished,
     endDate,
@@ -263,6 +257,7 @@ export function SelfAssessmentLayout({ c }) {
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const [mobileStep, setMobileStep] = useState(0);
   const leftPanelWidth = 380;
+  const at = assessmentTheme;
 
   const scrollMobileToTop = useCallback(() => {
     if (typeof window !== "undefined") {
@@ -340,39 +335,18 @@ export function SelfAssessmentLayout({ c }) {
   const showMobileNavPanel =
     matchDownMD && (mobileStep === 0 || mobileStep === 1);
 
-  const renderOptionLabel = (option, optIndex) => (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 1.25,
-        width: "100%",
-      }}
-    >
-      <Chip
-        label={t("selfAssessment.level", { level: optIndex })}
-        size="small"
-        sx={{
-          height: 26,
-          fontWeight: 700,
-          fontSize: "0.6875rem",
-          bgcolor: `${colors.primary.blue}14`,
-          color: colors.primary.blue,
-          border: `1px solid ${colors.primary.blue}30`,
-          flexShrink: 0,
-          mt: 0.125,
-        }}
-      />
-      <Typography variant="body2" sx={{ lineHeight: 1.5, flex: 1 }}>
-        {getOptionText(option)}
-      </Typography>
-    </Box>
-  );
-
   const renderOverallProgress = (compact = false, variant = "default") => {
     if (assessmentProgress.totalQuestions <= 0) return null;
 
     const isInline = variant === "inline";
+    const progressColor = getProgressColor(assessmentProgress.answerPercentage);
+    const ringSize = isInline ? 44 : compact ? 56 : 64;
+    const stroke = isInline ? 5 : 6;
+    const radius = (ringSize - stroke) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const ringOffset =
+      circumference -
+      (assessmentProgress.answerPercentage / 100) * circumference;
 
     return (
       <Box
@@ -385,21 +359,21 @@ export function SelfAssessmentLayout({ c }) {
             : compact
               ? { xs: 1.5, md: 2 }
               : { xs: 2, md: 2.5 },
-          borderRadius: 2,
-          bgcolor: "white",
-          border: `1px solid ${colors.neutral.gray200}`,
+          borderRadius: 2.5,
+          background: isInline ? "#fff" : at.panelGradient,
+          border: `1px solid ${at.primary}${isInline ? "22" : "28"}`,
           boxShadow: isInline
             ? "none"
             : compact
-              ? "none"
-              : "0 2px 12px rgba(0,0,0,0.04)",
+              ? `0 4px 16px ${at.primary}10`
+              : `0 8px 24px ${at.primary}12`,
           minWidth: isInline
             ? 0
             : compact
-              ? { xs: "100%", md: 260 }
+              ? { xs: "100%", md: 280 }
               : undefined,
-          maxWidth: isInline ? "none" : compact ? { md: 300 } : undefined,
-          flex: isInline ? "1 1 0" : compact ? { md: "0 0 280px" } : undefined,
+          maxWidth: isInline ? "none" : compact ? { md: 320 } : undefined,
+          flex: isInline ? "1 1 0" : compact ? { md: "0 0 300px" } : undefined,
           width: isInline ? "100%" : undefined,
         }}
       >
@@ -407,80 +381,182 @@ export function SelfAssessmentLayout({ c }) {
           sx={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
-            gap: 1,
-            mb: isInline ? 0.5 : 1,
-            flexWrap: "nowrap",
+            gap: isInline ? 1.25 : 1.75,
           }}
         >
-          <Typography
-            variant={isInline || compact ? "caption" : "subtitle2"}
+          <Box
             sx={{
-              fontWeight: 700,
-              color: colors.text.primary,
-              fontSize: isInline
-                ? "0.6875rem"
-                : compact
-                  ? "0.75rem"
-                  : "0.9375rem",
-              lineHeight: 1.3,
-              whiteSpace: isInline ? "nowrap" : undefined,
-              overflow: isInline ? "hidden" : undefined,
-              textOverflow: isInline ? "ellipsis" : undefined,
-            }}
-          >
-            {t("selfAssessment.overallProgress")}
-          </Typography>
-          <Typography
-            variant={isInline || compact ? "caption" : "subtitle2"}
-            sx={{
-              fontWeight: 700,
-              color: getProgressColor(assessmentProgress.answerPercentage),
-              fontSize: isInline
-                ? "0.75rem"
-                : compact
-                  ? "0.8125rem"
-                  : "0.9375rem",
+              position: "relative",
+              width: ringSize,
+              height: ringSize,
               flexShrink: 0,
             }}
           >
-            {assessmentProgress.displayPercentage}%
-          </Typography>
+            <svg
+              width={ringSize}
+              height={ringSize}
+              style={{ transform: "rotate(-90deg)" }}
+            >
+              <circle
+                cx={ringSize / 2}
+                cy={ringSize / 2}
+                r={radius}
+                fill="none"
+                stroke={`${at.primary}20`}
+                strokeWidth={stroke}
+              />
+              <circle
+                cx={ringSize / 2}
+                cy={ringSize / 2}
+                r={radius}
+                fill="none"
+                stroke={at.primary}
+                strokeWidth={stroke}
+                strokeDasharray={circumference}
+                strokeDashoffset={ringOffset}
+                strokeLinecap="round"
+              />
+            </svg>
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Typography
+                sx={{
+                  fontWeight: 800,
+                  fontSize: isInline ? "0.6875rem" : "0.8125rem",
+                  color: at.primary,
+                  lineHeight: 1,
+                }}
+              >
+                {assessmentProgress.displayPercentage}%
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1,
+                mb: isInline ? 0.5 : 0.75,
+              }}
+            >
+              <Typography
+                variant={isInline || compact ? "caption" : "subtitle2"}
+                sx={{
+                  fontWeight: 800,
+                  color: colors.text.primary,
+                  fontSize: isInline
+                    ? "0.6875rem"
+                    : compact
+                      ? "0.8125rem"
+                      : "0.9375rem",
+                  lineHeight: 1.3,
+                  whiteSpace: isInline ? "nowrap" : undefined,
+                  overflow: isInline ? "hidden" : undefined,
+                  textOverflow: isInline ? "ellipsis" : undefined,
+                }}
+              >
+                {t("selfAssessment.overallProgress")}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 700,
+                  color: progressColor,
+                  flexShrink: 0,
+                  fontSize: isInline ? "0.625rem" : "0.6875rem",
+                }}
+              >
+                {assessmentProgress.totalAnswer}/{assessmentProgress.totalQuestions}
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={assessmentProgress.answerPercentage}
+              sx={{
+                height: isInline ? 6 : compact ? 8 : 9,
+                borderRadius: 99,
+                bgcolor: `${at.primary}14`,
+                "& .MuiLinearProgress-bar": {
+                  borderRadius: 99,
+                  bgcolor: progressColor,
+                },
+              }}
+            />
+            {!isInline ? (
+              <Typography
+                variant="caption"
+                sx={{
+                  display: "block",
+                  mt: 0.75,
+                  color: colors.text.secondary,
+                  fontWeight: 500,
+                  fontSize: compact ? "0.6875rem" : "0.75rem",
+                }}
+              >
+                {t("selfAssessment.questionsAnswered", {
+                  answered: assessmentProgress.totalAnswer,
+                  total: assessmentProgress.totalQuestions,
+                })}
+              </Typography>
+            ) : null}
+          </Box>
         </Box>
-        <LinearProgress
-          variant="determinate"
-          value={assessmentProgress.answerPercentage}
-          sx={{
-            height: isInline ? 6 : compact ? 8 : 10,
-            borderRadius: 5,
-            bgcolor: colors.neutral.gray200,
-            "& .MuiLinearProgress-bar": {
-              borderRadius: 5,
-              bgcolor: getProgressColor(assessmentProgress.answerPercentage),
-            },
-          }}
-        />
-        <Typography
-          variant="caption"
-          sx={{
-            display: "block",
-            mt: isInline ? 0.5 : 0.75,
-            color: colors.text.secondary,
-            fontWeight: 500,
-            fontSize: isInline ? "0.625rem" : compact ? "0.6875rem" : "0.75rem",
-            whiteSpace: isInline ? "nowrap" : undefined,
-            overflow: isInline ? "hidden" : undefined,
-            textOverflow: isInline ? "ellipsis" : undefined,
-          }}
-        >
-          {t("selfAssessment.questionsAnswered", {
-            answered: assessmentProgress.totalAnswer,
-            total: assessmentProgress.totalQuestions,
-          })}
-        </Typography>
       </Box>
     );
   };
+
+  const handleProgressOverviewItemClick = useCallback(
+    (data) => {
+      if (assessments.length > 1 && !chartDrilldownAssessmentId) {
+        const assessment = assessments.find(
+          (a) => a.assessmentId === data.assessmentId,
+        );
+        if (assessment) {
+          handleAssessmentSelect(assessment);
+          setChartDrilldownAssessmentId(assessment.assessmentId);
+        }
+        return;
+      }
+
+      const sourceDomains = chartDrilldownAssessmentId
+        ? assessments.find((a) => a.assessmentId === chartDrilldownAssessmentId)
+            ?.domains || []
+        : domains;
+
+      const domain = sourceDomains.find((d) => d.domainId === data.domainId);
+      if (domain) {
+        handleDomainSelect(domain);
+      }
+    },
+    [
+      assessments,
+      chartDrilldownAssessmentId,
+      domains,
+      handleAssessmentSelect,
+      handleDomainSelect,
+      setChartDrilldownAssessmentId,
+    ],
+  );
+
+  const progressOverviewTitle =
+    assessments.length > 1 && !chartDrilldownAssessmentId
+      ? t("selfAssessment.progressOverview.titleAssessments")
+      : t("selfAssessment.progressOverview.titleDomains");
+
+  const progressOverviewSubtitle =
+    assessments.length > 1 && !chartDrilldownAssessmentId
+      ? t("selfAssessment.progressOverview.subtitleAssessments")
+      : t("selfAssessment.progressOverview.subtitleDomains");
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
@@ -703,7 +779,7 @@ export function SelfAssessmentLayout({ c }) {
             flexDirection: "column",
             overflow: "hidden",
           }}
-          className="self-assessment-page-content app-page-below-header"
+          className={`self-assessment-page-content app-page-below-header sa-theme-${at.kind}`}
         >
           <Box
             sx={{
@@ -744,6 +820,20 @@ export function SelfAssessmentLayout({ c }) {
                   <Typography variant="h5" sx={{ fontWeight: 700 }}>
                     {t("selfAssessment.title")}
                   </Typography>
+                  <Chip
+                    size="small"
+                    label={at.label}
+                    sx={{
+                      height: 26,
+                      fontWeight: 800,
+                      fontSize: "0.6875rem",
+                      letterSpacing: 0.3,
+                      textTransform: "uppercase",
+                      bgcolor: `${at.primary}12`,
+                      color: at.primary,
+                      border: `1px solid ${at.primary}30`,
+                    }}
+                  />
                   {/* Status Message */}
                   {endDate && (
                     <Typography
@@ -781,7 +871,7 @@ export function SelfAssessmentLayout({ c }) {
                 )}
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                {/* <Language sx={{ color: colors.primary.blue, fontSize: 20 }} /> */}
+                {/* <Language sx={{ color: at.primary, fontSize: 20 }} /> */}
                 <ToggleButtonGroup
                   value={currentLanguage}
                   exclusive
@@ -799,17 +889,17 @@ export function SelfAssessmentLayout({ c }) {
                       fontSize: "0.8125rem",
                       fontWeight: 600,
                       textTransform: "uppercase",
-                      borderColor: colors.primary.blue + "40",
+                      borderColor: at.primary + "40",
                       color: colors.text.secondary,
                       "&.Mui-selected": {
-                        bgcolor: colors.primary.blue,
+                        bgcolor: at.primary,
                         color: "white",
                         "&:hover": {
-                          bgcolor: colors.primary.dark,
+                          bgcolor: at.dark,
                         },
                       },
                       "&:hover": {
-                        bgcolor: colors.primary.lightest,
+                        bgcolor: at.lightest,
                       },
                     },
                   }}
@@ -875,10 +965,10 @@ export function SelfAssessmentLayout({ c }) {
                       fontSize: "0.75rem",
                       fontWeight: 600,
                       textTransform: "uppercase",
-                      borderColor: colors.primary.blue + "40",
+                      borderColor: at.primary + "40",
                       color: colors.text.secondary,
                       "&.Mui-selected": {
-                        bgcolor: colors.primary.blue,
+                        bgcolor: at.primary,
                         color: "white",
                       },
                     },
@@ -923,6 +1013,7 @@ export function SelfAssessmentLayout({ c }) {
                 selectedSubdomain={selectedSubdomain}
                 getDomainName={getDomainName}
                 getSubdomainName={getSubdomainName}
+                assessmentTheme={at}
               />
             )}
 
@@ -1007,15 +1098,16 @@ export function SelfAssessmentLayout({ c }) {
                       xs: showMobileNavPanel ? "auto" : "100%",
                       md: "100%",
                     },
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                    boxShadow: `0 4px 20px ${at.primary}14`,
+                    border: `1px solid ${at.primary}18`,
                   }}
                 >
                   <Box
                     className="sa-panel-header"
                     sx={{
                       p: { xs: 2.5, md: 3 },
-                      borderBottom: `2px solid ${colors.neutral.gray200}`,
-                      bgcolor: colors.background.secondary,
+                      borderBottom: `2px solid ${at.primary}22`,
+                      background: at.panelGradient,
                       flexShrink: 0,
                     }}
                   >
@@ -1058,9 +1150,9 @@ export function SelfAssessmentLayout({ c }) {
                         //   aria-label="Collapse assessment domains panel"
                         //   sx={{
                         //     flexShrink: 0,
-                        //     color: colors.primary.blue,
-                        //     bgcolor: colors.primary.blue + "12",
-                        //     "&:hover": { bgcolor: colors.primary.blue + "22" },
+                        //     color: at.primary,
+                        //     bgcolor: at.primary + "12",
+                        //     "&:hover": { bgcolor: at.primary + "22" },
                         //   }}
                         // >
                         //   <ChevronLeft fontSize="small" />
@@ -1068,42 +1160,18 @@ export function SelfAssessmentLayout({ c }) {
                         <></>
                       )}
                     </Box>
-                    {assessments.length > 1 && (
-                      <Box sx={{ mt: 2 }}>
-                        <Typography
-                          variant="caption"
-                          sx={{ color: colors.text.secondary, fontWeight: 600 }}
-                        >
-                          {t("selfAssessment.selectAssessment")}
-                        </Typography>
-                        <FormControl size="small" fullWidth sx={{ mt: 0.75 }}>
-                          <Select
-                            value={selectedAssessment?.assessmentId ?? ""}
-                            onChange={(e) => {
-                              const selectedId = Number(e.target.value);
-                              const assessment = assessments.find(
-                                (a) => Number(a.assessmentId) === selectedId,
-                              );
-                              if (assessment) {
-                                handleAssessmentSelect(assessment);
-                              }
-                            }}
-                          >
-                            {assessments.map((assessment) => (
-                              <MenuItem
-                                key={assessment.assessmentId}
-                                value={assessment.assessmentId}
-                              >
-                                {assessment.assessmentName ||
-                                  t("selfAssessment.assessmentNameFallback", {
-                                    id: assessment.assessmentId,
-                                  })}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Box>
-                    )}
+                    <AssessmentChipSelector
+                      assessments={assessments}
+                      selectedAssessmentId={selectedAssessment?.assessmentId}
+                      label={t("selfAssessment.selectAssessment")}
+                      onSelect={handleAssessmentSelect}
+                      getAssessmentLabel={(assessment) =>
+                        assessment.assessmentName ||
+                        t("selfAssessment.assessmentNameFallback", {
+                          id: assessment.assessmentId,
+                        })
+                      }
+                    />
                   </Box>
 
                   {/* Domains/Subdomains List */}
@@ -1161,14 +1229,14 @@ export function SelfAssessmentLayout({ c }) {
                                       ? "2px solid"
                                       : "1px solid",
                                     borderColor: isSubdomainSelected
-                                      ? colors.primary.blue
+                                      ? at.primary
                                       : colors.neutral.gray200,
                                     borderRadius: 2,
                                     bgcolor: isSubdomainSelected
-                                      ? colors.primary.blue + "12"
+                                      ? at.primary + "12"
                                       : "white",
                                     boxShadow: isSubdomainSelected
-                                      ? `0 4px 12px ${colors.primary.blue}20`
+                                      ? `0 4px 12px ${at.primary}20`
                                       : "0 2px 8px rgba(0,0,0,0.04)",
                                     "&:active": {
                                       transform: "scale(0.99)",
@@ -1202,7 +1270,6 @@ export function SelfAssessmentLayout({ c }) {
                                           minWidth: 0,
                                         }}
                                       >
-                                        {subdomainNumber}.{" "}
                                         {getSubdomainName(subdomain)}
                                       </Typography>
                                       {subdomainProgress === 100 && (
@@ -1271,19 +1338,19 @@ export function SelfAssessmentLayout({ c }) {
                                   transition: "all 0.3s ease",
                                   border: "1.5px solid",
                                   borderColor: isDomainSelected
-                                    ? colors.primary.blue
+                                    ? at.primary
                                     : "transparent",
                                   borderRadius: 2,
                                   bgcolor: isDomainSelected
-                                    ? colors.primary.blue + "08"
+                                    ? at.primary + "08"
                                     : colors.background.primary,
                                   boxShadow: isDomainSelected
-                                    ? `0 4px 12px ${colors.primary.blue}15`
+                                    ? `0 4px 12px ${at.primary}15`
                                     : "0 2px 8px rgba(0,0,0,0.04)",
                                   "&:hover": {
                                     transform: "translateX(4px)",
-                                    boxShadow: `0 6px 16px ${colors.primary.blue}25`,
-                                    borderColor: colors.primary.blue,
+                                    boxShadow: `0 6px 16px ${at.primary}25`,
+                                    borderColor: at.primary,
                                   },
                                 }}
                               >
@@ -1310,8 +1377,11 @@ export function SelfAssessmentLayout({ c }) {
                                         alignItems: "center",
                                         justifyContent: "center",
                                         flexShrink: 0,
+                                        bgcolor: isDomainSelected
+                                          ? `${at.primary}18`
+                                          : colors.neutral.gray100,
                                         color: isDomainSelected
-                                          ? colors.primary.blue
+                                          ? at.primary
                                           : colors.text.secondary,
                                       }}
                                     >
@@ -1325,13 +1395,13 @@ export function SelfAssessmentLayout({ c }) {
                                         sx={{
                                           fontWeight: 600,
                                           color: isDomainSelected
-                                            ? colors.primary.blue
+                                            ? at.primary
                                             : colors.text.primary,
                                           fontSize: "0.9375rem",
                                           mb: 0.25,
                                         }}
                                       >
-                                        {domainNumber}. {getDomainName(domain)}
+                                        {getDomainName(domain)}
                                       </Typography>
                                     </Box>
                                     {progress === 100 && (
@@ -1401,7 +1471,7 @@ export function SelfAssessmentLayout({ c }) {
                                       mt: 1.5,
                                       ml: 1.5,
                                       pl: 1.5,
-                                      borderLeft: `2px solid ${colors.neutral.gray200}`,
+                                      borderLeft: `2px solid ${at.primary}30`,
                                     }}
                                   >
                                     {domain.subDomain.map(
@@ -1432,20 +1502,20 @@ export function SelfAssessmentLayout({ c }) {
                                                 ? "2px solid"
                                                 : "1px solid",
                                               borderColor: isSubdomainSelected
-                                                ? colors.primary.blue
+                                                ? at.primary
                                                 : colors.neutral.gray200,
                                               borderRadius: 1.2,
                                               bgcolor: isSubdomainSelected
-                                                ? colors.primary.blue + "15"
+                                                ? at.primary + "15"
                                                 : "white",
                                               boxShadow: isSubdomainSelected
-                                                ? `0 4px 12px ${colors.primary.blue}30`
+                                                ? `0 4px 12px ${at.primary}30`
                                                 : "none",
                                               "&:hover": {
                                                 borderColor:
-                                                  colors.primary.blue,
+                                                  at.primary,
                                                 bgcolor:
-                                                  colors.primary.blue + "08",
+                                                  at.primary + "08",
                                               },
                                             }}
                                           >
@@ -1473,16 +1543,13 @@ export function SelfAssessmentLayout({ c }) {
                                                     sx={{
                                                       fontWeight: 600,
                                                       color: isSubdomainSelected
-                                                        ? colors.accent.green
+                                                        ? at.primary
                                                         : colors.text.primary,
                                                       fontSize: "0.75rem",
                                                       lineHeight: 1.3,
                                                     }}
                                                   >
-                                                    {subdomainNumber}.{" "}
-                                                    {getSubdomainName(
-                                                      subdomain,
-                                                    )}
+                                                    {getSubdomainName(subdomain)}
                                                   </Typography>
                                                 </Box>
                                                 {isSubdomainSelected &&
@@ -1685,10 +1752,10 @@ export function SelfAssessmentLayout({ c }) {
                       width: 28,
                       height: 48,
                       borderRadius: "0 8px 8px 0",
-                      bgcolor: colors.primary.blue,
+                      bgcolor: at.primary,
                       color: "#fff",
-                      boxShadow: "0 2px 8px rgba(30, 58, 138, 0.25)",
-                      "&:hover": { bgcolor: colors.primary.dark },
+                      boxShadow: `0 2px 8px ${at.primary}40`,
+                      "&:hover": { bgcolor: at.dark },
                     }}
                   >
                     {isLeftPanelCollapsed ? (
@@ -1754,8 +1821,8 @@ export function SelfAssessmentLayout({ c }) {
                             onClick={handleMobileStepBack}
                             aria-label={t("selfAssessment.mobileStep.back")}
                             sx={{
-                              color: colors.primary.blue,
-                              bgcolor: colors.primary.blue + "10",
+                              color: at.primary,
+                              bgcolor: at.primary + "10",
                             }}
                           >
                             <ArrowBack fontSize="small" />
@@ -2065,7 +2132,7 @@ export function SelfAssessmentLayout({ c }) {
                                           transform: "translateY(-2px)",
                                           boxShadow:
                                             "0 4px 12px rgba(0,0,0,0.1)",
-                                          borderColor: colors.primary.blue,
+                                          borderColor: at.primary,
                                         },
                                       }}
                                     >
@@ -2095,7 +2162,6 @@ export function SelfAssessmentLayout({ c }) {
                                                 fontSize: "0.9375rem",
                                               }}
                                             >
-                                              {subdomainNumber}.{" "}
                                               {getSubdomainName(subdomain)}
                                             </Typography>
                                           </Box>
@@ -2178,7 +2244,7 @@ export function SelfAssessmentLayout({ c }) {
                 {/* Domains Overview - No Domain Selected (desktop) */}
                 {!matchDownMD && !selectedDomain && (
                   <Paper
-                    elevation={2}
+                    elevation={0}
                     sx={{
                       flex: 1,
                       borderRadius: 3,
@@ -2186,18 +2252,18 @@ export function SelfAssessmentLayout({ c }) {
                       display: "flex",
                       flexDirection: "column",
                       maxHeight: "calc(100vh - 200px)",
-
                       overflow: "hidden",
                       minWidth: 0,
-                      boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                      border: `1px solid ${at.primary}18`,
+                      boxShadow: `0 8px 32px ${at.primary}12`,
                     }}
                   >
                     {/* Header */}
                     <Box
                       sx={{
                         p: 3,
-                        borderBottom: `2px solid ${colors.neutral.gray200}`,
-                        bgcolor: colors.background.secondary,
+                        borderBottom: `2px solid ${at.primary}22`,
+                        background: at.panelGradient,
                         display: "flex",
                         alignItems: "flex-start",
                         justifyContent: "space-between",
@@ -2238,147 +2304,21 @@ export function SelfAssessmentLayout({ c }) {
                       }}
                     >
                       {currentChartData.length > 0 ? (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 2,
-                            height: "100%",
-                          }}
-                        >
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              fontWeight: 600,
-                              color: colors.text.primary,
-                              mb: 1,
-                            }}
-                          >
-                            {assessments.length > 1 &&
-                            !chartDrilldownAssessmentId
-                              ? "Assessment Progress Overview"
-                              : "Domain Progress Overview"}
-                          </Typography>
-                          {assessments.length > 1 &&
-                            chartDrilldownAssessmentId && (
-                              <Button
-                                size="small"
-                                variant="text"
-                                onClick={() =>
-                                  setChartDrilldownAssessmentId(null)
-                                }
-                                sx={{
-                                  alignSelf: "flex-start",
-                                  textTransform: "none",
-                                }}
-                              >
-                                Back to Assessments
-                              </Button>
-                            )}
-                          <Box
-                            sx={{
-                              flex: 1,
-                              minHeight: "400px",
-                              width: "100%",
-                            }}
-                          >
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart
-                                data={currentChartData}
-                                layout="vertical"
-                                margin={{
-                                  top: 20,
-                                  right: 30,
-                                  left: 20,
-                                  bottom: 5,
-                                }}
-                              >
-                                <XAxis
-                                  type="number"
-                                  domain={[0, 100]}
-                                  tick={{
-                                    fill: colors.text.secondary,
-                                    fontSize: 12,
-                                  }}
-                                  stroke={colors.neutral.gray400}
-                                />
-                                <YAxis
-                                  type="category"
-                                  dataKey="name"
-                                  width={200}
-                                  tick={{
-                                    fill: colors.text.primary,
-                                    fontSize: 12,
-                                  }}
-                                  stroke={colors.neutral.gray400}
-                                />
-                                <Tooltip
-                                  contentStyle={{
-                                    backgroundColor: colors.background.primary,
-                                    border: `1px solid ${colors.neutral.gray300}`,
-                                    borderRadius: "8px",
-                                    padding: "8px 12px",
-                                  }}
-                                  formatter={(value) => [
-                                    `${value}%`,
-                                    "Progress",
-                                  ]}
-                                  labelStyle={{
-                                    color: colors.text.primary,
-                                    fontWeight: 600,
-                                    marginBottom: "4px",
-                                  }}
-                                />
-                                <Bar
-                                  dataKey="progress"
-                                  radius={[0, 8, 8, 0]}
-                                  onClick={(data) => {
-                                    if (
-                                      assessments.length > 1 &&
-                                      !chartDrilldownAssessmentId
-                                    ) {
-                                      const assessment = assessments.find(
-                                        (a) =>
-                                          a.assessmentId === data.assessmentId,
-                                      );
-                                      if (assessment) {
-                                        handleAssessmentSelect(assessment);
-                                        setChartDrilldownAssessmentId(
-                                          assessment.assessmentId,
-                                        );
-                                      }
-                                      return;
-                                    }
-
-                                    const sourceDomains =
-                                      chartDrilldownAssessmentId
-                                        ? assessments.find(
-                                            (a) =>
-                                              a.assessmentId ===
-                                              chartDrilldownAssessmentId,
-                                          )?.domains || []
-                                        : domains;
-
-                                    const domain = sourceDomains.find(
-                                      (d) => d.domainId === data.domainId,
-                                    );
-                                    if (domain) {
-                                      handleDomainSelect(domain);
-                                    }
-                                  }}
-                                  cursor="pointer"
-                                >
-                                  {currentChartData.map((entry, index) => (
-                                    <Cell
-                                      key={`cell-${index}`}
-                                      fill={entry.color}
-                                    />
-                                  ))}
-                                </Bar>
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </Box>
-                        </Box>
+                        <AssessmentProgressOverview
+                          items={currentChartData}
+                          title={progressOverviewTitle}
+                          subtitle={progressOverviewSubtitle}
+                          assessmentTheme={at}
+                          assessments={assessments}
+                          chartDrilldownAssessmentId={chartDrilldownAssessmentId}
+                          showBackButton={
+                            assessments.length > 1 && !!chartDrilldownAssessmentId
+                          }
+                          onBack={() => setChartDrilldownAssessmentId(null)}
+                          onItemClick={handleProgressOverviewItemClick}
+                          getProgressColor={getProgressColor}
+                          t={t}
+                        />
                       ) : (
                         <Box sx={{ textAlign: "center", py: 8, px: 3 }}>
                           <Assessment

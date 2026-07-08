@@ -179,13 +179,30 @@
     "overallProgress": "Assessment Progress",
     "progress": "Progress",
     "questionsAnswered": "{{answered}} of {{total}} questions answered",
+    "progressOverview": {
+      "titleAssessments": "Assessment Progress Overview",
+      "titleDomains": "Domain Progress Overview",
+      "subtitleAssessments": "Track completion across all assessments. Tap an item to view domains.",
+      "subtitleDomains": "Track completion across each domain. Tap a domain to start answering.",
+      "backToAssessments": "Back to assessments",
+      "complete": "Complete",
+      "inProgress": "In progress",
+      "notStarted": "Not started",
+      "totalItems": "{{count}} items",
+      "completeCount": "{{count}} complete",
+      "inProgressCount": "{{count}} in progress",
+      "tapAssessmentHint": "Tap an assessment to view its domain breakdown.",
+      "tapDomainHint": "Tap a domain to open questions and continue your assessment."
+    },
     "evidence": {
       "label": "Evidence",
       "progressLabel": "Evidence: {{uploaded}}/{{total}}",
       "remaining": "{{count}} left",
       "complete": "Complete"
     },
-    "level": "Level {{level}}",
+    "level": "Grade {{level}}",
+    "criterionLabel": "Criterion",
+    "criterionProgress": "Criterion {{current}} of {{total}}",
     "submitPreview": {
       "title": "Review Submitted Answers",
       "description": "Please review your submitted responses by domain and question before continuing to feedback.",

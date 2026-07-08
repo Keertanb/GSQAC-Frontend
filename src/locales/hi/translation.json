@@ -177,13 +177,30 @@
     "overallProgress": "समग्र मूल्यांकन प्रगति",
     "progress": "प्रगति",
     "questionsAnswered": "{{answered}} में से {{total}} प्रश्नों के उत्तर दिए",
+    "progressOverview": {
+      "titleAssessments": "मूल्यांकन प्रगति अवलोकन",
+      "titleDomains": "डोमेन प्रगति अवलोकन",
+      "subtitleAssessments": "सभी मूल्यांकन में पूर्णता ट्रैक करें। डोमेन देखने के लिए आइटम पर टैप करें।",
+      "subtitleDomains": "प्रत्येक डोमेन में पूर्णता ट्रैक करें। प्रश्न शुरू करने के लिए डोमेन पर टैप करें।",
+      "backToAssessments": "मूल्यांकन पर वापस जाएं",
+      "complete": "पूर्ण",
+      "inProgress": "प्रगति में",
+      "notStarted": "शुरू नहीं",
+      "totalItems": "{{count}} आइटम",
+      "completeCount": "{{count}} पूर्ण",
+      "inProgressCount": "{{count}} प्रगति में",
+      "tapAssessmentHint": "डोमेन विवरण देखने के लिए मूल्यांकन पर टैप करें।",
+      "tapDomainHint": "प्रश्न खोलने और मूल्यांकन जारी रखने के लिए डोमेन पर टैप करें।"
+    },
     "evidence": {
       "label": "साक्ष्य",
       "progressLabel": "साक्ष्य: {{uploaded}}/{{total}}",
       "remaining": "{{count}} शेष",
       "complete": "पूर्ण"
     },
-    "level": "स्तर {{level}}",
+    "level": "कक्षा {{level}}",
+    "criterionLabel": "मापदंड",
+    "criterionProgress": "मापदंड {{current}} / {{total}}",
     "submitPreview": {
       "title": "जमा किए गए उत्तरों की समीक्षा",
       "description": "प्रतिक्रिया के लिए आगे बढ़ने से पहले कृपया प्रत्येक डोमेन और प्रश्न के अनुसार अपने जमा किए गए उत्तरों की समीक्षा करें।",

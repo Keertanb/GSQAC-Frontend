@@ -18,6 +18,7 @@ import { DRAWER_WIDTH } from "../../../../constants/menuItems";
 import { colors } from "../../../../constants/colors";
 import { ReportDocument } from "./ReportDocument";
 import { ReportPdfCaptureHost } from "./ReportPdfCaptureHost";
+import { SchoolHostelFacilityModalGate } from "../../components/SchoolHostelFacilityModalGate";
 import "../ReportGeneration.css";
 
 export function ReportGenerationPageView({ c }) {
@@ -324,6 +325,7 @@ export function ReportGenerationPageView({ c }) {
         pageRefs={pdfCaptureRefs}
         active={pdfCaptureActive}
       />
+      <SchoolHostelFacilityModalGate />
     </Box>
   );
 }

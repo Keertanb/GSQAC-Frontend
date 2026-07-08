@@ -8,6 +8,7 @@ import {
 } from "../../../../services/schoolService";
 import useAuthStore from "../../../../store/useAuthStore";
 import { enqueueSnackbar } from "notistack";
+import { formatHostelFacilityLabel } from "../../../../utils/hostelDomain";
 
 export function useSchoolDetails() {
 
@@ -97,6 +98,7 @@ export function useSchoolDetails() {
     puccaBuilding: "Yes",
     electricity: "Yes",
     functionalToilets: "Yes",
+    hostelFacility: "Not set",
 
     // Contact Information
     principalName: "",
@@ -182,6 +184,7 @@ export function useSchoolDetails() {
           apiData.functionalToilets !== null
             ? convertInfrastructureValue(apiData.functionalToilets, "yesno")
             : prev.functionalToilets,
+        hostelFacility: formatHostelFacilityLabel(apiData.hostel),
 
         // Contact Information
         principalName: apiData.principalName || prev.principalName,

@@ -38,6 +38,33 @@
   padding: 20px 24px;
 }
 
+.sa-theme-administrative .sa-wizard-context,
+.sa-theme-academic .sa-wizard-context {
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.sa-theme-administrative .sa-wizard-context {
+  background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%);
+  border: 1px solid rgba(255, 153, 51, 0.2);
+}
+
+.sa-theme-academic .sa-wizard-context {
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+  border: 1px solid rgba(30, 58, 138, 0.16);
+}
+
+.sa-theme-administrative .sa-nav-card--domain:hover,
+.sa-theme-administrative .sa-nav-card--subdomain:hover {
+  transform: translateX(3px);
+}
+
+.sa-theme-academic .sa-nav-card--domain:hover,
+.sa-theme-academic .sa-nav-card--subdomain:hover {
+  transform: translateX(3px);
+}
+
 .sa-nav-card {
   border-radius: 12px;
 }

@@ -19,7 +19,13 @@ export function SelfAssessmentMobileStepper({
   selectedSubdomain,
   getDomainName,
   getSubdomainName,
+  assessmentTheme,
 }) {
+  const at = assessmentTheme || {
+    primary: colors.primary.blue,
+    lightest: colors.primary.lightest,
+  };
+
   const steps = [
     {
       key: "domains",
@@ -55,8 +61,8 @@ export function SelfAssessmentMobileStepper({
         p: { xs: 2, sm: 2.5 },
         borderRadius: 2.5,
         bgcolor: "white",
-        border: `1px solid ${colors.neutral.gray200}`,
-        boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
+        border: `1px solid ${at.primary}22`,
+        boxShadow: `0 2px 12px ${at.primary}12`,
       }}
     >
       <Box
@@ -73,9 +79,9 @@ export function SelfAssessmentMobileStepper({
             onClick={onBack}
             aria-label={t("selfAssessment.mobileStep.back")}
             sx={{
-              color: colors.primary.blue,
-              bgcolor: colors.primary.blue + "10",
-              "&:hover": { bgcolor: colors.primary.blue + "18" },
+              color: at.primary,
+              bgcolor: `${at.primary}10`,
+              "&:hover": { bgcolor: `${at.primary}18` },
             }}
           >
             <ArrowBack fontSize="small" />
@@ -84,30 +90,19 @@ export function SelfAssessmentMobileStepper({
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
             variant="subtitle2"
-            sx={{
-              fontWeight: 700,
-              color: colors.text.primary,
-              fontSize: "0.9375rem",
-              lineHeight: 1.3,
-            }}
+            sx={{ fontWeight: 800, color: colors.text.primary, lineHeight: 1.3 }}
           >
             {steps[activeStep]?.label}
           </Typography>
-          {stepSubtitle && (
+          {stepSubtitle ? (
             <Typography
               variant="caption"
-              sx={{
-                color: colors.text.secondary,
-                display: "block",
-                mt: 0.25,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
+              color="text.secondary"
+              sx={{ display: "block", mt: 0.25, lineHeight: 1.35 }}
             >
               {stepSubtitle}
             </Typography>
-          )}
+          ) : null}
         </Box>
       </Box>
 
@@ -123,33 +118,29 @@ export function SelfAssessmentMobileStepper({
             fontWeight: 600,
             mt: 0.5,
           },
-          "& .MuiStepLabel-label.Mui-active": {
-            color: colors.primary.blue,
-            fontWeight: 700,
-          },
-          "& .MuiStepLabel-label.Mui-completed": {
-            color: colors.accent.green,
-          },
           "& .MuiStepIcon-root": {
-            fontSize: "1.25rem",
-          },
-          "& .MuiStepIcon-root.Mui-active": {
-            color: colors.primary.blue,
-          },
-          "& .MuiStepIcon-root.Mui-completed": {
-            color: colors.accent.green,
+            color: colors.neutral.gray300,
+            "&.Mui-active": {
+              color: at.primary,
+            },
+            "&.Mui-completed": {
+              color: at.primary,
+            },
           },
         }}
       >
         {steps.map((step, index) => (
           <Step key={step.key} completed={activeStep > index}>
             <StepButton
-              disabled={!step.enabled && index > activeStep}
               onClick={() => step.enabled && onStepChange(index)}
+              disabled={!step.enabled}
               sx={{
-                py: 0.5,
                 "& .MuiStepLabel-label": {
-                  lineHeight: 1.2,
+                  color:
+                    activeStep === index
+                      ? at.primary
+                      : colors.text.secondary,
+                  fontWeight: activeStep === index ? 800 : 600,
                 },
               }}
             >

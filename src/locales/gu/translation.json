@@ -177,13 +177,30 @@
     "overallProgress": "સમગ્ર મૂલ્યાંકન પ્રગતિ",
     "progress": "પ્રગતિ",
     "questionsAnswered": "{{total}} માંથી {{answered}} પ્રશ્નોના જવાબ આપ્યા",
+    "progressOverview": {
+      "titleAssessments": "મૂલ્યાંકન પ્રગતિ વિહંગાવલોકન",
+      "titleDomains": "ડોમેન પ્રગતિ વિહંગાવલોકન",
+      "subtitleAssessments": "બધા મૂલ્યાંકનમાં પૂર્ણતા ટ્રેક કરો. ડોમેન જોવા માટે આઇટમ પર ટેપ કરો.",
+      "subtitleDomains": "દરેક ડોમેનમાં પૂર્ણતા ટ્રેક કરો. પ્રશ્નો શરૂ કરવા ડોમેન પર ટેપ કરો.",
+      "backToAssessments": "મૂલ્યાંકન પર પાછા જાઓ",
+      "complete": "પૂર્ણ",
+      "inProgress": "પ્રગતિમાં",
+      "notStarted": "શરૂ નથી થયું",
+      "totalItems": "{{count}} આઇટમ",
+      "completeCount": "{{count}} પૂર્ણ",
+      "inProgressCount": "{{count}} પ્રગતિમાં",
+      "tapAssessmentHint": "ડોમેન વિગતો જોવા મૂલ્યાંકન પર ટેપ કરો.",
+      "tapDomainHint": "પ્રશ્નો ખોલવા અને મૂલ્યાંકન ચાલુ રાખવા ડોમેન પર ટેપ કરો."
+    },
     "evidence": {
       "label": "આધાર",
       "progressLabel": "આધાર: {{uploaded}}/{{total}}",
       "remaining": "{{count}} બાકી",
       "complete": "પૂર્ણ"
     },
-    "level": "સ્તર {{level}}",
+    "level": "કક્ષા {{level}}",
+    "criterionLabel": "માપદંડ",
+    "criterionProgress": "માપદંડ {{current}} / {{total}}",
     "submitPreview": {
       "title": "સબમિટ કરેલા જવાબોની સમીક્ષા",
       "description": "પ્રતિસાદ મોડલ પર જતા પહેલાં કૃપા કરીને દરેક ક્ષેત્ર અને પ્રશ્ન મુજબ તમારા સબમિટ કરેલા જવાબોની સમીક્ષા કરો.",

@@ -16,6 +16,8 @@ import {
   Close as CloseIcon,
 } from "@mui/icons-material";
 import { colors } from "../../../../constants/colors";
+import { useTranslation } from "react-i18next";
+import { AssessmentOptionText } from "../../../../utils/assessmentOptionText";
 
 export function SubmitPreviewModal({
   open,
@@ -31,6 +33,7 @@ export function SubmitPreviewModal({
   cancelText,
   totalAnswered,
 }) {
+  const { t } = useTranslation();
   const hasData =
     Array.isArray(previewData) &&
     previewData.some((domain) =>
@@ -258,7 +261,7 @@ export function SubmitPreviewModal({
                             }}
                           >
                             <Chip
-                              label={`Q ${question.questionNumber}`}
+                              label={t("selfAssessment.criterionLabel")}
                               size="small"
                               sx={{
                                 height: 22,
@@ -292,16 +295,15 @@ export function SubmitPreviewModal({
                           >
                             {question.questionText}
                           </Typography>
-                          <Typography
-                            variant="body2"
+                          <Box
                             sx={{
                               color: colors.primary.blue,
                               fontWeight: 700,
                               fontSize: "0.8125rem",
                             }}
                           >
-                            {question.answerLabel}
-                          </Typography>
+                            <AssessmentOptionText text={question.answerLabel} />
+                          </Box>
                         </Box>
                       ))}
                     </Box>
