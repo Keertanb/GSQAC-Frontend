@@ -1,13 +1,16 @@
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Button,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   IconButton,
+  LinearProgress,
   Tooltip,
   Typography,
   useMediaQuery,
@@ -15,16 +18,18 @@ import {
 } from "@mui/material";
 import {
   AttachFile as AttachFileIcon,
-  CloudUpload as CloudUploadIcon,
-  Description as DescriptionIcon,
   CheckCircle as CheckCircleIcon,
   Close as CloseIcon,
+  CloudUpload as CloudUploadIcon,
+  Description as DescriptionIcon,
   OpenInNew as OpenInNewIcon,
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import { colors } from "../../constants/colors";
 import {
+  computeMandatoryEvidenceProgress,
   EVIDENCE_ACCEPT,
+  getEvidenceSlotName,
   MAX_EVIDENCE_SIZE_BYTES,
   subdomainRequiresEvidence,
   uploadFileToPresignedUrl,
@@ -49,6 +54,7 @@ function EvidenceViewDialog({
   isLoading,
   isMobile,
   isTabletView = false,
+  title,
 }) {
   const handleOpenExternal = () => {
     if (viewUrl) {
@@ -69,7 +75,7 @@ function EvidenceViewDialog({
       <DialogTitle className="subdomain-evidence-dialog__title">
         <Box>
           <Typography variant="subtitle1" fontWeight={800}>
-            Subdomain evidence
+            {title || "Evidence preview"}
           </Typography>
           {evidence?.fileName ? (
             <Typography variant="caption" color="text.secondary" display="block">
@@ -139,6 +145,174 @@ function EvidenceViewDialog({
   );
 }
 
+function EvidenceUploadModal({
+  open,
+  onClose,
+  slots,
+  summary,
+  readOnly,
+  isUploading,
+  uploadingSlotId,
+  onUploadClick,
+  onViewClick,
+  evidenceLabel,
+}) {
+  const progress = computeMandatoryEvidenceProgress(slots, summary);
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      className="subdomain-evidence-upload-modal"
+      PaperProps={{ className: "subdomain-evidence-upload-modal__paper" }}
+    >
+      <DialogTitle className="subdomain-evidence-upload-modal__title">
+        <Box>
+          <Typography variant="h6" fontWeight={800}>
+            {evidenceLabel} upload
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            JPG, PNG, PDF · Max 5 MB per file
+          </Typography>
+        </Box>
+        <IconButton size="small" onClick={onClose} aria-label="Close">
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent dividers className="subdomain-evidence-upload-modal__content">
+        <Box className="subdomain-evidence-upload-modal__summary">
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 0.75,
+            }}
+          >
+            <Typography variant="body2" fontWeight={700}>
+              Mandatory {evidenceLabel}
+            </Typography>
+            <Typography variant="body2" fontWeight={800} color="primary">
+              {progress.uploaded}/{progress.total} uploaded
+              {progress.remaining > 0 ? ` · ${progress.remaining} left` : ""}
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={progress.percentage}
+            sx={{
+              height: 8,
+              borderRadius: 99,
+              bgcolor: colors.neutral.gray200,
+              "& .MuiLinearProgress-bar": {
+                borderRadius: 99,
+                bgcolor:
+                  progress.percentage === 100
+                    ? colors.accent.green
+                    : colors.primary.blue,
+              },
+            }}
+          />
+        </Box>
+
+        <Box className="subdomain-evidence-upload-modal__slots">
+          {slots.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: "center" }}>
+              No evidence items are configured for this subdomain yet. Please contact the administrator.
+            </Typography>
+          ) : (
+            slots.map((slot) => {
+            const isMandatory =
+              slot.isMandatory === 1 ||
+              slot.isMandatory === true ||
+              slot.isMandatory === "1";
+            const hasFile = Boolean(slot.evidence?.evidenceId);
+            const slotUploading =
+              isUploading && uploadingSlotId === slot.evidenceSlotId;
+
+            return (
+              <Box
+                key={slot.evidenceSlotId}
+                className={`subdomain-evidence-slot-card${
+                  hasFile ? " subdomain-evidence-slot-card--done" : ""
+                }`}
+              >
+                <Box className="subdomain-evidence-slot-card__header">
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={800}>
+                      {slot.slotName || getEvidenceSlotName(slot)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {hasFile
+                        ? slot.evidence?.fileName || "Uploaded"
+                        : "Not uploaded yet"}
+                    </Typography>
+                  </Box>
+                  <Chip
+                    size="small"
+                    label={isMandatory ? "Mandatory" : "Optional"}
+                    color={isMandatory ? "error" : "default"}
+                    variant="outlined"
+                    sx={{ fontWeight: 700 }}
+                  />
+                </Box>
+
+                <Box className="subdomain-evidence-slot-card__actions">
+                  {hasFile ? (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<VisibilityIcon />}
+                      onClick={() => onViewClick(slot)}
+                      sx={{ textTransform: "none", fontWeight: 700 }}
+                    >
+                      View
+                    </Button>
+                  ) : null}
+                  {!readOnly ? (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      startIcon={
+                        slotUploading ? (
+                          <CircularProgress size={14} color="inherit" />
+                        ) : (
+                          <CloudUploadIcon />
+                        )
+                      }
+                      onClick={() => onUploadClick(slot)}
+                      disabled={slotUploading}
+                      sx={{
+                        textTransform: "none",
+                        fontWeight: 700,
+                        bgcolor: colors.primary.blue,
+                        boxShadow: "none",
+                        "&:hover": { bgcolor: colors.primary.dark, boxShadow: "none" },
+                      }}
+                    >
+                      {hasFile ? "Replace" : "Upload"}
+                    </Button>
+                  ) : null}
+                </Box>
+              </Box>
+            );
+          })
+          )}
+        </Box>
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={onClose} sx={{ textTransform: "none", fontWeight: 700 }}>
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 export function SubdomainEvidencePanel({
   subDomainId,
   schoolId,
@@ -148,45 +322,70 @@ export function SubdomainEvidencePanel({
   readOnly = false,
   className = "",
   variant = "compact",
+  languageCode = "en",
+  onProgressChange,
 }) {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
   const isTouchLayout = useMediaQuery(theme.breakpoints.down("md"));
   const inputRef = useRef(null);
-  const [localPreview, setLocalPreview] = useState(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
+  const [viewingSlot, setViewingSlot] = useState(null);
+  const [uploadingSlotId, setUploadingSlotId] = useState(null);
+  const [activeSlotId, setActiveSlotId] = useState(null);
   const requiresEvidence = subdomainRequiresEvidence(subdomain);
+  const lang = languageCode || i18n.language || "en";
+  const evidenceLabel = t("selfAssessment.evidence.label", { defaultValue: "Evidence" });
 
   const { data, isLoading, isFetching, refetch } = useSubdomainEvidenceQuery(
-    { subDomainId, schoolId },
+    { subDomainId, schoolId, languageCode: lang.toUpperCase() },
     requiresEvidence,
   );
 
-  const evidence = data?.data || null;
+  const payload = data?.data || data || {};
+  const slots = payload.slots || [];
+  const summary = payload.summary || null;
+  const progress = useMemo(
+    () => computeMandatoryEvidenceProgress(slots, summary),
+    [slots, summary],
+  );
+
+  React.useEffect(() => {
+    onProgressChange?.(progress);
+  }, [progress, onProgressChange]);
+
   const uploadMutation = usePrepareSubdomainEvidenceMutation({
-    onSuccess: () => setLocalPreview(null),
+    onSuccess: () => {
+      setUploadingSlotId(null);
+      refetch();
+    },
+    onError: () => setUploadingSlotId(null),
   });
 
   if (!requiresEvidence) return null;
 
-  const isPdf =
-    evidence?.contentType === "application/pdf" ||
-    evidence?.fileName?.toLowerCase().endsWith(".pdf");
-  const viewUrl =
-    localPreview || evidence?.viewUrl || evidence?.previewUrl || null;
+  const hasAnyEvidence = slots.some((slot) => slot.evidence?.evidenceId);
   const isUploading = uploadMutation.isPending;
-  const hasEvidence = Boolean(evidence?.fileName || localPreview);
 
-  const handlePickFile = () => {
+  const handleOpenUploadModal = (event) => {
+    event?.stopPropagation?.();
+    setUploadModalOpen(true);
+    refetch();
+  };
+
+  const handleUploadClick = (slot) => {
     if (readOnly || isUploading) return;
+    setActiveSlotId(slot.evidenceSlotId);
     inputRef.current?.click();
   };
 
-  const handleOpenView = async (event) => {
-    event?.stopPropagation?.();
+  const handleViewClick = async (slot) => {
+    setViewingSlot(slot);
     setViewOpen(true);
-    if (!viewUrl || !evidence?.viewUrl) {
+    if (!slot.evidence?.viewUrl) {
       await refetch();
     }
   };
@@ -194,8 +393,9 @@ export function SubdomainEvidencePanel({
   const handleFileChange = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
+    const evidenceSlotId = activeSlotId;
 
-    if (!file) return;
+    if (!file || !evidenceSlotId) return;
 
     if (file.size > MAX_EVIDENCE_SIZE_BYTES) {
       enqueueSnackbar("File exceeds the maximum allowed size of 5 MB.", {
@@ -213,15 +413,11 @@ export function SubdomainEvidencePanel({
       return;
     }
 
-    if (file.type.startsWith("image/")) {
-      setLocalPreview(URL.createObjectURL(file));
-    } else {
-      setLocalPreview(null);
-    }
-
     try {
+      setUploadingSlotId(evidenceSlotId);
       const response = await uploadMutation.mutateAsync({
         subDomainId,
+        evidenceSlotId,
         schoolId,
         assessmentId: assessmentId ?? null,
         extension,
@@ -229,117 +425,44 @@ export function SubdomainEvidencePanel({
         fileSizeBytes: file.size,
       });
 
-      const payload = response?.data || response;
-      if (payload?.uploadURL) {
-        await uploadFileToPresignedUrl(payload.uploadURL, file);
+      const uploadPayload = response?.data || response;
+      if (uploadPayload?.uploadURL) {
+        await uploadFileToPresignedUrl(uploadPayload.uploadURL, file);
       }
     } catch {
-      setLocalPreview(null);
+      setUploadingSlotId(null);
+    } finally {
+      setActiveSlotId(null);
     }
   };
 
-  const tooltipTitle = hasEvidence
-    ? "View uploaded evidence"
-    : "JPG, PNG, PDF · Max 5 MB";
+  const viewingEvidence = viewingSlot?.evidence || null;
+  const viewUrl = viewingEvidence?.viewUrl || viewingEvidence?.previewUrl || null;
+  const isPdf =
+    viewingEvidence?.contentType === "application/pdf" ||
+    viewingEvidence?.fileName?.toLowerCase().endsWith(".pdf");
+
+  const statusText =
+    progress.total > 0
+      ? `${progress.uploaded}/${progress.total} mandatory`
+      : slots.length > 0
+        ? `${slots.filter((s) => s.evidence?.evidenceId).length}/${slots.length}`
+        : "Required";
 
   if (variant === "compact") {
-    const showActions = hasEvidence || !readOnly;
-
-    const renderViewAction = () =>
-      hasEvidence ? (
-        isTouchLayout ? (
-          <Tooltip title="View evidence" arrow>
-            <IconButton
-              size="small"
-              className="subdomain-evidence-compact__icon-btn subdomain-evidence-compact__icon-btn--view"
-              onClick={handleOpenView}
-              aria-label="View evidence"
-            >
-              <VisibilityIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        ) : (
-          <Button
-            size="small"
-            variant="outlined"
-            className="subdomain-evidence-compact__btn subdomain-evidence-compact__btn--view"
-            startIcon={<VisibilityIcon sx={{ fontSize: "0.95rem !important" }} />}
-            onClick={handleOpenView}
-            sx={{
-              textTransform: "none",
-              fontWeight: 700,
-              fontSize: "0.7rem",
-              minWidth: 0,
-              px: 1,
-              py: 0.35,
-              borderColor: colors.primary.blue,
-              color: colors.primary.blue,
-            }}
-          >
-            View
-          </Button>
-        )
-      ) : null;
-
-    const renderUploadAction = () =>
-      !readOnly ? (
-        isTouchLayout ? (
-          <Tooltip title={hasEvidence ? "Replace evidence" : "Upload evidence"} arrow>
-            <IconButton
-              size="small"
-              className="subdomain-evidence-compact__icon-btn subdomain-evidence-compact__icon-btn--upload"
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePickFile();
-              }}
-              disabled={isUploading}
-              aria-label={hasEvidence ? "Replace evidence" : "Upload evidence"}
-            >
-              {isUploading ? (
-                <CircularProgress size={16} />
-              ) : (
-                <CloudUploadIcon fontSize="small" />
-              )}
-            </IconButton>
-          </Tooltip>
-        ) : (
-          <Button
-            size="small"
-            variant="contained"
-            className="subdomain-evidence-compact__btn subdomain-evidence-compact__btn--upload"
-            startIcon={
-              isUploading ? (
-                <CircularProgress size={12} color="inherit" />
-              ) : (
-                <CloudUploadIcon sx={{ fontSize: "0.95rem !important" }} />
-              )
-            }
-            onClick={(e) => {
-              e.stopPropagation();
-              handlePickFile();
-            }}
-            disabled={isUploading}
-            sx={{
-              bgcolor: colors.primary.blue,
-              textTransform: "none",
-              fontWeight: 700,
-              fontSize: "0.7rem",
-              minWidth: 0,
-              px: 1,
-              py: 0.35,
-              lineHeight: 1.2,
-              boxShadow: "none",
-              "&:hover": { bgcolor: colors.primary.dark, boxShadow: "none" },
-            }}
-          >
-            {hasEvidence ? "Replace" : "Upload"}
-          </Button>
-        )
-      ) : null;
-
     const compactContent = (
       <Box
-        className={`subdomain-evidence-compact ${hasEvidence ? "subdomain-evidence-compact--done" : ""} ${isPhone ? "subdomain-evidence-compact--mobile" : ""} ${isTablet ? "subdomain-evidence-compact--tablet" : ""} ${className}`.trim()}
+        className={`subdomain-evidence-compact ${
+          progress.percentage === 100 ? "subdomain-evidence-compact--done" : ""
+        } ${isPhone ? "subdomain-evidence-compact--mobile" : ""} ${
+          isTablet ? "subdomain-evidence-compact--tablet" : ""
+        } ${className}`.trim()}
+        onClick={handleOpenUploadModal}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") handleOpenUploadModal(e);
+        }}
       >
         {isLoading ? (
           <Box className="subdomain-evidence-compact__loading">
@@ -349,7 +472,7 @@ export function SubdomainEvidencePanel({
           <>
             <Box className="subdomain-evidence-compact__lead">
               <Box className="subdomain-evidence-compact__icon-wrap">
-                {hasEvidence ? (
+                {progress.percentage === 100 && hasAnyEvidence ? (
                   <CheckCircleIcon className="subdomain-evidence-compact__icon subdomain-evidence-compact__icon--done" />
                 ) : (
                   <AttachFileIcon className="subdomain-evidence-compact__icon" />
@@ -357,20 +480,47 @@ export function SubdomainEvidencePanel({
               </Box>
               <Box className="subdomain-evidence-compact__text">
                 <Typography className="subdomain-evidence-compact__label">
-                  Evidence
+                  {evidenceLabel}
                 </Typography>
                 <Typography className="subdomain-evidence-compact__status">
-                  {hasEvidence ? "Uploaded" : "Required · Max 5 MB"}
+                  {statusText}
                 </Typography>
               </Box>
             </Box>
 
-            {showActions ? (
-              <Box className="subdomain-evidence-compact__actions">
-                {renderViewAction()}
-                {renderUploadAction()}
-              </Box>
-            ) : null}
+            <Box className="subdomain-evidence-compact__actions">
+              {isTouchLayout ? (
+                <IconButton
+                  size="small"
+                  className="subdomain-evidence-compact__icon-btn subdomain-evidence-compact__icon-btn--upload"
+                  onClick={handleOpenUploadModal}
+                  aria-label={`Manage ${evidenceLabel}`}
+                >
+                  <CloudUploadIcon fontSize="small" />
+                </IconButton>
+              ) : (
+                <Button
+                  size="small"
+                  variant="contained"
+                  className="subdomain-evidence-compact__btn subdomain-evidence-compact__btn--upload"
+                  startIcon={<CloudUploadIcon sx={{ fontSize: "0.95rem !important" }} />}
+                  onClick={handleOpenUploadModal}
+                  sx={{
+                    bgcolor: colors.primary.blue,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    fontSize: "0.7rem",
+                    minWidth: 0,
+                    px: 1,
+                    py: 0.35,
+                    boxShadow: "none",
+                    "&:hover": { bgcolor: colors.primary.dark, boxShadow: "none" },
+                  }}
+                >
+                  Upload
+                </Button>
+              )}
+            </Box>
           </>
         )}
       </Box>
@@ -389,20 +539,41 @@ export function SubdomainEvidencePanel({
         {isTouchLayout ? (
           compactContent
         ) : (
-          <Tooltip title={tooltipTitle} arrow placement="top">
+          <Tooltip
+            title={`${evidenceLabel}: ${statusText} · Click to manage uploads`}
+            arrow
+            placement="top"
+          >
             {compactContent}
           </Tooltip>
         )}
 
+        <EvidenceUploadModal
+          open={uploadModalOpen}
+          onClose={() => setUploadModalOpen(false)}
+          slots={slots}
+          summary={summary}
+          readOnly={readOnly}
+          isUploading={isUploading}
+          uploadingSlotId={uploadingSlotId}
+          onUploadClick={handleUploadClick}
+          onViewClick={handleViewClick}
+          evidenceLabel={evidenceLabel}
+        />
+
         <EvidenceViewDialog
           open={viewOpen}
-          onClose={() => setViewOpen(false)}
-          evidence={evidence}
+          onClose={() => {
+            setViewOpen(false);
+            setViewingSlot(null);
+          }}
+          evidence={viewingEvidence}
           viewUrl={viewUrl}
           isPdf={isPdf}
           isLoading={isFetching && !viewUrl}
           isMobile={isPhone}
           isTabletView={isTablet}
+          title={viewingSlot ? getEvidenceSlotName(viewingSlot, lang) : evidenceLabel}
         />
       </>
     );
@@ -416,64 +587,59 @@ export function SubdomainEvidencePanel({
             <CircularProgress size={28} />
           </Box>
         ) : (
-          <>
-            {hasEvidence ? (
-              <Button
-                variant="outlined"
-                startIcon={<VisibilityIcon />}
-                onClick={handleOpenView}
-                sx={{ textTransform: "none", fontWeight: 700 }}
-              >
-                View evidence
-              </Button>
-            ) : null}
-
-            {!readOnly ? (
-              <>
-                <input
-                  ref={inputRef}
-                  type="file"
-                  accept={EVIDENCE_ACCEPT}
-                  hidden
-                  onChange={handleFileChange}
-                />
-                <Button
-                  variant="contained"
-                  startIcon={
-                    isUploading ? (
-                      <CircularProgress size={16} color="inherit" />
-                    ) : (
-                      <CloudUploadIcon />
-                    )
-                  }
-                  onClick={handlePickFile}
-                  disabled={isUploading}
-                  className="subdomain-evidence-panel__upload-btn"
-                  sx={{
-                    bgcolor: colors.primary.blue,
-                    textTransform: "none",
-                    fontWeight: 700,
-                    borderRadius: 2,
-                  }}
-                >
-                  {evidence?.fileName ? "Replace Evidence" : "Upload Evidence"}
-                </Button>
-              </>
-            ) : null}
-          </>
+          <Button
+            variant="contained"
+            startIcon={<CloudUploadIcon />}
+            onClick={handleOpenUploadModal}
+            sx={{
+              bgcolor: colors.primary.blue,
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: 2,
+            }}
+          >
+            Manage {evidenceLabel} ({statusText})
+          </Button>
         )}
       </Box>
 
+      <input
+        ref={inputRef}
+        type="file"
+        accept={EVIDENCE_ACCEPT}
+        hidden
+        onChange={handleFileChange}
+      />
+
+      <EvidenceUploadModal
+        open={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        slots={slots}
+        summary={summary}
+        readOnly={readOnly}
+        isUploading={isUploading}
+        uploadingSlotId={uploadingSlotId}
+        onUploadClick={handleUploadClick}
+        onViewClick={handleViewClick}
+        evidenceLabel={evidenceLabel}
+      />
+
       <EvidenceViewDialog
         open={viewOpen}
-        onClose={() => setViewOpen(false)}
-        evidence={evidence}
+        onClose={() => {
+          setViewOpen(false);
+          setViewingSlot(null);
+        }}
+        evidence={viewingEvidence}
         viewUrl={viewUrl}
         isPdf={isPdf}
         isLoading={isFetching && !viewUrl}
         isMobile={isPhone}
         isTabletView={isTablet}
+        title={viewingSlot ? getEvidenceSlotName(viewingSlot, lang) : evidenceLabel}
       />
     </Box>
   );
 }
+
+export { computeMandatoryEvidenceProgress };

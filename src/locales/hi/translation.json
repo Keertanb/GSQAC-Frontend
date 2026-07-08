@@ -35,6 +35,8 @@
       "domainNameEnglish": "डोमेन नाम (अंग्रेज़ी)",
       "domainNameHindi": "डोमेन नाम (हिंदी)",
       "saveDomain": "डोमेन सहेजें",
+      "lowerClass": "निचली कक्षा",
+      "upperClass": "ऊपरी कक्षा",
       "failedToLoadDomains": "डोमेन लोड करने में विफल",
       "noDomainsForAssessment": "इस मूल्यांकन के लिए कोई डोमेन उपलब्ध नहीं है।",
       "noAssessmentsAvailable": "कोई मूल्यांकन उपलब्ध नहीं है",
@@ -175,6 +177,12 @@
     "overallProgress": "समग्र मूल्यांकन प्रगति",
     "progress": "प्रगति",
     "questionsAnswered": "{{answered}} में से {{total}} प्रश्नों के उत्तर दिए",
+    "evidence": {
+      "label": "साक्ष्य",
+      "progressLabel": "साक्ष्य: {{uploaded}}/{{total}}",
+      "remaining": "{{count}} शेष",
+      "complete": "पूर्ण"
+    },
     "level": "स्तर {{level}}",
     "submitPreview": {
       "title": "जमा किए गए उत्तरों की समीक्षा",

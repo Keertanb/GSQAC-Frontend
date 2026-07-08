@@ -44,6 +44,8 @@ import {
 } from "../../../services/adminService";
 import { roleIdMap } from "../../../constants/roles";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
+import { EvidenceSlotEditor } from "./components/EvidenceSlotEditor";
+import { ClassRangeFields } from "./components/ClassRangeFields";
 
 const DomainSubdomainView = ({
   domain,
@@ -82,6 +84,10 @@ const DomainSubdomainView = ({
   const [subdomainToDelete, setSubdomainToDelete] = useState(null);
   const [translationId, setTranslationId] = useState(null);
   const [requireEvidence, setRequireEvidence] = useState("no");
+  const [subdomainClassRange, setSubdomainClassRange] = useState({
+    lowerClass: 1,
+    upperClass: 12,
+  });
 
   const upsertSubdomainMutation = useUpsertSubdomainMutation({
     onSuccess: (data, variables) => {
@@ -98,6 +104,7 @@ const DomainSubdomainView = ({
       setEditingSubdomain(null);
       setTranslationId(null);
       setRequireEvidence("no");
+      setSubdomainClassRange({ lowerClass: 1, upperClass: 12 });
       if (onSubdomainAdded) {
         onSubdomainAdded();
       }
@@ -195,12 +202,21 @@ const DomainSubdomainView = ({
       return;
     }
 
+    if (subdomainClassRange.lowerClass > subdomainClassRange.upperClass) {
+      enqueueSnackbar("Lower class cannot be greater than upper class.", {
+        variant: "warning",
+      });
+      return;
+    }
+
     const payload = {
       domainId: domain.domainId,
       subDomainNameEn: newSubdomainName.en.trim(),
       subDomainNameHi: newSubdomainName.hi.trim(),
       subDomainNameGu: newSubdomainName.gu.trim(),
       requireEvidence: requireEvidence === "yes" ? 1 : 0,
+      lowerClass: subdomainClassRange.lowerClass,
+      upperClass: subdomainClassRange.upperClass,
     };
 
     // If editing, include subDomainId
@@ -226,6 +242,10 @@ const DomainSubdomainView = ({
         ? "yes"
         : "no",
     );
+    setSubdomainClassRange({
+      lowerClass: Number(subdomain.lowerClass) || 1,
+      upperClass: Number(subdomain.upperClass) || 12,
+    });
 
     // Set selected role based on domain's roleId
     const subdomainRole = Object.keys(roleIdMap).find(
@@ -402,6 +422,27 @@ const DomainSubdomainView = ({
                   size="small"
                 />
               </Box>
+              <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                <ClassRangeFields
+                  lowerClass={subdomainClassRange.lowerClass}
+                  upperClass={subdomainClassRange.upperClass}
+                  onLowerClassChange={(value) =>
+                    setSubdomainClassRange((prev) => ({
+                      ...prev,
+                      lowerClass: value,
+                      upperClass: Math.max(prev.upperClass, value),
+                    }))
+                  }
+                  onUpperClassChange={(value) =>
+                    setSubdomainClassRange((prev) => ({
+                      ...prev,
+                      upperClass: value,
+                    }))
+                  }
+                  lowerLabel={t("assessment.management.lowerClass")}
+                  upperLabel={t("assessment.management.upperClass")}
+                />
+              </Box>
               <FormControl component="fieldset" fullWidth size="small">
                 <FormLabel
                   component="legend"
@@ -431,6 +472,14 @@ const DomainSubdomainView = ({
                   />
                 </RadioGroup>
               </FormControl>
+              {requireEvidence === "yes" ? (
+                <EvidenceSlotEditor
+                  subDomainId={
+                    editingSubdomain?.subDomainId || editingSubdomain?.id || null
+                  }
+                  initialSlots={editingSubdomain?.evidenceSlots || []}
+                />
+              ) : null}
             </Box>
             <Box sx={{ display: "flex", gap: 2 }}>
               <Button
@@ -449,6 +498,7 @@ const DomainSubdomainView = ({
                   setEditingSubdomain(null);
                   setTranslationId(null);
                   setRequireEvidence("no");
+      setSubdomainClassRange({ lowerClass: 1, upperClass: 12 });
                 }}
                 disabled={upsertSubdomainMutation.isPending}
               >
@@ -469,6 +519,12 @@ const DomainSubdomainView = ({
               <TableRow sx={{ bgcolor: colors.accent.green + "10" }}>
                 <TableCell sx={{ fontWeight: 700 }}>
                   {t("assessment.subdomain.title")}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700 }} align="center">
+                  {t("assessment.management.lowerClass")}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700 }} align="center">
+                  {t("assessment.management.upperClass")}
                 </TableCell>
                 <TableCell sx={{ fontWeight: 700 }} align="center">
                   Evidence
@@ -492,31 +548,35 @@ const DomainSubdomainView = ({
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
-                    <Chip
-                      size="small"
-                      label={
-                        subdomain.requireEvidence === 1 ||
-                        subdomain.requireEvidence === "1" ||
-                        subdomain.requireEvidence === true
-                          ? "Required"
-                          : "Not required"
-                      }
-                      sx={{
-                        fontWeight: 600,
-                        bgcolor:
-                          subdomain.requireEvidence === 1 ||
-                          subdomain.requireEvidence === "1" ||
-                          subdomain.requireEvidence === true
-                            ? colors.accent.green + "20"
-                            : colors.neutral.gray200,
-                        color:
-                          subdomain.requireEvidence === 1 ||
-                          subdomain.requireEvidence === "1" ||
-                          subdomain.requireEvidence === true
-                            ? colors.accent.green
-                            : colors.text.secondary,
-                      }}
-                    />
+                    {Number(subdomain.lowerClass) || 1}
+                  </TableCell>
+                  <TableCell align="center">
+                    {Number(subdomain.upperClass) || 12}
+                  </TableCell>
+                  <TableCell align="center">
+                    {subdomain.requireEvidence === 1 ||
+                    subdomain.requireEvidence === "1" ||
+                    subdomain.requireEvidence === true ? (
+                      <Chip
+                        size="small"
+                        label={`${subdomain.evidenceSlotCount || subdomain.evidenceSlots?.length || 0} slots · ${subdomain.mandatoryEvidenceCount || 0} mandatory`}
+                        sx={{
+                          fontWeight: 600,
+                          bgcolor: colors.accent.green + "20",
+                          color: colors.accent.green,
+                        }}
+                      />
+                    ) : (
+                      <Chip
+                        size="small"
+                        label="Not required"
+                        sx={{
+                          fontWeight: 600,
+                          bgcolor: colors.neutral.gray200,
+                          color: colors.text.secondary,
+                        }}
+                      />
+                    )}
                   </TableCell>
                   <TableCell align="center">
                     <Box

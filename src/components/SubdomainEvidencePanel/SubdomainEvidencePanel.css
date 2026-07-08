@@ -11,6 +11,7 @@
   flex-shrink: 0;
   max-width: 100%;
   box-sizing: border-box;
+  cursor: pointer;
 }
 
 .subdomain-evidence-compact--done {
@@ -322,4 +323,62 @@
 .subdomain-evidence-panel__file-icon {
   font-size: 2.5rem !important;
   color: #2563eb;
+}
+
+.subdomain-evidence-upload-modal__paper {
+  border-radius: 16px !important;
+}
+
+.subdomain-evidence-upload-modal__title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.5rem !important;
+}
+
+.subdomain-evidence-upload-modal__content {
+  padding-top: 0.75rem !important;
+}
+
+.subdomain-evidence-upload-modal__summary {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.subdomain-evidence-upload-modal__slots {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.subdomain-evidence-slot-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.subdomain-evidence-slot-card--done {
+  border-color: #86efac;
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.subdomain-evidence-slot-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.subdomain-evidence-slot-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }

@@ -8,6 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
+import { ClassRangeFields } from "./ClassRangeFields";
 
 /** “Add domain” CTA + inline add/edit domain form for one assessment accordion. */
 export function AssessmentAccordionDetailsTop({
@@ -19,6 +20,8 @@ export function AssessmentAccordionDetailsTop({
   editingDomain,
   newDomainName,
   setNewDomainName,
+  newDomainClassRange,
+  setNewDomainClassRange,
   setEditingDomain,
   setTranslationId,
   setShowAddDomain,
@@ -39,6 +42,7 @@ export function AssessmentAccordionDetailsTop({
           onClick={() => {
             setEditingDomain(null);
             setNewDomainName({ en: "", hi: "", gu: "" });
+            setNewDomainClassRange({ lowerClass: 1, upperClass: 12 });
             setTranslationId(null);
             setShowAddDomain(true);
             setActiveAssessmentForDomainForm({
@@ -112,6 +116,27 @@ export function AssessmentAccordionDetailsTop({
                 size="small"
               />
             </Box>
+            <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
+              <ClassRangeFields
+                lowerClass={newDomainClassRange.lowerClass}
+                upperClass={newDomainClassRange.upperClass}
+                onLowerClassChange={(value) =>
+                  setNewDomainClassRange((prev) => ({
+                    ...prev,
+                    lowerClass: value,
+                    upperClass: Math.max(prev.upperClass, value),
+                  }))
+                }
+                onUpperClassChange={(value) =>
+                  setNewDomainClassRange((prev) => ({
+                    ...prev,
+                    upperClass: value,
+                  }))
+                }
+                lowerLabel={t("assessment.management.lowerClass")}
+                upperLabel={t("assessment.management.upperClass")}
+              />
+            </Box>
             <Box sx={{ display: "flex", gap: 2 }}>
               <Button
                 variant="contained"
@@ -129,6 +154,7 @@ export function AssessmentAccordionDetailsTop({
                 onClick={() => {
                   setShowAddDomain(false);
                   setNewDomainName({ en: "", hi: "", gu: "" });
+                  setNewDomainClassRange({ lowerClass: 1, upperClass: 12 });
                   setEditingDomain(null);
                   setTranslationId(null);
                   setActiveAssessmentForDomainForm(null);

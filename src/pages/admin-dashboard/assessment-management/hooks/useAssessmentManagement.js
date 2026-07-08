@@ -43,6 +43,10 @@ export function useAssessmentManagement() {
     hi: "",
     gu: "",
   });
+  const [newDomainClassRange, setNewDomainClassRange] = useState({
+    lowerClass: 1,
+    upperClass: 12,
+  });
   const [selectedRole, setSelectedRole] = useState("all"); // all | school | inspector | crc
   const [editingDomain, setEditingDomain] = useState(null);
   const [translationId, setTranslationId] = useState(null);
@@ -399,6 +403,7 @@ export function useAssessmentManagement() {
       // Refetch domains
       refetchDomains();
       setNewDomainName({ en: "", hi: "", gu: "" });
+      setNewDomainClassRange({ lowerClass: 1, upperClass: 12 });
       setShowAddDomain(false);
       setEditingDomain(null);
       setTranslationId(null);
@@ -598,6 +603,10 @@ export function useAssessmentManagement() {
       en: domain.domainNameEn || "",
       hi: domain.domainNameHi || "",
     });
+    setNewDomainClassRange({
+      lowerClass: Number(domain.lowerClass) || 1,
+      upperClass: Number(domain.upperClass) || 12,
+    });
     setShowAddDomain(true);
     setActiveAssessmentForDomainForm({
       assessmentId: assessment.assessmentId,
@@ -714,7 +723,16 @@ export function useAssessmentManagement() {
       domainNameEn: newDomainName.en.trim(),
       domainNameHi: newDomainName.hi.trim(),
       domainNameGu: newDomainName.gu.trim(),
+      lowerClass: newDomainClassRange.lowerClass,
+      upperClass: newDomainClassRange.upperClass,
     };
+
+    if (newDomainClassRange.lowerClass > newDomainClassRange.upperClass) {
+      enqueueSnackbar("Lower class cannot be greater than upper class.", {
+        variant: "warning",
+      });
+      return;
+    }
 
     // Include assessmentId from accordion context
     if (assessment.assessmentId) payload.assessmentId = assessment.assessmentId;
@@ -890,6 +908,8 @@ export function useAssessmentManagement() {
     setShowAddDomain,
     newDomainName,
     setNewDomainName,
+    newDomainClassRange,
+    setNewDomainClassRange,
     selectedRole,
     setSelectedRole,
     editingDomain,

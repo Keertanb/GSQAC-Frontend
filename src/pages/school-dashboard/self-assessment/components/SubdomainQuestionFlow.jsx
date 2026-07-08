@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Typography,
@@ -28,6 +28,7 @@ import {
 } from "@mui/icons-material";
 import { colors } from "../../../../constants/colors";
 import { SubdomainEvidencePanel } from "../../../../components/SubdomainEvidencePanel/SubdomainEvidencePanel";
+import { subdomainRequiresEvidence } from "../../../../services/evidenceService";
 
 function renderOptionLabel(option, optIndex, getOptionText, t, isMobile = false) {
   return (
@@ -457,7 +458,15 @@ export function SubdomainQuestionFlow({
     selectedClass,
     selectedSection,
     selectedSubject,
+    languageCode,
   } = c;
+
+  const [evidenceProgress, setEvidenceProgress] = useState({
+    total: 0,
+    uploaded: 0,
+    remaining: 0,
+    percentage: 100,
+  });
 
   const needsClassFilters =
     currentQuestionEntry?.tabId === "classroom" ||
@@ -627,6 +636,8 @@ export function SubdomainQuestionFlow({
               domainName={getDomainName(selectedDomain)}
               readOnly={isReadOnly}
               className="sa-subdomain-evidence"
+              languageCode={(languageCode || "EN").toLowerCase()}
+              onProgressChange={setEvidenceProgress}
             />
             {!matchDownMD ? (
               <Chip
@@ -657,6 +668,49 @@ export function SubdomainQuestionFlow({
             },
           }}
         />
+        {subdomainRequiresEvidence(selectedSubdomain) &&
+        evidenceProgress.total > 0 ? (
+          <Box sx={{ mt: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 0.5,
+              }}
+            >
+              <Typography variant="caption" fontWeight={700} color="text.secondary">
+                {t("selfAssessment.evidence.progressLabel", {
+                  uploaded: evidenceProgress.uploaded,
+                  total: evidenceProgress.total,
+                })}
+              </Typography>
+              <Typography variant="caption" fontWeight={800} color="primary">
+                {evidenceProgress.remaining > 0
+                  ? t("selfAssessment.evidence.remaining", {
+                      count: evidenceProgress.remaining,
+                    })
+                  : t("selfAssessment.evidence.complete")}
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={evidenceProgress.percentage}
+              sx={{
+                height: { xs: 6, sm: 8 },
+                borderRadius: 99,
+                bgcolor: colors.neutral.gray200,
+                "& .MuiLinearProgress-bar": {
+                  borderRadius: 99,
+                  bgcolor:
+                    evidenceProgress.percentage === 100
+                      ? colors.accent.green
+                      : colors.primary.blue,
+                },
+              }}
+            />
+          </Box>
+        ) : null}
       </Box>
 
       <Box
@@ -743,10 +797,7 @@ export function SubdomainQuestionFlow({
                     ) : (
                       <span className="sa-wizard-btn-inline">
                         <Save sx={{ fontSize: 15 }} />
-                        <span className="sa-wizard-btn-stacked">
-                          <span>Save</span>
-                          <span>Assessment</span>
-                        </span>
+                        <span>Save</span>
                       </span>
                     )}
                   </Button>
@@ -768,10 +819,7 @@ export function SubdomainQuestionFlow({
                     }}
                   >
                     <span className="sa-wizard-btn-inline">
-                      <span className="sa-wizard-btn-stacked">
-                        <span>Next</span>
-                        <span>Question</span>
-                      </span>
+                      <span>Next</span>
                       <ArrowForward sx={{ fontSize: 15 }} />
                     </span>
                   </Button>
@@ -790,10 +838,7 @@ export function SubdomainQuestionFlow({
                     }}
                   >
                     <span className="sa-wizard-btn-inline">
-                      <span className="sa-wizard-btn-stacked">
-                        <span>Next</span>
-                        <span>Subdomain</span>
-                      </span>
+                      <span>Next</span>
                       <ArrowForward sx={{ fontSize: 15 }} />
                     </span>
                   </Button>

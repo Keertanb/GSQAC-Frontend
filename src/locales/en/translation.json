@@ -36,6 +36,8 @@
       "domainNameEnglish": "Domain Name (English)",
       "domainNameHindi": "Domain Name (Hindi)",
       "saveDomain": "Save Domain",
+      "lowerClass": "Lower class",
+      "upperClass": "Upper class",
       "failedToLoadDomains": "Failed to load domains",
       "noDomainsForAssessment": "No domains available for this assessment.",
       "noAssessmentsAvailable": "No assessments available",
@@ -177,6 +179,12 @@
     "overallProgress": "Assessment Progress",
     "progress": "Progress",
     "questionsAnswered": "{{answered}} of {{total}} questions answered",
+    "evidence": {
+      "label": "Evidence",
+      "progressLabel": "Evidence: {{uploaded}}/{{total}}",
+      "remaining": "{{count}} left",
+      "complete": "Complete"
+    },
     "level": "Level {{level}}",
     "submitPreview": {
       "title": "Review Submitted Answers",

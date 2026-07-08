@@ -23,6 +23,8 @@ export function AssessmentAssessmentAccordionItem({ c, assessment, assessmentDom
     editingDomain,
     newDomainName,
     setNewDomainName,
+    newDomainClassRange,
+    setNewDomainClassRange,
     setEditingDomain,
     setTranslationId,
     setShowAddDomain,
@@ -85,6 +87,8 @@ export function AssessmentAssessmentAccordionItem({ c, assessment, assessmentDom
           editingDomain={editingDomain}
           newDomainName={newDomainName}
           setNewDomainName={setNewDomainName}
+          newDomainClassRange={newDomainClassRange}
+          setNewDomainClassRange={setNewDomainClassRange}
           setEditingDomain={setEditingDomain}
           setTranslationId={setTranslationId}
           setShowAddDomain={setShowAddDomain}

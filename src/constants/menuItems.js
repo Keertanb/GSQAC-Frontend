@@ -42,13 +42,13 @@ export const schoolMenuItems = [
     url: "/school-dashboard/self-assessment",
     activeFinder: ["/school-dashboard/self-assessment"],
   },
-  {
-    id: "report-generation",
-    label: "Report Generation",
-    icon: Assignment,
-    url: "/school-dashboard/report-generation",
-    activeFinder: ["/school-dashboard/report-generation"],
-  },
+  // {
+  //   id: "report-generation",
+  //   label: "Report Generation",
+  //   icon: Assignment,
+  //   url: "/school-dashboard/report-generation",
+  //   activeFinder: ["/school-dashboard/report-generation"],
+  // },
   //   {
   //     id: "students",
   //     label: "Student Management",

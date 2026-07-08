@@ -35,6 +35,8 @@
       "domainNameEnglish": "ડોમેન નામ (અંગ્રેજી)",
       "domainNameHindi": "ડોમેન નામ (હિન્દી)",
       "saveDomain": "ડોમેન સાચવો",
+      "lowerClass": "નીચી ધોરણ",
+      "upperClass": "ઉચ્ચ ધોરણ",
       "failedToLoadDomains": "ડોમેન્સ લોડ કરવામાં નિષ્ફળ",
       "noDomainsForAssessment": "આ મૂલ્યાંકન માટે કોઈ ડોમેન ઉપલબ્ધ નથી.",
       "noAssessmentsAvailable": "કોઈ મૂલ્યાંકન ઉપલબ્ધ નથી",
@@ -175,6 +177,12 @@
     "overallProgress": "સમગ્ર મૂલ્યાંકન પ્રગતિ",
     "progress": "પ્રગતિ",
     "questionsAnswered": "{{total}} માંથી {{answered}} પ્રશ્નોના જવાબ આપ્યા",
+    "evidence": {
+      "label": "આધાર",
+      "progressLabel": "આધાર: {{uploaded}}/{{total}}",
+      "remaining": "{{count}} બાકી",
+      "complete": "પૂર્ણ"
+    },
     "level": "સ્તર {{level}}",
     "submitPreview": {
       "title": "સબમિટ કરેલા જવાબોની સમીક્ષા",

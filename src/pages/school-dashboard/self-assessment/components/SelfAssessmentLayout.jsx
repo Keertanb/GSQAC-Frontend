@@ -58,6 +58,10 @@ import { DRAWER_WIDTH } from "../../../../constants/menuItems";
 import { SubmitFeedbackModal, countFeedbackWords } from "./SubmitFeedbackModal";
 import { SubmitPreviewModal } from "./SubmitPreviewModal";
 import { AssessmentNavProgressBar } from "../../../../components/AssessmentNavProgressBar/AssessmentNavProgressBar";
+import {
+  getSubdomainEvidenceProgress,
+  subdomainRequiresEvidence,
+} from "../../../../services/evidenceService";
 import { SelfAssessmentMobileStepper } from "./SelfAssessmentMobileStepper";
 import { SubdomainQuestionFlow } from "./SubdomainQuestionFlow";
 import {
@@ -70,6 +74,30 @@ import {
   Cell,
 } from "recharts";
 import "../SelfAssessment.css";
+
+function SubdomainEvidenceProgressBar({
+  subdomain,
+  getProgressColor,
+  t,
+  mobile = false,
+}) {
+  if (!subdomainRequiresEvidence(subdomain)) return null;
+
+  const evidenceProgress = getSubdomainEvidenceProgress(subdomain);
+  if (!evidenceProgress.total) return null;
+
+  return (
+    <AssessmentNavProgressBar
+      progress={evidenceProgress.percentage}
+      getProgressColor={getProgressColor}
+      label={t("selfAssessment.evidence.progressLabel", {
+        uploaded: evidenceProgress.uploaded,
+        total: evidenceProgress.total,
+      })}
+      mobile={mobile}
+    />
+  );
+}
 
 export function SelfAssessmentLayout({ c }) {
   const {
@@ -1193,6 +1221,12 @@ export function SelfAssessmentLayout({ c }) {
                                       label={t("selfAssessment.progress")}
                                       mobile
                                     />
+                                    <SubdomainEvidenceProgressBar
+                                      subdomain={subdomain}
+                                      getProgressColor={getProgressColor}
+                                      t={t}
+                                      mobile
+                                    />
                                   </CardContent>
                                 </Card>
                               );
@@ -1520,6 +1554,11 @@ export function SelfAssessmentLayout({ c }) {
                                                   }}
                                                 />
                                               </Box>
+                                              <SubdomainEvidenceProgressBar
+                                                subdomain={subdomain}
+                                                getProgressColor={getProgressColor}
+                                                t={t}
+                                              />
                                             </CardContent>
                                           </Card>
                                         );
