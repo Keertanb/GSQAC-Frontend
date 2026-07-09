@@ -13,21 +13,14 @@ export function splitOptionTextSegments(text) {
   const normalized = text.trim();
   if (!normalized) return [];
 
-  if (BULLET_SEPARATOR_PATTERN.test(normalized)) {
-    return normalized
-      .split(BULLET_SEPARATOR_PATTERN)
-      .map(cleanOptionSegment)
-      .filter(Boolean);
+  if (!BULLET_SEPARATOR_PATTERN.test(normalized)) {
+    return [normalized];
   }
 
-  if (normalized.includes(",")) {
-    return normalized
-      .split(/,\s*/)
-      .map(cleanOptionSegment)
-      .filter(Boolean);
-  }
-
-  return [normalized];
+  return normalized
+    .split(BULLET_SEPARATOR_PATTERN)
+    .map(cleanOptionSegment)
+    .filter(Boolean);
 }
 
 export function AssessmentOptionText({ text, sx = {} }) {

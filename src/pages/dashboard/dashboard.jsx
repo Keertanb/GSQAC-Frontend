@@ -101,6 +101,13 @@ const Dashboard = () => {
   }, [user, token, role, navigate]);
 
   useEffect(() => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active !== document.body) {
+      active.blur();
+    }
+  }, []);
+
+  useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = "hidden";
     } else {

@@ -34,7 +34,12 @@ import {
   useSubmitAnswerMutation,
 } from "../../../../services/adminService";
 import { buildSubmitPreviewData } from "../utils/buildSubmitPreviewData";
-import { filterDomainsByHostelFacility } from "../../../../utils/hostelDomain";
+import {
+  filterAssessmentsByHostelFacility,
+  isHostelDomain,
+  normalizeHostelFacilityValue,
+  sumProgressFromDomains,
+} from "../../../../utils/hostelDomain";
 import { getAssessmentTheme } from "../../../../utils/assessmentTheme";
 
 const getSessionIdFromDomainsResponse = (domainsResponse, assessmentId) => {
@@ -128,6 +133,11 @@ export function useSelfAssessment() {
 
   const schoolData = schoolDataResponse?.data || {};
 
+  const hostelValue = useMemo(
+    () => normalizeHostelFacilityValue(schoolData.hostel),
+    [schoolData.hostel],
+  );
+
   const {
     data: domainsData,
     isLoading: isLoadingDomains,
@@ -141,8 +151,7 @@ export function useSelfAssessment() {
     enabled:
       !isLoadingSchoolData &&
       !!userName &&
-      schoolData.hostel !== null &&
-      schoolData.hostel !== undefined,
+      hostelValue !== null,
   });
 
   // Fetch all questions (without class filter) for counting purposes
@@ -305,25 +314,28 @@ export function useSelfAssessment() {
   // Note: Removed auto-selection of subject to allow manual selection only
 
   const assessments = useMemo(() => {
+    let list = [];
     if (Array.isArray(domainsData?.data)) {
       if (domainsData.data.length > 0 && domainsData.data[0]?.domains) {
-        return domainsData.data;
+        list = domainsData.data;
+      } else {
+        list = [
+          {
+            assessmentId: null,
+            assessmentName: "Assessment",
+            domains: domainsData.data,
+            isPublished: domainsData?.isPublished,
+            startDate: domainsData?.startDate,
+            endDate: domainsData?.endDate,
+            isSubmitted: domainsData?.isSubmitted,
+            sessionId: domainsData?.sessionId,
+          },
+        ];
       }
-      return [
-        {
-          assessmentId: null,
-          assessmentName: "Assessment",
-          domains: domainsData.data,
-          isPublished: domainsData?.isPublished,
-          startDate: domainsData?.startDate,
-          endDate: domainsData?.endDate,
-          isSubmitted: domainsData?.isSubmitted,
-          sessionId: domainsData?.sessionId,
-        },
-      ];
     }
-    return [];
-  }, [domainsData]);
+
+    return filterAssessmentsByHostelFacility(list, hostelValue);
+  }, [domainsData, hostelValue]);
 
   useEffect(() => {
     if (!assessments.length) {
@@ -352,14 +364,17 @@ export function useSelfAssessment() {
     [selectedAssessment],
   );
 
-  const domains = useMemo(() => {
-    const rawDomains = selectedAssessment?.domains || [];
-    const hostelValue =
-      schoolData.hostel === null || schoolData.hostel === undefined
-        ? null
-        : Number(schoolData.hostel);
-    return filterDomainsByHostelFacility(rawDomains, hostelValue);
-  }, [selectedAssessment?.domains, schoolData.hostel]);
+  const domains = useMemo(
+    () => selectedAssessment?.domains || [],
+    [selectedAssessment?.domains],
+  );
+
+  useEffect(() => {
+    if (hostelValue !== 0 || !selectedDomain) return;
+    if (!isHostelDomain(selectedDomain)) return;
+    setSelectedDomain(null);
+    setSelectedSubdomain(null);
+  }, [hostelValue, selectedDomain]);
   const isPublished =
     selectedAssessment?.isPublished ?? domainsData?.isPublished ?? false;
   const endDate = selectedAssessment?.endDate ?? domainsData?.endDate ?? null;
@@ -369,9 +384,8 @@ export function useSelfAssessment() {
     selectedAssessment?.sessionId ?? domainsData?.sessionId ?? null;
 
   const assessmentProgress = useMemo(() => {
-    const totalQuestions = Number(selectedAssessment?.totalQuestions) || 0;
-    const totalAnswer = Number(selectedAssessment?.totalAnswer) || 0;
-    const answerPercentage = Number(selectedAssessment?.answerPercentage) || 0;
+    const { totalQuestions, totalAnswer, answerPercentage } =
+      sumProgressFromDomains(domains);
     const clampedPercentage = Math.min(100, Math.max(0, answerPercentage));
 
     return {
@@ -383,7 +397,7 @@ export function useSelfAssessment() {
           ? Number(answerPercentage.toFixed(2))
           : Math.round(clampedPercentage),
     };
-  }, [selectedAssessment]);
+  }, [domains]);
 
   // Check if endDate has passed (end date is inclusive - closed only after end of endDate day)
   const isEndDatePassed = useMemo(() => {
@@ -1566,13 +1580,7 @@ export function useSelfAssessment() {
     if (!assessments || assessments.length === 0) return [];
     return assessments.map((assessment, index) => {
       const assessmentDomains = assessment.domains || [];
-      const progress =
-        assessmentDomains.length > 0
-          ? assessmentDomains.reduce(
-              (sum, domain) => sum + getDomainProgress(domain),
-              0,
-            ) / assessmentDomains.length
-          : 0;
+      const { answerPercentage } = sumProgressFromDomains(assessmentDomains);
       return {
         name: `${index + 1}. ${
           assessment.assessmentName ||
@@ -1580,12 +1588,12 @@ export function useSelfAssessment() {
             id: assessment.assessmentId,
           })
         }`,
-        progress: Math.round(progress),
+        progress: Math.round(answerPercentage),
         assessmentId: assessment.assessmentId,
-        color: getProgressColor(progress),
+        color: getProgressColor(answerPercentage),
       };
     });
-  }, [assessments]);
+  }, [assessments, t]);
 
   const currentChartData = useMemo(() => {
     if (assessments.length > 1 && !chartDrilldownAssessmentId) {

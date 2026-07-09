@@ -200,8 +200,8 @@
       "remaining": "{{count}} left",
       "complete": "Complete"
     },
-    "level": "Grade {{level}}",
-    "criterionLabel": "Criterion",
+    "level": "કક્ષા {{level}}",
+    "criterionLabel": "માપદંડ",
     "criterionProgress": "Criterion {{current}} of {{total}}",
     "submitPreview": {
       "title": "Review Submitted Answers",

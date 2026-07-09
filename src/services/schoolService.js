@@ -471,12 +471,19 @@ export const useSetSchoolHostelFacilityMutation = (options = {}) => {
   return useMutation({
     mutationFn: (data) => setSchoolHostelFacility(data),
     onSuccess: (data, variables) => {
+      const authState = useAuthStore.getState();
+      const roleId = getRoleId(authState.role);
+      const languageCode = authState.languageCode || "GU";
+      const userId = authState.userId;
+
       queryClient.invalidateQueries({
         queryKey: queryKeys.school.schoolData(variables.schoolId),
       });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.school.domains(roleId, languageCode),
-      });
+      if (roleId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.school.domains(roleId, languageCode, userId),
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["school", "domains"] });
       enqueueSnackbar(data?.message || "Hostel facility saved successfully.", {
         variant: "success",
@@ -484,16 +491,17 @@ export const useSetSchoolHostelFacilityMutation = (options = {}) => {
       options.onSuccess?.(data, variables);
     },
     onError: (error) => {
-      enqueueSnackbar(
-        error?.response?.data?.message || "Failed to save hostel facility.",
-        { variant: "error" },
-      );
+      enqueueSnackbar(error?.response?.data?.message, { variant: "error" });
       options.onError?.(error);
     },
   });
 };
 
-export const getAssessmentReport = async ({ schoolId, assessmentId, languageCode = "GU" }) => {
+export const getAssessmentReport = async ({
+  schoolId,
+  assessmentId,
+  languageCode = "GU",
+}) => {
   const response = await axiosInstance.get("/school/assessment-report", {
     params: { schoolId, assessmentId, languageCode },
     timeout: 90000,
@@ -508,8 +516,13 @@ export const useGetAssessmentReportQuery = ({
   enabled = true,
 }) => {
   return useQuery({
-    queryKey: queryKeys.school.assessmentReport(schoolId, assessmentId, languageCode),
-    queryFn: () => getAssessmentReport({ schoolId, assessmentId, languageCode }),
+    queryKey: queryKeys.school.assessmentReport(
+      schoolId,
+      assessmentId,
+      languageCode,
+    ),
+    queryFn: () =>
+      getAssessmentReport({ schoolId, assessmentId, languageCode }),
     enabled: enabled && !!schoolId && !!assessmentId,
     staleTime: 2 * 60 * 1000,
     retry: false,
