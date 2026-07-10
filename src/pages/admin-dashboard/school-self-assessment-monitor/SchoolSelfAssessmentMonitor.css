@@ -1,0 +1,460 @@
+.ssam-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.ssam-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem 1.75rem;
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, #eef2ff 0%, #ffffff 55%, #f8fafc 100%);
+  border: 1px solid rgba(99, 102, 241, 0.12);
+}
+
+.ssam-kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6366f1;
+}
+
+.ssam-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+}
+
+.ssam-lede {
+  margin: 0.5rem 0 0;
+  max-width: 52rem;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.ssam-refreshing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.ssam-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.ssam-search-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.ssam-search-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.ssam-search-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  font: inherit;
+  color: #0f172a;
+  background: #fff;
+}
+
+.ssam-search-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.ssam-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.ssam-stat-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.ssam-stat-card--indigo .ssam-stat-icon { color: #4f46e5; background: #eef2ff; }
+.ssam-stat-card--green .ssam-stat-icon { color: #059669; background: #ecfdf5; }
+.ssam-stat-card--blue .ssam-stat-icon { color: #2563eb; background: #eff6ff; }
+.ssam-stat-card--slate .ssam-stat-icon { color: #475569; background: #f1f5f9; }
+.ssam-stat-card--amber .ssam-stat-icon { color: #d97706; background: #fffbeb; }
+
+.ssam-stat-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ssam-stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.ssam-stat-label {
+  margin-top: 0.15rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.ssam-stat-sub {
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.ssam-charts {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 1rem;
+}
+
+.ssam-chart-card,
+.ssam-table-section,
+.ssam-detail-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.ssam-chart-card,
+.ssam-table-section {
+  padding: 1.1rem 1.25rem;
+}
+
+.ssam-section-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ssam-chart-body {
+  margin-top: 0.75rem;
+}
+
+.ssam-chart-empty,
+.ssam-empty-state,
+.ssam-report-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: 220px;
+  text-align: center;
+  color: #64748b;
+}
+
+.ssam-empty-state {
+  padding: 3rem 1.5rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px dashed #cbd5e1;
+}
+
+.ssam-empty-state h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.ssam-empty-state p,
+.ssam-report-placeholder p {
+  margin: 0;
+  max-width: 28rem;
+  line-height: 1.55;
+}
+
+.ssam-table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+
+.ssam-table-sub {
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.ssam-table-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+  color: #334155;
+}
+
+.ssam-school-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.ssam-school-name {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ssam-school-meta {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.ssam-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.ssam-chip--submitted {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.ssam-chip--pending {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.ssam-chip--not-started {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.ssam-account-pill {
+  display: inline-flex;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.ssam-account-pill.is-yes {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.ssam-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid #c7d2fe;
+  border-radius: 0.65rem;
+  background: #eef2ff;
+  color: #4338ca;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ssam-view-btn--muted {
+  background: #fff;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+.ssam-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ssam-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ssam-detail-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #eef2ff 0%, #ffffff 100%);
+  border: 1px solid rgba(99, 102, 241, 0.12);
+}
+
+.ssam-detail-kicker {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6366f1;
+}
+
+.ssam-detail-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ssam-detail-meta {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+}
+
+.ssam-detail-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 1rem;
+}
+
+.ssam-detail-card {
+  padding: 1.1rem 1.25rem;
+}
+
+.ssam-assessment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.ssam-assessment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.8rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.ssam-assessment-name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ssam-assessment-meta {
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.ssam-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 0.85rem;
+}
+
+.ssam-info-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.ssam-info-value {
+  display: block;
+  margin-top: 0.15rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ssam-inline-loading,
+.ssam-empty-copy {
+  margin-top: 0.85rem;
+  color: #64748b;
+}
+
+.ssam-report-placeholder {
+  min-height: 160px;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px dashed #cbd5e1;
+}
+
+@media (max-width: 1200px) {
+  .ssam-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ssam-charts,
+  .ssam-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .ssam-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .ssam-filters,
+  .ssam-stats-grid,
+  .ssam-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ssam-detail-hero {
+    flex-direction: column;
+  }
+}

@@ -94,6 +94,46 @@ export function getSubdomainEvidenceProgress(subdomain) {
   };
 }
 
+export function getDomainMandatoryEvidenceProgress(domain) {
+  let total = 0;
+  let uploaded = 0;
+
+  (domain?.subDomain || []).forEach((subdomain) => {
+    const progress = getSubdomainEvidenceProgress(subdomain);
+    total += progress.total;
+    uploaded += progress.uploaded;
+  });
+
+  return {
+    total,
+    uploaded,
+    remaining: Math.max(0, total - uploaded),
+    percentage: total > 0 ? Math.round((uploaded / total) * 100) : 100,
+    isComplete: total === 0 || uploaded >= total,
+  };
+}
+
+export function getAssessmentMandatoryEvidenceProgress(domains = []) {
+  let total = 0;
+  let uploaded = 0;
+
+  domains.forEach((domain) => {
+    (domain.subDomain || []).forEach((subdomain) => {
+      const progress = getSubdomainEvidenceProgress(subdomain);
+      total += progress.total;
+      uploaded += progress.uploaded;
+    });
+  });
+
+  return {
+    total,
+    uploaded,
+    remaining: Math.max(0, total - uploaded),
+    percentage: total > 0 ? Math.round((uploaded / total) * 100) : 100,
+    isComplete: total === 0 || uploaded >= total,
+  };
+}
+
 export const getSubdomainEvidence = async (params) => {
   const response = await axiosInstance.get("/common/subdomain-evidence", {
     params,
@@ -153,6 +193,90 @@ export function useEvidenceSlotsQuery(subDomainId, enabled = true) {
   });
 }
 
+function patchSubdomainEvidenceInDomains(domains, subDomainId, progress) {
+  if (!Array.isArray(domains)) return domains;
+
+  const targetId = Number(subDomainId);
+  const total = Number(progress?.total) || 0;
+  const uploaded = Number(progress?.uploaded) || 0;
+  const remaining = Math.max(0, total - uploaded);
+  let changed = false;
+
+  const nextDomains = domains.map((domain) => ({
+    ...domain,
+    subDomain: (domain.subDomain || []).map((subdomain) => {
+      const currentId = Number(subdomain.subDomainId || subdomain.id);
+      if (currentId !== targetId) return subdomain;
+
+      if (
+        Number(subdomain.mandatoryEvidenceTotal) === total &&
+        Number(subdomain.mandatoryEvidenceUploaded) === uploaded
+      ) {
+        return subdomain;
+      }
+
+      changed = true;
+      return {
+        ...subdomain,
+        mandatoryEvidenceTotal: total,
+        mandatoryEvidenceUploaded: uploaded,
+        mandatoryEvidenceRemaining: remaining,
+        mandatoryEvidencePercentage:
+          total > 0 ? Math.round((uploaded / total) * 100) : 100,
+      };
+    }),
+  }));
+
+  return changed ? nextDomains : domains;
+}
+
+function patchDomainsResponseSubdomainEvidence(oldData, subDomainId, progress) {
+  if (!oldData) return oldData;
+
+  if (Array.isArray(oldData.data)) {
+    if (oldData.data.length > 0 && oldData.data[0]?.domains) {
+      let changed = false;
+      const nextData = oldData.data.map((assessment) => {
+        const nextDomains = patchSubdomainEvidenceInDomains(
+          assessment.domains,
+          subDomainId,
+          progress,
+        );
+        if (nextDomains === assessment.domains) return assessment;
+        changed = true;
+        return { ...assessment, domains: nextDomains };
+      });
+      return changed ? { ...oldData, data: nextData } : oldData;
+    }
+
+    const nextDomains = patchSubdomainEvidenceInDomains(
+      oldData.data,
+      subDomainId,
+      progress,
+    );
+    return nextDomains === oldData.data
+      ? oldData
+      : { ...oldData, data: nextDomains };
+  }
+
+  return oldData;
+}
+
+export function updateDomainsCacheSubdomainEvidence(
+  queryClient,
+  subDomainId,
+  progress,
+) {
+  if (!queryClient || !subDomainId || !progress?.total) return;
+
+  const patcher = (oldData) =>
+    patchDomainsResponseSubdomainEvidence(oldData, subDomainId, progress);
+
+  ["school", "verifier", "crc"].forEach((scope) => {
+    queryClient.setQueriesData({ queryKey: [scope, "domains"] }, patcher);
+  });
+}
+
 export function usePrepareSubdomainEvidenceMutation(options = {}) {
   const queryClient = useQueryClient();
 
@@ -167,6 +291,9 @@ export function usePrepareSubdomainEvidenceMutation(options = {}) {
         ],
       });
       queryClient.invalidateQueries({ queryKey: ["questionnaire", "domain"] });
+      queryClient.invalidateQueries({ queryKey: ["school", "domains"] });
+      queryClient.invalidateQueries({ queryKey: ["verifier", "domains"] });
+      queryClient.invalidateQueries({ queryKey: ["crc", "domains"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "domains"] });
       enqueueSnackbar(data?.message || "Evidence uploaded successfully.", {
         variant: "success",

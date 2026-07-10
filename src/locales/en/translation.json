@@ -179,6 +179,13 @@
     "overallProgress": "Assessment Progress",
     "progress": "Progress",
     "questionsAnswered": "{{answered}} of {{total}} questions answered",
+    "submitAssessment": "Submit Assessment",
+    "submitting": "Submitting...",
+    "submitBlocked": {
+      "domainsIncomplete": "Please complete all domains (100%) before submitting.",
+      "evidenceIncomplete": "Please upload all mandatory evidence ({{remaining}} remaining) before submitting.",
+      "ready": "Submit your assessment"
+    },
     "progressOverview": {
       "titleAssessments": "Assessment Progress Overview",
       "titleDomains": "Domain Progress Overview",
@@ -197,6 +204,7 @@
     "evidence": {
       "label": "Evidence",
       "progressLabel": "Evidence: {{uploaded}}/{{total}}",
+      "domainProgressLabel": "Mandatory evidence: {{uploaded}}/{{total}}",
       "remaining": "{{count}} left",
       "complete": "Complete"
     },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -41,6 +41,10 @@ import {
   sumProgressFromDomains,
 } from "../../../../utils/hostelDomain";
 import { getAssessmentTheme } from "../../../../utils/assessmentTheme";
+import {
+  getAssessmentMandatoryEvidenceProgress,
+  updateDomainsCacheSubdomainEvidence,
+} from "../../../../services/evidenceService";
 
 const getSessionIdFromDomainsResponse = (domainsResponse, assessmentId) => {
   if (!domainsResponse) return null;
@@ -1455,6 +1459,28 @@ export function useSelfAssessment() {
       return;
     }
 
+    if (!canSubmitAssessment) {
+      if (!allDomainsComplete) {
+        enqueueSnackbar(
+          t("selfAssessment.submitBlocked.domainsIncomplete", {
+            defaultValue:
+              "Please complete all domains (100%) before submitting.",
+          }),
+          { variant: "warning" },
+        );
+      } else if (!allMandatoryEvidenceComplete) {
+        enqueueSnackbar(
+          t("selfAssessment.submitBlocked.evidenceIncomplete", {
+            remaining: mandatoryEvidenceProgress.remaining,
+            defaultValue:
+              "Please upload all mandatory evidence before submitting.",
+          }),
+          { variant: "warning" },
+        );
+      }
+      return;
+    }
+
     setSubmitPreviewError(null);
     setSubmitPreviewData([]);
     setShowSubmitPreview(true);
@@ -1509,6 +1535,10 @@ export function useSelfAssessment() {
       return;
     }
 
+    if (!canSubmitAssessment) {
+      return;
+    }
+
     if (submitAssessmentMutation.isPending || isFetchingDomains) {
       return;
     }
@@ -1560,6 +1590,26 @@ export function useSelfAssessment() {
       return Math.round(progress) === 100;
     });
   }, [domains, getDomainProgress]);
+
+  const mandatoryEvidenceProgress = useMemo(
+    () => getAssessmentMandatoryEvidenceProgress(domains),
+    [domains],
+  );
+
+  const handleSubdomainEvidenceProgressChange = useCallback(
+    (progress) => {
+      const subDomainId =
+        selectedSubdomain?.subDomainId || selectedSubdomain?.id;
+      if (!subDomainId || !progress?.total) return;
+      updateDomainsCacheSubdomainEvidence(queryClient, subDomainId, progress);
+    },
+    [queryClient, selectedSubdomain],
+  );
+
+  const allMandatoryEvidenceComplete = mandatoryEvidenceProgress.isComplete;
+
+  const canSubmitAssessment =
+    allDomainsComplete && allMandatoryEvidenceComplete;
 
   // Prepare chart data for bar graph
   const domainChartData = useMemo(() => {
@@ -2223,6 +2273,10 @@ export function useSelfAssessment() {
     handleOpenSubmitConfirmation,
     handleConfirmSubmit,
     allDomainsComplete,
+    allMandatoryEvidenceComplete,
+    mandatoryEvidenceProgress,
+    handleSubdomainEvidenceProgressChange,
+    canSubmitAssessment,
     domainChartData,
     assessmentChartData,
     currentChartData,

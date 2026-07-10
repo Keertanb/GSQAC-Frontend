@@ -1,6 +1,7 @@
 import { useRoutes } from "react-router-dom";
 import { useMemo } from "react";
 import useAuthStore from "../store/useAuthStore";
+import { getAuthToken } from "../utils/authToken";
 import {
   publicRoutes,
   schoolRoutes,
@@ -11,7 +12,8 @@ import {
 } from "./Routes";
 
 const Router = () => {
-  const token = useAuthStore((state) => state.token);
+  const storeToken = useAuthStore((state) => state.token);
+  const token = storeToken || getAuthToken();
   const role = useAuthStore((state) => state.role);
 
   const routes = useMemo(() => {

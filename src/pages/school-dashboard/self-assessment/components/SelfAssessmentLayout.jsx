@@ -61,6 +61,7 @@ import { AssessmentNavProgressBar } from "../../../../components/AssessmentNavPr
 import { AssessmentChipSelector } from "../../../../components/AssessmentChipSelector/AssessmentChipSelector";
 import {
   getSubdomainEvidenceProgress,
+  getDomainMandatoryEvidenceProgress,
   subdomainRequiresEvidence,
 } from "../../../../services/evidenceService";
 import { SelfAssessmentMobileStepper } from "./SelfAssessmentMobileStepper";
@@ -89,6 +90,30 @@ function SubdomainEvidenceProgressBar({
       })}
       mobile={mobile}
     />
+  );
+}
+
+function DomainEvidenceProgressBar({
+  domain,
+  getProgressColor,
+  t,
+  mobile = false,
+}) {
+  const evidenceProgress = getDomainMandatoryEvidenceProgress(domain);
+  if (!evidenceProgress.total) return null;
+
+  return (
+    <Box sx={{ mt: 1.25 }}>
+      <AssessmentNavProgressBar
+        progress={evidenceProgress.percentage}
+        getProgressColor={getProgressColor}
+        label={t("selfAssessment.evidence.domainProgressLabel", {
+          uploaded: evidenceProgress.uploaded,
+          total: evidenceProgress.total,
+        })}
+        mobile={mobile}
+      />
+    </Box>
   );
 }
 
@@ -243,6 +268,9 @@ export function SelfAssessmentLayout({ c }) {
     handleOpenSubmitConfirmation,
     handleConfirmSubmit,
     allDomainsComplete,
+    allMandatoryEvidenceComplete,
+    mandatoryEvidenceProgress,
+    canSubmitAssessment,
     domainChartData,
     assessmentChartData,
     currentChartData,
@@ -1458,6 +1486,12 @@ export function SelfAssessmentLayout({ c }) {
                                       }}
                                     />
                                   </Box>
+                                  <DomainEvidenceProgressBar
+                                    domain={domain}
+                                    getProgressColor={getProgressColor}
+                                    t={t}
+                                    mobile={matchDownMD}
+                                  />
                                 </CardContent>
                               </Card>
 
@@ -1682,13 +1716,24 @@ export function SelfAssessmentLayout({ c }) {
                           onClick={handleOpenSubmitConfirmation}
                           disabled={
                             submitAssessmentMutation.isPending ||
-                            !allDomainsComplete ||
+                            !canSubmitAssessment ||
                             isReadOnly
                           }
                           title={
                             !allDomainsComplete
-                              ? "Please complete all domains (100%) before submitting"
-                              : "Submit your assessment"
+                              ? t("selfAssessment.submitBlocked.domainsIncomplete", {
+                                  defaultValue:
+                                    "Please complete all domains (100%) before submitting.",
+                                })
+                              : !allMandatoryEvidenceComplete
+                                ? t("selfAssessment.submitBlocked.evidenceIncomplete", {
+                                    remaining: mandatoryEvidenceProgress.remaining,
+                                    defaultValue:
+                                      "Please upload all mandatory evidence before submitting.",
+                                  })
+                                : t("selfAssessment.submitBlocked.ready", {
+                                    defaultValue: "Submit your assessment",
+                                  })
                           }
                           sx={{
                             bgcolor: colors.accent.green,
@@ -1710,10 +1755,12 @@ export function SelfAssessmentLayout({ c }) {
                           }}
                         >
                           {submitAssessmentMutation.isPending
-                            ? "Submitting..."
-                            : !allDomainsComplete
-                              ? "Preview & Submit"
-                              : "Submit Assessment"}
+                            ? t("selfAssessment.submitting", {
+                                defaultValue: "Submitting...",
+                              })
+                            : t("selfAssessment.submitAssessment", {
+                                defaultValue: "Submit Assessment",
+                              })}
                         </Button>
                       </Box>
                     )}

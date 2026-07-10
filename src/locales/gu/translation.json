@@ -177,6 +177,13 @@
     "overallProgress": "સમગ્ર મૂલ્યાંકન પ્રગતિ",
     "progress": "પ્રગતિ",
     "questionsAnswered": "{{total}} માંથી {{answered}} પ્રશ્નોના જવાબ આપ્યા",
+    "submitAssessment": "મૂલ્યાંકન સબમિટ કરો",
+    "submitting": "સબમિટ થઈ રહ્યું છે...",
+    "submitBlocked": {
+      "domainsIncomplete": "સબમિટ કરતા પહેલાં બધા ડોમેન (100%) પૂર્ણ કરો.",
+      "evidenceIncomplete": "સબમિટ કરતા પહેલાં બધા ફરજિયાત આધાર અપલોડ કરો ({{remaining}} બાકી).",
+      "ready": "તમારું મૂલ્યાંકન સબમિટ કરો"
+    },
     "progressOverview": {
       "titleAssessments": "મૂલ્યાંકન પ્રગતિ વિહંગાવલોકન",
       "titleDomains": "ડોમેન પ્રગતિ વિહંગાવલોકન",
@@ -195,6 +202,7 @@
     "evidence": {
       "label": "આધાર",
       "progressLabel": "આધાર: {{uploaded}}/{{total}}",
+      "domainProgressLabel": "ફરજિયાત આધાર: {{uploaded}}/{{total}}",
       "remaining": "{{count}} બાકી",
       "complete": "પૂર્ણ"
     },

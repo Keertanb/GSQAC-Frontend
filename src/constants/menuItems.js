@@ -6,6 +6,7 @@ import {
   Settings,
   Feedback,
   ReportProblem,
+  MonitorHeart,
   Assignment,
   CheckCircle,
   VerifiedUser,
@@ -166,6 +167,13 @@ export const adminMenuItems = [
     icon: Business,
     url: "/admin-dashboard/school-allocation",
     activeFinder: ["/admin-dashboard/school-allocation"],
+  },
+  {
+    id: "school-self-assessment-monitor",
+    label: "Self-Assessment Monitor",
+    icon: MonitorHeart,
+    url: "/admin-dashboard/school-self-assessment-monitor",
+    activeFinder: ["/admin-dashboard/school-self-assessment-monitor"],
   },
   {
     id: "school-assessment-status",

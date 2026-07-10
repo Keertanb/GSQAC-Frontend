@@ -455,9 +455,23 @@ export function SubdomainEvidencePanel({
     [slots, summary],
   );
 
+  const onProgressChangeRef = React.useRef(onProgressChange);
+  onProgressChangeRef.current = onProgressChange;
+  const lastReportedProgressRef = React.useRef(null);
+
   React.useEffect(() => {
-    onProgressChange?.(progress);
-  }, [progress, onProgressChange]);
+    const prev = lastReportedProgressRef.current;
+    if (
+      prev &&
+      prev.uploaded === progress.uploaded &&
+      prev.total === progress.total &&
+      prev.percentage === progress.percentage
+    ) {
+      return;
+    }
+    lastReportedProgressRef.current = progress;
+    onProgressChangeRef.current?.(progress);
+  }, [progress]);
 
   const uploadMutation = usePrepareSubdomainEvidenceMutation({
     onSuccess: () => {

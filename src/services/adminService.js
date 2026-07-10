@@ -1343,6 +1343,31 @@ export const useGetSchoolAssessmentStatusListQuery = (params = {}, enabled = tru
   });
 };
 
+export const getSchoolSelfAssessmentMonitor = async (params = {}) => {
+  const response = await axiosInstance.get("/admin/school-self-assessment-monitor", {
+    params,
+  });
+  return response.data;
+};
+
+export const useGetSchoolSelfAssessmentMonitorQuery = (params = {}, enabled = true) => {
+  return useQuery({
+    queryKey: [
+      "admin",
+      "school-self-assessment-monitor",
+      params.districtId,
+      params.blockId,
+      params.page,
+      params.limit,
+      params.search,
+      params.status,
+    ],
+    queryFn: () => getSchoolSelfAssessmentMonitor(params),
+    enabled: enabled && !!(params.districtId || params.blockId),
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
 /**
  * Get school assessment status detail
  * @param {string} schoolId

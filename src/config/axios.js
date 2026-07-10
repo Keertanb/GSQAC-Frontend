@@ -1,6 +1,7 @@
 import axios from "axios";
 import { enqueueSnackbar } from "notistack";
 import useAuthStore from "../store/useAuthStore";
+import { getAuthToken } from "../utils/authToken";
 
 // Base URL for API
 const BASE_URL = "https://gsqac-api.gujaratvsk.org/api/v1";
@@ -30,8 +31,7 @@ const showNetworkErrorToast = (message) => {
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const state = useAuthStore.getState();
-    const token = state.token;
+    const token = getAuthToken();
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

@@ -19,6 +19,7 @@ import AssessmentManagement from "./assessment-management/AssessmentManagement";
 import Verifier from "./verifier/Verifier";
 import SchoolAllocation from "./school-allocation/SchoolAllocation";
 import SchoolAssessmentStatus from "./school-assessment-status/SchoolAssessmentStatus";
+import SchoolSelfAssessmentMonitor from "./school-self-assessment-monitor/SchoolSelfAssessmentMonitor";
 import ParentFeedback from "./parent-feedback/ParentFeedback";
 import AdminOverview from "./overview/AdminOverview";
 import DistrictNodalOfficers from "./district-nodal-officers/DistrictNodalOfficers";
@@ -29,6 +30,7 @@ import {
   ADMIN_ASSESSMENT_MANAGEMENT_URL,
   ADMIN_SCHOOL_ALLOCATION_URL,
   ADMIN_SCHOOL_ASSESSMENT_STATUS_URL,
+  ADMIN_SCHOOL_SELF_ASSESSMENT_MONITOR_URL,
   ADMIN_ROLE_MANAGEMENT_URL,
   ADMIN_DISTRICT_NODAL_OFFICERS_URL,
   ADMIN_PARENT_FEEDBACK_URL,
@@ -80,6 +82,8 @@ const AdminDashboard = () => {
       return "allocation";
     } else if (location.pathname === ADMIN_SCHOOL_ASSESSMENT_STATUS_URL) {
       return "school-assessment-status";
+    } else if (location.pathname === ADMIN_SCHOOL_SELF_ASSESSMENT_MONITOR_URL) {
+      return "school-self-assessment-monitor";
     } else if (location.pathname === ADMIN_DISTRICT_NODAL_OFFICERS_URL) {
       return "district-nodal-officers";
     } else if (location.pathname === ADMIN_ROLE_MANAGEMENT_URL) {
@@ -369,6 +373,9 @@ const AdminDashboard = () => {
             {currentView === "allocation" && <SchoolAllocation />}
             {currentView === "school-assessment-status" && (
               <SchoolAssessmentStatus />
+            )}
+            {currentView === "school-self-assessment-monitor" && (
+              <SchoolSelfAssessmentMonitor />
             )}
             {currentView === "district-nodal-officers" && (
               <DistrictNodalOfficers />

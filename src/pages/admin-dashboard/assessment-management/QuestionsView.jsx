@@ -991,7 +991,6 @@ const QuestionsView = ({
                 ]);
                 setIsClassroomObservation(0);
                 setQuestionType("single_choice");
-                setAllowImageUpload("no");
                 setOptionErrors({});
                 setOptionFieldTouched({});
                 setShowAddQuestion(!showAddQuestion);
@@ -1094,8 +1093,6 @@ const QuestionsView = ({
                               value={questionType}
                               onChange={(e) => {
                                 setQuestionType(e.target.value);
-                                if (e.target.value !== "single_choice")
-                                  setAllowImageUpload("no");
                                 // Reset related fields when question type changes
                                 if (e.target.value === "fln") {
                                   setFlnAnswer("");
@@ -1818,8 +1815,6 @@ const QuestionsView = ({
                         value={questionType}
                         onChange={(e) => {
                           setQuestionType(e.target.value);
-                          if (e.target.value !== "single_choice")
-                            setAllowImageUpload("no");
                           if (e.target.value === "fln") {
                             setFlnAnswer("");
                           } else {
@@ -2441,8 +2436,6 @@ const QuestionsView = ({
                         value={questionType}
                         onChange={(e) => {
                           setQuestionType(e.target.value);
-                          if (e.target.value !== "single_choice")
-                            setAllowImageUpload("no");
                           if (e.target.value === "fln") {
                             setFlnAnswer("");
                           } else {

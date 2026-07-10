@@ -1,17 +1,28 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import {
+  clearAuthToken,
+  getAuthToken,
+  hydrateAuthToken,
+  setAuthToken,
+} from "../utils/authToken";
+import { migrateLegacyAuthStorage } from "../utils/migrateLegacyAuthStorage";
+
+migrateLegacyAuthStorage();
+hydrateAuthToken();
 
 const useAuthStore = create(
   persist(
     (set) => ({
       user: null,
-      token: null,
+      token: getAuthToken(),
       role: null,
       userId: null,
       userName: null,
       districtId: null,
 
       setUserData: (userData, token, role, userId, userName, districtId) => {
+        setAuthToken(token);
         set({
           user: userData,
           token,
@@ -30,6 +41,7 @@ const useAuthStore = create(
       },
 
       logout: () => {
+        clearAuthToken();
         set({
           user: null,
           token: null,
@@ -42,14 +54,28 @@ const useAuthStore = create(
 
       isAuthenticated: () => {
         const state = useAuthStore.getState();
-        return !!(state.user && state.token);
+        return !!(state.user && getAuthToken());
       },
     }),
     {
-      name: "auth-storage",
-      storage: createJSONStorage(() => localStorage),
-    }
-  )
+      name: "gsqac-auth-session",
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => ({
+        user: state.user,
+        role: state.role,
+        userId: state.userId,
+        userName: state.userName,
+        districtId: state.districtId,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        const token = getAuthToken();
+        if (token) {
+          useAuthStore.setState({ token });
+        }
+      },
+    },
+  ),
 );
 
 export default useAuthStore;

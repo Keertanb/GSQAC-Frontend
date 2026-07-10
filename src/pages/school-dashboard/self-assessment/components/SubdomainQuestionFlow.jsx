@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -437,6 +437,7 @@ export function SubdomainQuestionFlow({
     selectedSection,
     selectedSubject,
     languageCode,
+    handleSubdomainEvidenceProgressChange,
   } = c;
 
   const [evidenceProgress, setEvidenceProgress] = useState({
@@ -445,6 +446,14 @@ export function SubdomainQuestionFlow({
     remaining: 0,
     percentage: 100,
   });
+
+  const handleEvidenceProgressChange = useCallback(
+    (progress) => {
+      setEvidenceProgress(progress);
+      handleSubdomainEvidenceProgressChange?.(progress);
+    },
+    [handleSubdomainEvidenceProgressChange],
+  );
 
   const at = assessmentTheme || {
     primary: colors.primary.blue,
@@ -626,7 +635,7 @@ export function SubdomainQuestionFlow({
               readOnly={isReadOnly}
               className="sa-subdomain-evidence"
               languageCode={(languageCode || "EN").toLowerCase()}
-              onProgressChange={setEvidenceProgress}
+              onProgressChange={handleEvidenceProgressChange}
             />
             {!matchDownMD ? (
               <Chip

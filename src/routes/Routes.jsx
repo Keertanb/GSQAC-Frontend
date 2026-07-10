@@ -254,6 +254,16 @@ export const adminRoutes = [
         ),
       },
       {
+        path: ROUTE_URLS.ADMIN_SCHOOL_SELF_ASSESSMENT_MONITOR_URL,
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <Suspense fallback={<LazyLoad />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: ROUTE_URLS.ADMIN_SCHOOL_ASSESSMENT_STATUS_URL,
         element: (
           <ProtectedRoute requiredRole="admin">

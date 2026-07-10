@@ -177,6 +177,13 @@
     "overallProgress": "समग्र मूल्यांकन प्रगति",
     "progress": "प्रगति",
     "questionsAnswered": "{{answered}} में से {{total}} प्रश्नों के उत्तर दिए",
+    "submitAssessment": "मूल्यांकन सबमिट करें",
+    "submitting": "सबमिट हो रहा है...",
+    "submitBlocked": {
+      "domainsIncomplete": "सबमिट करने से पहले सभी डोमेन (100%) पूरे करें।",
+      "evidenceIncomplete": "सबमिट करने से पहले सभी अनिवार्य साक्ष्य अपलोड करें ({{remaining}} शेष)।",
+      "ready": "अपना मूल्यांकन सबमिट करें"
+    },
     "progressOverview": {
       "titleAssessments": "मूल्यांकन प्रगति अवलोकन",
       "titleDomains": "डोमेन प्रगति अवलोकन",
@@ -195,6 +202,7 @@
     "evidence": {
       "label": "साक्ष्य",
       "progressLabel": "साक्ष्य: {{uploaded}}/{{total}}",
+      "domainProgressLabel": "अनिवार्य साक्ष्य: {{uploaded}}/{{total}}",
       "remaining": "{{count}} शेष",
       "complete": "पूर्ण"
     },
