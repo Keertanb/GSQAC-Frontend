@@ -180,11 +180,18 @@
     "progress": "Progress",
     "questionsAnswered": "{{answered}} of {{total}} questions answered",
     "submitAssessment": "Submit Assessment",
+    "submitAllAssessments": "Submit All Assessments",
+    "submitSuccess": "Assessment submitted successfully!",
+    "allAssessmentsSubmitted": "All assessments submitted successfully!",
+    "allAssessmentsAlreadySubmitted": "All assessments are already submitted.",
+    "assessmentSubmittedReadonly": "This assessment has been submitted and is read-only.",
     "submitting": "Submitting...",
     "submitBlocked": {
       "domainsIncomplete": "Please complete all domains (100%) before submitting.",
+      "allAssessmentsDomainsIncomplete": "Please complete all domains (100%) in every assessment before submitting.",
       "evidenceIncomplete": "Please upload all mandatory evidence ({{remaining}} remaining) before submitting.",
-      "ready": "Submit your assessment"
+      "ready": "Submit your assessment",
+      "readyAll": "Submit all assessments when every assessment is complete."
     },
     "progressOverview": {
       "titleAssessments": "Assessment Progress Overview",

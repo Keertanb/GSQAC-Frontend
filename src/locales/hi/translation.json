@@ -178,11 +178,18 @@
     "progress": "प्रगति",
     "questionsAnswered": "{{answered}} में से {{total}} प्रश्नों के उत्तर दिए",
     "submitAssessment": "मूल्यांकन सबमिट करें",
+    "submitAllAssessments": "सभी मूल्यांकन सबमिट करें",
+    "submitSuccess": "मूल्यांकन सफलतापूर्वक सबमिट हुआ!",
+    "allAssessmentsSubmitted": "सभी मूल्यांकन सफलतापूर्वक सबमिट हुए!",
+    "allAssessmentsAlreadySubmitted": "सभी मूल्यांकन पहले से सबमिट हैं।",
+    "assessmentSubmittedReadonly": "यह मूल्यांकन सबमिट हो चुका है और केवल पढ़ने योग्य है।",
     "submitting": "सबमिट हो रहा है...",
     "submitBlocked": {
       "domainsIncomplete": "सबमिट करने से पहले सभी डोमेन (100%) पूरे करें।",
+      "allAssessmentsDomainsIncomplete": "सबमिट करने से पहले हर मूल्यांकन में सभी डोमेन (100%) पूरे करें।",
       "evidenceIncomplete": "सबमिट करने से पहले सभी अनिवार्य साक्ष्य अपलोड करें ({{remaining}} शेष)।",
-      "ready": "अपना मूल्यांकन सबमिट करें"
+      "ready": "अपना मूल्यांकन सबमिट करें",
+      "readyAll": "सभी मूल्यांकन पूरे होने पर सबमिट करें।"
     },
     "progressOverview": {
       "titleAssessments": "मूल्यांकन प्रगति अवलोकन",

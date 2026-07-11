@@ -28,18 +28,25 @@ import {
   useSubmitSubdomainWiseAnswersMutation,
   useSubmitAssessmentMutation,
   useGetSchoolGradesQuery,
+  submitAssessment,
 } from "../../../../services/schoolService";
 import {
   useGetClassWiseSubjectsQuery,
   useSubmitAnswerMutation,
 } from "../../../../services/adminService";
-import { buildSubmitPreviewData } from "../utils/buildSubmitPreviewData";
+import { buildSubmitPreviewData, buildSubmitPreviewDataForAssessments } from "../utils/buildSubmitPreviewData";
 import {
   filterAssessmentsByHostelFacility,
   isHostelDomain,
   normalizeHostelFacilityValue,
   sumProgressFromDomains,
 } from "../../../../utils/hostelDomain";
+import {
+  isAssessmentSubmitted,
+  isAssessmentAnswersComplete,
+  isAssessmentFullyComplete,
+  getIncompleteAssessments,
+} from "../../../../utils/assessmentSubmit";
 import { getAssessmentTheme } from "../../../../utils/assessmentTheme";
 import {
   getAssessmentMandatoryEvidenceProgress,
@@ -57,8 +64,8 @@ const getSessionIdFromDomainsResponse = (domainsResponse, assessmentId) => {
       const assessment =
         domainsResponse.data.find(
           (item) => Number(item.assessmentId) === Number(assessmentId),
-        ) || domainsResponse.data[0];
-      return assessment?.sessionId ?? domainsResponse.sessionId ?? null;
+        );
+      return assessment?.sessionId ?? null;
     }
     return domainsResponse.sessionId ?? null;
   }
@@ -93,6 +100,8 @@ export function useSelfAssessment() {
   const [isLoadingSubmitPreview, setIsLoadingSubmitPreview] = useState(false);
   const [submitPreviewError, setSubmitPreviewError] = useState(null);
   const [submitFeedback, setSubmitFeedback] = useState("");
+  const [isSubmittingAllAssessments, setIsSubmittingAllAssessments] =
+    useState(false);
   const [selectedQuestionTab, setSelectedQuestionTab] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
@@ -382,10 +391,43 @@ export function useSelfAssessment() {
   const isPublished =
     selectedAssessment?.isPublished ?? domainsData?.isPublished ?? false;
   const endDate = selectedAssessment?.endDate ?? domainsData?.endDate ?? null;
-  const isSubmitted =
-    selectedAssessment?.isSubmitted ?? domainsData?.isSubmitted ?? false;
+  const isSubmitted = isAssessmentSubmitted(selectedAssessment);
   const sessionId =
     selectedAssessment?.sessionId ?? domainsData?.sessionId ?? null;
+
+  const allAssessmentsSubmitted = useMemo(
+    () =>
+      assessments.length > 0 &&
+      assessments.every((assessment) => isAssessmentSubmitted(assessment)),
+    [assessments],
+  );
+
+  const allAssessmentsAnswersComplete = useMemo(
+    () =>
+      assessments.length > 0 &&
+      assessments.every((assessment) => isAssessmentAnswersComplete(assessment)),
+    [assessments],
+  );
+
+  const allAssessmentsMandatoryEvidenceProgress = useMemo(
+    () =>
+      getAssessmentMandatoryEvidenceProgress(
+        assessments.flatMap((assessment) => assessment.domains || []),
+      ),
+    [assessments],
+  );
+
+  const allAssessmentsComplete = useMemo(
+    () =>
+      assessments.length > 0 &&
+      assessments.every((assessment) => isAssessmentFullyComplete(assessment)),
+    [assessments],
+  );
+
+  const incompleteAssessments = useMemo(
+    () => getIncompleteAssessments(assessments),
+    [assessments],
+  );
 
   const assessmentProgress = useMemo(() => {
     const { totalQuestions, totalAnswer, answerPercentage } =
@@ -414,7 +456,7 @@ export function useSelfAssessment() {
     return toDateOnly(currentDate) > toDateOnly(endDateObj);
   }, [endDate]);
 
-  // Assessment is read-only if submitted or endDate has passed
+  // Current assessment is read-only only when that assessment is submitted or its end date passed.
   const isReadOnly = isSubmitted || isEndDatePassed;
 
   // Helper function to map dropdown group range to API group range format
@@ -1460,18 +1502,18 @@ export function useSelfAssessment() {
     }
 
     if (!canSubmitAssessment) {
-      if (!allDomainsComplete) {
+      if (!allAssessmentsAnswersComplete) {
         enqueueSnackbar(
-          t("selfAssessment.submitBlocked.domainsIncomplete", {
+          t("selfAssessment.submitBlocked.allAssessmentsDomainsIncomplete", {
             defaultValue:
-              "Please complete all domains (100%) before submitting.",
+              "Please complete all domains (100%) in every assessment before submitting.",
           }),
           { variant: "warning" },
         );
-      } else if (!allMandatoryEvidenceComplete) {
+      } else if (!allAssessmentsMandatoryEvidenceComplete) {
         enqueueSnackbar(
           t("selfAssessment.submitBlocked.evidenceIncomplete", {
-            remaining: mandatoryEvidenceProgress.remaining,
+            remaining: allAssessmentsMandatoryEvidenceProgress.remaining,
             defaultValue:
               "Please upload all mandatory evidence before submitting.",
           }),
@@ -1487,13 +1529,18 @@ export function useSelfAssessment() {
     setIsLoadingSubmitPreview(true);
 
     try {
-      const preview = await buildSubmitPreviewData({
-        domains,
+      const preview = await buildSubmitPreviewDataForAssessments({
+        assessments,
         roleId,
         languageCode,
         userId: Number(userId),
         getDomainName,
         getSubdomainName,
+        getAssessmentName: (assessment) =>
+          assessment.assessmentName ||
+          t("selfAssessment.assessmentNameFallback", {
+            id: assessment.assessmentId,
+          }),
       });
       setSubmitPreviewData(preview);
     } catch (error) {
@@ -1507,7 +1554,9 @@ export function useSelfAssessment() {
   };
 
   const handleCloseSubmitPreview = () => {
-    if (submitAssessmentMutation.isPending || isFetchingDomains) return;
+    if (submitAssessmentMutation.isPending || isFetchingDomains || isSubmittingAllAssessments) {
+      return;
+    }
     setShowSubmitPreview(false);
     setSubmitPreviewData([]);
     setSubmitPreviewError(null);
@@ -1521,7 +1570,9 @@ export function useSelfAssessment() {
   };
 
   const handleCloseSubmitFeedback = () => {
-    if (submitAssessmentMutation.isPending || isFetchingDomains) return;
+    if (submitAssessmentMutation.isPending || isFetchingDomains || isSubmittingAllAssessments) {
+      return;
+    }
     setShowSubmitConfirmation(false);
     setSubmitFeedback("");
   };
@@ -1539,33 +1590,98 @@ export function useSelfAssessment() {
       return;
     }
 
-    if (submitAssessmentMutation.isPending || isFetchingDomains) {
+    if (submitAssessmentMutation.isPending || isFetchingDomains || isSubmittingAllAssessments) {
       return;
     }
 
+    setIsSubmittingAllAssessments(true);
+
     try {
       const domainsResult = await refetchDomains();
-      const freshSessionId = getSessionIdFromDomainsResponse(
-        domainsResult.data,
-        selectedAssessment?.assessmentId ?? selectedAssessmentId,
+      const freshData = domainsResult.data;
+      let freshAssessments = assessments;
+
+      if (Array.isArray(freshData?.data) && freshData.data[0]?.domains) {
+        freshAssessments = filterAssessmentsByHostelFacility(
+          freshData.data,
+          hostelValue,
+        );
+      }
+
+      const pendingAssessments = freshAssessments.filter(
+        (assessment) => !isAssessmentSubmitted(assessment),
       );
 
-      const payload = {
-        sessionId: freshSessionId ?? null,
-        assessmentId: selectedAssessment?.assessmentId ?? null,
-        userId: Number(userId),
-        roleId: Number(roleId),
-        schoolId: userName || undefined,
-        isSubmitted: 1,
-        feedback: submitFeedback.trim() || "NA",
-      };
-      submitAssessmentMutation.mutate(payload);
-    } catch (error) {
-      console.error("Error refreshing domains before submit:", error);
+      if (!pendingAssessments.length) {
+        enqueueSnackbar(
+          t("selfAssessment.allAssessmentsAlreadySubmitted", {
+            defaultValue: "All assessments are already submitted.",
+          }),
+          { variant: "info" },
+        );
+        return;
+      }
+
+      const feedback = submitFeedback.trim() || "NA";
+
+      for (const assessment of pendingAssessments) {
+        const freshSessionId = getSessionIdFromDomainsResponse(
+          freshData,
+          assessment.assessmentId,
+        );
+
+        await submitAssessment({
+          sessionId: freshSessionId ?? null,
+          assessmentId: assessment.assessmentId ?? null,
+          userId: Number(userId),
+          roleId: Number(roleId),
+          schoolId: userName || undefined,
+          isSubmitted: 1,
+          feedback,
+        });
+      }
+
+      setShowSubmitConfirmation(false);
+      setSubmitFeedback("");
+
+      await refetchDomains();
+
+      if (selectedSubdomain) {
+        refetchQuestions();
+      }
+
+      queryClient.invalidateQueries({
+        queryKey: ["school"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.school.domains(roleId, languageCode),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.school.schoolData(userName),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.school.schoolSections(userName),
+      });
+
       enqueueSnackbar(
-        "Failed to refresh assessment session. Please try again.",
+        pendingAssessments.length > 1
+          ? t("selfAssessment.allAssessmentsSubmitted", {
+              defaultValue: "All assessments submitted successfully!",
+            })
+          : t("selfAssessment.submitSuccess", {
+              defaultValue: "Assessment submitted successfully!",
+            }),
+        { variant: "success" },
+      );
+    } catch (error) {
+      console.error("Error submitting assessments:", error);
+      enqueueSnackbar(
+        error?.response?.data?.message ||
+          "Failed to submit assessments. Please try again.",
         { variant: "error" },
       );
+    } finally {
+      setIsSubmittingAllAssessments(false);
     }
   };
 
@@ -1607,9 +1723,11 @@ export function useSelfAssessment() {
   );
 
   const allMandatoryEvidenceComplete = mandatoryEvidenceProgress.isComplete;
+  const allAssessmentsMandatoryEvidenceComplete =
+    allAssessmentsMandatoryEvidenceProgress.isComplete;
 
   const canSubmitAssessment =
-    allDomainsComplete && allMandatoryEvidenceComplete;
+    allAssessmentsComplete && !allAssessmentsSubmitted;
 
   // Prepare chart data for bar graph
   const domainChartData = useMemo(() => {
@@ -2274,9 +2392,16 @@ export function useSelfAssessment() {
     handleConfirmSubmit,
     allDomainsComplete,
     allMandatoryEvidenceComplete,
+    allAssessmentsComplete,
+    allAssessmentsSubmitted,
+    allAssessmentsAnswersComplete,
+    allAssessmentsMandatoryEvidenceProgress,
+    allAssessmentsMandatoryEvidenceComplete,
+    incompleteAssessments,
     mandatoryEvidenceProgress,
     handleSubdomainEvidenceProgressChange,
     canSubmitAssessment,
+    isSubmittingAllAssessments,
     domainChartData,
     assessmentChartData,
     currentChartData,

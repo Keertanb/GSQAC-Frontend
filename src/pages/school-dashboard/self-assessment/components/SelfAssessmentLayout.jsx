@@ -269,8 +269,14 @@ export function SelfAssessmentLayout({ c }) {
     handleConfirmSubmit,
     allDomainsComplete,
     allMandatoryEvidenceComplete,
+    allAssessmentsComplete,
+    allAssessmentsSubmitted,
+    allAssessmentsAnswersComplete,
+    allAssessmentsMandatoryEvidenceProgress,
+    allAssessmentsMandatoryEvidenceComplete,
     mandatoryEvidenceProgress,
     canSubmitAssessment,
+    isSubmittingAllAssessments,
     domainChartData,
     assessmentChartData,
     currentChartData,
@@ -875,9 +881,14 @@ export function SelfAssessmentLayout({ c }) {
                       }}
                     >
                       {isReadOnly
-                        ? t("selfAssessment.submissionClosedOn", {
-                            date: endDate,
-                          })
+                        ? isSubmitted
+                          ? t("selfAssessment.assessmentSubmittedReadonly", {
+                              defaultValue:
+                                "This assessment has been submitted and is read-only.",
+                            })
+                          : t("selfAssessment.submissionClosedOn", {
+                              date: endDate,
+                            })
                         : t("selfAssessment.submitBefore", { date: endDate })}
                     </Typography>
                   )}
@@ -967,9 +978,14 @@ export function SelfAssessmentLayout({ c }) {
                     }}
                   >
                     {isReadOnly
-                      ? t("selfAssessment.submissionClosedOn", {
-                          date: endDate,
-                        })
+                      ? isSubmitted
+                        ? t("selfAssessment.assessmentSubmittedReadonly", {
+                            defaultValue:
+                              "This assessment has been submitted and is read-only.",
+                          })
+                        : t("selfAssessment.submissionClosedOn", {
+                            date: endDate,
+                          })
                       : t("selfAssessment.submitBefore", { date: endDate })}
                   </Typography>
                 ) : (
@@ -1700,7 +1716,7 @@ export function SelfAssessmentLayout({ c }) {
 
                   {/* Final Submit Button — desktop + mobile domains tab only */}
                   {isPublished &&
-                    !isReadOnly &&
+                    !allAssessmentsSubmitted &&
                     (!matchDownMD || mobileStep === 0) && (
                       <Box
                         sx={{
@@ -1716,23 +1732,28 @@ export function SelfAssessmentLayout({ c }) {
                           onClick={handleOpenSubmitConfirmation}
                           disabled={
                             submitAssessmentMutation.isPending ||
-                            !canSubmitAssessment ||
-                            isReadOnly
+                            isSubmittingAllAssessments ||
+                            !canSubmitAssessment
                           }
                           title={
-                            !allDomainsComplete
-                              ? t("selfAssessment.submitBlocked.domainsIncomplete", {
-                                  defaultValue:
-                                    "Please complete all domains (100%) before submitting.",
-                                })
-                              : !allMandatoryEvidenceComplete
+                            !allAssessmentsAnswersComplete
+                              ? t(
+                                  "selfAssessment.submitBlocked.allAssessmentsDomainsIncomplete",
+                                  {
+                                    defaultValue:
+                                      "Please complete all domains (100%) in every assessment before submitting.",
+                                  },
+                                )
+                              : !allAssessmentsMandatoryEvidenceComplete
                                 ? t("selfAssessment.submitBlocked.evidenceIncomplete", {
-                                    remaining: mandatoryEvidenceProgress.remaining,
+                                    remaining:
+                                      allAssessmentsMandatoryEvidenceProgress.remaining,
                                     defaultValue:
                                       "Please upload all mandatory evidence before submitting.",
                                   })
-                                : t("selfAssessment.submitBlocked.ready", {
-                                    defaultValue: "Submit your assessment",
+                                : t("selfAssessment.submitBlocked.readyAll", {
+                                    defaultValue:
+                                      "Submit all assessments when every assessment is complete.",
                                   })
                           }
                           sx={{
@@ -1754,13 +1775,18 @@ export function SelfAssessmentLayout({ c }) {
                             borderRadius: 2,
                           }}
                         >
-                          {submitAssessmentMutation.isPending
+                          {submitAssessmentMutation.isPending ||
+                          isSubmittingAllAssessments
                             ? t("selfAssessment.submitting", {
                                 defaultValue: "Submitting...",
                               })
-                            : t("selfAssessment.submitAssessment", {
-                                defaultValue: "Submit Assessment",
-                              })}
+                            : assessments.length > 1
+                              ? t("selfAssessment.submitAllAssessments", {
+                                  defaultValue: "Submit All Assessments",
+                                })
+                              : t("selfAssessment.submitAssessment", {
+                                  defaultValue: "Submit Assessment",
+                                })}
                         </Button>
                       </Box>
                     )}
@@ -2448,7 +2474,11 @@ export function SelfAssessmentLayout({ c }) {
         })}
         confirmText={t("selfAssessment.submitFeedback.confirm")}
         cancelText={t("selfAssessment.submitFeedback.cancel")}
-        isLoading={isFetchingDomains || submitAssessmentMutation.isPending}
+        isLoading={
+          isFetchingDomains ||
+          submitAssessmentMutation.isPending ||
+          isSubmittingAllAssessments
+        }
       />
     </Box>
   );

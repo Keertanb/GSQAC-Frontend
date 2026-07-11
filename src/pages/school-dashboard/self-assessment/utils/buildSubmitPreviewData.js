@@ -139,3 +139,41 @@ export async function buildSubmitPreviewData({
 
   return previewDomains;
 }
+
+export async function buildSubmitPreviewDataForAssessments({
+  assessments,
+  roleId,
+  languageCode,
+  userId,
+  getDomainName,
+  getSubdomainName,
+  getAssessmentName,
+}) {
+  const combinedPreview = [];
+
+  for (let assessmentIndex = 0; assessmentIndex < assessments.length; assessmentIndex += 1) {
+    const assessment = assessments[assessmentIndex];
+    const assessmentLabel =
+      getAssessmentName?.(assessment) ||
+      assessment.assessmentName ||
+      `Assessment ${assessmentIndex + 1}`;
+    const previewDomains = await buildSubmitPreviewData({
+      domains: assessment.domains || [],
+      roleId,
+      languageCode,
+      userId,
+      getDomainName,
+      getSubdomainName,
+    });
+
+    previewDomains.forEach((domain) => {
+      combinedPreview.push({
+        ...domain,
+        assessmentName: assessmentLabel,
+        domainName: `${assessmentLabel} — ${domain.domainName}`,
+      });
+    });
+  }
+
+  return combinedPreview;
+}

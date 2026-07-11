@@ -178,11 +178,18 @@
     "progress": "પ્રગતિ",
     "questionsAnswered": "{{total}} માંથી {{answered}} પ્રશ્નોના જવાબ આપ્યા",
     "submitAssessment": "મૂલ્યાંકન સબમિટ કરો",
+    "submitAllAssessments": "બધા મૂલ્યાંકન સબમિટ કરો",
+    "submitSuccess": "મૂલ્યાંકન સફળતાપૂર્વક સબમિટ થયું!",
+    "allAssessmentsSubmitted": "બધા મૂલ્યાંકન સફળતાપૂર્વક સબમિટ થયા!",
+    "allAssessmentsAlreadySubmitted": "બધા મૂલ્યાંકન પહેલેથી સબમિટ થયેલા છે.",
+    "assessmentSubmittedReadonly": "આ મૂલ્યાંકન સબમિટ થયેલું છે અને ફક્ત વાંચવા યોગ્ય છે.",
     "submitting": "સબમિટ થઈ રહ્યું છે...",
     "submitBlocked": {
       "domainsIncomplete": "સબમિટ કરતા પહેલાં બધા ડોમેન (100%) પૂર્ણ કરો.",
+      "allAssessmentsDomainsIncomplete": "સબમિટ કરતા પહેલાં દરેક મૂલ્યાંકનમાં બધા ડોમેન (100%) પૂર્ણ કરો.",
       "evidenceIncomplete": "સબમિટ કરતા પહેલાં બધા ફરજિયાત આધાર અપલોડ કરો ({{remaining}} બાકી).",
-      "ready": "તમારું મૂલ્યાંકન સબમિટ કરો"
+      "ready": "તમારું મૂલ્યાંકન સબમિટ કરો",
+      "readyAll": "બધા મૂલ્યાંકન પૂર્ણ થયા પછી સબમિટ કરો."
     },
     "progressOverview": {
       "titleAssessments": "મૂલ્યાંકન પ્રગતિ વિહંગાવલોકન",
