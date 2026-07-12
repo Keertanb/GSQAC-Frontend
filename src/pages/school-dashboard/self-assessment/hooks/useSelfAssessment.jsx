@@ -54,6 +54,7 @@ import {
 import { getAssessmentTheme } from "../../../../utils/assessmentTheme";
 import {
   getAssessmentMandatoryEvidenceProgress,
+  sanitizeDomainsEvidence,
   updateDomainsCacheSubdomainEvidence,
 } from "../../../../services/evidenceService";
 
@@ -371,7 +372,10 @@ export function useSelfAssessment() {
       }
     }
 
-    return filterAssessmentsByHostelFacility(list, hostelValue);
+    return filterAssessmentsByHostelFacility(list, hostelValue).map((assessment) => ({
+      ...assessment,
+      domains: sanitizeDomainsEvidence(assessment.domains || []),
+    }));
   }, [domainsData, hostelValue, t]);
 
   useEffect(() => {
@@ -1740,7 +1744,7 @@ export function useSelfAssessment() {
     (progress) => {
       const subDomainId =
         selectedSubdomain?.subDomainId || selectedSubdomain?.id;
-      if (!subDomainId || !progress?.total) return;
+      if (!subDomainId || progress == null) return;
       updateDomainsCacheSubdomainEvidence(queryClient, subDomainId, progress);
     },
     [queryClient, selectedSubdomain],

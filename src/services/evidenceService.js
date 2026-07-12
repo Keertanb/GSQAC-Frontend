@@ -6,10 +6,36 @@ export const MAX_EVIDENCE_SIZE_BYTES = 5 * 1024 * 1024;
 export const EVIDENCE_ACCEPT =
   "image/jpeg,image/jpg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf";
 
-export function subdomainRequiresEvidence(subdomain) {
-  if ((subdomain?.evidenceSlots || []).length > 0) return true;
+export function isMandatoryEvidenceSlot(slot) {
+  const value = slot?.isMandatory;
+  return value === 1 || value === true || value === "1";
+}
+
+export function getMandatoryEvidenceSlots(subdomain) {
+  return (subdomain?.evidenceSlots || []).filter(isMandatoryEvidenceSlot);
+}
+
+export function zeroMandatoryEvidenceProgress() {
+  return {
+    total: 0,
+    uploaded: 0,
+    remaining: 0,
+    percentage: 100,
+    isComplete: true,
+  };
+}
+
+export function subdomainHasMandatoryEvidence(subdomain) {
+  return getSubdomainEvidenceProgress(subdomain).total > 0;
+}
+
+export function subdomainEvidenceIsEnabled(subdomain) {
   const value = subdomain?.requireEvidence;
   return value === 1 || value === "1" || value === true;
+}
+
+export function subdomainRequiresEvidence(subdomain) {
+  return subdomainEvidenceIsEnabled(subdomain);
 }
 
 export function getEvidenceSlotName(slot, language = "en") {
@@ -24,10 +50,49 @@ export function getEvidenceSlotName(slot, language = "en") {
   }
 }
 
-export function computeMandatoryEvidenceProgress(slots = [], summary = null) {
-  if (summary?.mandatoryTotal != null) {
-    const mandatoryTotal = Number(summary.mandatoryTotal) || 0;
-    const mandatoryUploaded = Number(summary.mandatoryUploaded) || 0;
+export function computeMandatoryEvidenceProgress(slots = []) {
+  const mandatorySlots = (slots || []).filter(isMandatoryEvidenceSlot);
+
+  if (mandatorySlots.length === 0) {
+    return zeroMandatoryEvidenceProgress();
+  }
+
+  const mandatoryUploaded = mandatorySlots.filter((slot) => slot.evidence?.evidenceId)
+    .length;
+
+  return {
+    total: mandatorySlots.length,
+    uploaded: mandatoryUploaded,
+    remaining: Math.max(0, mandatorySlots.length - mandatoryUploaded),
+    percentage: Math.round((mandatoryUploaded / mandatorySlots.length) * 100),
+    isComplete: mandatoryUploaded >= mandatorySlots.length,
+  };
+}
+
+export function getSubdomainEvidenceProgress(subdomain) {
+  if (!subdomainEvidenceIsEnabled(subdomain)) {
+    return zeroMandatoryEvidenceProgress();
+  }
+
+  const slots = subdomain?.evidenceSlots;
+
+  if (Array.isArray(slots)) {
+    const mandatorySlots = getMandatoryEvidenceSlots(subdomain);
+    if (mandatorySlots.length === 0) {
+      return zeroMandatoryEvidenceProgress();
+    }
+
+    const mandatoryTotal = mandatorySlots.length;
+    const hasSlotEvidence = mandatorySlots.some(
+      (slot) => slot.evidence !== undefined,
+    );
+    const mandatoryUploaded = hasSlotEvidence
+      ? mandatorySlots.filter((slot) => slot.evidence?.evidenceId).length
+      : Math.min(
+          Number(subdomain?.mandatoryEvidenceUploaded) || 0,
+          mandatoryTotal,
+        );
+
     return {
       total: mandatoryTotal,
       uploaded: mandatoryUploaded,
@@ -36,52 +101,24 @@ export function computeMandatoryEvidenceProgress(slots = [], summary = null) {
         mandatoryTotal > 0
           ? Math.round((mandatoryUploaded / mandatoryTotal) * 100)
           : 100,
+      isComplete: mandatoryUploaded >= mandatoryTotal,
     };
   }
 
-  const mandatorySlots = (slots || []).filter(
-    (slot) =>
-      slot.isMandatory === 1 ||
-      slot.isMandatory === true ||
-      slot.isMandatory === "1",
-  );
-  const uploaded = mandatorySlots.filter((slot) => slot.evidence?.evidenceId)
-    .length;
+  const configuredSlotCount = Number(subdomain?.evidenceSlotCount);
+  const mandatoryTotal = Number(subdomain?.mandatoryEvidenceTotal) || 0;
 
-  return {
-    total: mandatorySlots.length,
-    uploaded,
-    remaining: Math.max(0, mandatorySlots.length - uploaded),
-    percentage:
-      mandatorySlots.length > 0
-        ? Math.round((uploaded / mandatorySlots.length) * 100)
-        : 100,
-  };
-}
-
-export function getSubdomainEvidenceProgress(subdomain) {
-  if (!subdomainRequiresEvidence(subdomain)) {
-    return { total: 0, uploaded: 0, remaining: 0, percentage: 100 };
+  if (
+    mandatoryTotal === 0 ||
+    configuredSlotCount === 0
+  ) {
+    return zeroMandatoryEvidenceProgress();
   }
 
-  const mandatoryTotal =
-    Number(subdomain.mandatoryEvidenceTotal) ||
-    (subdomain.evidenceSlots || []).filter(
-      (slot) =>
-        slot.isMandatory === 1 ||
-        slot.isMandatory === true ||
-        slot.isMandatory === "1",
-    ).length;
-
-  const mandatoryUploaded =
-    Number(subdomain.mandatoryEvidenceUploaded) ||
-    (subdomain.evidenceSlots || []).filter(
-      (slot) =>
-        (slot.isMandatory === 1 ||
-          slot.isMandatory === true ||
-          slot.isMandatory === "1") &&
-        slot.evidence?.evidenceId,
-    ).length;
+  const mandatoryUploaded = Math.min(
+    Number(subdomain?.mandatoryEvidenceUploaded) || 0,
+    mandatoryTotal,
+  );
 
   return {
     total: mandatoryTotal,
@@ -91,6 +128,7 @@ export function getSubdomainEvidenceProgress(subdomain) {
       mandatoryTotal > 0
         ? Math.round((mandatoryUploaded / mandatoryTotal) * 100)
         : 100,
+    isComplete: mandatoryUploaded >= mandatoryTotal,
   };
 }
 
@@ -132,6 +170,28 @@ export function getAssessmentMandatoryEvidenceProgress(domains = []) {
     percentage: total > 0 ? Math.round((uploaded / total) * 100) : 100,
     isComplete: total === 0 || uploaded >= total,
   };
+}
+
+export function sanitizeDomainsEvidence(domains = []) {
+  if (!Array.isArray(domains)) return [];
+
+  return domains.map((domain) => ({
+    ...domain,
+    subDomain: (domain.subDomain || []).map((subdomain) => {
+      const progress = getSubdomainEvidenceProgress(subdomain);
+      if (progress.total > 0) {
+        return subdomain;
+      }
+
+      return {
+        ...subdomain,
+        mandatoryEvidenceTotal: 0,
+        mandatoryEvidenceUploaded: 0,
+        mandatoryEvidenceRemaining: 0,
+        mandatoryEvidencePercentage: 100,
+      };
+    }),
+  }));
 }
 
 export const getSubdomainEvidence = async (params) => {
@@ -267,7 +327,7 @@ export function updateDomainsCacheSubdomainEvidence(
   subDomainId,
   progress,
 ) {
-  if (!queryClient || !subDomainId || !progress?.total) return;
+  if (!queryClient || !subDomainId || progress == null) return;
 
   const patcher = (oldData) =>
     patchDomainsResponseSubdomainEvidence(oldData, subDomainId, progress);

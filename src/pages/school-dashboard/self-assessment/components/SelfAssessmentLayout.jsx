@@ -62,7 +62,7 @@ import { AssessmentChipSelector } from "../../../../components/AssessmentChipSel
 import {
   getSubdomainEvidenceProgress,
   getDomainMandatoryEvidenceProgress,
-  subdomainRequiresEvidence,
+  subdomainHasMandatoryEvidence,
 } from "../../../../services/evidenceService";
 import { SelfAssessmentMobileStepper } from "./SelfAssessmentMobileStepper";
 import { SubdomainQuestionFlow } from "./SubdomainQuestionFlow";
@@ -75,7 +75,7 @@ function SubdomainEvidenceProgressBar({
   t,
   mobile = false,
 }) {
-  if (!subdomainRequiresEvidence(subdomain)) return null;
+  if (!subdomainHasMandatoryEvidence(subdomain)) return null;
 
   const evidenceProgress = getSubdomainEvidenceProgress(subdomain);
   if (!evidenceProgress.total) return null;

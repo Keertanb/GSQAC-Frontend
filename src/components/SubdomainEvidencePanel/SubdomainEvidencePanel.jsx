@@ -177,7 +177,6 @@ function EvidenceUploadModal({
   open,
   onClose,
   slots,
-  summary,
   readOnly,
   isUploading,
   uploadingSlotId,
@@ -189,7 +188,7 @@ function EvidenceUploadModal({
   const theme = useTheme();
   const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const at = assessmentTheme || DEFAULT_EVIDENCE_THEME;
-  const progress = computeMandatoryEvidenceProgress(slots, summary);
+  const progress = computeMandatoryEvidenceProgress(slots);
 
   return (
     <Dialog
@@ -240,58 +239,60 @@ function EvidenceUploadModal({
       </DialogTitle>
 
       <DialogContent dividers className="subdomain-evidence-upload-modal__content">
-        <Box
-          className="subdomain-evidence-upload-modal__summary"
-          sx={{
-            background: `${at.primary}08`,
-            border: `1px solid ${at.primary}22`,
-          }}
-        >
+        {progress.total > 0 ? (
           <Box
-            className="subdomain-evidence-upload-modal__summary-row"
+            className="subdomain-evidence-upload-modal__summary"
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: { xs: "flex-start", sm: "center" },
-              flexDirection: { xs: "column", sm: "row" },
-              gap: { xs: 0.35, sm: 0.75 },
-              mb: 0.75,
+              background: `${at.primary}08`,
+              border: `1px solid ${at.primary}22`,
             }}
           >
-            <Typography variant="body2" fontWeight={700} sx={{ lineHeight: 1.4 }}>
-              Mandatory {evidenceLabel}
-            </Typography>
-            <Typography
-              variant="body2"
-              fontWeight={800}
+            <Box
+              className="subdomain-evidence-upload-modal__summary-row"
               sx={{
-                color: at.primary,
-                lineHeight: 1.4,
-                wordBreak: "break-word",
-                overflowWrap: "anywhere",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: { xs: "flex-start", sm: "center" },
+                flexDirection: { xs: "column", sm: "row" },
+                gap: { xs: 0.35, sm: 0.75 },
+                mb: 0.75,
               }}
             >
-              {progress.uploaded}/{progress.total} uploaded
-              {progress.remaining > 0 ? ` · ${progress.remaining} left` : ""}
-            </Typography>
-          </Box>
-          <LinearProgress
-            variant="determinate"
-            value={progress.percentage}
-            sx={{
-              height: 8,
-              borderRadius: 99,
-              bgcolor: `${at.primary}18`,
-              "& .MuiLinearProgress-bar": {
+              <Typography variant="body2" fontWeight={700} sx={{ lineHeight: 1.4 }}>
+                Mandatory {evidenceLabel}
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={800}
+                sx={{
+                  color: at.primary,
+                  lineHeight: 1.4,
+                  wordBreak: "break-word",
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {progress.uploaded}/{progress.total} uploaded
+                {progress.remaining > 0 ? ` · ${progress.remaining} left` : ""}
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={progress.percentage}
+              sx={{
+                height: 8,
                 borderRadius: 99,
-                bgcolor:
-                  progress.percentage === 100
-                    ? colors.accent.green
-                    : at.primary,
-              },
-            }}
-          />
-        </Box>
+                bgcolor: `${at.primary}18`,
+                "& .MuiLinearProgress-bar": {
+                  borderRadius: 99,
+                  bgcolor:
+                    progress.percentage === 100
+                      ? colors.accent.green
+                      : at.primary,
+                },
+              }}
+            />
+          </Box>
+        ) : null}
 
         <Box className="subdomain-evidence-upload-modal__slots">
           {slots.length === 0 ? (
@@ -449,10 +450,9 @@ export function SubdomainEvidencePanel({
 
   const payload = data?.data || data || {};
   const slots = payload.slots || [];
-  const summary = payload.summary || null;
   const progress = useMemo(
-    () => computeMandatoryEvidenceProgress(slots, summary),
-    [slots, summary],
+    () => computeMandatoryEvidenceProgress(slots),
+    [slots],
   );
 
   const onProgressChangeRef = React.useRef(onProgressChange);
@@ -460,6 +460,8 @@ export function SubdomainEvidencePanel({
   const lastReportedProgressRef = React.useRef(null);
 
   React.useEffect(() => {
+    if (isLoading) return;
+
     const prev = lastReportedProgressRef.current;
     if (
       prev &&
@@ -471,7 +473,7 @@ export function SubdomainEvidencePanel({
     }
     lastReportedProgressRef.current = progress;
     onProgressChangeRef.current?.(progress);
-  }, [progress]);
+  }, [isLoading, progress]);
 
   const uploadMutation = usePrepareSubdomainEvidenceMutation({
     onSuccess: () => {
@@ -563,7 +565,7 @@ export function SubdomainEvidencePanel({
       ? `${progress.uploaded}/${progress.total} mandatory`
       : slots.length > 0
         ? `${slots.filter((s) => s.evidence?.evidenceId).length}/${slots.length}`
-        : "Required";
+        : "Not configured";
 
   if (variant === "compact") {
     const compactContent = (
@@ -669,7 +671,6 @@ export function SubdomainEvidencePanel({
           open={uploadModalOpen}
           onClose={() => setUploadModalOpen(false)}
           slots={slots}
-          summary={summary}
           readOnly={readOnly}
           isUploading={isUploading}
           uploadingSlotId={uploadingSlotId}
@@ -738,7 +739,6 @@ export function SubdomainEvidencePanel({
         open={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}
         slots={slots}
-        summary={summary}
         readOnly={readOnly}
         isUploading={isUploading}
         uploadingSlotId={uploadingSlotId}

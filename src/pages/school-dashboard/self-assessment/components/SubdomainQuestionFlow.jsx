@@ -28,7 +28,12 @@ import {
 } from "@mui/icons-material";
 import { colors } from "../../../../constants/colors";
 import { SubdomainEvidencePanel } from "../../../../components/SubdomainEvidencePanel/SubdomainEvidencePanel";
-import { subdomainRequiresEvidence } from "../../../../services/evidenceService";
+import {
+  getSubdomainEvidenceProgress,
+  subdomainHasMandatoryEvidence,
+  subdomainRequiresEvidence,
+  zeroMandatoryEvidenceProgress,
+} from "../../../../services/evidenceService";
 import { renderAssessmentOptionLabel } from "../../../../utils/assessmentOptionLabel";
 
 function ClassroomSubjectFilters({ c, tabId }) {
@@ -440,12 +445,19 @@ export function SubdomainQuestionFlow({
     handleSubdomainEvidenceProgressChange,
   } = c;
 
-  const [evidenceProgress, setEvidenceProgress] = useState({
-    total: 0,
-    uploaded: 0,
-    remaining: 0,
-    percentage: 100,
-  });
+  const [evidenceProgress, setEvidenceProgress] = useState(() =>
+    selectedSubdomain
+      ? getSubdomainEvidenceProgress(selectedSubdomain)
+      : zeroMandatoryEvidenceProgress(),
+  );
+
+  useEffect(() => {
+    if (!selectedSubdomain) {
+      setEvidenceProgress(zeroMandatoryEvidenceProgress());
+      return;
+    }
+    setEvidenceProgress(getSubdomainEvidenceProgress(selectedSubdomain));
+  }, [selectedSubdomain]);
 
   const handleEvidenceProgressChange = useCallback(
     (progress) => {
@@ -666,8 +678,7 @@ export function SubdomainQuestionFlow({
             },
           }}
         />
-        {subdomainRequiresEvidence(selectedSubdomain) &&
-        evidenceProgress.total > 0 ? (
+        {subdomainHasMandatoryEvidence(selectedSubdomain) ? (
           <Box sx={{ mt: 1 }}>
             <Box
               sx={{
