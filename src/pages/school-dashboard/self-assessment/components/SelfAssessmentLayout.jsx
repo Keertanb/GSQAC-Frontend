@@ -103,7 +103,7 @@ function DomainEvidenceProgressBar({
   if (!evidenceProgress.total) return null;
 
   return (
-    <Box sx={{ mt: 1.25 }}>
+    <Box sx={{ mt: mobile ? 1.25 : 0.75 }}>
       <AssessmentNavProgressBar
         progress={evidenceProgress.percentage}
         getProgressColor={getProgressColor}
@@ -132,6 +132,7 @@ export function SelfAssessmentLayout({ c }) {
     i18n,
     currentLanguage,
     setCurrentLanguage,
+    handleLanguageChange,
     selectedDomain,
     setSelectedDomain,
     selectedSubdomain,
@@ -290,7 +291,7 @@ export function SelfAssessmentLayout({ c }) {
 
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const [mobileStep, setMobileStep] = useState(0);
-  const leftPanelWidth = 380;
+  const leftPanelWidth = 300;
   const at = assessmentTheme;
 
   const scrollMobileToTop = useCallback(() => {
@@ -374,8 +375,8 @@ export function SelfAssessmentLayout({ c }) {
 
     const isInline = variant === "inline";
     const progressColor = getProgressColor(assessmentProgress.answerPercentage);
-    const ringSize = isInline ? 44 : compact ? 56 : 64;
-    const stroke = isInline ? 5 : 6;
+    const ringSize = isInline ? 44 : compact ? 48 : 56;
+    const stroke = isInline ? 5 : 5;
     const radius = (ringSize - stroke) / 2;
     const circumference = 2 * Math.PI * radius;
     const ringOffset =
@@ -391,8 +392,8 @@ export function SelfAssessmentLayout({ c }) {
           p: isInline
             ? { xs: 1, sm: 1.25 }
             : compact
-              ? { xs: 1.5, md: 2 }
-              : { xs: 2, md: 2.5 },
+              ? { xs: 1.25, md: 1.5 }
+              : { xs: 2, md: 2 },
           borderRadius: 2.5,
           background: isInline ? "#fff" : at.panelGradient,
           border: `1px solid ${at.primary}${isInline ? "22" : "28"}`,
@@ -404,10 +405,10 @@ export function SelfAssessmentLayout({ c }) {
           minWidth: isInline
             ? 0
             : compact
-              ? { xs: "100%", md: 280 }
+              ? { xs: "100%", md: 220 }
               : undefined,
-          maxWidth: isInline ? "none" : compact ? { md: 320 } : undefined,
-          flex: isInline ? "1 1 0" : compact ? { md: "0 0 300px" } : undefined,
+          maxWidth: isInline ? "none" : compact ? { md: 260 } : undefined,
+          flex: isInline ? "1 1 0" : compact ? { md: "0 0 240px" } : undefined,
           width: isInline ? "100%" : undefined,
         }}
       >
@@ -915,10 +916,7 @@ export function SelfAssessmentLayout({ c }) {
                   value={currentLanguage}
                   exclusive
                   onChange={(e, newLanguage) => {
-                    if (newLanguage !== null) {
-                      setCurrentLanguage(newLanguage);
-                      i18n.changeLanguage(newLanguage);
-                    }
+                    handleLanguageChange(newLanguage);
                   }}
                   size="small"
                   sx={{
@@ -995,10 +993,7 @@ export function SelfAssessmentLayout({ c }) {
                   value={currentLanguage}
                   exclusive
                   onChange={(e, newLanguage) => {
-                    if (newLanguage !== null) {
-                      setCurrentLanguage(newLanguage);
-                      i18n.changeLanguage(newLanguage);
-                    }
+                    handleLanguageChange(newLanguage);
                   }}
                   size="small"
                   sx={{
@@ -1149,7 +1144,7 @@ export function SelfAssessmentLayout({ c }) {
                   <Box
                     className="sa-panel-header"
                     sx={{
-                      p: { xs: 2.5, md: 3 },
+                      p: { xs: 2.5, md: 1.75 },
                       borderBottom: `2px solid ${at.primary}22`,
                       background: at.panelGradient,
                       flexShrink: 0,
@@ -1165,11 +1160,13 @@ export function SelfAssessmentLayout({ c }) {
                     >
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography
-                          variant="h6"
+                          variant="subtitle1"
                           sx={{
                             fontWeight: 700,
                             color: colors.text.primary,
-                            mb: 0.5,
+                            mb: 0.25,
+                            fontSize: { xs: "1rem", md: "0.9375rem" },
+                            lineHeight: 1.3,
                           }}
                         >
                           {showMobileSubdomainsPanel
@@ -1179,7 +1176,7 @@ export function SelfAssessmentLayout({ c }) {
                         <Typography
                           variant="body2"
                           color="text.secondary"
-                          sx={{ fontSize: "0.8125rem" }}
+                          sx={{ fontSize: { xs: "0.8125rem", md: "0.75rem" } }}
                         >
                           {showMobileSubdomainsPanel && selectedDomain
                             ? getDomainName(selectedDomain)
@@ -1205,6 +1202,7 @@ export function SelfAssessmentLayout({ c }) {
                       )}
                     </Box>
                     <AssessmentChipSelector
+                      className="sa-domains-panel__chip-selector"
                       assessments={assessments}
                       selectedAssessmentId={selectedAssessment?.assessmentId}
                       label={t("selfAssessment.selectAssessment")}
@@ -1230,7 +1228,7 @@ export function SelfAssessmentLayout({ c }) {
                       overflowY: "auto",
                       overflowX: "hidden",
                       WebkitOverflowScrolling: "touch",
-                      p: { xs: 2.5, md: 2.5 },
+                      p: { xs: 2.5, md: 1.5 },
                     }}
                   >
                     {showMobileSubdomainsPanel ? (
@@ -1239,7 +1237,7 @@ export function SelfAssessmentLayout({ c }) {
                           sx={{
                             display: "flex",
                             flexDirection: "column",
-                            gap: { xs: 2, md: 1.5 },
+                            gap: { xs: 2, md: 1 },
                           }}
                         >
                           {selectedDomain.subDomain.map(
@@ -1358,7 +1356,7 @@ export function SelfAssessmentLayout({ c }) {
                         sx={{
                           display: "flex",
                           flexDirection: "column",
-                          gap: { xs: 2, md: 1.5 },
+                          gap: { xs: 2, md: 1 },
                         }}
                       >
                         {domains.map((domain, domainIndex) => {
@@ -1400,23 +1398,23 @@ export function SelfAssessmentLayout({ c }) {
                               >
                                 <CardContent
                                   sx={{
-                                    p: { xs: 2.5, md: 2 },
-                                    "&:last-child": { pb: { xs: 2.5, md: 2 } },
+                                    p: { xs: 2.5, md: 1.5 },
+                                    "&:last-child": { pb: { xs: 2.5, md: 1.5 } },
                                   }}
                                 >
                                   <Box
                                     sx={{
                                       display: "flex",
                                       alignItems: "center",
-                                      gap: 1.5,
-                                      mb: 1.5,
+                                      gap: 1,
+                                      mb: 1,
                                     }}
                                   >
                                     <Box
                                       sx={{
-                                        width: 36,
-                                        height: 36,
-                                        borderRadius: 1.5,
+                                        width: { xs: 36, md: 28 },
+                                        height: { xs: 36, md: 28 },
+                                        borderRadius: 1.25,
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "center",
@@ -1430,19 +1428,23 @@ export function SelfAssessmentLayout({ c }) {
                                       }}
                                     >
                                       {React.cloneElement(DomainIcon, {
-                                        sx: { fontSize: 24 },
+                                        sx: { fontSize: { xs: 24, md: 18 } },
                                       })}
                                     </Box>
                                     <Box sx={{ flex: 1, minWidth: 0 }}>
                                       <Typography
-                                        variant="body1"
+                                        variant="body2"
                                         sx={{
                                           fontWeight: 600,
                                           color: isDomainSelected
                                             ? at.primary
                                             : colors.text.primary,
-                                          fontSize: "0.9375rem",
-                                          mb: 0.25,
+                                          fontSize: {
+                                            xs: "0.9375rem",
+                                            md: "0.8125rem",
+                                          },
+                                          mb: 0,
+                                          lineHeight: 1.35,
                                         }}
                                       >
                                         {getDomainName(domain)}
@@ -1458,7 +1460,7 @@ export function SelfAssessmentLayout({ c }) {
                                     )}
                                   </Box>
                                   {/* Progress Bar */}
-                                  <Box sx={{ mt: 1 }}>
+                                  <Box sx={{ mt: 0.75 }}>
                                     <Box
                                       sx={{
                                         display: "flex",
@@ -1475,7 +1477,7 @@ export function SelfAssessmentLayout({ c }) {
                                           fontWeight: 500,
                                         }}
                                       >
-                                        Progress
+                                        {t("selfAssessment.progress")}
                                       </Typography>
                                       <Typography
                                         variant="caption"
@@ -1633,7 +1635,7 @@ export function SelfAssessmentLayout({ c }) {
                                                       fontWeight: 500,
                                                     }}
                                                   >
-                                                    Progress
+                                                    {t("selfAssessment.progress")}
                                                   </Typography>
                                                   <Typography
                                                     variant="caption"
@@ -1704,11 +1706,10 @@ export function SelfAssessmentLayout({ c }) {
                             mb: 1,
                           }}
                         >
-                          No Assessment Available
+                          {t("selfAssessment.noAssessmentAvailable")}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          The assessment has not been published or created yet.
-                          Please contact your administrator.
+                          {t("selfAssessment.noAssessmentAvailableDescription")}
                         </Typography>
                       </Box>
                     )}
@@ -1815,11 +1816,13 @@ export function SelfAssessmentLayout({ c }) {
                     aria-expanded={!isLeftPanelCollapsed}
                     aria-label={
                       isLeftPanelCollapsed
-                        ? "Expand assessment domains panel"
-                        : "Collapse assessment domains panel"
+                        ? t("selfAssessment.expandDomainsPanel")
+                        : t("selfAssessment.collapseDomainsPanel")
                     }
                     title={
-                      isLeftPanelCollapsed ? "Show domains" : "Hide domains"
+                      isLeftPanelCollapsed
+                        ? t("selfAssessment.showDomains")
+                        : t("selfAssessment.hideDomains")
                     }
                     sx={{
                       width: 28,
@@ -2118,7 +2121,7 @@ export function SelfAssessmentLayout({ c }) {
                                   display: "block",
                                 }}
                               >
-                                Progress
+                                {t("selfAssessment.progress")}
                               </Typography>
                               <Box
                                 sx={{
@@ -2305,7 +2308,7 @@ export function SelfAssessmentLayout({ c }) {
                                 variant="body1"
                                 color="text.secondary"
                               >
-                                No subdomains available for this domain
+                                {t("selfAssessment.noSubdomainsForDomain")}
                               </Typography>
                             </Box>
                           )}
@@ -2317,6 +2320,7 @@ export function SelfAssessmentLayout({ c }) {
                 {/* Domains Overview - No Domain Selected (desktop) */}
                 {!matchDownMD && !selectedDomain && (
                   <Paper
+                    className="sa-overview-panel"
                     elevation={0}
                     sx={{
                       flex: 1,
@@ -2333,24 +2337,27 @@ export function SelfAssessmentLayout({ c }) {
                   >
                     {/* Header */}
                     <Box
+                      className="sa-panel-header sa-overview-panel__header"
                       sx={{
-                        p: 3,
+                        p: { xs: 2.5, md: 1.75 },
                         borderBottom: `2px solid ${at.primary}22`,
                         background: at.panelGradient,
                         display: "flex",
                         alignItems: "flex-start",
                         justifyContent: "space-between",
-                        gap: 3,
+                        gap: 2,
                         flexWrap: "wrap",
                       }}
                     >
-                      <Box sx={{ flex: 1, minWidth: 220 }}>
+                      <Box sx={{ flex: 1, minWidth: 180 }}>
                         <Typography
-                          variant="h5"
+                          variant="subtitle1"
                           sx={{
                             fontWeight: 700,
                             color: colors.text.primary,
-                            mb: 0.5,
+                            mb: 0.25,
+                            fontSize: { xs: "1.125rem", md: "1rem" },
+                            lineHeight: 1.3,
                           }}
                         >
                           {t("selfAssessment.assessmentOverview")}
@@ -2358,7 +2365,7 @@ export function SelfAssessmentLayout({ c }) {
                         <Typography
                           variant="body2"
                           color="text.secondary"
-                          sx={{ fontSize: "0.875rem" }}
+                          sx={{ fontSize: { xs: "0.8125rem", md: "0.75rem" } }}
                         >
                           {t("selfAssessment.reviewSubtitle")}
                         </Typography>
@@ -2368,16 +2375,18 @@ export function SelfAssessmentLayout({ c }) {
 
                     {/* Bar Graph - Domains Progress */}
                     <Box
+                      className="sa-overview-panel__body"
                       sx={{
                         flex: 1,
                         overflowY: "auto",
-                        p: { xs: 2.5, md: 3.5 },
+                        p: { xs: 2.5, md: 2 },
                         display: "flex",
                         flexDirection: "column",
                       }}
                     >
                       {currentChartData.length > 0 ? (
                         <AssessmentProgressOverview
+                          embedded
                           items={currentChartData}
                           title={progressOverviewTitle}
                           subtitle={progressOverviewSubtitle}
@@ -2409,16 +2418,14 @@ export function SelfAssessmentLayout({ c }) {
                               mb: 1.5,
                             }}
                           >
-                            No Assessment Available
+                            {t("selfAssessment.noAssessmentAvailable")}
                           </Typography>
                           <Typography
                             variant="body1"
                             color="text.secondary"
                             sx={{ maxWidth: 400, mx: "auto" }}
                           >
-                            The assessment has not been published or created
-                            yet. Please contact your administrator to publish
-                            the assessment.
+                            {t("selfAssessment.noAssessmentAvailableDescriptionPublish")}
                           </Typography>
                         </Box>
                       )}

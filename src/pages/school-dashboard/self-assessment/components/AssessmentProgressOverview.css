@@ -55,3 +55,19 @@
     transform: translateY(0);
   }
 }
+
+.sa-progress-overview--embedded .sa-progress-overview__list {
+  max-height: none;
+}
+
+@media (min-width: 960px) {
+  .sa-progress-overview--embedded .sa-progress-overview__list {
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .sa-progress-overview--embedded .sa-progress-item {
+    flex-shrink: 0;
+  }
+}

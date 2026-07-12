@@ -35,7 +35,48 @@
 }
 
 .sa-nav-list {
-  padding: 20px 24px;
+  padding: 16px 18px;
+}
+
+@media (min-width: 960px) {
+  .sa-domains-panel .sa-panel-header {
+    padding: 14px 16px !important;
+  }
+
+  .sa-domains-panel .sa-nav-list {
+    padding: 10px 12px !important;
+  }
+
+  .sa-domains-panel .sa-nav-card .MuiCardContent-root {
+    padding: 12px 14px !important;
+  }
+
+  .sa-domains-panel .assessment-chip-selector {
+    margin-top: 0.65rem;
+    gap: 0.4rem;
+  }
+
+  .sa-domains-panel .assessment-chip-selector__label {
+    font-size: 0.625rem !important;
+  }
+
+  .sa-domains-panel .assessment-chip-selector__chip {
+    min-height: 30px !important;
+    font-size: 0.75rem !important;
+  }
+
+  .sa-domains-panel .assessment-chip-selector__chip .MuiChip-label {
+    padding: 4px 10px !important;
+    line-height: 1.25 !important;
+  }
+
+  .sa-overview-panel__header {
+    padding: 14px 16px !important;
+  }
+
+  .sa-overview-panel__body {
+    padding: 14px 16px !important;
+  }
 }
 
 .sa-theme-administrative .sa-wizard-context,
@@ -70,7 +111,7 @@
 }
 
 .sa-nav-card .MuiCardContent-root {
-  padding: 18px 20px;
+  padding: 16px 18px;
 }
 
 .sa-questions-content {

@@ -97,6 +97,7 @@ function ProgressItemCard({
   getProgressColor,
   onClick,
   statusLabels,
+  compact = false,
 }) {
   const status = getStatus(item.progress);
   const displayName = stripLeadingNumber(item.name);
@@ -126,8 +127,8 @@ function ProgressItemCard({
         width: "100%",
         textAlign: "left",
         border: `1px solid ${colors.neutral.gray200}`,
-        borderRadius: 2.5,
-        p: { xs: 1.75, md: 2 },
+        borderRadius: compact ? 2 : 2.5,
+        p: compact ? { xs: 1.25, md: 1.25 } : { xs: 1.75, md: 2 },
         bgcolor: "#fff",
         cursor: onClick ? "pointer" : "default",
         transition: "all 0.22s ease",
@@ -145,22 +146,22 @@ function ProgressItemCard({
         sx={{
           display: "flex",
           alignItems: "flex-start",
-          gap: 1.5,
-          mb: 1.25,
+          gap: compact ? 1 : 1.5,
+          mb: compact ? 0.75 : 1.25,
         }}
       >
         <Box
           className="sa-progress-item__index"
           sx={{
-            width: 32,
-            height: 32,
-            borderRadius: 1.5,
+            width: compact ? 26 : 32,
+            height: compact ? 26 : 32,
+            borderRadius: 1.25,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
             fontWeight: 800,
-            fontSize: "0.8125rem",
+            fontSize: compact ? "0.75rem" : "0.8125rem",
             bgcolor: `${accentColor}14`,
             color: accentColor,
           }}
@@ -173,20 +174,25 @@ function ProgressItemCard({
             sx={{
               fontWeight: 700,
               color: colors.text.primary,
-              lineHeight: 1.35,
-              mb: 0.5,
+              lineHeight: 1.3,
+              mb: compact ? 0.35 : 0.5,
+              fontSize: compact ? "0.8125rem" : undefined,
             }}
           >
             {displayName}
           </Typography>
           <Chip
             size="small"
-            icon={<StatusIcon sx={{ fontSize: "14px !important" }} />}
+            icon={
+              <StatusIcon
+                sx={{ fontSize: compact ? "12px !important" : "14px !important" }}
+              />
+            }
             label={statusLabels[status]}
             sx={{
-              height: 24,
+              height: compact ? 22 : 24,
               fontWeight: 700,
-              fontSize: "0.6875rem",
+              fontSize: compact ? "0.625rem" : "0.6875rem",
               bgcolor: `${statusColor}14`,
               color: statusColor,
               border: `1px solid ${statusColor}30`,
@@ -203,7 +209,12 @@ function ProgressItemCard({
             color: barColor,
           }}
         >
-          <Typography sx={{ fontWeight: 800, fontSize: "1.125rem" }}>
+          <Typography
+            sx={{
+              fontWeight: 800,
+              fontSize: compact ? "0.9375rem" : "1.125rem",
+            }}
+          >
             {item.progress}%
           </Typography>
           {onClick ? (
@@ -215,7 +226,7 @@ function ProgressItemCard({
         variant="determinate"
         value={item.progress}
         sx={{
-          height: 8,
+          height: compact ? 6 : 8,
           borderRadius: 99,
           bgcolor: colors.neutral.gray100,
           "& .MuiLinearProgress-bar": {
@@ -240,6 +251,7 @@ export function AssessmentProgressOverview({
   onItemClick,
   getProgressColor,
   t,
+  embedded = false,
 }) {
   const at = assessmentTheme || {
     primary: colors.primary.blue,
@@ -283,100 +295,179 @@ export function AssessmentProgressOverview({
   };
 
   return (
-    <Box className="sa-progress-overview">
-      <Box
-        className="sa-progress-overview__hero"
-        sx={{
-          background: at.panelGradient,
-          border: `1px solid ${at.primary}22`,
-          borderRadius: 3,
-          p: { xs: 2, md: 2.5 },
-          mb: 2.5,
-        }}
-      >
+    <Box
+      className={`sa-progress-overview${
+        embedded ? " sa-progress-overview--embedded" : ""
+      }`}
+    >
+      {embedded ? (
+        <Box className="sa-progress-overview__embedded-header" sx={{ mb: 1.5 }}>
+          <Typography
+            variant="subtitle2"
+            sx={{
+              fontWeight: 800,
+              color: colors.text.primary,
+              lineHeight: 1.3,
+              mb: subtitle ? 0.35 : 0.75,
+              fontSize: { xs: "0.875rem", md: "0.8125rem" },
+            }}
+          >
+            {title}
+          </Typography>
+          {subtitle ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mb: 0.75, lineHeight: 1.4 }}
+            >
+              {subtitle}
+            </Typography>
+          ) : null}
+          <Box
+            className="sa-progress-overview__stats"
+            sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}
+          >
+            <Chip
+              size="small"
+              label={t("selfAssessment.progressOverview.totalItems", {
+                count: items.length,
+              })}
+              sx={{
+                height: 24,
+                fontWeight: 700,
+                fontSize: "0.6875rem",
+                bgcolor: `${at.primary}12`,
+                color: at.primary,
+                border: `1px solid ${at.primary}28`,
+              }}
+            />
+            <Chip
+              size="small"
+              label={t("selfAssessment.progressOverview.completeCount", {
+                count: summary.complete,
+              })}
+              sx={{
+                height: 24,
+                fontWeight: 700,
+                fontSize: "0.6875rem",
+                bgcolor: `${colors.accent.green}12`,
+                color: colors.accent.green,
+                border: `1px solid ${colors.accent.green}30`,
+              }}
+            />
+            {summary.inProgress > 0 ? (
+              <Chip
+                size="small"
+                label={t("selfAssessment.progressOverview.inProgressCount", {
+                  count: summary.inProgress,
+                })}
+                sx={{
+                  height: 24,
+                  fontWeight: 700,
+                  fontSize: "0.6875rem",
+                  bgcolor: `${colors.semantic.warning}12`,
+                  color: colors.semantic.warning,
+                  border: `1px solid ${colors.semantic.warning}30`,
+                }}
+              />
+            ) : null}
+          </Box>
+        </Box>
+      ) : (
         <Box
+          className="sa-progress-overview__hero"
           sx={{
-            display: "flex",
-            alignItems: { xs: "flex-start", sm: "center" },
-            gap: { xs: 2, md: 2.5 },
-            flexDirection: { xs: "column", sm: "row" },
+            background: at.panelGradient,
+            border: `1px solid ${at.primary}22`,
+            borderRadius: 3,
+            p: { xs: 2, md: 2.5 },
+            mb: 2.5,
           }}
         >
-          <CircularProgressRing
-            value={summary.average}
-            color={at.primary}
-            trackColor={`${at.primary}18`}
-          />
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                mb: 0.75,
-                flexWrap: "wrap",
-              }}
-            >
-              <AssessmentOutlined sx={{ color: at.primary, fontSize: 22 }} />
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 800, color: colors.text.primary, lineHeight: 1.25 }}
-              >
-                {title}
-              </Typography>
-            </Box>
-            {subtitle ? (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 1.5, lineHeight: 1.5 }}
-              >
-                {subtitle}
-              </Typography>
-            ) : null}
-            <Box className="sa-progress-overview__stats" sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-              <Chip
-                size="small"
-                label={t("selfAssessment.progressOverview.totalItems", {
-                  count: items.length,
-                })}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: { xs: "flex-start", sm: "center" },
+              gap: { xs: 2, md: 2.5 },
+              flexDirection: { xs: "column", sm: "row" },
+            }}
+          >
+            <CircularProgressRing
+              value={summary.average}
+              color={at.primary}
+              trackColor={`${at.primary}18`}
+            />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box
                 sx={{
-                  fontWeight: 700,
-                  bgcolor: `${at.primary}12`,
-                  color: at.primary,
-                  border: `1px solid ${at.primary}28`,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 0.75,
+                  flexWrap: "wrap",
                 }}
-              />
-              <Chip
-                size="small"
-                label={t("selfAssessment.progressOverview.completeCount", {
-                  count: summary.complete,
-                })}
-                sx={{
-                  fontWeight: 700,
-                  bgcolor: `${colors.accent.green}12`,
-                  color: colors.accent.green,
-                  border: `1px solid ${colors.accent.green}30`,
-                }}
-              />
-              {summary.inProgress > 0 ? (
+              >
+                <AssessmentOutlined sx={{ color: at.primary, fontSize: 22 }} />
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 800, color: colors.text.primary, lineHeight: 1.25 }}
+                >
+                  {title}
+                </Typography>
+              </Box>
+              {subtitle ? (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 1.5, lineHeight: 1.5 }}
+                >
+                  {subtitle}
+                </Typography>
+              ) : null}
+              <Box className="sa-progress-overview__stats" sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                 <Chip
                   size="small"
-                  label={t("selfAssessment.progressOverview.inProgressCount", {
-                    count: summary.inProgress,
+                  label={t("selfAssessment.progressOverview.totalItems", {
+                    count: items.length,
                   })}
                   sx={{
                     fontWeight: 700,
-                    bgcolor: `${colors.semantic.warning}12`,
-                    color: colors.semantic.warning,
-                    border: `1px solid ${colors.semantic.warning}30`,
+                    bgcolor: `${at.primary}12`,
+                    color: at.primary,
+                    border: `1px solid ${at.primary}28`,
                   }}
                 />
-              ) : null}
+                <Chip
+                  size="small"
+                  label={t("selfAssessment.progressOverview.completeCount", {
+                    count: summary.complete,
+                  })}
+                  sx={{
+                    fontWeight: 700,
+                    bgcolor: `${colors.accent.green}12`,
+                    color: colors.accent.green,
+                    border: `1px solid ${colors.accent.green}30`,
+                  }}
+                />
+                {summary.inProgress > 0 ? (
+                  <Chip
+                    size="small"
+                    label={t("selfAssessment.progressOverview.inProgressCount", {
+                      count: summary.inProgress,
+                    })}
+                    sx={{
+                      fontWeight: 700,
+                      bgcolor: `${colors.semantic.warning}12`,
+                      color: colors.semantic.warning,
+                      border: `1px solid ${colors.semantic.warning}30`,
+                    }}
+                  />
+                ) : null}
+              </Box>
             </Box>
           </Box>
         </Box>
-      </Box>
+      )}
 
       {showBackButton && onBack ? (
         <Button
@@ -402,7 +493,11 @@ export function AssessmentProgressOverview({
 
       <Box
         className="sa-progress-overview__list"
-        sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: embedded ? 1 : 1.5,
+        }}
       >
         {items.map((item, index) => (
           <ProgressItemCard
@@ -412,6 +507,7 @@ export function AssessmentProgressOverview({
             accentColor={resolveAccentColor(item)}
             getProgressColor={getProgressColor}
             statusLabels={statusLabels}
+            compact={embedded}
             onClick={
               onItemClick
                 ? () => onItemClick(item)
@@ -426,9 +522,10 @@ export function AssessmentProgressOverview({
           variant="caption"
           sx={{
             display: "block",
-            mt: 2,
+            mt: embedded ? 1.25 : 2,
             color: colors.text.tertiary,
             fontWeight: 500,
+            fontSize: embedded ? "0.6875rem" : undefined,
           }}
         >
           {t("selfAssessment.progressOverview.tapDomainHint")}
@@ -438,9 +535,10 @@ export function AssessmentProgressOverview({
           variant="caption"
           sx={{
             display: "block",
-            mt: 2,
+            mt: embedded ? 1.25 : 2,
             color: colors.text.tertiary,
             fontWeight: 500,
+            fontSize: embedded ? "0.6875rem" : undefined,
           }}
         >
           {t("selfAssessment.progressOverview.tapAssessmentHint")}

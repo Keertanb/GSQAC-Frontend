@@ -16,6 +16,10 @@ import {
 } from "@mui/icons-material";
 import { enqueueSnackbar } from "notistack";
 import { colors } from "../../../../constants/colors";
+import {
+  getStoredAppLanguage,
+  persistAppLanguage,
+} from "../../../../utils/i18nLanguage";
 import { queryKeys } from "../../../../config/queryClient";
 import { getRoleId } from "../../../../constants/roles";
 import useAuthStore from "../../../../store/useAuthStore";
@@ -80,7 +84,25 @@ export function useSelfAssessment() {
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
   const { logout, user, userId, userName } = useAuthStore();
   const { t, i18n } = useTranslation();
-  const [currentLanguage, setCurrentLanguage] = useState("gu");
+  const [currentLanguage, setCurrentLanguage] = useState(getStoredAppLanguage);
+
+  useEffect(() => {
+    const lang = getStoredAppLanguage();
+    if (i18n.language !== lang) {
+      i18n.changeLanguage(lang);
+    }
+    setCurrentLanguage(lang);
+  }, [i18n]);
+
+  const handleLanguageChange = useCallback(
+    (newLanguage) => {
+      if (newLanguage == null) return;
+      setCurrentLanguage(newLanguage);
+      i18n.changeLanguage(newLanguage);
+      persistAppLanguage(newLanguage);
+    },
+    [i18n],
+  );
   const [selectedDomain, setSelectedDomain] = useState(null);
   const [selectedSubdomain, setSelectedSubdomain] = useState(null);
   const [answers, setAnswers] = useState({});
@@ -335,7 +357,9 @@ export function useSelfAssessment() {
         list = [
           {
             assessmentId: null,
-            assessmentName: "Assessment",
+            assessmentName: t("selfAssessment.defaultAssessmentName", {
+              defaultValue: "Assessment",
+            }),
             domains: domainsData.data,
             isPublished: domainsData?.isPublished,
             startDate: domainsData?.startDate,
@@ -348,7 +372,7 @@ export function useSelfAssessment() {
     }
 
     return filterAssessmentsByHostelFacility(list, hostelValue);
-  }, [domainsData, hostelValue]);
+  }, [domainsData, hostelValue, t]);
 
   useEffect(() => {
     if (!assessments.length) {
@@ -2244,6 +2268,7 @@ export function useSelfAssessment() {
     i18n,
     currentLanguage,
     setCurrentLanguage,
+    handleLanguageChange,
     selectedDomain,
     setSelectedDomain,
     selectedSubdomain,

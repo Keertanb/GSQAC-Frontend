@@ -4,6 +4,12 @@ import LanguageDetector from "i18next-browser-languagedetector";
 import enTranslations from "../locales/en/translation.json";
 import hiTranslations from "../locales/hi/translation.json";
 import guTranslations from "../locales/gu/translation.json";
+import {
+  getStoredAppLanguage,
+  LANGUAGE_STORAGE_KEY,
+} from "../utils/i18nLanguage";
+
+const initialLanguage = getStoredAppLanguage();
 
 i18n
   .use(LanguageDetector)
@@ -20,17 +26,18 @@ i18n
         translation: guTranslations,
       },
     },
+    lng: initialLanguage,
     fallbackLng: "en",
+    supportedLngs: ["gu", "en", "hi"],
     debug: false,
     interpolation: {
       escapeValue: false,
     },
     detection: {
-      order: ["localStorage", "navigator"],
+      order: ["localStorage"],
       caches: ["localStorage"],
-      lookupLocalStorage: "gsqac-i18nextLng",
+      lookupLocalStorage: LANGUAGE_STORAGE_KEY,
     },
   });
 
 export default i18n;
-
