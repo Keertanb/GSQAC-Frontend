@@ -54,8 +54,10 @@
       "schoolTypes": {
         "primary": "प्राथमिक (कक्षा 1 से 8)",
         "secondary": "माध्यमिक (कक्षा 9 से 12)",
+        "both": "दोनों (सभी स्कूल श्रेणियाँ)",
         "primaryShort": "प्राथमिक",
-        "secondaryShort": "माध्यमिक"
+        "secondaryShort": "माध्यमिक",
+        "bothShort": "दोनों"
       },
       "schoolManagementTypes": {
         "privateSchool": "निजी विद्यालय",

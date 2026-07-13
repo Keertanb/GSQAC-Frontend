@@ -97,6 +97,9 @@ export function AssessmentUpsertAssessmentDialog({ c }) {
           <MenuItem value="2">
             {t("assessment.management.schoolTypes.secondary")}
           </MenuItem>
+          <MenuItem value="3">
+            {t("assessment.management.schoolTypes.both")}
+          </MenuItem>
         </Select>
       </FormControl>
       <FormControl fullWidth size="small">
@@ -225,6 +228,7 @@ export function AssessmentUpsertAssessmentDialog({ c }) {
               newAssessmentEn: nameEn,
               newAssessmentHi: nameHi,
               schoolType: parseInt(newAssessment.schoolType, 10),
+              management: managementId,
             },
             {
               onSuccess: () => {

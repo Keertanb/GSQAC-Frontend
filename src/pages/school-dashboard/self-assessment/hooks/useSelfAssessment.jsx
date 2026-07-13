@@ -352,9 +352,18 @@ export function useSelfAssessment() {
   const assessments = useMemo(() => {
     let list = [];
     if (Array.isArray(domainsData?.data)) {
-      if (domainsData.data.length > 0 && domainsData.data[0]?.domains) {
-        list = domainsData.data;
-      } else {
+      const isMultiAssessmentPayload =
+        domainsData.data.length > 0 &&
+        domainsData.data.every(
+          (item) => item && Object.prototype.hasOwnProperty.call(item, "assessmentId"),
+        );
+
+      if (isMultiAssessmentPayload) {
+        list = domainsData.data.map((assessment) => ({
+          ...assessment,
+          domains: Array.isArray(assessment.domains) ? assessment.domains : [],
+        }));
+      } else if (domainsData.data.length > 0) {
         list = [
           {
             assessmentId: null,

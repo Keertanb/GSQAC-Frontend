@@ -79,6 +79,15 @@ export const getDatePickerOnlyInputProps = (extra = {}) => ({
   onDrop: (event) => event.preventDefault(),
 });
 
+/** GET /admin/assessment `schoolType`: 1 = Primary, 2 = Secondary, 3 = Both */
+export const getAssessmentSchoolTypeShortLabel = (schoolType, t) => {
+  const type = Number(schoolType);
+  if (type === 1) return t("assessment.management.schoolTypes.primaryShort");
+  if (type === 2) return t("assessment.management.schoolTypes.secondaryShort");
+  if (type === 3) return t("assessment.management.schoolTypes.bothShort");
+  return null;
+};
+
 /** GET /admin/assessment `management`: 1 = Private, 2 = Government */
 export const getAssessmentManagementId = (assessment) => {
   if (!assessment) return null;

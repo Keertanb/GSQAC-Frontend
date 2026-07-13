@@ -44,6 +44,7 @@ export function useAdminDashboard() {
   const overview = dashboard.overview || {};
   const verificationStatus = dashboard.verificationStatus || [];
   const assessmentStatus = dashboard.assessmentStatus || [];
+  const selfAssessmentCounts = dashboard.selfAssessmentCounts || {};
   const districtBreakdown = dashboard.districtBreakdown || [];
   const statewideDistrictBreakdown =
     districtId && statewideDashboard.districtBreakdown?.length
@@ -422,6 +423,7 @@ export function useAdminDashboard() {
     overview,
     verificationStatus,
     assessmentStatus,
+    selfAssessmentCounts,
     districtChartData,
     blockChartData,
     blockBreakdown,

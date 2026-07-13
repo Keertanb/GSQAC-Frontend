@@ -54,8 +54,10 @@
       "schoolTypes": {
         "primary": "પ્રાથમિક (ધોરણ 1 થી 8)",
         "secondary": "માધ્યમિક (ધોરણ 9 થી 12)",
+        "both": "બંને (બધી શાળા શ્રેણીઓ)",
         "primaryShort": "પ્રાથમિક",
-        "secondaryShort": "માધ્યમિક"
+        "secondaryShort": "માધ્યમિક",
+        "bothShort": "બંને"
       },
       "schoolManagementTypes": {
         "privateSchool": "ખાનગી શાળા",

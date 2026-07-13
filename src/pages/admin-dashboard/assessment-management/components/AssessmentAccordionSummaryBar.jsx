@@ -8,7 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 import { ContentCopy, Delete, Edit } from "@mui/icons-material";
-import { getAssessmentManagementId } from "../utils/assessmentManagementUtils";
+import { getAssessmentManagementId, getAssessmentSchoolTypeShortLabel } from "../utils/assessmentManagementUtils";
 
 const MANAGEMENT_CHIP_STYLES = {
   1: { color: "#ea580c" },
@@ -30,6 +30,7 @@ export function AssessmentAccordionSummaryBar({
   onDelete,
 }) {
   const managementId = getAssessmentManagementId(assessment);
+  const schoolTypeLabel = getAssessmentSchoolTypeShortLabel(assessment.schoolType, t);
   const managementChipStyle = managementId
     ? MANAGEMENT_CHIP_STYLES[managementId]
     : null;
@@ -62,14 +63,10 @@ export function AssessmentAccordionSummaryBar({
         <Typography sx={{ fontWeight: 700 }}>
           {getAssessmentName(assessment)}
         </Typography>
-        {assessment.schoolType && (
+        {schoolTypeLabel && (
           <Chip
             size="small"
-            label={
-              assessment.schoolType === 1 || assessment.schoolType === "1"
-                ? t("assessment.management.schoolTypes.primaryShort")
-                : t("assessment.management.schoolTypes.secondaryShort")
-            }
+            label={schoolTypeLabel}
             sx={{
               bgcolor: colors.accent.purple + "15",
               color: colors.accent.purple,

@@ -982,7 +982,7 @@ export const updateAssessment = async (payload) => {
 
 /**
  * Clone an assessment
- * @param {Object} payload - { assessmentId, newAssessmentGu, newAssessmentEn, newAssessmentHi, schoolType }
+ * @param {Object} payload - { assessmentId, newAssessmentGu, newAssessmentEn, newAssessmentHi, schoolType, management }
  * @returns {Promise} API response
  */
 export const cloneAssessment = async (payload) => {

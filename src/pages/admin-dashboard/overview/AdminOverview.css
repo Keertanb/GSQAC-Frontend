@@ -369,6 +369,56 @@
   .ado-stats-grid { grid-template-columns: 1fr; }
 }
 
+.ado-stats-grid--self-assessment {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 900px) {
+  .ado-stats-grid--self-assessment {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ado-section-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.875rem;
+}
+
+.ado-section-badge {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.ado-self-assessment-band {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+  gap: 0.875rem;
+  align-items: stretch;
+}
+
+@media (max-width: 1100px) {
+  .ado-self-assessment-band {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ado-self-assessment-chart {
+  min-height: 100%;
+}
+
+.ado-self-assessment-chart-wrap {
+  min-height: 220px;
+}
+
 .admin-dashboard-overview .ado-stat-card {
   position: relative;
   overflow: hidden;
