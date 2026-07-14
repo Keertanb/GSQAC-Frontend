@@ -4,7 +4,9 @@ import {
   useGetAllDistrictsQuery,
   useGetDistrictWiseBlocksQuery,
   useGetSchoolListQuery,
+  useGetSchoolSelfAssessmentMonitorQuery,
 } from "../../../../services/adminService";
+
 
 const pct = (num, den) => (den > 0 ? Math.round((num / den) * 100) : 0);
 
@@ -12,6 +14,7 @@ export function useAdminDashboard() {
   const [districtId, setDistrictId] = useState("");
   const [blockId, setBlockId] = useState("");
   const [schoolId, setSchoolId] = useState("");
+  const [mapMode, setMapMode] = useState("self-assessment"); // "verification" | "self-assessment"
 
   const { data: districtsData } = useGetAllDistrictsQuery();
   const districts = districtsData?.data || [];
@@ -38,6 +41,20 @@ export function useAdminDashboard() {
     );
 
   const { data: statewideData } = useGetAdminDashboardQuery({}, Boolean(districtId));
+
+  // School Self-Assessment Monitor data for the map.
+  // Pre-fetch whenever a district is selected so data is ready when switching modes.
+  const {
+    data: ssamDistrictData,
+    isFetching: isFetchingSelfAssessment,
+  } = useGetSchoolSelfAssessmentMonitorQuery(
+    {
+      districtId: districtId ? Number(districtId) : undefined,
+      page: 0,
+      limit: 500, // fetch all school rows; summary + blockBreakdown are always returned
+    },
+    Boolean(districtId), // enable as soon as any district is selected
+  );
 
   const dashboard = data?.data || {};
   const statewideDashboard = statewideData?.data || {};
@@ -400,6 +417,61 @@ export function useAdminDashboard() {
     setSchoolId(value);
   };
 
+  const handleMapModeChange = (mode) => {
+    setMapMode(mode);
+  };
+
+  // Self-assessment district stats: build from the district's summary when available
+  const selfAssessmentDistrictData = useMemo(() => {
+    // The SSAM API returns a summary object for the selected district.
+    // Build a single-entry list using that summary so the selected district
+    // gets colored in self-assessment mode. Other districts show as "No data".
+    const summary = ssamDistrictData?.data?.summary;
+    if (!summary || !districtId) return [];
+
+    // Find the selected district name from the master list
+    const selectedDist = districts.find((d) => String(d.value) === String(districtId));
+    if (!selectedDist) return [];
+
+    return [
+      {
+        districtId: Number(districtId),
+        districtName: selectedDist.name,
+        submitted: summary.submitted ?? 0,
+        pending: summary.pending ?? 0,
+        notStarted: summary.notStarted ?? 0,
+        total: summary.total ?? 0,
+        submissionRate: summary.submissionRate ?? 0,
+      },
+    ];
+  }, [ssamDistrictData, districtId, districts]);
+
+  // Self-assessment block stats: blockBreakdown from SSAM API for selected district
+  const selfAssessmentBlockData = useMemo(
+    () => ssamDistrictData?.data?.blockBreakdown || [],
+    [ssamDistrictData],
+  );
+
+  // Self-assessment schools data
+  const selfAssessmentSchools = useMemo(
+    () => ssamDistrictData?.data?.rows || [],
+    [ssamDistrictData],
+  );
+
+  // Raw SSAM summary for KPI cards in the map panel
+  const selfAssessmentSummary = useMemo(
+    () =>
+      ssamDistrictData?.data?.summary || {
+        total: 0,
+        submitted: 0,
+        pending: 0,
+        notStarted: 0,
+        recentlyActive: 0,
+        submissionRate: 0,
+      },
+    [ssamDistrictData],
+  );
+
   const lastUpdated = dataUpdatedAt
     ? new Date(dataUpdatedAt).toLocaleTimeString([], {
         hour: "2-digit",
@@ -443,6 +515,15 @@ export function useAdminDashboard() {
     isFetching,
     lastUpdated,
     refetch,
+    // Map mode
+    mapMode,
+    handleMapModeChange,
+    // Self-assessment map data
+    selfAssessmentDistrictData,
+    selfAssessmentBlockData,
+    selfAssessmentSummary,
+    selfAssessmentSchools,
+    isFetchingSelfAssessment,
     handleDistrictChange,
     handleDistrictSelect,
     handleClearDistrict,

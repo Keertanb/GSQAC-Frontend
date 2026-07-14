@@ -5,6 +5,19 @@ import React, {
   useEffect,
   useRef,
 } from "react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+} from "recharts";
 import { MapContainer, TileLayer, GeoJSON, Polygon, CircleMarker, useMap } from "react-leaflet";
 import gujaratDistricts from "../data/gujaratDistricts.json";
 import {
@@ -24,6 +37,12 @@ import {
   mergeBlockBreakdown,
   SCHOOL_LEGEND_STOPS,
 } from "../utils/mapDrilldownUtils";
+import {
+  buildSelfAssessmentDistrictStats,
+  buildSelfAssessmentBlockStats,
+  getSelfAssessmentColor,
+  getSelfAssessmentTone,
+} from "../utils/selfAssessmentMapUtils";
 import {
   useGetDistrictWiseBlocksQuery,
   useGetSchoolAssessmentStatusListQuery,
@@ -110,6 +129,15 @@ export function GujaratSatelliteMap({
   onSchoolSelect,
   onClearSelection,
   onClearBlock,
+  // Map mode: "verification" | "self-assessment"
+  mode = "verification",
+  onModeChange,
+  // Self-assessment data
+  selfAssessmentDistrictData = [],
+  selfAssessmentBlockData = [],
+  selfAssessmentSummary = null,
+  selfAssessmentSchools = [],
+  isFetchingSelfAssessment = false,
 }) {
   const [hoveredDistrictKey, setHoveredDistrictKey] = useState(null);
   const [hoveredBlockId, setHoveredBlockId] = useState(null);
@@ -212,6 +240,58 @@ export function GujaratSatelliteMap({
     () => buildDistrictMapStats(districtBreakdown, districts),
     [districtBreakdown, districts],
   );
+
+  // Self-assessment district stats map (key → stats)
+  const ssamStatsByKey = useMemo(
+    () => buildSelfAssessmentDistrictStats(selfAssessmentDistrictData, districts),
+    [selfAssessmentDistrictData, districts],
+  );
+
+  // Self-assessment block stats map (blockId → stats)
+  const ssamBlockStatsById = useMemo(
+    () => buildSelfAssessmentBlockStats(selfAssessmentBlockData),
+    [selfAssessmentBlockData],
+  );
+
+  const selectedSsamBlockStats = useMemo(() => {
+    return selectedBlockId ? ssamBlockStatsById[selectedBlockId] || null : null;
+  }, [ssamBlockStatsById, selectedBlockId]);
+
+  const ssamSchoolsForSelectedBlock = useMemo(() => {
+    if (!selectedBlockId || !selfAssessmentSchools) return [];
+    return selfAssessmentSchools.filter((s) => String(s.blockId) === String(selectedBlockId));
+  }, [selfAssessmentSchools, selectedBlockId]);
+
+  const currentSsamStats = useMemo(() => {
+    return mapLevel === "schools" ? selectedSsamBlockStats : selfAssessmentSummary;
+  }, [mapLevel, selectedSsamBlockStats, selfAssessmentSummary]);
+
+  const ssamPieData = useMemo(() => {
+    if (!currentSsamStats) return [];
+    return [
+      { name: "In Progress", value: currentSsamStats.pending || 0, color: "#3b82f6" },
+      { name: "Not Started", value: currentSsamStats.notStarted || 0, color: "#94a3b8" },
+      { name: "Submitted", value: currentSsamStats.submitted || 0, color: "#10b981" },
+    ];
+  }, [currentSsamStats]);
+
+  const ssamBarData = useMemo(() => {
+    if (mapLevel === "schools") {
+      if (!selectedSsamBlockStats) return [];
+      return [{
+        name: selectedSsamBlockStats.blockName,
+        "In Progress": selectedSsamBlockStats.pending || 0,
+        "Not Started": selectedSsamBlockStats.notStarted || 0,
+        "Submitted": selectedSsamBlockStats.submitted || 0,
+      }];
+    }
+    return selfAssessmentBlockData.map((b) => ({
+      name: b.blockName,
+      "In Progress": b.pending || 0,
+      "Not Started": b.notStarted || 0,
+      "Submitted": b.submitted || 0,
+    }));
+  }, [mapLevel, selectedSsamBlockStats, selfAssessmentBlockData]);
 
   const districtFeatures = useMemo(
     () =>
@@ -353,12 +433,23 @@ export function GujaratSatelliteMap({
   const districtStyle = useCallback(
     (feature) => {
       const key = getFeatureKey(feature);
-      const stats = statsByKey[key] || { completionRate: 0, hasData: false };
       const isSelected = selectedKey === key;
       const isHovered = hoveredDistrictKey === key;
-      const fill = getCompletionColor(stats.completionRate, stats.hasData);
 
       if (mapLevel === "state") {
+        if (mode === "self-assessment") {
+          const ssamStats = ssamStatsByKey[key] || { submissionRate: 0, hasData: false };
+          const fill = getSelfAssessmentColor(ssamStats.submissionRate, ssamStats.hasData);
+          return {
+            color: isSelected || isHovered ? "#1e3a8a" : "#ffffff",
+            weight: isSelected ? 2.5 : isHovered ? 2 : 1.2,
+            fillColor: fill,
+            fillOpacity: isHovered ? 0.82 : 0.68,
+          };
+        }
+
+        const stats = statsByKey[key] || { completionRate: 0, hasData: false };
+        const fill = getCompletionColor(stats.completionRate, stats.hasData);
         return {
           color: isSelected || isHovered ? "#1e3a8a" : "#ffffff",
           weight: isSelected ? 2.5 : isHovered ? 2 : 1.2,
@@ -375,7 +466,7 @@ export function GujaratSatelliteMap({
         dashArray: isSelected ? undefined : "4 4",
       };
     },
-    [statsByKey, selectedKey, hoveredDistrictKey, mapLevel],
+    [statsByKey, ssamStatsByKey, selectedKey, hoveredDistrictKey, mapLevel, mode],
   );
 
   const onEachDistrict = useCallback(
@@ -397,22 +488,40 @@ export function GujaratSatelliteMap({
             weight: 2.2,
             fillOpacity: 0.86,
           });
-          setTooltip({
-            type: "district",
-            name: formatDistrictName(
-              region.stats.districtName || feature.properties?.name,
-            ),
-            rate: region.stats.completionRate,
-            tone: getCompletionTone(
-              region.stats.completionRate,
-              region.stats.hasData,
-            ),
-            allocated: region.stats.allocated,
-            completed: region.stats.completed,
-            pending: region.stats.pending,
-            x: event.originalEvent.clientX,
-            y: event.originalEvent.clientY,
-          });
+
+          if (mode === "self-assessment") {
+            const ssamStats = ssamStatsByKey[key] || { submissionRate: 0, hasData: false, submitted: 0, pending: 0, notStarted: 0 };
+            setTooltip({
+              type: "district-ssam",
+              name: formatDistrictName(
+                ssamStats.districtName || region.stats.districtName || feature.properties?.name,
+              ),
+              rate: ssamStats.submissionRate,
+              tone: getSelfAssessmentTone(ssamStats.submissionRate, ssamStats.hasData),
+              submitted: ssamStats.submitted,
+              pending: ssamStats.pending,
+              notStarted: ssamStats.notStarted,
+              x: event.originalEvent.clientX,
+              y: event.originalEvent.clientY,
+            });
+          } else {
+            setTooltip({
+              type: "district",
+              name: formatDistrictName(
+                region.stats.districtName || feature.properties?.name,
+              ),
+              rate: region.stats.completionRate,
+              tone: getCompletionTone(
+                region.stats.completionRate,
+                region.stats.hasData,
+              ),
+              allocated: region.stats.allocated,
+              completed: region.stats.completed,
+              pending: region.stats.pending,
+              x: event.originalEvent.clientX,
+              y: event.originalEvent.clientY,
+            });
+          }
         },
         mouseout: () => {
           if (mapLevel !== "state") return;
@@ -421,13 +530,27 @@ export function GujaratSatelliteMap({
         },
       });
     },
-    [districtFeatures, handleDistrictClick, mapLevel],
+    [districtFeatures, handleDistrictClick, mapLevel, mode, ssamStatsByKey],
   );
 
   const previewDistrict =
     districtFeatures.find(
       (item) => item.key === (hoveredDistrictKey || selectedKey),
     ) || selectedDistrictFeature;
+
+  // Self-assessment stats for the currently hovered/selected district
+  const previewSsamDistrictStats = useMemo(() => {
+    const key = hoveredDistrictKey || selectedKey;
+    if (!key) return null;
+    return ssamStatsByKey[key] || null;
+  }, [hoveredDistrictKey, selectedKey, ssamStatsByKey]);
+
+  // Self-assessment stats for the currently hovered/selected block
+  const ssamActiveBlockStats = useMemo(() => {
+    const blockId = hoveredBlockId || selectedBlockId;
+    if (!blockId) return null;
+    return ssamBlockStatsById[String(blockId)] || null;
+  }, [hoveredBlockId, selectedBlockId, ssamBlockStatsById]);
 
   const activeBlock =
     blockCells.find(
@@ -441,12 +564,32 @@ export function GujaratSatelliteMap({
     ) || null;
 
   const breadcrumb = [
-    { label: "Gujarat", active: mapLevel === "state" },
+    { 
+      label: "Gujarat", 
+      active: mapLevel === "state",
+      onClick: () => {
+        if (mapLevel !== "state") {
+          onClearSelection?.();
+        }
+      }
+    },
     selectedDistrictName
-      ? { label: selectedDistrictName, active: mapLevel === "blocks" }
+      ? { 
+          label: selectedDistrictName, 
+          active: mapLevel === "blocks",
+          onClick: () => {
+            if (mapLevel !== "blocks") {
+              onClearBlock?.();
+            }
+          }
+        }
       : null,
     selectedBlockName
-      ? { label: selectedBlockName, active: mapLevel === "schools" }
+      ? { 
+          label: selectedBlockName, 
+          active: mapLevel === "schools",
+          onClick: undefined
+        }
       : null,
   ].filter(Boolean);
 
@@ -470,6 +613,8 @@ export function GujaratSatelliteMap({
                     className={`ado-map-breadcrumb-item${
                       item.active ? " ado-map-breadcrumb-item--active" : ""
                     }`}
+                    onClick={item.onClick}
+                    style={item.onClick && !item.active ? { cursor: "pointer", textDecoration: "underline" } : {}}
                   >
                     {item.label}
                   </span>
@@ -479,6 +624,12 @@ export function GujaratSatelliteMap({
           ) : null}
         </div>
         <div className="ado-map-header-actions">
+          {/* Map data mode indicator */}
+          <div className="ado-map-mode-tabs" aria-label="Map data mode">
+            <div className="ado-map-mode-tab ado-map-mode-tab--active" style={{ cursor: "default" }}>
+              {isFetchingSelfAssessment ? "⟳ " : "📋 "}Self-Assessment
+            </div>
+          </div>
           <span className="ado-map-chip ado-map-chip--satellite">Esri satellite</span>
           <span className="ado-map-chip">
             {mapLevel === "schools"
@@ -549,6 +700,13 @@ export function GujaratSatelliteMap({
 
                   if (!block.polygon?.length) return null;
 
+                  // In self-assessment mode, use SSAM block colors
+                  const ssamStats = ssamBlockStatsById[String(block.blockId)];
+                  const blockFill =
+                    mode === "self-assessment" && ssamStats
+                      ? ssamStats.fill
+                      : block.fill;
+
                   return (
                     <Polygon
                       key={block.blockId}
@@ -556,7 +714,7 @@ export function GujaratSatelliteMap({
                       pathOptions={{
                         color: isSelected || isHovered ? "#1e3a8a" : "#ffffff",
                         weight: isSelected ? 3 : isHovered ? 2.2 : 1.4,
-                        fillColor: hiddenInSchoolZoom ? "#94a3b8" : block.fill,
+                        fillColor: hiddenInSchoolZoom ? "#94a3b8" : blockFill,
                         fillOpacity: hiddenInSchoolZoom
                           ? 0.12
                           : mapLevel === "schools" && isSelected
@@ -572,17 +730,32 @@ export function GujaratSatelliteMap({
                         mouseover: (event) => {
                           if (hiddenInSchoolZoom) return;
                           setHoveredBlockId(String(block.blockId));
-                          setTooltip({
-                            type: "block",
-                            name: block.blockName,
-                            rate: block.completionRate,
-                            tone: block.tone,
-                            total: block.total,
-                            completed: block.completed,
-                            pending: block.pending,
-                            x: event.originalEvent.clientX,
-                            y: event.originalEvent.clientY,
-                          });
+                          if (mode === "self-assessment" && ssamStats) {
+                            setTooltip({
+                              type: "block-ssam",
+                              name: block.blockName,
+                              rate: ssamStats.submissionRate,
+                              tone: ssamStats.tone,
+                              submitted: ssamStats.submitted,
+                              pending: ssamStats.pending,
+                              notStarted: ssamStats.notStarted,
+                              total: ssamStats.total,
+                              x: event.originalEvent.clientX,
+                              y: event.originalEvent.clientY,
+                            });
+                          } else {
+                            setTooltip({
+                              type: "block",
+                              name: block.blockName,
+                              rate: block.completionRate,
+                              tone: block.tone,
+                              total: block.total,
+                              completed: block.completed,
+                              pending: block.pending,
+                              x: event.originalEvent.clientX,
+                              y: event.originalEvent.clientY,
+                            });
+                          }
                         },
                         mouseout: () => {
                           if (hiddenInSchoolZoom) return;
@@ -666,6 +839,25 @@ export function GujaratSatelliteMap({
                   </div>
                 </>
               ) : null}
+              {tooltip.type === "district-ssam" ? (
+                <>
+                  <p className="ado-map-tooltip-rate">
+                    <span>Self-Assessment</span>
+                    <strong>{tooltip.rate}%</strong>
+                  </p>
+                  <div className="ado-map-tooltip-grid">
+                    <span>
+                      Submitted <strong>{tooltip.submitted}</strong>
+                    </span>
+                    <span>
+                      In Progress <strong>{tooltip.pending}</strong>
+                    </span>
+                    <span>
+                      Not Started <strong>{tooltip.notStarted}</strong>
+                    </span>
+                  </div>
+                </>
+              ) : null}
               {tooltip.type === "block" ? (
                 <>
                   <p className="ado-map-tooltip-rate">
@@ -681,6 +873,25 @@ export function GujaratSatelliteMap({
                     </span>
                     <span>
                       Pending <strong>{tooltip.pending}</strong>
+                    </span>
+                  </div>
+                </>
+              ) : null}
+              {tooltip.type === "block-ssam" ? (
+                <>
+                  <p className="ado-map-tooltip-rate">
+                    <span>Submitted</span>
+                    <strong>{tooltip.rate}%</strong>
+                  </p>
+                  <div className="ado-map-tooltip-grid">
+                    <span>
+                      Submitted <strong>{tooltip.submitted}</strong>
+                    </span>
+                    <span>
+                      In Progress <strong>{tooltip.pending}</strong>
+                    </span>
+                    <span>
+                      Not Started <strong>{tooltip.notStarted}</strong>
                     </span>
                   </div>
                 </>
@@ -766,7 +977,9 @@ export function GujaratSatelliteMap({
             <h3>
               {mapLevel === "schools"
                 ? "School assessment status"
-                : "Verification completion"}
+                : mode === "self-assessment"
+                  ? "Self-Assessment Submission"
+                  : "Verification completion"}
             </h3>
             {mapLevel === "schools" ? (
               <ul>
@@ -799,6 +1012,159 @@ export function GujaratSatelliteMap({
             )}
           </div>
 
+          {/* ── SELF-ASSESSMENT MODE PANELS ── */}
+          {mode === "self-assessment" && currentSsamStats && currentSsamStats.total > 0 ? (
+            <div className="ado-ssam-panel ado-ssam-panel--full">
+              <div className="ado-ssam-panel-header">
+                <p className="ado-map-focus-label">Self-Assessment Progress</p>
+                <span className={`ado-map-rate-pill ado-map-rate-pill--${mapLevel === "schools" ? selectedSsamBlockStats?.tone : getSelfAssessmentTone(selfAssessmentSummary?.submissionRate, true)}`}>
+                  {mapLevel === "schools" ? selectedSsamBlockStats?.submissionRate : selfAssessmentSummary?.submissionRate}%
+                </span>
+              </div>
+              <h3 className="ado-ssam-panel-district">
+                {mapLevel === "schools" ? (selectedBlockName || selectedSsamBlockStats?.blockName) : formatDistrictName(selfAssessmentDistrictData[0]?.districtName || previewDistrict?.stats?.districtName || previewDistrict?.feature?.properties?.name)}
+              </h3>
+              
+              <div className="ado-ssam-stats-grid">
+                <div className="ado-ssam-stat-card">
+                  <div className="ado-ssam-stat-icon ado-ssam-stat-icon--indigo">🏫</div>
+                  <div className="ado-ssam-stat-content">
+                    <span className="ado-ssam-stat-value">{currentSsamStats.total}</span>
+                    <span className="ado-ssam-stat-label">Total schools</span>
+                  </div>
+                </div>
+                <div className="ado-ssam-stat-card">
+                  <div className="ado-ssam-stat-icon ado-ssam-stat-icon--green">✓</div>
+                  <div className="ado-ssam-stat-content">
+                    <span className="ado-ssam-stat-value">{currentSsamStats.submitted}</span>
+                    <span className="ado-ssam-stat-label">Submitted</span>
+                  </div>
+                </div>
+                <div className="ado-ssam-stat-card">
+                  <div className="ado-ssam-stat-icon ado-ssam-stat-icon--blue">⏳</div>
+                  <div className="ado-ssam-stat-content">
+                    <span className="ado-ssam-stat-value">{currentSsamStats.pending}</span>
+                    <span className="ado-ssam-stat-label">In progress</span>
+                  </div>
+                </div>
+                <div className="ado-ssam-stat-card">
+                  <div className="ado-ssam-stat-icon ado-ssam-stat-icon--slate">○</div>
+                  <div className="ado-ssam-stat-content">
+                    <span className="ado-ssam-stat-value">{currentSsamStats.notStarted}</span>
+                    <span className="ado-ssam-stat-label">Not started</span>
+                  </div>
+                </div>
+                <div className="ado-ssam-stat-card">
+                  <div className="ado-ssam-stat-icon ado-ssam-stat-icon--amber">⚡</div>
+                  <div className="ado-ssam-stat-content">
+                    <span className="ado-ssam-stat-value">{currentSsamStats.recentlyActive || 0}</span>
+                    <span className="ado-ssam-stat-label">Active (7d)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ado-ssam-chart-box">
+                <h4 className="ado-ssam-chart-title">Status distribution</h4>
+                <div style={{ width: "100%", height: 180 }}>
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie
+                        data={ssamPieData}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={40}
+                        outerRadius={65}
+                        paddingAngle={3}
+                      >
+                        {ssamPieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend verticalAlign="bottom" height={36} iconType="square" wrapperStyle={{ fontSize: '10px' }}/>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="ado-ssam-chart-box">
+                <h4 className="ado-ssam-chart-title">Block-wise progress</h4>
+                <div style={{ width: "100%", height: 180 }}>
+                  <ResponsiveContainer>
+                    <BarChart
+                      data={ssamBarData}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 9 }} tickMargin={5} />
+                      <YAxis tick={{ fontSize: 9 }} />
+                      <Tooltip />
+                      <Legend verticalAlign="bottom" height={36} iconType="square" wrapperStyle={{ fontSize: '10px' }}/>
+                      <Bar dataKey="In Progress" stackId="a" fill="#3b82f6" />
+                      <Bar dataKey="Not Started" stackId="a" fill="#94a3b8" />
+                      <Bar dataKey="Submitted" stackId="a" fill="#10b981" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Keep the school-wise list if we are in block level */}
+              {mapLevel === "schools" && ssamSchoolsForSelectedBlock.length > 0 && (
+                <>
+                  <p className="ado-ssam-blocks-title" style={{ marginTop: 8 }}>School-wise status</p>
+                  <div className="ado-ssam-blocks-list">
+                    {ssamSchoolsForSelectedBlock.map((school) => {
+                      const statusClass = 
+                        school.status === "Submitted" ? "ado-ssam-block-rate--excellent" :
+                        school.status === "In Progress" ? "ado-ssam-block-rate--moderate" :
+                        "ado-ssam-block-rate--none";
+
+                      const isHovered = String(school.schoolId) === String(hoveredSchoolId);
+                      const isSelected = String(school.schoolId) === String(selectedSchoolId);
+                      return (
+                        <div
+                          key={school.schoolId}
+                          className={`ado-ssam-block-row${isHovered || isSelected ? " ado-ssam-block-row--active" : ""}`}
+                          onMouseEnter={() => setHoveredSchoolId(String(school.schoolId))}
+                          onMouseLeave={() => setHoveredSchoolId(null)}
+                          onClick={() => {
+                            onSchoolSelect?.(String(school.schoolId));
+                          }}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <div className="ado-ssam-block-row-top">
+                            <span className="ado-ssam-block-name" title={school.schoolName}>{school.schoolName}</span>
+                          </div>
+                          <div className="ado-ssam-block-row-counts" style={{ justifyContent: "space-between", marginTop: 2 }}>
+                            <span>{school.udiseCode || school.schoolId}</span>
+                            <span className={statusClass} style={{ fontSize: "0.65rem", fontWeight: 700 }}>
+                              {school.status === "Submitted" ? "✓ Submitted" : school.status === "In Progress" ? "⏳ In Progress" : "○ Not Started"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          ) : mode === "self-assessment" && isFetchingSelfAssessment ? (
+            <div className="ado-map-focus-card ado-map-focus-card--empty">
+              <div className="ado-map-empty-icon" aria-hidden>⏳</div>
+              <p>Loading self-assessment data…</p>
+            </div>
+          ) : mode === "self-assessment" ? (
+            <div className="ado-map-focus-card ado-map-focus-card--empty">
+              <div className="ado-map-empty-icon" aria-hidden>📋</div>
+              <p>
+                {mapLevel === "state"
+                  ? "Click a district to view its self-assessment progress."
+                  : "No self-assessment data available."}
+              </p>
+            </div>
+          ) : null}
+
+          {/* ── VERIFICATION MODE PANELS (and school-level in any mode) ── */}
           {mapLevel === "schools" && activeSchool ? (
             <div className="ado-map-focus-card">
               <div className="ado-map-focus-top">
@@ -817,7 +1183,7 @@ export function GujaratSatelliteMap({
                 </p>
               ) : null}
             </div>
-          ) : mapLevel === "blocks" && activeBlock ? (
+          ) : mode === "verification" && mapLevel === "blocks" && activeBlock ? (
             <div className="ado-map-focus-card">
               <div className="ado-map-focus-top">
                 <p className="ado-map-focus-label">Selected block</p>
@@ -865,7 +1231,7 @@ export function GujaratSatelliteMap({
                 Zoom to schools
               </button>
             </div>
-          ) : previewDistrict ? (
+          ) : mode === "verification" && previewDistrict ? (
             <div className="ado-map-focus-card">
               <div className="ado-map-focus-top">
                 <p className="ado-map-focus-label">

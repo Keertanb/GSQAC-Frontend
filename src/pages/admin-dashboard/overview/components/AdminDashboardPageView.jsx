@@ -244,6 +244,14 @@ export function AdminDashboardPageView({ c }) {
     handleClearBlock,
     handleSchoolChange,
     handleSchoolSelect,
+    // Map mode
+    mapMode,
+    handleMapModeChange,
+    selfAssessmentDistrictData,
+    selfAssessmentBlockData,
+    selfAssessmentSummary,
+    selfAssessmentSchools,
+    isFetchingSelfAssessment,
   } = c;
 
   if (isLoading) {
@@ -502,6 +510,13 @@ export function AdminDashboardPageView({ c }) {
         onSchoolSelect={handleSchoolSelect}
         onClearSelection={handleClearDistrict}
         onClearBlock={handleClearBlock}
+        mode={mapMode}
+        onModeChange={handleMapModeChange}
+        selfAssessmentDistrictData={selfAssessmentDistrictData}
+        selfAssessmentBlockData={selfAssessmentBlockData}
+        selfAssessmentSummary={selfAssessmentSummary}
+        selfAssessmentSchools={selfAssessmentSchools}
+        isFetchingSelfAssessment={isFetchingSelfAssessment}
       />
 
       {/* Quick insight cards */}
