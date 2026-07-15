@@ -59,7 +59,8 @@ const useAuthStore = create(
     }),
     {
       name: "gsqac-auth-session",
-      storage: createJSONStorage(() => sessionStorage),
+      // localStorage survives mobile app background kills; sessionStorage does not
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
         role: state.role,

@@ -1,22 +1,30 @@
-const TOKEN_STORAGE_KEY = "gsqac-session-token";
+const TOKEN_STORAGE_KEY = "gsqac-auth-token";
+const LEGACY_SESSION_TOKEN_KEY = "gsqac-session-token";
 
 let memoryToken = null;
 
-function readTokenFromSession() {
+function readTokenFromStorage() {
   try {
-    return sessionStorage.getItem(TOKEN_STORAGE_KEY);
+    return (
+      localStorage.getItem(TOKEN_STORAGE_KEY) ||
+      sessionStorage.getItem(LEGACY_SESSION_TOKEN_KEY) ||
+      sessionStorage.getItem(TOKEN_STORAGE_KEY)
+    );
   } catch {
     return null;
   }
 }
 
-function writeTokenToSession(token) {
+function writeTokenToStorage(token) {
   try {
     if (token) {
-      sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
     } else {
-      sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
     }
+    // Clear any leftover session tokens so mobile/WebView kills don't leave stale state.
+    sessionStorage.removeItem(LEGACY_SESSION_TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
   } catch {
     // Ignore storage errors (private mode, quota, etc.)
   }
@@ -24,21 +32,25 @@ function writeTokenToSession(token) {
 
 export function getAuthToken() {
   if (memoryToken) return memoryToken;
-  memoryToken = readTokenFromSession();
+  memoryToken = readTokenFromStorage();
   return memoryToken;
 }
 
 export function setAuthToken(token) {
   memoryToken = token || null;
-  writeTokenToSession(memoryToken);
+  writeTokenToStorage(memoryToken);
 }
 
 export function clearAuthToken() {
   memoryToken = null;
-  writeTokenToSession(null);
+  writeTokenToStorage(null);
 }
 
 export function hydrateAuthToken() {
-  memoryToken = readTokenFromSession();
+  memoryToken = readTokenFromStorage();
+  // Persist migrated session token into localStorage for mobile app survival.
+  if (memoryToken) {
+    writeTokenToStorage(memoryToken);
+  }
   return memoryToken;
 }
