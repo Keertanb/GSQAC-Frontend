@@ -6,7 +6,7 @@ import {
 } from "../../../services/adminService";
 import {
   registerVerifier,
-  uploadVerifierRegistrationFile,
+  resolveLocalFileName,
 } from "../../../services/verifierRegistrationService";
 import {
   INITIAL_VERIFIER_FORM,
@@ -68,6 +68,7 @@ function toPayload(form, fileNames) {
       form.hasVehicle === "yes" ? form.hasDrivingLicense : null,
     workDuration: form.workDuration,
     aadhaarNumber: form.aadhaarNumber.trim(),
+    confirmAadhaarNumber: form.confirmAadhaarNumber.trim(),
     aadhaarFileName: fileNames.aadhaarFileName,
     bankAccountName: form.bankAccountName.trim(),
     bankAccountNumber: form.bankAccountNumber.trim(),
@@ -86,7 +87,6 @@ export function useVerifierRegistrationForm() {
   const [form, setForm] = useState(INITIAL_VERIFIER_FORM);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const [registrationResult, setRegistrationResult] = useState(null);
 
   const districts = useDistrictOptions();
   const talukaOptions1 = useTalukaOptions(form.preferredDistrict1);
@@ -177,25 +177,22 @@ export function useVerifierRegistrationForm() {
     }
 
     setSubmitting(true);
-    setRegistrationResult(null);
 
     try {
-      const [aadhaarFileName, nocFileName, selfDeclarationFileName] =
-        await Promise.all([
-          uploadVerifierRegistrationFile(form.aadhaarFile),
-          form.occupation === "employed" && form.nocFile
-            ? uploadVerifierRegistrationFile(form.nocFile)
-            : Promise.resolve(null),
-          form.selfDeclarationFile
-            ? uploadVerifierRegistrationFile(form.selfDeclarationFile)
-            : Promise.resolve(null),
-        ]);
+      const aadhaarFileName = resolveLocalFileName(form.aadhaarFile);
+      const nocFileName =
+        form.occupation === "employed"
+          ? resolveLocalFileName(form.nocFile)
+          : null;
+      const selfDeclarationFileName = resolveLocalFileName(
+        form.selfDeclarationFile,
+      );
 
       if (!aadhaarFileName) {
-        throw new Error("Aadhaar document upload failed");
+        throw new Error("Please select an Aadhaar document");
       }
       if (form.occupation === "employed" && !nocFileName) {
-        throw new Error("NOC document upload failed");
+        throw new Error("Please select an NOC document");
       }
 
       const payload = toPayload(form, {
@@ -205,9 +202,7 @@ export function useVerifierRegistrationForm() {
       });
 
       const response = await registerVerifier(payload);
-      const data = response?.data || response;
 
-      setRegistrationResult(data);
       enqueueSnackbar(
         response?.message || "Verifier registered successfully.",
         { variant: "success" },
@@ -230,7 +225,6 @@ export function useVerifierRegistrationForm() {
     errors,
     age,
     submitting,
-    registrationResult,
     districts,
     talukaOptions: {
       1: talukaOptions1,

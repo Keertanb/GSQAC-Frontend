@@ -186,7 +186,6 @@ export default function VerifierRegistration() {
     errors,
     age,
     submitting,
-    registrationResult,
     districts,
     talukaOptions,
     updateField,
@@ -227,25 +226,6 @@ export default function VerifierRegistration() {
               વેરિફાયર તરીકે નોંધણી કરો — dependent fields appear based on your answers.
             </Typography>
           </Box>
-
-          {registrationResult && (
-            <Box className="vr-reg-success">
-              <Typography variant="subtitle1" fontWeight={800} color="success.dark">
-                Registration successful
-              </Typography>
-              <Typography variant="body2">
-                Username: <strong>{registrationResult.userName}</strong>
-              </Typography>
-              <Typography variant="body2">
-                Temporary password:{" "}
-                <strong>{registrationResult.temporaryPassword}</strong>
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {registrationResult.loginHint ||
-                  "Login as Verifier using the username and temporary password above."}
-              </Typography>
-            </Box>
-          )}
 
           <Box
             component="form"
@@ -641,6 +621,18 @@ export default function VerifierRegistration() {
                 }
               />
 
+              <TextField
+                label="Confirm Aadhaar Number / આધાર કાર્ડ ફરીથી દાખલ કરો"
+                value={form.confirmAadhaarNumber}
+                onChange={updateField("confirmAadhaarNumber")}
+                fullWidth
+                required
+                size="small"
+                inputProps={{ maxLength: 12, inputMode: "numeric" }}
+                error={!!errors.confirmAadhaarNumber}
+                helperText={errors.confirmAadhaarNumber}
+              />
+
               <FileUploadField
                 labelEn="Aadhaar Card Upload"
                 labelGu="આધાર કાર્ડ અપલોડ"
@@ -669,6 +661,7 @@ export default function VerifierRegistration() {
                   fullWidth
                   required
                   size="small"
+                  inputProps={{ maxLength: 18, inputMode: "numeric" }}
                   error={!!errors.bankAccountNumber}
                   helperText={errors.bankAccountNumber}
                 />
@@ -766,7 +759,7 @@ export default function VerifierRegistration() {
                       case is pending against me.
                       <br />
                       હું બાંહેધરી આપું છું કે મારા વિરુદ્ધ કોઈ વિભાગીય તપાસ, શિસ્ત વિષયક
-                      તપાસ કે કોર્ટ કેસ પેન્ડિંગ નથી.
+                      તપાસ કે કોર્ટ કેસ પેન્ડિંગ નથી. *
                     </Typography>
                   }
                 />
@@ -796,7 +789,7 @@ export default function VerifierRegistration() {
                   textTransform: "none",
                 }}
               >
-                {submitting ? "Uploading & Registering..." : "Submit Registration"}
+                {submitting ? "Registering..." : "Submit Registration"}
               </Button>
             </Box>
           </Box>

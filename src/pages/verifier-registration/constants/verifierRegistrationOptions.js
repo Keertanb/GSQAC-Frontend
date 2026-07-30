@@ -111,6 +111,7 @@ export const INITIAL_VERIFIER_FORM = {
   hasDrivingLicense: "",
   workDuration: "",
   aadhaarNumber: "",
+  confirmAadhaarNumber: "",
   aadhaarFile: null,
   bankAccountName: "",
   bankAccountNumber: "",
