@@ -17,8 +17,8 @@
 
 .vr-hang__ropes {
   position: relative;
-  width: 62%;
-  height: 22px;
+  width: 56%;
+  height: 14px;
   margin-bottom: -2px;
   flex-shrink: 0;
 }
@@ -26,8 +26,8 @@
 .vr-hang__rope {
   position: absolute;
   top: 0;
-  width: 2.5px;
-  height: 22px;
+  width: 2px;
+  height: 14px;
   background: linear-gradient(180deg, var(--vr-rope) 0%, #8b6914 100%);
   border-radius: 2px;
 }
@@ -47,8 +47,8 @@
 .vr-hang__peg {
   position: absolute;
   top: -2px;
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, #e8d5b7, #8b6914 70%);
 }
@@ -68,14 +68,14 @@
   border: none;
   cursor: pointer;
   text-align: center;
-  padding: 0.95rem 0.9rem 0.85rem;
-  border-radius: 8px 8px 12px 12px;
+  padding: 0.55rem 0.5rem 0.5rem;
+  border-radius: 6px 6px 9px 9px;
   color: #fff8f0;
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, transparent 42%),
     linear-gradient(180deg, #b45309 0%, var(--vr-saffron-deep) 48%, #9a3412 100%);
   box-shadow:
-    0 6px 14px rgba(154, 52, 18, 0.4),
+    0 5px 12px rgba(154, 52, 18, 0.38),
     inset 0 1px 0 rgba(255, 255, 255, 0.25),
     inset 0 -2px 0 rgba(0, 0, 0, 0.15);
   border: 1.5px solid rgba(255, 237, 213, 0.35);
@@ -88,7 +88,7 @@
 .vr-hang__board::before {
   content: "";
   position: absolute;
-  inset: 5px;
+  inset: 4px;
   border: 1px dashed rgba(255, 247, 237, 0.3);
   border-radius: 4px;
   pointer-events: none;
@@ -105,11 +105,11 @@
 
 .vr-hang__nail {
   position: absolute;
-  top: -4px;
+  top: -3px;
   left: 50%;
-  width: 8px;
-  height: 8px;
-  margin-left: -4px;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #fde68a, #92400e);
   z-index: 2;
@@ -117,14 +117,14 @@
 
 .vr-hang__blink-badge {
   position: absolute;
-  top: 7px;
-  right: 8px;
+  top: 4px;
+  right: 5px;
   z-index: 2;
-  font-size: 0.58rem;
+  font-size: 0.48rem;
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 0.16rem 0.4rem;
+  padding: 0.1rem 0.28rem;
   border-radius: 999px;
   background: var(--vr-navy);
   color: #fff;
@@ -135,16 +135,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  margin-bottom: 0.3rem;
+  width: 26px;
+  height: 26px;
+  margin-bottom: 0.15rem;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.28);
 }
 
 .vr-hang__icon {
-  font-size: 1.15rem !important;
+  font-size: 0.9rem !important;
   color: #fff7ed;
 }
 
@@ -155,20 +155,20 @@
 
 .vr-hang__eyebrow {
   display: block;
-  font-size: 0.62rem;
+  font-size: 0.5rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: rgba(255, 247, 237, 0.88);
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.08rem;
 }
 
 .vr-hang__title {
   display: block;
   font-family: "Georgia", "Times New Roman", serif;
-  font-size: 1.1rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.15;
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   animation: vr-title-glow 1.8s ease-in-out infinite;
@@ -176,10 +176,10 @@
 
 .vr-hang__sub {
   display: block;
-  margin-top: 0.28rem;
-  font-size: 0.74rem;
+  margin-top: 0.15rem;
+  font-size: 0.58rem;
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.3;
   color: rgba(255, 247, 237, 0.9);
 }
 
@@ -187,15 +187,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: 0.55rem;
-  padding: 0.35rem 0.75rem;
+  margin-top: 0.35rem;
+  padding: 0.22rem 0.48rem;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: 0.58rem;
   font-weight: 800;
   background: rgba(30, 58, 138, 0.95);
   color: #fff;
   animation: vr-cta-blink 1.6s steps(2, end) infinite;
-  min-height: 32px;
+  min-height: 24px;
 }
 
 @keyframes vr-sway {
@@ -261,10 +261,10 @@
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas: "icon text cta";
-    column-gap: 0.55rem;
+    column-gap: 0.5rem;
     align-items: center;
     text-align: left;
-    padding: 0.55rem 0.6rem;
+    padding: 0.5rem 0.55rem;
     border-radius: 10px;
     animation: none;
     transform: none;
@@ -281,46 +281,46 @@
   .vr-hang__blink-badge {
     top: 4px;
     right: 5px;
-    font-size: 0.48rem;
-    padding: 0.1rem 0.28rem;
+    font-size: 0.46rem;
+    padding: 0.08rem 0.24rem;
   }
 
   .vr-hang__icon-wrap {
     grid-area: icon;
     margin: 0;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
   }
 
   .vr-hang__icon {
-    font-size: 1rem !important;
+    font-size: 0.95rem !important;
   }
 
   .vr-hang__text-stack {
     grid-area: text;
-    padding-right: 0.25rem;
+    padding-right: 0.2rem;
   }
 
   .vr-hang__title {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     animation: none;
   }
 
   .vr-hang__sub {
-    margin-top: 0.08rem;
-    font-size: 0.62rem;
+    margin-top: 0.06rem;
+    font-size: 0.58rem;
   }
 
   .vr-hang__eyebrow {
-    font-size: 0.52rem;
+    font-size: 0.48rem;
   }
 
   .vr-hang__cta {
     grid-area: cta;
     margin-top: 0;
-    min-height: 30px;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.6rem;
+    min-height: 28px;
+    padding: 0.22rem 0.45rem;
+    font-size: 0.56rem;
     white-space: nowrap;
   }
 }
@@ -331,7 +331,7 @@
     grid-template-areas:
       "icon text"
       "cta cta";
-    row-gap: 0.4rem;
+    row-gap: 0.35rem;
   }
 
   .vr-hang__cta {

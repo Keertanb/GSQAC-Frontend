@@ -108,10 +108,36 @@ export function useVerifierRegistrationForm() {
   };
 
   const updateField = (field) => (event) => {
-    const value =
+    let value =
       event.target.type === "checkbox"
         ? event.target.checked
         : event.target.value;
+
+    if (field === "experienceYears" || field === "previousAccreditationDuration") {
+      value = String(value ?? "").replace(/\D/g, "").slice(0, 2);
+    }
+
+    if (field === "bankIfsc") {
+      value = String(value ?? "")
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "")
+        .slice(0, 11);
+    }
+
+    if (
+      field === "mobileNumber" ||
+      field === "aadhaarNumber" ||
+      field === "confirmAadhaarNumber" ||
+      field === "bankAccountNumber"
+    ) {
+      const maxLen =
+        field === "mobileNumber"
+          ? 10
+          : field === "bankAccountNumber"
+            ? 18
+            : 12;
+      value = String(value ?? "").replace(/\D/g, "").slice(0, maxLen);
+    }
 
     setForm((prev) => {
       const next = { ...prev, [field]: value };

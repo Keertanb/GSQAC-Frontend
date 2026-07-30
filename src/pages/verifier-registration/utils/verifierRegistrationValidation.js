@@ -3,7 +3,6 @@ import * as Yup from "yup";
 const NAME_REGEX = /^[A-Za-z]+(?: [A-Za-z]+)*$/;
 const MOBILE_REGEX = /^[6-9]\d{9}$/;
 const AADHAAR_REGEX = /^[2-9][0-9]{11}$/;
-const IFSC_REGEX = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function isAllSameDigits(value) {
@@ -49,7 +48,7 @@ export const aadhaarNumberSchema = Yup.string()
 
 export function calculateAgeFromDob(dateOfBirth) {
   if (!dateOfBirth) return "";
-  const dob = new Date(dateOfBirth);
+  const dob = new Date(`${dateOfBirth}T00:00:00`);
   if (Number.isNaN(dob.getTime())) return "";
 
   const today = new Date();
@@ -61,6 +60,28 @@ export function calculateAgeFromDob(dateOfBirth) {
   return age >= 0 ? String(age) : "";
 }
 
+function isValidCalendarDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
+}
+
+function getDobBounds() {
+  const today = new Date();
+  const max = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+  const min = new Date(today.getFullYear() - 75, today.getMonth(), today.getDate());
+  const toIso = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { min: toIso(min), max: toIso(max) };
+}
+
+export const DOB_BOUNDS = getDobBounds();
+
 export const verifierRegistrationSchema = Yup.object().shape({
   fullName: personNameSchema("Name"),
   email: Yup.string()
@@ -70,6 +91,9 @@ export const verifierRegistrationSchema = Yup.object().shape({
     .max(150, "Email cannot exceed 150 characters"),
   dateOfBirth: Yup.string()
     .required("Field is required")
+    .test("valid-date", "Please select a valid date", (value) =>
+      isValidCalendarDate(value),
+    )
     .test("age-range", "Age must be between 18 and 75 years", (value) => {
       if (!value) return false;
       const age = Number(calculateAgeFromDob(value));
@@ -98,7 +122,17 @@ export const verifierRegistrationSchema = Yup.object().shape({
   previousAccreditationDuration: Yup.string().when("previousAccreditationWork", {
     is: "yes",
     then: (schema) =>
-      schema.trim().required("Field is required").max(200, "Too long"),
+      schema
+        .required("Field is required")
+        .matches(/^\d{1,2}$/, "Only digits are allowed")
+        .test(
+          "duration-range",
+          "Duration must be between 1 and 60 years",
+          (value) => {
+            const n = Number(value);
+            return Number.isFinite(n) && n >= 1 && n <= 60;
+          },
+        ),
     otherwise: (schema) => schema.notRequired(),
   }),
   otherVerificationExperience: Yup.string().required("Field is required"),
@@ -141,8 +175,11 @@ export const verifierRegistrationSchema = Yup.object().shape({
   bankIfsc: Yup.string()
     .trim()
     .required("Field is required")
-    .transform((value) => (value ? value.toUpperCase() : value))
-    .matches(IFSC_REGEX, "Enter a valid IFSC code"),
+    .length(11, "IFSC code must be exactly 11 characters")
+    .matches(
+      /^[A-Z]{4}0[A-Z0-9]{6}$/,
+      "Enter a valid IFSC (e.g. SBIN0001234 — 4 letters, 0, then 6 chars)",
+    ),
   bankBranch: Yup.string()
     .trim()
     .required("Field is required")

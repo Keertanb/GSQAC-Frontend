@@ -40,6 +40,7 @@ import {
   WORK_DURATION_OPTIONS,
   YES_NO_OPTIONS,
 } from "./constants/verifierRegistrationOptions";
+import { DOB_BOUNDS } from "./utils/verifierRegistrationValidation";
 import "./VerifierRegistration.css";
 
 function YesNoGroup({ labelEn, labelGu, name, value, onChange, error, required }) {
@@ -73,8 +74,6 @@ function RankedLocationFields({
   talukaError,
   required = false,
 }) {
-  const hasBlockOptions = talukaOptions.length > 0;
-
   return (
     <Box className="vr-reg-ranked-row">
       <Chip
@@ -93,58 +92,53 @@ function RankedLocationFields({
           <MenuItem value="">
             <em>Select district</em>
           </MenuItem>
-          {districts.map((district) => (
-            <MenuItem key={district.districtId} value={String(district.districtId)}>
-              {district.districtName}
-            </MenuItem>
-          ))}
+          {districts.map((district) => {
+            const id = String(district.districtId ?? district.id ?? "");
+            const name = district.districtName || district.name || id;
+            return (
+              <MenuItem key={id} value={id}>
+                {name}
+              </MenuItem>
+            );
+          })}
         </Select>
         {districtError && <FormHelperText>{districtError}</FormHelperText>}
       </FormControl>
 
-      {hasBlockOptions ? (
-        <FormControl
-          fullWidth
-          size="small"
-          error={!!talukaError}
-          required={required}
-          disabled={!districtValue}
-        >
-          <InputLabel>{`Taluka ${rank}`}</InputLabel>
-          <Select
-            value={talukaValue}
-            label={`Taluka ${rank}`}
-            onChange={onTalukaChange}
-          >
-            <MenuItem value="">
-              <em>Select taluka</em>
-            </MenuItem>
-            {talukaOptions.map((block) => (
-              <MenuItem key={block.blockId} value={String(block.blockName)}>
-                {block.blockName}
-              </MenuItem>
-            ))}
-          </Select>
-          {talukaError && <FormHelperText>{talukaError}</FormHelperText>}
-        </FormControl>
-      ) : (
-        <TextField
-          label={`Taluka ${rank}`}
+      <FormControl
+        fullWidth
+        size="small"
+        error={!!talukaError}
+        required={required}
+        disabled={!districtValue}
+      >
+        <InputLabel>{`Block / Taluka ${rank}`}</InputLabel>
+        <Select
           value={talukaValue}
+          label={`Block / Taluka ${rank}`}
           onChange={onTalukaChange}
-          fullWidth
-          size="small"
-          required={required}
-          disabled={!districtValue}
-          error={!!talukaError}
-          helperText={
-            talukaError ||
-            (districtValue
-              ? "Enter taluka within selected district"
-              : "Select district first")
-          }
-        />
-      )}
+        >
+          <MenuItem value="">
+            <em>
+              {!districtValue
+                ? "Select district first"
+                : talukaOptions.length === 0
+                  ? "No blocks found"
+                  : "Select block / taluka"}
+            </em>
+          </MenuItem>
+          {talukaOptions.map((block) => {
+            const id = String(block.blockId ?? block.id ?? "");
+            const name = block.blockName || block.name || id;
+            return (
+              <MenuItem key={id} value={name}>
+                {name}
+              </MenuItem>
+            );
+          })}
+        </Select>
+        {talukaError && <FormHelperText>{talukaError}</FormHelperText>}
+      </FormControl>
     </Box>
   );
 }
@@ -267,12 +261,26 @@ export default function VerifierRegistration() {
                   type="date"
                   value={form.dateOfBirth}
                   onChange={updateField("dateOfBirth")}
+                  onKeyDown={(event) => event.preventDefault()}
+                  onPaste={(event) => event.preventDefault()}
                   fullWidth
                   required
                   size="small"
                   InputLabelProps={{ shrink: true }}
+                  inputProps={{
+                    min: DOB_BOUNDS.min,
+                    max: DOB_BOUNDS.max,
+                  }}
+                  sx={{
+                    "& input::-webkit-calendar-picker-indicator": {
+                      cursor: "pointer",
+                      opacity: 1,
+                    },
+                  }}
                   error={!!errors.dateOfBirth}
-                  helperText={errors.dateOfBirth || "To verify retirement / eligibility"}
+                  helperText={
+                    errors.dateOfBirth || "Use the calendar — typing is disabled"
+                  }
                 />
                 <TextField
                   label="Age / ઉંમર"
@@ -446,15 +454,18 @@ export default function VerifierRegistration() {
 
               <TextField
                 label="Educational / Administrative Experience (years) / અનુભવ (વર્ષ)"
-                type="number"
                 value={form.experienceYears}
                 onChange={updateField("experienceYears")}
                 fullWidth
                 required
                 size="small"
-                inputProps={{ min: 0, max: 60, step: 1 }}
+                inputProps={{
+                  inputMode: "numeric",
+                  pattern: "[0-9]*",
+                  maxLength: 2,
+                }}
                 error={!!errors.experienceYears}
-                helperText={errors.experienceYears}
+                helperText={errors.experienceYears || "Digits only (0–60)"}
               />
 
               <YesNoGroup
@@ -469,14 +480,21 @@ export default function VerifierRegistration() {
 
               {form.previousAccreditationWork === "yes" && (
                 <TextField
-                  label="If Yes, for how long? / જો હા તો કેટલા સમય માટે?"
+                  label="If Yes, for how long? (years) / જો હા તો કેટલા સમય માટે?"
                   value={form.previousAccreditationDuration}
                   onChange={updateField("previousAccreditationDuration")}
                   fullWidth
                   required
                   size="small"
+                  inputProps={{
+                    inputMode: "numeric",
+                    pattern: "[0-9]*",
+                    maxLength: 2,
+                  }}
                   error={!!errors.previousAccreditationDuration}
-                  helperText={errors.previousAccreditationDuration}
+                  helperText={
+                    errors.previousAccreditationDuration || "Digits only (1–60 years)"
+                  }
                 />
               )}
 
@@ -672,9 +690,15 @@ export default function VerifierRegistration() {
                   fullWidth
                   required
                   size="small"
-                  inputProps={{ style: { textTransform: "uppercase" } }}
+                  inputProps={{
+                    maxLength: 11,
+                    style: { textTransform: "uppercase", letterSpacing: "0.06em" },
+                  }}
                   error={!!errors.bankIfsc}
-                  helperText={errors.bankIfsc}
+                  helperText={
+                    errors.bankIfsc ||
+                    "Format: ABCD0123456 (4 letters + 0 + 6 alphanumeric)"
+                  }
                 />
               </Box>
 
