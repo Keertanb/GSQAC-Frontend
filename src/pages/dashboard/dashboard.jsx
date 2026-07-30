@@ -18,6 +18,7 @@ import {
 } from "@mui/icons-material";
 import useAuthStore from "../../store/useAuthStore";
 import { GrievanceFeedbackPanel } from "./components/GrievanceFeedbackPanel";
+import { VerifierRegistrationBoard } from "./components/VerifierRegistrationBoard";
 import "./dashboard.css";
 
 import LogoImg from "../../assets/logo_image.png";
@@ -279,6 +280,9 @@ const Dashboard = () => {
         style={{ backgroundImage: `url(${HeroBgImg})` }}
       >
         <div className="hero-overlay" />
+        <div className="hero-verifier-board-wrap" aria-label="Verifier registration">
+          <VerifierRegistrationBoard />
+        </div>
         <div className="hero-content">
           <div className="hero-split">
             <div className="hero-split-col hero-split-col--carousel">

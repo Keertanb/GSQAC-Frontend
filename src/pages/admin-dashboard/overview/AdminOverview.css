@@ -1,5 +1,5 @@
 .admin-dashboard-overview {
-  --ado-indigo: #4f46e5;
+  --ado-indigo: #4338ca;
   --ado-indigo-deep: #312e81;
   --ado-indigo-soft: #eef2ff;
   --ado-violet: #7c3aed;
@@ -8,27 +8,28 @@
   --ado-cyan: #0891b2;
   --ado-green: #059669;
   --ado-green-soft: #ecfdf5;
-  --ado-amber: #d97706;
+  --ado-amber: #b45309;
   --ado-amber-soft: #fffbeb;
-  --ado-red: #dc2626;
+  --ado-red: #b91c1c;
   --ado-red-soft: #fef2f2;
   --ado-slate-50: #f8fafc;
   --ado-slate-100: #f1f5f9;
-  --ado-slate-200: #e2e8f0;
+  --ado-slate-200: #e6e9ef;
   --ado-slate-300: #cbd5e1;
   --ado-slate-400: #94a3b8;
   --ado-slate-500: #64748b;
   --ado-slate-600: #475569;
   --ado-slate-800: #1e293b;
   --ado-slate-900: #0f172a;
-  --ado-radius-sm: 0.75rem;
-  --ado-radius-md: 1.125rem;
-  --ado-radius-lg: 1.25rem;
-  --ado-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
-  --ado-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.07);
-  --ado-shadow-lg: 0 12px 32px rgba(37, 99, 235, 0.1);
-  --ado-shadow-glow: 0 8px 24px rgba(37, 99, 235, 0.14);
-  padding: 0 0 1.5rem;
+  --ado-radius-sm: 0.625rem;
+  --ado-radius-md: 0.875rem;
+  --ado-radius-lg: 1rem;
+  --ado-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --ado-shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --ado-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --ado-shadow-glow: 0 4px 16px rgba(15, 23, 42, 0.07);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 0 0 2rem;
   max-width: 100%;
 }
 
@@ -44,21 +45,18 @@
 
 .ado-section-title {
   margin: 0;
-  font-size: 1.375rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #1e1b4b 0%, #4338ca 55%, #2563eb 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
+  font-size: 1.3125rem;
+  font-weight: 700;
+  color: var(--ado-slate-900);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 .ado-section-desc {
   margin: 0.4rem 0 0;
   font-size: 0.875rem;
   color: var(--ado-slate-500);
-  line-height: 1.55;
+  line-height: 1.6;
   max-width: 640px;
 }
 
@@ -71,42 +69,37 @@
   50% { opacity: 0.6; transform: scale(0.85); }
 }
 
-/* ─── Hero (clean light card) ─── */
-.ado-hero {
+/* ─── Sticky nav (header + tabs) ─── */
+.ado-sticky-nav {
+  position: sticky;
+  top: 72px;
+  z-index: 5;
+  background: #f9fafb;
+  padding-top: 0.25rem;
+  margin: -0.25rem 0 1.25rem;
+}
+
+/* ─── Header (slim scope bar) ─── */
+.ado-header {
   position: relative;
   border-radius: var(--ado-radius-lg);
-  overflow: hidden;
-  margin-bottom: 1.25rem;
   background: #ffffff;
   border: 1px solid var(--ado-slate-200);
-  box-shadow: var(--ado-shadow-md);
+  box-shadow: var(--ado-shadow-sm);
+  margin-bottom: 0.6rem;
 }
 
-.ado-hero-accent-bar {
-  height: 4px;
-  width: 100%;
-}
-
-.ado-hero--state .ado-hero-accent-bar {
-  background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
-}
-
-.ado-hero--district .ado-hero-accent-bar {
-  background: linear-gradient(90deg, #4f46e5, #6366f1, #818cf8);
-}
-
-.ado-hero-content {
+.ado-header-top {
   position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1.25rem;
-  padding: 1.35rem 1.5rem 1rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  padding: 1.1rem 1.35rem;
 }
 
-.ado-hero-eyebrow {
+.ado-header-eyebrow {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -116,7 +109,7 @@
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: var(--ado-slate-500);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
 .ado-live-dot {
@@ -139,29 +132,29 @@
   font-size: 0.7rem;
 }
 
-.ado-hero-title-row {
+.ado-header-title-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.65rem;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.3rem;
 }
 
-.ado-hero-title {
-  font-size: 1.75rem;
+.ado-header-title {
+  font-size: 1.375rem;
   font-weight: 800;
   color: var(--ado-slate-900);
   margin: 0;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
-.ado-hero-desc {
-  font-size: 0.9rem;
+.ado-header-desc {
+  font-size: 0.85rem;
   color: var(--ado-slate-500);
   margin: 0;
   max-width: 580px;
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
 .ado-scope-badge {
@@ -184,11 +177,7 @@
   color: var(--ado-indigo);
 }
 
-.ado-filter-wrap--hero .ado-filter-label {
-  color: var(--ado-slate-500);
-}
-
-.ado-hero-actions {
+.ado-header-actions {
   display: flex;
   align-items: flex-end;
   gap: 0.75rem;
@@ -197,7 +186,7 @@
   justify-content: flex-end;
 }
 
-.ado-hero-filters {
+.ado-header-filters {
   display: flex;
   align-items: flex-end;
   gap: 0.65rem;
@@ -262,96 +251,112 @@
 
 .ado-spin-icon { animation: ado-spin 0.8s linear infinite; }
 
-.ado-kpi-strip {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.65rem;
-  padding: 0.85rem 1.5rem 1.15rem;
-  border-top: 1px solid var(--ado-slate-200);
+/* ─── Tab bar ─── */
+.ado-tabbar {
+  border-radius: var(--ado-radius-lg);
+  background: #ffffff;
+  border: 1px solid var(--ado-slate-200);
+  box-shadow: var(--ado-shadow-sm);
+  padding: 0 0.5rem;
+}
+
+.ado-tabs {
+  min-height: 2.75rem;
+}
+
+.ado-tabs .MuiTabs-flexContainer {
+  gap: 0.25rem;
+}
+
+.ado-tab {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.9rem;
+  text-transform: none;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ado-slate-500);
+  letter-spacing: -0.005em;
+  border-radius: 0.5rem 0.5rem 0 0;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.ado-tab:hover {
+  color: var(--ado-slate-800);
   background: var(--ado-slate-50);
 }
 
-@media (max-width: 768px) {
-  .ado-kpi-strip {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.ado-tab.Mui-selected {
+  color: var(--ado-indigo);
 }
 
-.ado-kpi {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--ado-radius-sm);
-  padding: 0.8rem 0.9rem;
-  text-align: left;
-  border: 1px solid var(--ado-slate-200);
-  background: #ffffff;
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+.ado-tabs-indicator {
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ado-indigo);
 }
 
-.ado-kpi::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
+.ado-tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
-.ado-kpi--green::before { background: #10b981; }
-.ado-kpi--blue::before { background: #3b82f6; }
-.ado-kpi--violet::before { background: #6366f1; }
-.ado-kpi--amber::before { background: #f59e0b; }
-
-.ado-kpi:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--ado-shadow-sm);
-  border-color: var(--ado-slate-300);
-}
-
-.ado-kpi-icon {
+.ado-tab-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.65rem;
-  height: 1.65rem;
-  border-radius: 0.45rem;
-  font-size: 0.8rem;
-  margin-bottom: 0.4rem;
-}
-
-.ado-kpi--green .ado-kpi-icon { background: var(--ado-green-soft); color: var(--ado-green); }
-.ado-kpi--blue .ado-kpi-icon { background: var(--ado-blue-soft); color: var(--ado-blue); }
-.ado-kpi--violet .ado-kpi-icon { background: var(--ado-indigo-soft); color: var(--ado-indigo); }
-.ado-kpi--amber .ado-kpi-icon { background: var(--ado-amber-soft); color: var(--ado-amber); }
-
-.ado-kpi-value {
-  display: block;
-  font-size: 1.375rem;
-  font-weight: 800;
-  color: var(--ado-slate-900);
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-
-.ado-kpi-label {
-  display: block;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.3rem;
+  border-radius: 9999px;
+  background: var(--ado-slate-100);
+  color: var(--ado-slate-500);
   font-size: 0.625rem;
   font-weight: 700;
-  color: var(--ado-slate-500);
-  margin-top: 0.28rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  line-height: 1.35;
 }
 
-.ado-kpi-divider {
-  display: none;
+.ado-tab.Mui-selected .ado-tab-badge {
+  background: var(--ado-indigo-soft);
+  color: var(--ado-indigo);
+}
+
+/* ─── Tab panel ─── */
+.ado-tab-panel:focus-visible {
+  outline: 2px solid var(--ado-indigo);
+  outline-offset: 4px;
+  border-radius: var(--ado-radius-sm);
+}
+
+.ado-tab-panel-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ─── Overview tab layout ─── */
+.ado-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .ado-overview-grid { grid-template-columns: 1fr; }
+  .ado-overview-grid .ado-sidebar { order: -1; }
+}
+
+.ado-overview-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
 }
 
 /* ─── Metrics band ─── */
 .ado-metrics-band {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 /* ─── Stat cards ─── */
@@ -451,8 +456,9 @@
 }
 
 .admin-dashboard-overview .ado-stat-card:hover {
-  box-shadow: var(--ado-shadow-glow);
-  transform: translateY(-3px);
+  box-shadow: var(--ado-shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--ado-slate-300);
 }
 
 .admin-dashboard-overview .ado-stat-header {
@@ -478,24 +484,20 @@
 }
 
 .admin-dashboard-overview .ado-stat-indigo .ado-stat-icon-wrap {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #ffffff;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  background: var(--ado-indigo-soft);
+  color: var(--ado-indigo);
 }
 .admin-dashboard-overview .ado-stat-blue .ado-stat-icon-wrap {
-  background: linear-gradient(135deg, #3b82f6, #60a5fa);
-  color: #ffffff;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+  background: var(--ado-blue-soft);
+  color: var(--ado-blue);
 }
 .admin-dashboard-overview .ado-stat-green .ado-stat-icon-wrap {
-  background: linear-gradient(135deg, #10b981, #34d399);
-  color: #ffffff;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+  background: var(--ado-green-soft);
+  color: var(--ado-green);
 }
 .admin-dashboard-overview .ado-stat-amber .ado-stat-icon-wrap {
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
-  color: #ffffff;
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+  background: var(--ado-amber-soft);
+  color: var(--ado-amber);
 }
 
 .admin-dashboard-overview .ado-stat-content {
@@ -589,37 +591,93 @@
   font-weight: 500;
 }
 
-/* ─── Analytics section ─── */
-.ado-analytics-section {
-  margin-top: 0.75rem;
+/* ─── Sparkline (inline stat-card trend) ─── */
+.ado-sparkline {
+  margin-top: auto;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--ado-slate-100);
 }
 
-.ado-section-intro {
+.ado-sparkline-head {
   display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 1.15rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--ado-slate-200);
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--ado-slate-400);
+  margin-bottom: 0.1rem;
 }
 
-/* ─── Layout ─── */
-.ado-main-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 1rem;
-  align-items: start;
-}
-
-@media (max-width: 1100px) {
-  .ado-main-grid { grid-template-columns: 1fr; }
-  .ado-sidebar { order: -1; }
-}
-
-.ado-main-col {
+/* ─── Radar panel ─── */
+.ado-radar-wrap {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.5rem;
+}
+
+.ado-radar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.9rem;
+  padding: 0 0.5rem 0.25rem;
+}
+
+.ado-radar-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--ado-slate-600);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ado-radar-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ─── Heatmap grid ─── */
+.ado-heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.ado-heatmap-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.7rem 0.5rem;
+  border-radius: var(--ado-radius-sm);
+  border: 1px solid;
+  text-align: center;
+  cursor: default;
+  transition: transform 0.15s ease;
+}
+
+.ado-heatmap-cell:hover {
+  transform: translateY(-1px);
+}
+
+.ado-heatmap-cell-rate {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.ado-heatmap-cell-name {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--ado-slate-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .ado-section-heading {
@@ -744,14 +802,13 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  opacity: 0.9;
+  height: 2px;
 }
 
-.ado-chart-accent-indigo::before { background: linear-gradient(90deg, #4f46e5, #818cf8); }
-.ado-chart-accent-blue::before { background: linear-gradient(90deg, #2563eb, #60a5fa); }
-.ado-chart-accent-green::before { background: linear-gradient(90deg, #059669, #34d399); }
-.ado-chart-accent-amber::before { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.ado-chart-accent-indigo::before { background: var(--ado-indigo); }
+.ado-chart-accent-blue::before { background: var(--ado-blue); }
+.ado-chart-accent-green::before { background: var(--ado-green); }
+.ado-chart-accent-amber::before { background: var(--ado-amber); }
 
 .ado-chart-full { width: 100%; }
 
@@ -906,7 +963,9 @@
   flex-direction: column;
   gap: 1rem;
   position: sticky;
-  top: 5.5rem;
+  top: calc(72px + 9rem);
+  max-height: calc(100vh - 72px - 9rem - 1.5rem);
+  overflow-y: auto;
 }
 
 .ado-panel {
@@ -1090,6 +1149,20 @@
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
+}
+
+.ado-verifier-list--grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1.25rem;
+}
+
+@media (max-width: 700px) {
+  .ado-verifier-list--grid { grid-template-columns: 1fr; }
+}
+
+.ado-panel--wide {
+  width: 100%;
 }
 
 .ado-verifier-item {
@@ -1335,15 +1408,13 @@
 }
 
 @media (max-width: 640px) {
-  .ado-hero-content { padding: 1.25rem; }
-  .ado-hero-title { font-size: 1.5rem; }
-  .ado-kpi-strip { padding: 0.75rem 1rem 1rem; }
-  .ado-hero-actions {
+  .ado-header-top { padding: 1rem; }
+  .ado-header-actions {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
   }
-  .ado-hero-filters {
+  .ado-header-filters {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
@@ -2045,38 +2116,6 @@
   }
 }
 
-/* ─── Analytics section card ─── */
-.ado-analytics-section--card {
-  margin-top: 0.75rem;
-  padding: 1.25rem 1.25rem 1.35rem;
-  border-radius: var(--ado-radius-lg);
-  border: 1px solid var(--ado-slate-200);
-  background: #ffffff;
-  box-shadow: var(--ado-shadow-sm);
-}
-
-.ado-section-intro {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 1.15rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--ado-slate-200);
-}
-
-.ado-section-intro-badge {
-  flex-shrink: 0;
-  padding: 0.35rem 0.7rem;
-  border-radius: 9999px;
-  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-  color: #047857;
-  font-size: 0.625rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
 /* Chart header icons */
 .ado-chart-header-main {
   display: flex;
@@ -2096,15 +2135,10 @@
   font-size: 1rem;
 }
 
-.ado-chart-icon--indigo { background: linear-gradient(135deg, #eef2ff, #e0e7ff); }
-.ado-chart-icon--blue { background: linear-gradient(135deg, #eff6ff, #dbeafe); }
-.ado-chart-icon--green { background: linear-gradient(135deg, #ecfdf5, #d1fae5); }
-.ado-chart-icon--amber { background: linear-gradient(135deg, #fffbeb, #fef3c7); }
-
-.ado-chart-accent-indigo { background: linear-gradient(180deg, #ffffff 0%, #fafaff 100%); }
-.ado-chart-accent-blue { background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%); }
-.ado-chart-accent-green { background: linear-gradient(180deg, #ffffff 0%, #f8fdfb 100%); }
-.ado-chart-accent-amber { background: linear-gradient(180deg, #ffffff 0%, #fffdf8 100%); }
+.ado-chart-icon--indigo { background: var(--ado-indigo-soft); color: var(--ado-indigo); }
+.ado-chart-icon--blue { background: var(--ado-blue-soft); color: var(--ado-blue); }
+.ado-chart-icon--green { background: var(--ado-green-soft); color: var(--ado-green); }
+.ado-chart-icon--amber { background: var(--ado-amber-soft); color: var(--ado-amber); }
 
 /* Sidebar panel variants */
 .ado-panel-icon {
@@ -2118,60 +2152,54 @@
   flex-shrink: 0;
 }
 
-.ado-panel-icon--warn { background: linear-gradient(135deg, #fef3c7, #fde68a); }
-.ado-panel-icon--gold { background: linear-gradient(135deg, #fef3c7, #fcd34d); }
-.ado-panel-icon--indigo { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); }
-.ado-panel-icon--blue { background: linear-gradient(135deg, #dbeafe, #bfdbfe); }
+.ado-panel-icon--warn { background: var(--ado-amber-soft); color: var(--ado-amber); }
+.ado-panel-icon--gold { background: #fef3c7; color: #92400e; }
+.ado-panel-icon--indigo { background: var(--ado-indigo-soft); color: var(--ado-indigo); }
+.ado-panel-icon--blue { background: var(--ado-blue-soft); color: var(--ado-blue); }
 
 .ado-panel-rank {
-  background: linear-gradient(180deg, #ffffff 0%, #fffef8 100%);
-  border-color: rgba(251, 191, 36, 0.2);
+  border-color: var(--ado-slate-200);
 }
 
 .ado-panel-verifiers {
-  background: linear-gradient(180deg, #ffffff 0%, #f8f7ff 100%);
-  border-color: rgba(124, 58, 237, 0.15);
+  border-color: var(--ado-slate-200);
 }
 
 .ado-panel-trend {
-  background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%);
-  border-color: rgba(37, 99, 235, 0.15);
+  border-color: var(--ado-slate-200);
 }
 
 .ado-panel-attention {
-  border-color: rgba(245, 158, 11, 0.35);
-  background: linear-gradient(165deg, #fffbeb 0%, #ffffff 50%);
-  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.08);
+  border-color: rgba(180, 83, 9, 0.2);
+  background: #ffffff;
 }
 
 .ado-rank-fill {
-  background: linear-gradient(90deg, #6366f1, #a78bfa, #60a5fa);
+  background: var(--ado-indigo);
 }
 
 .ado-rank-item:first-child .ado-rank-num {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .ado-verifier-avatar {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  box-shadow: 0 3px 10px rgba(99, 102, 241, 0.3);
+  background: var(--ado-indigo);
 }
 
 .ado-district-drill-banner {
-  background: linear-gradient(135deg, #eef2ff 0%, #e0f2fe 50%, #ffffff 100%);
-  border-color: #a5b4fc;
-  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.08);
+  background: var(--ado-indigo-soft);
+  border-color: #c7d2fe;
+  box-shadow: none;
 }
 
 .ado-block-card {
-  background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
-  border-color: rgba(199, 210, 254, 0.4);
+  background: #ffffff;
+  border-color: var(--ado-slate-200);
 }
 
 .ado-block-card-fill {
-  background: linear-gradient(90deg, #10b981, #34d399, #6ee7b7);
+  background: var(--ado-green);
 }
 
 /* ─── Insight cards band ─── */
@@ -2362,18 +2390,14 @@
   color: #dc2626;
 }
 
-.ado-chart-accent-cyan::before { background: linear-gradient(90deg, #0891b2, #22d3ee); }
-.ado-chart-accent-violet::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
-.ado-chart-accent-cyan { background: linear-gradient(180deg, #ffffff 0%, #f0fdfa 100%); }
-.ado-chart-accent-violet { background: linear-gradient(180deg, #ffffff 0%, #faf5ff 100%); }
+.ado-chart-accent-cyan::before { background: var(--ado-cyan); }
+.ado-chart-accent-violet::before { background: var(--ado-violet); }
 
 .ado-chart-icon--cyan { background: #ecfeff; color: #0891b2; }
 .ado-chart-icon--violet { background: #f5f3ff; color: #7c3aed; }
 
 @media (max-width: 640px) {
-  .ado-hero-title { font-size: 1.625rem; }
-  .ado-section-intro { flex-direction: column; }
-  .ado-analytics-section--card { padding: 1rem; }
+  .ado-header-title { font-size: 1.2rem; }
 
   .ado-map-section {
     padding: 0.85rem;

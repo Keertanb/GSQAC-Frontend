@@ -8,6 +8,9 @@ import PublicRoute from "../components/PublicRoute/PublicRoute";
 const Dashboard = lazy(() => import("../pages/dashboard/dashboard"));
 const Login = lazy(() => import("../pages/login/login"));
 const OtpVerify = lazy(() => import("../pages/otp-verify/otp-verify"));
+const VerifierRegistration = lazy(() =>
+  import("../pages/verifier-registration/VerifierRegistration")
+);
 
 const SchoolDashboard = lazy(() =>
   import("../pages/school-dashboard/school-dashboard")
@@ -36,7 +39,6 @@ const CRCDashboard = lazy(() =>
 const CRCAssessment = lazy(() =>
   import("../pages/crc-dashboard/school-assessment/CRCAssessment")
 );
-
 export const publicRoutes = [
   {
     path: ROUTE_URLS.ROOT_URL,
@@ -67,6 +69,16 @@ export const publicRoutes = [
           <PublicRoute>
             <Suspense fallback={<LazyLoad />}>
               <OtpVerify />
+            </Suspense>
+          </PublicRoute>
+        ),
+      },
+      {
+        path: ROUTE_URLS.VERIFIER_REGISTRATION_URL,
+        element: (
+          <PublicRoute>
+            <Suspense fallback={<LazyLoad />}>
+              <VerifierRegistration />
             </Suspense>
           </PublicRoute>
         ),

@@ -1,0 +1,341 @@
+.vr-hang {
+  --vr-saffron-deep: #ea580c;
+  --vr-navy: #1e3a8a;
+  --vr-rope: #c4a484;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  z-index: 5;
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.vr-hang__ropes {
+  position: relative;
+  width: 62%;
+  height: 22px;
+  margin-bottom: -2px;
+  flex-shrink: 0;
+}
+
+.vr-hang__rope {
+  position: absolute;
+  top: 0;
+  width: 2.5px;
+  height: 22px;
+  background: linear-gradient(180deg, var(--vr-rope) 0%, #8b6914 100%);
+  border-radius: 2px;
+}
+
+.vr-hang__rope--left {
+  left: 16%;
+  transform: rotate(5deg);
+  transform-origin: top center;
+}
+
+.vr-hang__rope--right {
+  right: 16%;
+  transform: rotate(-5deg);
+  transform-origin: top center;
+}
+
+.vr-hang__peg {
+  position: absolute;
+  top: -2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #e8d5b7, #8b6914 70%);
+}
+
+.vr-hang__peg--left {
+  left: calc(16% - 2px);
+}
+
+.vr-hang__peg--right {
+  right: calc(16% - 2px);
+}
+
+.vr-hang__board {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+  padding: 0.95rem 0.9rem 0.85rem;
+  border-radius: 8px 8px 12px 12px;
+  color: #fff8f0;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, transparent 42%),
+    linear-gradient(180deg, #b45309 0%, var(--vr-saffron-deep) 48%, #9a3412 100%);
+  box-shadow:
+    0 6px 14px rgba(154, 52, 18, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+  border: 1.5px solid rgba(255, 237, 213, 0.35);
+  transform-origin: top center;
+  animation: vr-sway 3.6s ease-in-out infinite;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.vr-hang__board::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px dashed rgba(255, 247, 237, 0.3);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.vr-hang__board:hover {
+  filter: brightness(1.05);
+}
+
+.vr-hang__board:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 3px;
+}
+
+.vr-hang__nail {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fde68a, #92400e);
+  z-index: 2;
+}
+
+.vr-hang__blink-badge {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  z-index: 2;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.16rem 0.4rem;
+  border-radius: 999px;
+  background: var(--vr-navy);
+  color: #fff;
+  animation: vr-blink-pulse 1.4s ease-in-out infinite;
+}
+
+.vr-hang__icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 0.3rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.vr-hang__icon {
+  font-size: 1.15rem !important;
+  color: #fff7ed;
+}
+
+.vr-hang__text-stack {
+  display: block;
+  min-width: 0;
+}
+
+.vr-hang__eyebrow {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 247, 237, 0.88);
+  margin-bottom: 0.15rem;
+}
+
+.vr-hang__title {
+  display: block;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  animation: vr-title-glow 1.8s ease-in-out infinite;
+}
+
+.vr-hang__sub {
+  display: block;
+  margin-top: 0.28rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: rgba(255, 247, 237, 0.9);
+}
+
+.vr-hang__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.55rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: rgba(30, 58, 138, 0.95);
+  color: #fff;
+  animation: vr-cta-blink 1.6s steps(2, end) infinite;
+  min-height: 32px;
+}
+
+@keyframes vr-sway {
+  0%,
+  100% {
+    transform: rotate(-1deg);
+  }
+  50% {
+    transform: rotate(1deg);
+  }
+}
+
+@keyframes vr-blink-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes vr-title-glow {
+  0%,
+  100% {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  }
+  50% {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 0 8px rgba(255, 237, 213, 0.45);
+  }
+}
+
+@keyframes vr-cta-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vr-hang__board,
+  .vr-hang__blink-badge,
+  .vr-hang__title,
+  .vr-hang__cta {
+    animation: none;
+  }
+}
+
+@media (max-width: 960px) {
+  .vr-hang__ropes {
+    width: 42%;
+    height: 12px;
+  }
+
+  .vr-hang__rope {
+    height: 12px;
+  }
+
+  .vr-hang__board {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "icon text cta";
+    column-gap: 0.55rem;
+    align-items: center;
+    text-align: left;
+    padding: 0.55rem 0.6rem;
+    border-radius: 10px;
+    animation: none;
+    transform: none;
+  }
+
+  .vr-hang__board::before {
+    inset: 4px;
+  }
+
+  .vr-hang__nail {
+    display: none;
+  }
+
+  .vr-hang__blink-badge {
+    top: 4px;
+    right: 5px;
+    font-size: 0.48rem;
+    padding: 0.1rem 0.28rem;
+  }
+
+  .vr-hang__icon-wrap {
+    grid-area: icon;
+    margin: 0;
+    width: 32px;
+    height: 32px;
+  }
+
+  .vr-hang__icon {
+    font-size: 1rem !important;
+  }
+
+  .vr-hang__text-stack {
+    grid-area: text;
+    padding-right: 0.25rem;
+  }
+
+  .vr-hang__title {
+    font-size: 0.82rem;
+    animation: none;
+  }
+
+  .vr-hang__sub {
+    margin-top: 0.08rem;
+    font-size: 0.62rem;
+  }
+
+  .vr-hang__eyebrow {
+    font-size: 0.52rem;
+  }
+
+  .vr-hang__cta {
+    grid-area: cta;
+    margin-top: 0;
+    min-height: 30px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6rem;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 420px) {
+  .vr-hang__board {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "icon text"
+      "cta cta";
+    row-gap: 0.4rem;
+  }
+
+  .vr-hang__cta {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}

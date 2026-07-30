@@ -2,6 +2,7 @@
 export const ROOT_URL = "/";
 export const LOGIN_URL = "/login";
 export const OTP_VERIFY_URL = "/otp-verify";
+export const VERIFIER_REGISTRATION_URL = "/verifier-registration";
 
 // Dashboard Routes
 export const SCHOOL_DASHBOARD_URL = "/school-dashboard";

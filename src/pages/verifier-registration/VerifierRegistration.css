@@ -1,0 +1,258 @@
+.vr-reg-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% 0%, rgba(255, 153, 51, 0.18), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 90% 10%, rgba(30, 58, 138, 0.12), transparent 50%),
+    linear-gradient(180deg, #fff7ed 0%, #f8fafc 45%, #eef2ff 100%);
+}
+
+.vr-reg-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+}
+
+.vr-reg-container {
+  padding-top: 1.75rem;
+  padding-bottom: 2.5rem;
+}
+
+.vr-reg-card {
+  border-radius: 1.25rem !important;
+  border: 1px solid rgba(234, 88, 12, 0.18);
+  overflow: hidden;
+  background: #fff !important;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08) !important;
+}
+
+.vr-reg-card__hero {
+  padding: 1.5rem 1.5rem 1rem;
+  background: linear-gradient(135deg, #ea580c 0%, #f97316 55%, #fb923c 100%);
+  color: #fff7ed;
+  text-align: center;
+}
+
+.vr-reg-card__icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 0.75rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.vr-reg-card__title {
+  color: #fff !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.vr-reg-card__sub {
+  color: rgba(255, 247, 237, 0.92) !important;
+  max-width: 36rem;
+  margin: 0 auto !important;
+  line-height: 1.55;
+}
+
+.vr-reg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.vr-reg-success {
+  margin: 1rem 1.5rem 0;
+  padding: 1rem 1.15rem;
+  border-radius: 0.85rem;
+  border: 1px solid #86efac;
+  background: #f0fdf4;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.vr-reg-section {
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.vr-reg-section__header {
+  padding: 0.85rem 1rem;
+  background: linear-gradient(90deg, #eff6ff 0%, #fff7ed 100%);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.vr-reg-section__title-en {
+  font-weight: 800 !important;
+  color: #1e3a8a !important;
+  line-height: 1.3 !important;
+}
+
+.vr-reg-section__title-gu {
+  color: #9a3412 !important;
+  font-weight: 600 !important;
+  margin-top: 0.15rem !important;
+}
+
+.vr-reg-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: #fff;
+}
+
+.vr-reg-section-note {
+  color: #64748b !important;
+  font-size: 0.85rem !important;
+  margin-top: -0.25rem !important;
+}
+
+.vr-reg-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.vr-reg-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.vr-reg-field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-bottom: 0.35rem;
+}
+
+.vr-reg-field-label__en {
+  font-weight: 600 !important;
+  color: #0f172a !important;
+}
+
+.vr-reg-field-label__gu {
+  color: #64748b !important;
+}
+
+.vr-reg-required {
+  color: #dc2626;
+}
+
+.vr-reg-optional {
+  color: #64748b;
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+.vr-reg-yesno,
+.vr-reg-file {
+  width: 100%;
+}
+
+.vr-reg-checkbox-group,
+.vr-reg-yesno .MuiFormGroup-root {
+  margin-top: 0.25rem;
+}
+
+.vr-reg-checkbox-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.15rem 0.75rem;
+}
+
+.vr-reg-checkbox-group__label,
+.vr-reg-radio-group__label {
+  font-weight: 600 !important;
+  color: #0f172a !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.vr-reg-ranked-row {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.75rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+}
+
+.vr-reg-ranked-row__chip {
+  margin-top: 0.45rem;
+  font-weight: 700 !important;
+}
+
+.vr-reg-file__button {
+  justify-content: flex-start !important;
+  text-transform: none !important;
+  margin-top: 0.35rem;
+}
+
+.vr-reg-file__name {
+  display: block;
+  margin-top: 0.35rem;
+  color: #0369a1 !important;
+}
+
+.vr-reg-declaration {
+  line-height: 1.55 !important;
+  color: #334155 !important;
+}
+
+.vr-reg-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
+  flex-wrap: wrap;
+  padding-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .vr-reg-grid--2 {
+    grid-template-columns: 1fr;
+  }
+
+  .vr-reg-checkbox-group {
+    grid-template-columns: 1fr;
+  }
+
+  .vr-reg-ranked-row {
+    grid-template-columns: 1fr;
+  }
+
+  .vr-reg-ranked-row__chip {
+    margin-top: 0;
+    width: fit-content;
+  }
+}
+
+@media (max-width: 480px) {
+  .vr-reg-form {
+    padding: 1rem;
+  }
+
+  .vr-reg-section__body {
+    padding: 0.85rem;
+  }
+
+  .vr-reg-actions {
+    flex-direction: column-reverse;
+  }
+
+  .vr-reg-actions .MuiButton-root {
+    width: 100%;
+  }
+}

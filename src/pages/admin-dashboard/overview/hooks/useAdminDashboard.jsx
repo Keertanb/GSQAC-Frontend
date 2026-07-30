@@ -7,6 +7,7 @@ import {
 } from "../../../../services/adminService";
 
 const pct = (num, den) => (den > 0 ? Math.round((num / den) * 100) : 0);
+const RADAR_COLORS = ["#4338ca", "#0891b2", "#b45309", "#059669", "#be185d"];
 
 export function useAdminDashboard() {
   const [districtId, setDistrictId] = useState("");
@@ -336,6 +337,68 @@ export function useAdminDashboard() {
     [districtChartData],
   );
 
+  const districtRadarData = useMemo(() => {
+    const top = [...districtChartData]
+      .sort((a, b) => b.allocated - a.allocated)
+      .slice(0, 5);
+    if (top.length < 2) return { entities: [], axes: [] };
+    const maxVerifiers = Math.max(1, ...top.map((d) => d.verifiers));
+    const maxAllocated = Math.max(1, ...top.map((d) => d.allocated));
+    const entities = top.map((d, i) => ({ key: d.fullName, color: RADAR_COLORS[i % RADAR_COLORS.length] }));
+    const axes = [
+      {
+        metric: "Verification Rate",
+        ...Object.fromEntries(top.map((d) => [d.fullName, pct(d.completed, d.allocated)])),
+      },
+      {
+        metric: "Verifier Strength",
+        ...Object.fromEntries(top.map((d) => [d.fullName, Math.round((d.verifiers / maxVerifiers) * 100)])),
+      },
+      {
+        metric: "Allocation Volume",
+        ...Object.fromEntries(top.map((d) => [d.fullName, Math.round((d.allocated / maxAllocated) * 100)])),
+      },
+    ];
+    return { entities, axes };
+  }, [districtChartData]);
+
+  const blockRadarData = useMemo(() => {
+    const top = [...blockChartData]
+      .filter((b) => b.total > 0)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+    if (top.length < 2) return { entities: [], axes: [] };
+    const entities = top.map((b, i) => ({ key: b.fullName, color: RADAR_COLORS[i % RADAR_COLORS.length] }));
+    const axes = [
+      {
+        metric: "Completion Rate",
+        ...Object.fromEntries(top.map((b) => [b.fullName, pct(b.completed, b.total)])),
+      },
+      {
+        metric: "In-Progress Rate",
+        ...Object.fromEntries(top.map((b) => [b.fullName, pct(b.inProgress, b.total)])),
+      },
+      {
+        metric: "Allocation Rate",
+        ...Object.fromEntries(top.map((b) => [b.fullName, pct(b.total - b.notAllocated, b.total)])),
+      },
+    ];
+    return { entities, axes };
+  }, [blockChartData]);
+
+  const blockHeatmapData = useMemo(
+    () =>
+      [...blockChartData]
+        .map((b) => ({
+          name: b.fullName,
+          rate: pct(b.completed, b.total),
+          total: b.total,
+          completed: b.completed,
+        }))
+        .sort((a, b) => b.rate - a.rate),
+    [blockChartData],
+  );
+
   const insightCards = useMemo(() => {
     const districtsBelow50 = districtBreakdown.filter(
       (d) =>
@@ -438,6 +501,9 @@ export function useAdminDashboard() {
     comparisonChartData,
     workloadBuckets,
     districtPerformanceData,
+    districtRadarData,
+    blockRadarData,
+    blockHeatmapData,
     insightCards,
     insights,
     isLoading,
