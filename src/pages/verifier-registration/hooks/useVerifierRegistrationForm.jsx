@@ -17,19 +17,48 @@ import {
   validateVerifierRegistrationForm,
 } from "../utils/verifierRegistrationValidation";
 
+function normalizeDistrictOptions(list) {
+  return (list || [])
+    .map((district) => {
+      const districtId = String(
+        district.value ?? district.districtId ?? district.id ?? "",
+      );
+      const districtName =
+        district.name || district.districtName || district.label || districtId;
+      if (!districtId) return null;
+      return { ...district, districtId, districtName, value: districtId, name: districtName };
+    })
+    .filter(Boolean);
+}
+
+function normalizeBlockOptions(list) {
+  return (list || [])
+    .map((block) => {
+      const blockId = String(block.value ?? block.blockId ?? block.id ?? "");
+      const blockName = block.name || block.blockName || block.label || blockId;
+      if (!blockName) return null;
+      return { ...block, blockId, blockName, value: blockId, name: blockName };
+    })
+    .filter(Boolean);
+}
+
 function useDistrictOptions() {
   const { data } = useGetAllDistrictsQuery();
   const apiDistricts = data?.data || [];
 
-  return useMemo(
-    () => (apiDistricts.length > 0 ? apiDistricts : STATIC_GUJARAT_DISTRICTS),
-    [apiDistricts],
-  );
+  return useMemo(() => {
+    const source =
+      apiDistricts.length > 0 ? apiDistricts : STATIC_GUJARAT_DISTRICTS;
+    return normalizeDistrictOptions(source);
+  }, [apiDistricts]);
 }
 
 function useTalukaOptions(districtId) {
   const { data } = useGetDistrictWiseBlocksQuery(districtId || undefined);
-  return data?.data || [];
+  return useMemo(
+    () => normalizeBlockOptions(data?.data || []),
+    [data?.data],
+  );
 }
 
 function toPayload(form, fileNames) {

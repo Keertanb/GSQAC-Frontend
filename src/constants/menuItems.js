@@ -10,6 +10,7 @@ import {
   Assignment,
   CheckCircle,
   VerifiedUser,
+  HowToReg,
   Business,
   AccountCircle,
   ManageAccounts,
@@ -159,6 +160,13 @@ export const adminMenuItems = [
     icon: VerifiedUser,
     url: "/admin-dashboard/verifier",
     activeFinder: ["/admin-dashboard/verifier"],
+  },
+  {
+    id: "verifier-registration",
+    label: "Verifier Registration",
+    icon: HowToReg,
+    url: "/admin-dashboard/verifier-registration",
+    activeFinder: ["/admin-dashboard/verifier-registration"],
   },
 
   {

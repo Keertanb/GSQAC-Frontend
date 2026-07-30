@@ -93,8 +93,12 @@ function RankedLocationFields({
             <em>Select district</em>
           </MenuItem>
           {districts.map((district) => {
-            const id = String(district.districtId ?? district.id ?? "");
-            const name = district.districtName || district.name || id;
+            const id = String(
+              district.value ?? district.districtId ?? district.id ?? "",
+            );
+            const name =
+              district.name || district.districtName || district.label || id;
+            if (!id) return null;
             return (
               <MenuItem key={id} value={id}>
                 {name}
@@ -128,10 +132,11 @@ function RankedLocationFields({
             </em>
           </MenuItem>
           {talukaOptions.map((block) => {
-            const id = String(block.blockId ?? block.id ?? "");
-            const name = block.blockName || block.name || id;
+            const id = String(block.value ?? block.blockId ?? block.id ?? "");
+            const name = block.name || block.blockName || block.label || id;
+            if (!name) return null;
             return (
-              <MenuItem key={id} value={name}>
+              <MenuItem key={id || name} value={name}>
                 {name}
               </MenuItem>
             );

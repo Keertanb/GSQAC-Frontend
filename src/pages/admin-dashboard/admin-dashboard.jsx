@@ -17,6 +17,7 @@ import AppDrawer from "../../components/AppDrawer/AppDrawer";
 import { DRAWER_WIDTH } from "../../constants/menuItems";
 import AssessmentManagement from "./assessment-management/AssessmentManagement";
 import Verifier from "./verifier/Verifier";
+import VerifierRegistrationAdmin from "./verifier-registration/VerifierRegistrationAdmin";
 import SchoolAllocation from "./school-allocation/SchoolAllocation";
 import SchoolAssessmentStatus from "./school-assessment-status/SchoolAssessmentStatus";
 import SchoolSelfAssessmentMonitor from "./school-self-assessment-monitor/SchoolSelfAssessmentMonitor";
@@ -27,6 +28,7 @@ import RoleManagement from "./role-management/RoleManagement";
 import {
   ADMIN_DASHBOARD_URL,
   ADMIN_VERIFIER_URL,
+  ADMIN_VERIFIER_REGISTRATION_URL,
   ADMIN_ASSESSMENT_MANAGEMENT_URL,
   ADMIN_SCHOOL_ALLOCATION_URL,
   ADMIN_SCHOOL_ASSESSMENT_STATUS_URL,
@@ -76,6 +78,8 @@ const AdminDashboard = () => {
   const getCurrentView = () => {
     if (location.pathname === ADMIN_VERIFIER_URL) {
       return "verifier";
+    } else if (location.pathname === ADMIN_VERIFIER_REGISTRATION_URL) {
+      return "verifier-registration";
     } else if (location.pathname === ADMIN_ASSESSMENT_MANAGEMENT_URL) {
       return "assessment";
     } else if (location.pathname === ADMIN_SCHOOL_ALLOCATION_URL) {
@@ -369,6 +373,9 @@ const AdminDashboard = () => {
             }}
           >
             {currentView === "verifier" && <Verifier />}
+            {currentView === "verifier-registration" && (
+              <VerifierRegistrationAdmin />
+            )}
             {currentView === "assessment" && <AssessmentManagement />}
             {currentView === "allocation" && <SchoolAllocation />}
             {currentView === "school-assessment-status" && (

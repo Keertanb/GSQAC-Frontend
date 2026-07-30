@@ -246,6 +246,16 @@ export const adminRoutes = [
         ),
       },
       {
+        path: ROUTE_URLS.ADMIN_VERIFIER_REGISTRATION_URL,
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <Suspense fallback={<LazyLoad />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: ROUTE_URLS.ADMIN_ASSESSMENT_MANAGEMENT_URL,
         element: (
           <ProtectedRoute requiredRole="admin">

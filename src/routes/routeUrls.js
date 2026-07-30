@@ -20,6 +20,8 @@ export const INSPECTOR_COMPLETED_URL = "/inspector-dashboard/completed";
 
 // Admin Dashboard Sub-routes
 export const ADMIN_VERIFIER_URL = "/admin-dashboard/verifier";
+export const ADMIN_VERIFIER_REGISTRATION_URL =
+  "/admin-dashboard/verifier-registration";
 export const ADMIN_ASSESSMENT_MANAGEMENT_URL = "/admin-dashboard/assessment-management";
 export const ADMIN_SCHOOL_ALLOCATION_URL = "/admin-dashboard/school-allocation";
 export const ADMIN_SCHOOL_ASSESSMENT_STATUS_URL =
