@@ -100,14 +100,38 @@ export const verifierRegistrationSchema = Yup.object().shape({
       return Number.isFinite(age) && age >= 18 && age <= 75;
     }),
   mobileNumber: mobileNumberSchema,
+  gender: Yup.string()
+    .oneOf(["male", "female", "other"], "Field is required")
+    .required("Field is required"),
+  teacherCode: Yup.string()
+    .trim()
+    .required("Field is required")
+    .matches(/^\d+$/, "Only numbers are allowed")
+    .min(1, "Field is required")
+    .max(20, "Teacher code cannot exceed 20 digits"),
   educationalQualification: Yup.string().required("Field is required"),
   computerKnowledge: Yup.string().required("Field is required"),
   languageSkills: Yup.array()
     .of(Yup.string())
     .min(1, "Select at least one language skill (Read/Write)")
     .required("Field is required"),
-  occupation: Yup.string().required("Field is required"),
+  occupation: Yup.string()
+    .oneOf(["employed"], "Field is required")
+    .required("Field is required"),
   organizationType: Yup.string().when("occupation", {
+    is: "employed",
+    then: (schema) => schema.required("Field is required"),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  currentSchoolLevel: Yup.string().when("occupation", {
+    is: "employed",
+    then: (schema) =>
+      schema
+        .oneOf(["primary", "secondary"], "Field is required")
+        .required("Field is required"),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  currentDesignation: Yup.string().when("occupation", {
     is: "employed",
     then: (schema) => schema.required("Field is required"),
     otherwise: (schema) => schema.notRequired(),
@@ -142,12 +166,22 @@ export const verifierRegistrationSchema = Yup.object().shape({
       schema.trim().required("Field is required").max(2000, "Too long"),
     otherwise: (schema) => schema.notRequired(),
   }),
-  preferredDistrict1: Yup.string().required("Field is required"),
+  preferredDistrict1: Yup.string()
+    .required("Field is required")
+    .test("not-none", "Field is required", (value) => value && value !== "none"),
   preferredDistrict2: Yup.string().required("Field is required"),
   preferredDistrict3: Yup.string().required("Field is required"),
   preferredTaluka1: Yup.string().trim().required("Field is required"),
-  preferredTaluka2: Yup.string().trim().required("Field is required"),
-  preferredTaluka3: Yup.string().trim().required("Field is required"),
+  preferredTaluka2: Yup.string().when("preferredDistrict2", {
+    is: (value) => value && value !== "none",
+    then: (schema) => schema.trim().required("Field is required"),
+    otherwise: (schema) => schema.notRequired().nullable(),
+  }),
+  preferredTaluka3: Yup.string().when("preferredDistrict3", {
+    is: (value) => value && value !== "none",
+    then: (schema) => schema.trim().required("Field is required"),
+    otherwise: (schema) => schema.notRequired().nullable(),
+  }),
   hasVehicle: Yup.string().required("Field is required"),
   vehicleType: Yup.string().when("hasVehicle", {
     is: "yes",
@@ -195,11 +229,6 @@ export const verifierRegistrationSchema = Yup.object().shape({
     .required("Field is required")
     .min(5, "Bank address must be at least 5 characters")
     .max(500, "Bank address cannot exceed 500 characters"),
-  nocFile: Yup.mixed().when("occupation", {
-    is: "employed",
-    then: (schema) => schema.required("NOC upload is required"),
-    otherwise: (schema) => schema.notRequired().nullable(),
-  }),
   selfDeclaration: Yup.boolean().oneOf(
     [true],
     "You must accept the declaration to submit",

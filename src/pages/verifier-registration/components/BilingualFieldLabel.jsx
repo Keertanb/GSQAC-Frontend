@@ -9,14 +9,20 @@ export default function BilingualFieldLabel({
 }) {
   return (
     <Box className="vr-reg-field-label">
-      <Typography component="span" variant="body2" className="vr-reg-field-label__en">
-        {labelEn}
-        {required && <span className="vr-reg-required"> *</span>}
-        {optional && <span className="vr-reg-optional"> (Optional)</span>}
-      </Typography>
       {labelGu && (
-        <Typography component="span" variant="caption" className="vr-reg-field-label__gu">
+        <Typography component="span" variant="body2" className="vr-reg-field-label__gu">
           {labelGu}
+          {required && <span className="vr-reg-required"> *</span>}
+          {optional && <span className="vr-reg-optional"> (વૈકલ્પિક)</span>}
+        </Typography>
+      )}
+      {labelEn && (
+        <Typography component="span" variant="caption" className="vr-reg-field-label__en">
+          {labelEn}
+          {!labelGu && required && <span className="vr-reg-required"> *</span>}
+          {!labelGu && optional && (
+            <span className="vr-reg-optional"> (Optional)</span>
+          )}
         </Typography>
       )}
     </Box>

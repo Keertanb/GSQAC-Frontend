@@ -53,17 +53,49 @@ function useDistrictOptions() {
   }, [apiDistricts]);
 }
 
+function resolveDistrictQueryId(districtId) {
+  if (!districtId || districtId === "none") return undefined;
+  return districtId;
+}
+
+function toDistrictPayload(value) {
+  if (!value || value === "none") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function toTalukaPayload(districtValue, talukaValue) {
+  if (!districtValue || districtValue === "none") return null;
+  const trimmed = String(talukaValue || "").trim();
+  return trimmed || null;
+}
+
 function useTalukaOptions(districtId) {
-  const { data } = useGetDistrictWiseBlocksQuery(districtId || undefined);
+  const queryId = resolveDistrictQueryId(districtId);
+  const { data } = useGetDistrictWiseBlocksQuery(queryId);
   return useMemo(
     () => normalizeBlockOptions(data?.data || []),
     [data?.data],
   );
 }
 
+function getAadhaarConfirmError(aadhaarNumber, confirmAadhaarNumber) {
+  if (!confirmAadhaarNumber || !aadhaarNumber) return "";
+  if (confirmAadhaarNumber === aadhaarNumber) return "";
+  if (
+    confirmAadhaarNumber.length === 12 ||
+    !aadhaarNumber.startsWith(confirmAadhaarNumber)
+  ) {
+    return "Aadhaar Numbers must match";
+  }
+  return "";
+}
+
 function toPayload(form, fileNames) {
   return {
     fullName: form.fullName.trim(),
+    gender: form.gender,
+    teacherCode: form.teacherCode.trim(),
     email: form.email.trim(),
     dateOfBirth: form.dateOfBirth,
     mobileNumber: form.mobileNumber.trim(),
@@ -74,6 +106,10 @@ function toPayload(form, fileNames) {
     occupation: form.occupation,
     organizationType:
       form.occupation === "employed" ? form.organizationType : null,
+    currentSchoolLevel:
+      form.occupation === "employed" ? form.currentSchoolLevel : null,
+    currentDesignation:
+      form.occupation === "employed" ? form.currentDesignation : null,
     experienceYears: Number(form.experienceYears),
     previousAccreditationWork: form.previousAccreditationWork,
     previousAccreditationDuration:
@@ -85,12 +121,21 @@ function toPayload(form, fileNames) {
       form.otherVerificationExperience === "yes"
         ? form.otherVerificationDetails.trim()
         : null,
-    preferredDistrict1: Number(form.preferredDistrict1),
-    preferredDistrict2: Number(form.preferredDistrict2),
-    preferredDistrict3: Number(form.preferredDistrict3),
-    preferredTaluka1: form.preferredTaluka1.trim(),
-    preferredTaluka2: form.preferredTaluka2.trim(),
-    preferredTaluka3: form.preferredTaluka3.trim(),
+    preferredDistrict1: toDistrictPayload(form.preferredDistrict1),
+    preferredDistrict2: toDistrictPayload(form.preferredDistrict2),
+    preferredDistrict3: toDistrictPayload(form.preferredDistrict3),
+    preferredTaluka1: toTalukaPayload(
+      form.preferredDistrict1,
+      form.preferredTaluka1,
+    ),
+    preferredTaluka2: toTalukaPayload(
+      form.preferredDistrict2,
+      form.preferredTaluka2,
+    ),
+    preferredTaluka3: toTalukaPayload(
+      form.preferredDistrict3,
+      form.preferredTaluka3,
+    ),
     hasVehicle: form.hasVehicle,
     vehicleType: form.hasVehicle === "yes" ? form.vehicleType : null,
     hasDrivingLicense:
@@ -105,8 +150,7 @@ function toPayload(form, fileNames) {
     bankBranch: form.bankBranch.trim(),
     bankName: form.bankName.trim(),
     bankAddress: form.bankAddress.trim(),
-    nocFileName:
-      form.occupation === "employed" ? fileNames.nocFileName : null,
+    nocFileName: null,
     selfDeclaration: true,
     selfDeclarationFileName: fileNames.selfDeclarationFileName || null,
   };
@@ -146,6 +190,10 @@ export function useVerifierRegistrationForm() {
       value = String(value ?? "").replace(/\D/g, "").slice(0, 2);
     }
 
+    if (field === "teacherCode") {
+      value = String(value ?? "").replace(/\D/g, "").slice(0, 20);
+    }
+
     if (field === "bankIfsc") {
       value = String(value ?? "")
         .toUpperCase()
@@ -177,7 +225,13 @@ export function useVerifierRegistrationForm() {
 
       if (field === "occupation" && value !== "employed") {
         next.organizationType = "";
+        next.currentSchoolLevel = "";
+        next.currentDesignation = "";
         next.nocFile = null;
+      }
+
+      if (field === "currentSchoolLevel") {
+        next.currentDesignation = "";
       }
 
       if (field === "previousAccreditationWork" && value !== "yes") {
@@ -193,8 +247,27 @@ export function useVerifierRegistrationForm() {
         next.hasDrivingLicense = "";
       }
 
+      if (field === "willingToJoin" && !value) {
+        next.selfDeclarationFile = null;
+      }
+
       return next;
     });
+
+    if (field === "aadhaarNumber" || field === "confirmAadhaarNumber") {
+      const aadhaar = field === "aadhaarNumber" ? value : form.aadhaarNumber;
+      const confirm =
+        field === "confirmAadhaarNumber" ? value : form.confirmAadhaarNumber;
+      const matchError = getAadhaarConfirmError(aadhaar, confirm);
+      setErrors((prev) => {
+        const next = { ...prev };
+        if (field === "aadhaarNumber") delete next.aadhaarNumber;
+        if (matchError) next.confirmAadhaarNumber = matchError;
+        else delete next.confirmAadhaarNumber;
+        return next;
+      });
+      return;
+    }
 
     clearError(field);
   };
@@ -235,10 +308,6 @@ export function useVerifierRegistrationForm() {
 
     try {
       const aadhaarFileName = resolveLocalFileName(form.aadhaarFile);
-      const nocFileName =
-        form.occupation === "employed"
-          ? resolveLocalFileName(form.nocFile)
-          : null;
       const selfDeclarationFileName = resolveLocalFileName(
         form.selfDeclarationFile,
       );
@@ -246,13 +315,9 @@ export function useVerifierRegistrationForm() {
       if (!aadhaarFileName) {
         throw new Error("Please select an Aadhaar document");
       }
-      if (form.occupation === "employed" && !nocFileName) {
-        throw new Error("Please select an NOC document");
-      }
 
       const payload = toPayload(form, {
         aadhaarFileName,
-        nocFileName,
         selfDeclarationFileName,
       });
 

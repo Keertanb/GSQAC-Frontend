@@ -46,6 +46,8 @@ export function VerifierRegistrationDetailModal({ row, onClose }) {
           <DetailSection title="Personal & Contact">
             <DetailItem label="Full Name" value={row.fullName} />
             <DetailItem label="Username" value={row.userName} />
+            <DetailItem label="Gender" value={row.genderLabel} />
+            <DetailItem label="Teacher Code" value={row.teacherCode} />
             <DetailItem label="Email" value={row.email} />
             <DetailItem label="Date of Birth" value={row.dateOfBirthLabel} />
             <DetailItem label="Mobile" value={row.mobileNumber} />
@@ -73,6 +75,14 @@ export function VerifierRegistrationDetailModal({ row, onClose }) {
             <DetailItem
               label="Organization Type"
               value={row.organizationTypeLabel}
+            />
+            <DetailItem
+              label="Current School Level"
+              value={row.currentSchoolLevelLabel}
+            />
+            <DetailItem
+              label="Current Designation"
+              value={row.currentDesignationLabel}
             />
             <DetailItem label="Experience (Years)" value={row.experienceYears} />
             <DetailItem

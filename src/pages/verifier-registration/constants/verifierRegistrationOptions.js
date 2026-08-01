@@ -44,7 +44,7 @@ export const PROFESSIONAL_QUALIFICATIONS = [
   { value: "bed", labelEn: "B.Ed", labelGu: "બી.એડ" },
   { value: "med", labelEn: "M.Ed", labelGu: "એમ.એડ" },
   { value: "phd", labelEn: "Ph.D", labelGu: "પી.એચ.ડી" },
-  { value: "gset_net", labelEn: "GSET / NET", labelGu: "GSET / NET" },
+  { value: "gset_net", labelEn: "GSET / NET", labelGu: "જીસેટ / નેટ" },
 ];
 
 export const LANGUAGE_SKILLS = [
@@ -56,7 +56,53 @@ export const LANGUAGE_SKILLS = [
 
 export const OCCUPATION_OPTIONS = [
   { value: "employed", labelEn: "Employed (Job)", labelGu: "નોકરી" },
-  { value: "retired", labelEn: "Retired", labelGu: "નિવૃત્ત" },
+];
+
+export const GENDER_OPTIONS = [
+  { value: "male", labelEn: "Male", labelGu: "પુરુષ" },
+  { value: "female", labelEn: "Female", labelGu: "સ્ત્રી" },
+  { value: "other", labelEn: "Other", labelGu: "અન્ય" },
+];
+
+export const CURRENT_SCHOOL_LEVEL_OPTIONS = [
+  { value: "primary", labelEn: "Primary School", labelGu: "પ્રાથમિક શાળા" },
+  { value: "secondary", labelEn: "Secondary School", labelGu: "માધ્યમિક શાળા" },
+];
+
+export const PRIMARY_DESIGNATION_OPTIONS = [
+  {
+    value: "mukhya_shikshak",
+    labelEn: "Head Teacher",
+    labelGu: "મુખ્ય શિક્ષક",
+  },
+  {
+    value: "mukhya_shikshak_h_tat",
+    labelEn: "Head Teacher (H Tat)",
+    labelGu: "મુખ્ય શિક્ષક (એચ તાત)",
+  },
+  {
+    value: "crc_coordinator",
+    labelEn: "CRC Coordinator",
+    labelGu: "સીઆરસી કોઓર્ડિનેટર",
+  },
+  {
+    value: "kedavni_nirikshak",
+    labelEn: "Education Inspector",
+    labelGu: "કેડાવણી નિરીક્ષક",
+  },
+];
+
+export const SECONDARY_DESIGNATION_OPTIONS = [
+  {
+    value: "acharya_varg_2",
+    labelEn: "Acharya (Class 2)",
+    labelGu: "આચાર્ય (વર્ગ 2)",
+  },
+];
+
+export const ALL_DESIGNATION_OPTIONS = [
+  ...PRIMARY_DESIGNATION_OPTIONS,
+  ...SECONDARY_DESIGNATION_OPTIONS,
 ];
 
 export const ORGANIZATION_TYPES = [
@@ -84,8 +130,16 @@ export const YES_NO_OPTIONS = [
   { value: "no", labelEn: "No", labelGu: "ના" },
 ];
 
+export function formatBilingualOption(item) {
+  if (!item) return "";
+  if (!item.labelGu || item.labelGu === item.labelEn) return item.labelEn;
+  return `${item.labelGu} / ${item.labelEn}`;
+}
+
 export const INITIAL_VERIFIER_FORM = {
   fullName: "",
+  gender: "",
+  teacherCode: "",
   email: "",
   dateOfBirth: "",
   mobileNumber: "",
@@ -95,6 +149,8 @@ export const INITIAL_VERIFIER_FORM = {
   languageSkills: [],
   occupation: "",
   organizationType: "",
+  currentSchoolLevel: "",
+  currentDesignation: "",
   experienceYears: "",
   previousAccreditationWork: "",
   previousAccreditationDuration: "",
@@ -120,6 +176,7 @@ export const INITIAL_VERIFIER_FORM = {
   bankName: "",
   bankAddress: "",
   nocFile: null,
+  willingToJoin: false,
   selfDeclaration: false,
   selfDeclarationFile: null,
 };
