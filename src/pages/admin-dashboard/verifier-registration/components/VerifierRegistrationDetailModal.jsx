@@ -47,7 +47,7 @@ export function VerifierRegistrationDetailModal({ row, onClose }) {
             <DetailItem label="Full Name" value={row.fullName} />
             <DetailItem label="Username" value={row.userName} />
             <DetailItem label="Gender" value={row.genderLabel} />
-            <DetailItem label="Teacher Code" value={row.teacherCode} />
+            <DetailItem label="Teacher Code / CRC Code" value={row.teacherCode || "-"} />
             <DetailItem label="Email" value={row.email} />
             <DetailItem label="Date of Birth" value={row.dateOfBirthLabel} />
             <DetailItem label="Mobile" value={row.mobileNumber} />
@@ -84,7 +84,7 @@ export function VerifierRegistrationDetailModal({ row, onClose }) {
               label="Current Designation"
               value={row.currentDesignationLabel}
             />
-            <DetailItem label="Experience (Years)" value={row.experienceYears} />
+            <DetailItem label="Experience" value={row.experienceLabel} />
             <DetailItem
               label="Prior Accreditation Work"
               value={row.previousAccreditationWorkLabel}

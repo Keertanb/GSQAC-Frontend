@@ -7,24 +7,20 @@ export default function BilingualFieldLabel({
   required = false,
   optional = false,
 }) {
+  const label =
+    labelGu && labelEn && labelGu !== labelEn
+      ? `${labelGu} (${labelEn})`
+      : labelGu || labelEn || "";
+
   return (
     <Box className="vr-reg-field-label">
-      {labelGu && (
-        <Typography component="span" variant="body2" className="vr-reg-field-label__gu">
-          {labelGu}
-          {required && <span className="vr-reg-required"> *</span>}
-          {optional && <span className="vr-reg-optional"> (વૈકલ્પિક)</span>}
-        </Typography>
-      )}
-      {labelEn && (
-        <Typography component="span" variant="caption" className="vr-reg-field-label__en">
-          {labelEn}
-          {!labelGu && required && <span className="vr-reg-required"> *</span>}
-          {!labelGu && optional && (
-            <span className="vr-reg-optional"> (Optional)</span>
-          )}
-        </Typography>
-      )}
+      <Typography component="span" variant="body2" className="vr-reg-field-label__gu">
+        {label}
+        {required && <span className="vr-reg-required"> *</span>}
+        {optional && (
+          <span className="vr-reg-optional"> (વૈકલ્પિક / Optional)</span>
+        )}
+      </Typography>
     </Box>
   );
 }

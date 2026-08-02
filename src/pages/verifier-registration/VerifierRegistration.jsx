@@ -19,11 +19,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import {
-  ArrowBack as ArrowBackIcon,
-  CloudUpload as CloudUploadIcon,
-  VerifiedUser as VerifiedUserIcon,
-} from "@mui/icons-material";
+import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import { ROOT_URL } from "../../routes/routeUrls";
 import LogoImg from "../../assets/logo_image.png";
 import GsqacLogoImg from "../../assets/gsqac_logo.png";
@@ -48,9 +44,14 @@ import {
 import { DOB_BOUNDS } from "./utils/verifierRegistrationValidation";
 import "./VerifierRegistration.css";
 
-function YesNoGroup({ labelEn, labelGu, name, value, onChange, error, required }) {
+function YesNoGroup({ labelEn, labelGu, name, value, onChange, onBlur, error, required }) {
   return (
-    <FormControl error={!!error} required={required} className="vr-reg-yesno">
+    <FormControl
+      error={!!error}
+      required={required}
+      className="vr-reg-yesno"
+      onBlur={onBlur}
+    >
       <BilingualFieldLabel labelEn={labelEn} labelGu={labelGu} required={required} />
       <RadioGroup row name={name} value={value} onChange={onChange}>
         {YES_NO_OPTIONS.map((option) => (
@@ -75,6 +76,8 @@ function RankedLocationFields({
   talukaOptions,
   onDistrictChange,
   onTalukaChange,
+  onDistrictBlur,
+  onTalukaBlur,
   districtError,
   talukaError,
   required = false,
@@ -97,6 +100,8 @@ function RankedLocationFields({
           value={districtValue}
           label={`જિલ્લો ${rank} / District ${rank}`}
           onChange={onDistrictChange}
+          onBlur={onDistrictBlur}
+          onClose={onDistrictBlur}
         >
           <MenuItem value="">
             <em>જિલ્લો પસંદ કરો / Select district</em>
@@ -135,6 +140,8 @@ function RankedLocationFields({
           value={isNone ? "" : talukaValue}
           label={`બ્લોક / તાલુકો ${rank} / Block / Taluka ${rank}`}
           onChange={onTalukaChange}
+          onBlur={onTalukaBlur}
+          onClose={onTalukaBlur}
         >
           <MenuItem value="">
             <em>
@@ -165,60 +172,6 @@ function RankedLocationFields({
   );
 }
 
-function FileUploadField({
-  labelEn,
-  labelGu,
-  file,
-  onChange,
-  error,
-  required,
-  optional,
-  disabled = false,
-}) {
-  return (
-    <FormControl
-      error={!!error}
-      required={required}
-      className="vr-reg-file"
-      disabled={disabled}
-    >
-      <BilingualFieldLabel
-        labelEn={labelEn}
-        labelGu={labelGu}
-        required={required}
-        optional={optional}
-      />
-      <Button
-        component="label"
-        variant="outlined"
-        startIcon={<CloudUploadIcon />}
-        className="vr-reg-file__button"
-        disabled={disabled}
-      >
-        {file ? "ફાઈલ બદલો / Change file" : "દસ્તાવેજ અપલોડ / Upload document"}
-        <input
-          type="file"
-          hidden
-          accept=".pdf,.jpg,.jpeg,.png"
-          onChange={onChange}
-          disabled={disabled}
-        />
-      </Button>
-      {file && !disabled && (
-        <Typography variant="caption" className="vr-reg-file__name">
-          Selected: {file.name}
-        </Typography>
-      )}
-      <FormHelperText>
-        {error ||
-          (disabled
-            ? "અપલોડ માટે નીચેની સંમતિ ચેકબોક્સ પસંદ કરો / Select the consent checkbox to enable upload"
-            : "Accepted formats: PDF, JPG, PNG")}
-      </FormHelperText>
-    </FormControl>
-  );
-}
-
 export default function VerifierRegistration() {
   const navigate = useNavigate();
   const {
@@ -229,7 +182,7 @@ export default function VerifierRegistration() {
     districts,
     talukaOptions,
     updateField,
-    updateFile,
+    blurField,
     toggleMultiValue,
     handleSubmit,
   } = useVerifierRegistrationForm();
@@ -257,10 +210,10 @@ export default function VerifierRegistration() {
             <img src={LogoImg} alt="GCERT" className="vr-reg-header__logo" />
             <div className="vr-reg-header__brand-text">
               <p className="vr-reg-header__org-gu">
-                ગુજરાત સ્કૂલ ક્વોલિટી એશ્યોરન્સ કાઉન્સિલ
+                ગુજરાત સ્કૂલ ક્વોલિટી એક્રેડિટેશન કાઉન્સિલ (GSQAC)
               </p>
               <p className="vr-reg-header__org-en">
-                Gujarat School Quality Assurance Council
+                Gujarat - SSSA
               </p>
             </div>
             <img
@@ -291,10 +244,11 @@ export default function VerifierRegistration() {
                     Verifier Registration
                   </Typography>
                 </div>
-                <div className="vr-reg-card__badge" aria-hidden>
-                  <VerifiedUserIcon />
-                  <span>GSQAC</span>
-                </div>
+                <img
+                  src={GsqacLogoImg}
+                  alt="GSQAC"
+                  className="vr-reg-card__gsqac-logo"
+                />
               </div>
               <p className="vr-reg-card__sub">
                 નીચેની વિગતો સંપૂર્ણ અને સચોટ ભરો. તારાંકિત (*) ક્ષેત્રો અનિવાર્ય છે.
@@ -318,9 +272,10 @@ export default function VerifierRegistration() {
               titleGu="વ્યક્તિગત માહિતી અને સંપર્ક વિગતો"
             >
               <TextField
-                label="પૂરું નામ / Full Name"
+                label="પૂરું નામ (Full Name)"
                 value={form.fullName}
                 onChange={updateField("fullName")}
+                onBlur={blurField("fullName")}
                 fullWidth
                 required
                 size="small"
@@ -332,9 +287,10 @@ export default function VerifierRegistration() {
                 error={!!errors.gender}
                 required
                 className="vr-reg-choice-group"
+                onBlur={blurField("gender")}
               >
                 <BilingualFieldLabel
-                  labelGu="લિંગ"
+                  labelGu="જાતિ"
                   labelEn="Gender"
                   required
                 />
@@ -343,6 +299,7 @@ export default function VerifierRegistration() {
                   name="gender"
                   value={form.gender}
                   onChange={updateField("gender")}
+                  onBlur={blurField("gender")}
                   className="vr-reg-choice-group__options"
                 >
                   {GENDER_OPTIONS.map((item) => (
@@ -358,10 +315,7 @@ export default function VerifierRegistration() {
                       label={
                         <span className="vr-reg-choice-option__label">
                           <span className="vr-reg-choice-option__gu">
-                            {item.labelGu}
-                          </span>
-                          <span className="vr-reg-choice-option__en">
-                            {item.labelEn}
+                            {formatBilingualOption(item)}
                           </span>
                         </span>
                       }
@@ -374,22 +328,25 @@ export default function VerifierRegistration() {
               </FormControl>
 
               <TextField
-                label="શિક્ષક કોડ / Teacher Code"
+                label="શિક્ષક કોડ / CRC કોડ (Teacher Code / CRC Code)"
                 value={form.teacherCode}
                 onChange={updateField("teacherCode")}
+                onBlur={blurField("teacherCode")}
                 fullWidth
-                required
                 size="small"
                 inputProps={{ inputMode: "numeric", maxLength: 20 }}
                 error={!!errors.teacherCode}
-                helperText={errors.teacherCode}
+                helperText={
+                  errors.teacherCode || "વૈકલ્પિક / Optional — digits only"
+                }
               />
 
               <TextField
-                label="ઈ-મેઈલ આઈડી / Email ID"
+                label="ઈ-મેઈલ આઈડી (Email ID)"
                 type="email"
                 value={form.email}
                 onChange={updateField("email")}
+                onBlur={blurField("email")}
                 fullWidth
                 required
                 size="small"
@@ -398,10 +355,11 @@ export default function VerifierRegistration() {
               />
               <Box className="vr-reg-grid vr-reg-grid--2">
                 <TextField
-                  label="જન્મ તારીખ / Date of Birth"
+                  label="જન્મ તારીખ (Date of Birth)"
                   type="date"
                   value={form.dateOfBirth}
                   onChange={updateField("dateOfBirth")}
+                  onBlur={blurField("dateOfBirth")}
                   onKeyDown={(event) => event.preventDefault()}
                   onPaste={(event) => event.preventDefault()}
                   fullWidth
@@ -422,7 +380,7 @@ export default function VerifierRegistration() {
                   helperText={errors.dateOfBirth}
                 />
                 <TextField
-                  label="ઉંમર / Age"
+                  label="ઉંમર (Age)"
                   value={age}
                   fullWidth
                   size="small"
@@ -430,9 +388,10 @@ export default function VerifierRegistration() {
                 />
               </Box>
               <TextField
-                label="મોબાઈલ-વોટ્સએપ નંબર / Mobile / WhatsApp Number"
+                label="મોબાઈલ-વોટ્સએપ નંબર (Mobile / WhatsApp Number)"
                 value={form.mobileNumber}
                 onChange={updateField("mobileNumber")}
+                onBlur={blurField("mobileNumber")}
                 fullWidth
                 required
                 size="small"
@@ -454,11 +413,13 @@ export default function VerifierRegistration() {
                 required
                 error={!!errors.educationalQualification}
               >
-                <InputLabel>શૈક્ષણિક લાયકાત / Educational Qualification</InputLabel>
+                <InputLabel>શૈક્ષણિક લાયકાત (Educational Qualification)</InputLabel>
                 <Select
                   value={form.educationalQualification}
-                  label="શૈક્ષણિક લાયકાત / Educational Qualification"
+                  label="શૈક્ષણિક લાયકાત (Educational Qualification)"
                   onChange={updateField("educationalQualification")}
+onBlur={blurField("educationalQualification")}
+onClose={blurField("educationalQualification")}
                 >
                   {EDUCATIONAL_QUALIFICATIONS.map((item) => (
                     <MenuItem key={item.value} value={item.value}>
@@ -471,9 +432,12 @@ export default function VerifierRegistration() {
                 )}
               </FormControl>
 
-              <FormControl error={!!errors.professionalQualifications}>
+              <FormControl
+                error={!!errors.professionalQualifications}
+                onBlur={blurField("professionalQualifications")}
+              >
                 <FormLabel className="vr-reg-checkbox-group__label">
-                  વ્યાવસાયિક લાયકાત / Professional Qualification{" "}
+                  વ્યાવસાયિક લાયકાત (Professional Qualification){" "}
                   <span className="vr-reg-optional">(વૈકલ્પિક / Optional)</span>
                 </FormLabel>
                 <Box className="vr-reg-checkbox-group">
@@ -499,18 +463,23 @@ export default function VerifierRegistration() {
               </FormControl>
 
               <YesNoGroup
-                labelEn="Computer / IT Knowledge (computer, mobile, tablet)"
+                labelEn="Computer / IT Knowledge (computer/ mobile/ tablet)"
                 labelGu="કમ્પ્યુટર/આઈટી જ્ઞાન"
                 name="computerKnowledge"
                 value={form.computerKnowledge}
                 onChange={updateField("computerKnowledge")}
+                onBlur={blurField("computerKnowledge")}
                 error={errors.computerKnowledge}
                 required
               />
 
-              <FormControl error={!!errors.languageSkills} required>
+              <FormControl
+                error={!!errors.languageSkills}
+                required
+                onBlur={blurField("languageSkills")}
+              >
                 <FormLabel className="vr-reg-checkbox-group__label">
-                  ભાષાનું જ્ઞાન / Language Knowledge *
+                  ભાષાનું જ્ઞાન (Language Knowledge) *
                 </FormLabel>
                 <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
                   ગુજરાતી અને અંગ્રેજીમાં વાંચન / લેખન ક્ષમતા — Reading / writing ability in Gujarati &amp; English
@@ -542,14 +511,19 @@ export default function VerifierRegistration() {
               titleEn="Work & Experience Details"
               titleGu="નોકરી અને અનુભવ સંબંધિત વિગતો"
             >
-              <FormControl error={!!errors.occupation} required>
+              <FormControl
+                error={!!errors.occupation}
+                required
+                onBlur={blurField("occupation")}
+              >
                 <FormLabel className="vr-reg-radio-group__label">
-                  વ્યવસાય / Occupation *
+                  વ્યવસાય (Occupation) *
                 </FormLabel>
                 <RadioGroup
                   row
                   value={form.occupation}
                   onChange={updateField("occupation")}
+                  onBlur={blurField("occupation")}
                 >
                   {OCCUPATION_OPTIONS.map((item) => (
                     <FormControlLabel
@@ -571,12 +545,14 @@ export default function VerifierRegistration() {
                   error={!!errors.organizationType}
                 >
                   <InputLabel>
-                    નોકરીની સંસ્થાનો પ્રકાર / Type of Job Institution
+                    નોકરીની સંસ્થાનો પ્રકાર (Type of Job Institution)
                   </InputLabel>
                   <Select
                     value={form.organizationType}
-                    label="નોકરીની સંસ્થાનો પ્રકાર / Type of Job Institution"
+                    label="નોકરીની સંસ્થાનો પ્રકાર (Type of Job Institution)"
                     onChange={updateField("organizationType")}
+onBlur={blurField("organizationType")}
+onClose={blurField("organizationType")}
                   >
                     {ORGANIZATION_TYPES.map((item) => (
                       <MenuItem key={item.value} value={item.value}>
@@ -596,6 +572,7 @@ export default function VerifierRegistration() {
                     error={!!errors.currentSchoolLevel}
                     required
                     className="vr-reg-choice-group"
+                    onBlur={blurField("currentSchoolLevel")}
                   >
                     <BilingualFieldLabel
                       labelGu="વર્તમાન હોદ્દો — શાળા પ્રકાર"
@@ -607,6 +584,7 @@ export default function VerifierRegistration() {
                       name="currentSchoolLevel"
                       value={form.currentSchoolLevel}
                       onChange={updateField("currentSchoolLevel")}
+                      onBlur={blurField("currentSchoolLevel")}
                       className="vr-reg-choice-group__options"
                     >
                       {CURRENT_SCHOOL_LEVEL_OPTIONS.map((item) => (
@@ -622,10 +600,7 @@ export default function VerifierRegistration() {
                           label={
                             <span className="vr-reg-choice-option__label">
                               <span className="vr-reg-choice-option__gu">
-                                {item.labelGu}
-                              </span>
-                              <span className="vr-reg-choice-option__en">
-                                {item.labelEn}
+                                {formatBilingualOption(item)}
                               </span>
                             </span>
                           }
@@ -637,7 +612,36 @@ export default function VerifierRegistration() {
                     )}
                   </FormControl>
 
-                  {form.currentSchoolLevel && (
+                  {form.currentSchoolLevel === "other" && (
+                    <TextField
+                      label="અન્ય શાળા પ્રકાર સ્પષ્ટ કરો (Specify Other School Type)"
+                      value={form.currentSchoolLevelOther}
+                      onChange={updateField("currentSchoolLevelOther")}
+                      onBlur={blurField("currentSchoolLevelOther")}
+                      fullWidth
+                      required
+                      size="small"
+                      error={!!errors.currentSchoolLevelOther}
+                      helperText={errors.currentSchoolLevelOther}
+                    />
+                  )}
+
+                  {form.currentSchoolLevel === "other" && (
+                    <TextField
+                      label="વર્તમાન હોદ્દો (Current Designation)"
+                      value={form.currentDesignation}
+                      onChange={updateField("currentDesignation")}
+                      onBlur={blurField("currentDesignation")}
+                      fullWidth
+                      required
+                      size="small"
+                      error={!!errors.currentDesignation}
+                      helperText={errors.currentDesignation}
+                    />
+                  )}
+
+                  {(form.currentSchoolLevel === "primary" ||
+                    form.currentSchoolLevel === "secondary") && (
                     <FormControl
                       fullWidth
                       size="small"
@@ -645,12 +649,14 @@ export default function VerifierRegistration() {
                       error={!!errors.currentDesignation}
                     >
                       <InputLabel>
-                        વર્તમાન હોદ્દો / Current Designation
+                        વર્તમાન હોદ્દો (Current Designation)
                       </InputLabel>
                       <Select
                         value={form.currentDesignation}
-                        label="વર્તમાન હોદ્દો / Current Designation"
+                        label="વર્તમાન હોદ્દો (Current Designation)"
                         onChange={updateField("currentDesignation")}
+                        onBlur={blurField("currentDesignation")}
+                        onClose={blurField("currentDesignation")}
                       >
                         {(form.currentSchoolLevel === "primary"
                           ? PRIMARY_DESIGNATION_OPTIONS
@@ -669,37 +675,57 @@ export default function VerifierRegistration() {
                 </>
               )}
 
-              <TextField
-                label="અનુભવ (વર્ષ) / Educational / Administrative Experience (years)"
-                value={form.experienceYears}
-                onChange={updateField("experienceYears")}
-                fullWidth
-                required
-                size="small"
-                inputProps={{
-                  inputMode: "numeric",
-                  pattern: "[0-9]*",
-                  maxLength: 2,
-                }}
-                error={!!errors.experienceYears}
-                helperText={errors.experienceYears || "ફક્ત અંક / Digits only (0–60)"}
-              />
+              <Box className="vr-reg-grid vr-reg-grid--2">
+                <TextField
+                  label="અનુભવ — વર્ષ (Experience — Years)"
+                  value={form.experienceYears}
+                  onChange={updateField("experienceYears")}
+                  onBlur={blurField("experienceYears")}
+                  fullWidth
+                  required
+                  size="small"
+                  inputProps={{
+                    inputMode: "numeric",
+                    pattern: "[0-9]*",
+                    maxLength: 2,
+                  }}
+                  error={!!errors.experienceYears}
+                  helperText={errors.experienceYears || "0–60 વર્ષ / years"}
+                />
+                <TextField
+                  label="અનુભવ — મહિના (Experience — Months)"
+                  value={form.experienceMonths}
+                  onChange={updateField("experienceMonths")}
+                  onBlur={blurField("experienceMonths")}
+                  fullWidth
+                  size="small"
+                  inputProps={{
+                    inputMode: "numeric",
+                    pattern: "[0-9]*",
+                    maxLength: 2,
+                  }}
+                  error={!!errors.experienceMonths}
+                  helperText={errors.experienceMonths || "0–11 મહિના / months"}
+                />
+              </Box>
 
               <YesNoGroup
                 labelEn="Prior work in School Accreditation / Verification?"
-                labelGu="સ્કૂલ એક્રેડિટેશન/વેરિફિકેશનમાં અગાઉ કામગીરી છે?"
+                labelGu="સ્કૂલ એક્રેડિટેશન/વેરિફિકેશનમાં અગાઉ કામગીરી કરેલ છે?"
                 name="previousAccreditationWork"
                 value={form.previousAccreditationWork}
                 onChange={updateField("previousAccreditationWork")}
+                onBlur={blurField("previousAccreditationWork")}
                 error={errors.previousAccreditationWork}
                 required
               />
 
               {form.previousAccreditationWork === "yes" && (
                 <TextField
-                  label="જો હા તો કેટલા સમય માટે? (વર્ષ) / If Yes, for how long? (years)"
+                  label="જો હા તો કેટલા સમય માટે? — વર્ષ (If Yes, for how long? — years)"
                   value={form.previousAccreditationDuration}
                   onChange={updateField("previousAccreditationDuration")}
+                  onBlur={blurField("previousAccreditationDuration")}
                   fullWidth
                   required
                   size="small"
@@ -721,15 +747,17 @@ export default function VerifierRegistration() {
                 name="otherVerificationExperience"
                 value={form.otherVerificationExperience}
                 onChange={updateField("otherVerificationExperience")}
+                onBlur={blurField("otherVerificationExperience")}
                 error={errors.otherVerificationExperience}
                 required
               />
 
               {form.otherVerificationExperience === "yes" && (
                 <TextField
-                  label="If Yes, details / વિગતો"
+                  label="વિગતો (If Yes, details)"
                   value={form.otherVerificationDetails}
                   onChange={updateField("otherVerificationDetails")}
+                  onBlur={blurField("otherVerificationDetails")}
                   fullWidth
                   required
                   multiline
@@ -764,6 +792,8 @@ export default function VerifierRegistration() {
                   talukaOptions={talukaOptions[rank]}
                   onDistrictChange={updateField(`preferredDistrict${rank}`)}
                   onTalukaChange={updateField(`preferredTaluka${rank}`)}
+                  onDistrictBlur={blurField(`preferredDistrict${rank}`)}
+                  onTalukaBlur={blurField(`preferredTaluka${rank}`)}
                   districtError={errors[`preferredDistrict${rank}`]}
                   talukaError={errors[`preferredTaluka${rank}`]}
                   required
@@ -777,20 +807,26 @@ export default function VerifierRegistration() {
                 name="hasVehicle"
                 value={form.hasVehicle}
                 onChange={updateField("hasVehicle")}
+                onBlur={blurField("hasVehicle")}
                 error={errors.hasVehicle}
                 required
               />
 
               {hasVehicle && (
                 <>
-                  <FormControl error={!!errors.vehicleType} required>
+                  <FormControl
+                    error={!!errors.vehicleType}
+                    required
+                    onBlur={blurField("vehicleType")}
+                  >
                     <FormLabel className="vr-reg-radio-group__label">
-                      વાહનનો પ્રકાર / Vehicle Type *
+                      વાહનનો પ્રકાર (Vehicle Type) *
                     </FormLabel>
                     <RadioGroup
                       row
                       value={form.vehicleType}
                       onChange={updateField("vehicleType")}
+                      onBlur={blurField("vehicleType")}
                     >
                       {VEHICLE_TYPES.map((item) => (
                         <FormControlLabel
@@ -812,13 +848,19 @@ export default function VerifierRegistration() {
                     name="hasDrivingLicense"
                     value={form.hasDrivingLicense}
                     onChange={updateField("hasDrivingLicense")}
+                    onBlur={blurField("hasDrivingLicense")}
                     error={errors.hasDrivingLicense}
                     required
                   />
                 </>
               )}
 
-              <FormControl error={!!errors.workDuration} required className="vr-reg-choice-group">
+              <FormControl
+                error={!!errors.workDuration}
+                required
+                className="vr-reg-choice-group"
+                onBlur={blurField("workDuration")}
+              >
                 <BilingualFieldLabel
                   labelGu="સ્કૂલ એક્રેડિટેશનની કામગીરી માટે તમે કેટલા સમય સુધી જોડાઈ શકો છો?"
                   labelEn="How long can you join for school accreditation work?"
@@ -827,6 +869,7 @@ export default function VerifierRegistration() {
                 <RadioGroup
                   value={form.workDuration}
                   onChange={updateField("workDuration")}
+                  onBlur={blurField("workDuration")}
                 >
                   {WORK_DURATION_OPTIONS.map((item) => (
                     <FormControlLabel
@@ -850,9 +893,10 @@ export default function VerifierRegistration() {
               titleGu="ઓળખ અને બેંક વિગતો"
             >
               <TextField
-                label="Aadhaar Number / આધાર કાર્ડ"
+                label="આધાર કાર્ડ (Aadhaar Number)"
                 value={form.aadhaarNumber}
                 onChange={updateField("aadhaarNumber")}
+                onBlur={blurField("aadhaarNumber")}
                 fullWidth
                 required
                 size="small"
@@ -864,9 +908,10 @@ export default function VerifierRegistration() {
               />
 
               <TextField
-                label="આધાર નંબરની પુષ્ટિ / Confirm Aadhaar Number"
+                label="આધાર નંબરની પુષ્ટિ (Confirm Aadhaar Number)"
                 value={form.confirmAadhaarNumber}
                 onChange={updateField("confirmAadhaarNumber")}
+                onBlur={blurField("confirmAadhaarNumber")}
                 fullWidth
                 required
                 size="small"
@@ -875,24 +920,18 @@ export default function VerifierRegistration() {
                 helperText={errors.confirmAadhaarNumber}
               />
 
-              <FileUploadField
-                labelEn="Aadhaar Card Upload"
-                labelGu="આધાર કાર્ડ અપલોડ"
-                file={form.aadhaarFile}
-                onChange={updateFile("aadhaarFile")}
-                error={errors.aadhaarFile}
-                required
-              />
-
               <Typography variant="body2" className="vr-reg-section-note">
-                આ માહિતી ફક્ત અમારા પેમેન્ટ પર્પઝ માટે લઈએ છીએ.
-                <span>This information is collected only for our payment purpose.</span>
+                આ માહિતી માત્ર વેરિફિકેશનની કામગીરી માટે નાણાકીય ચૂકવણીના હેતુ માટે છે.
+                <span>
+                  This information is only for monetary payment related to verification work.
+                </span>
               </Typography>
 
               <TextField
-                label="ખાતાધારકનું નામ / Account Holder Name"
+                label="ખાતાધારકનું નામ (Account Holder Name)"
                 value={form.bankAccountName}
                 onChange={updateField("bankAccountName")}
+                onBlur={blurField("bankAccountName")}
                 fullWidth
                 required
                 size="small"
@@ -902,9 +941,10 @@ export default function VerifierRegistration() {
 
               <Box className="vr-reg-grid vr-reg-grid--2">
                 <TextField
-                  label="ખાતા નંબર / Account Number"
+                  label="ખાતા નંબર (Account Number)"
                   value={form.bankAccountNumber}
                   onChange={updateField("bankAccountNumber")}
+                  onBlur={blurField("bankAccountNumber")}
                   fullWidth
                   required
                   size="small"
@@ -913,9 +953,10 @@ export default function VerifierRegistration() {
                   helperText={errors.bankAccountNumber}
                 />
                 <TextField
-                  label="IFSC કોડ / IFSC Code"
+                  label="IFSC કોડ (IFSC Code)"
                   value={form.bankIfsc}
                   onChange={updateField("bankIfsc")}
+                  onBlur={blurField("bankIfsc")}
                   fullWidth
                   required
                   size="small"
@@ -933,9 +974,10 @@ export default function VerifierRegistration() {
 
               <Box className="vr-reg-grid vr-reg-grid--2">
                 <TextField
-                  label="શાખાનું નામ / Branch Name"
+                  label="શાખાનું નામ (Branch Name)"
                   value={form.bankBranch}
                   onChange={updateField("bankBranch")}
+                  onBlur={blurField("bankBranch")}
                   fullWidth
                   required
                   size="small"
@@ -943,9 +985,10 @@ export default function VerifierRegistration() {
                   helperText={errors.bankBranch}
                 />
                 <TextField
-                  label="બેંકનું નામ / Bank Name"
+                  label="બેંકનું નામ (Bank Name)"
                   value={form.bankName}
                   onChange={updateField("bankName")}
+                  onBlur={blurField("bankName")}
                   fullWidth
                   required
                   size="small"
@@ -955,9 +998,10 @@ export default function VerifierRegistration() {
               </Box>
 
               <TextField
-                label="બેંક સરનામું / Bank Address"
+                label="બેંક સરનામું (Bank Address)"
                 value={form.bankAddress}
                 onChange={updateField("bankAddress")}
+                onBlur={blurField("bankAddress")}
                 fullWidth
                 required
                 multiline
@@ -974,41 +1018,13 @@ export default function VerifierRegistration() {
               titleEn="Approval & Self-Declaration"
               titleGu="મંજૂરી અને બાંહેધરી"
             >
-              <FileUploadField
-                labelEn="Self-Declaration Document (optional upload)"
-                labelGu="બાંહેધરી પત્રક અપલોડ"
-                file={form.selfDeclarationFile}
-                onChange={updateFile("selfDeclarationFile")}
-                optional
-                disabled={!form.willingToJoin}
-              />
-
-              <FormControl className="vr-reg-declaration-box">
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={form.willingToJoin}
-                      onChange={updateField("willingToJoin")}
-                    />
-                  }
-                  label={
-                    <Typography variant="body2" className="vr-reg-declaration">
-                      હું મારી સ્વેચ્છા અને સંમતિથી આ કામગીરીમાં જોડાવા ઇચ્છું છું.
-                      <br />
-                      <span>
-                        I wish to join this work of my own free will and consent.
-                      </span>
-                    </Typography>
-                  }
-                />
-              </FormControl>
-
               <FormControl error={!!errors.selfDeclaration} required className="vr-reg-declaration-box">
                 <FormControlLabel
                   control={
                     <Checkbox
                       checked={form.selfDeclaration}
                       onChange={updateField("selfDeclaration")}
+                      onBlur={blurField("selfDeclaration")}
                     />
                   }
                   label={
@@ -1031,8 +1047,10 @@ export default function VerifierRegistration() {
 
             <Box className="vr-reg-actions">
               <div className="vr-reg-actions__note">
-                <strong>નોંધ / Note:</strong> સબમિટ કર્યા પછી વિગતોમાં ફેરફાર શક્ય નથી.
-                <span>Details cannot be edited after submission.</span>
+                <strong>નોંધ / Note:</strong> અરજી કર્યાથી વેરિફાયર તરીકે પસંદગી કે કામગીરી માટેનો કોઈ હક કે દાવો કરી શકાશે નહીં. પસંદગીનો અંતિમ નિર્ણય GCERT-GSQAC નો રહેશે.
+                <span>
+                  Submitting an application does not create any right or claim to selection or work as a verifier. The final decision rests with GCERT-GSQAC.
+                </span>
               </div>
               <div className="vr-reg-actions__buttons">
                 <Button
@@ -1060,7 +1078,7 @@ export default function VerifierRegistration() {
 
             <footer className="vr-reg-card__footer">
               <p>
-                ગુજરાત સ્કૂલ ક્વોલિટી એશ્યોરન્સ કાઉન્સિલ (GSQAC)
+                ગુજરાત સ્કૂલ ક્વોલિટી એક્રેડિટેશન કાઉન્સિલ (GSQAC) — Gujarat - SSSA
               </p>
               <p>
                 Gujarat Council of Educational Research and Training (GCERT)

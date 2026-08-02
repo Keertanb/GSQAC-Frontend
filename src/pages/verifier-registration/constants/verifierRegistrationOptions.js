@@ -35,6 +35,8 @@ export const STATIC_GUJARAT_DISTRICTS = [
 ];
 
 export const EDUCATIONAL_QUALIFICATIONS = [
+  { value: "class_10", labelEn: "Class 10", labelGu: "ધોરણ 10" },
+  { value: "class_12", labelEn: "Class 12", labelGu: "ધોરણ 12" },
   { value: "graduate", labelEn: "Graduate", labelGu: "સ્નાતક" },
   { value: "postgraduate", labelEn: "Post-Graduate", labelGu: "અનુસ્નાતક" },
 ];
@@ -55,7 +57,7 @@ export const LANGUAGE_SKILLS = [
 ];
 
 export const OCCUPATION_OPTIONS = [
-  { value: "employed", labelEn: "Employed (Job)", labelGu: "નોકરી" },
+  { value: "employed", labelEn: "Employed", labelGu: "નોકરી" },
 ];
 
 export const GENDER_OPTIONS = [
@@ -67,6 +69,7 @@ export const GENDER_OPTIONS = [
 export const CURRENT_SCHOOL_LEVEL_OPTIONS = [
   { value: "primary", labelEn: "Primary School", labelGu: "પ્રાથમિક શાળા" },
   { value: "secondary", labelEn: "Secondary School", labelGu: "માધ્યમિક શાળા" },
+  { value: "other", labelEn: "Other", labelGu: "અન્ય" },
 ];
 
 export const PRIMARY_DESIGNATION_OPTIONS = [
@@ -112,6 +115,7 @@ export const ORGANIZATION_TYPES = [
   { value: "private", labelEn: "Private", labelGu: "ખાનગી" },
   { value: "ngo", labelEn: "NGO", labelGu: "NGO" },
   { value: "freelance", labelEn: "Freelance", labelGu: "ફ્રી-લાન્સ" },
+  { value: "nivrut", labelEn: "Nivrut", labelGu: "નિવૃત્ત" },
 ];
 
 export const VEHICLE_TYPES = [
@@ -133,7 +137,7 @@ export const YES_NO_OPTIONS = [
 export function formatBilingualOption(item) {
   if (!item) return "";
   if (!item.labelGu || item.labelGu === item.labelEn) return item.labelEn;
-  return `${item.labelGu} / ${item.labelEn}`;
+  return `${item.labelGu} (${item.labelEn})`;
 }
 
 export const INITIAL_VERIFIER_FORM = {
@@ -150,8 +154,10 @@ export const INITIAL_VERIFIER_FORM = {
   occupation: "",
   organizationType: "",
   currentSchoolLevel: "",
+  currentSchoolLevelOther: "",
   currentDesignation: "",
   experienceYears: "",
+  experienceMonths: "",
   previousAccreditationWork: "",
   previousAccreditationDuration: "",
   otherVerificationExperience: "",
@@ -168,15 +174,11 @@ export const INITIAL_VERIFIER_FORM = {
   workDuration: "",
   aadhaarNumber: "",
   confirmAadhaarNumber: "",
-  aadhaarFile: null,
   bankAccountName: "",
   bankAccountNumber: "",
   bankIfsc: "",
   bankBranch: "",
   bankName: "",
   bankAddress: "",
-  nocFile: null,
-  willingToJoin: false,
   selfDeclaration: false,
-  selfDeclarationFile: null,
 };

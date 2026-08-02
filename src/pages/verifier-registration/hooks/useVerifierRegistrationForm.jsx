@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { enqueueSnackbar } from "notistack";
 import {
   useGetAllDistrictsQuery,
@@ -6,7 +6,6 @@ import {
 } from "../../../services/adminService";
 import {
   registerVerifier,
-  resolveLocalFileName,
 } from "../../../services/verifierRegistrationService";
 import {
   INITIAL_VERIFIER_FORM,
@@ -14,6 +13,8 @@ import {
 } from "../constants/verifierRegistrationOptions";
 import {
   calculateAgeFromDob,
+  getRelatedValidationFields,
+  validateVerifierRegistrationField,
   validateVerifierRegistrationForm,
 } from "../utils/verifierRegistrationValidation";
 
@@ -26,7 +27,13 @@ function normalizeDistrictOptions(list) {
       const districtName =
         district.name || district.districtName || district.label || districtId;
       if (!districtId) return null;
-      return { ...district, districtId, districtName, value: districtId, name: districtName };
+      return {
+        ...district,
+        districtId,
+        districtName,
+        value: districtId,
+        name: districtName,
+      };
     })
     .filter(Boolean);
 }
@@ -82,20 +89,49 @@ function useTalukaOptions(districtId) {
 function getAadhaarConfirmError(aadhaarNumber, confirmAadhaarNumber) {
   if (!confirmAadhaarNumber || !aadhaarNumber) return "";
   if (confirmAadhaarNumber === aadhaarNumber) return "";
-  if (
-    confirmAadhaarNumber.length === 12 ||
-    !aadhaarNumber.startsWith(confirmAadhaarNumber)
-  ) {
-    return "Aadhaar Numbers must match";
-  }
-  return "";
+  return "Aadhaar Numbers must match";
 }
 
-function toPayload(form, fileNames) {
+function applyFieldSideEffects(prev, field, value) {
+  const next = { ...prev, [field]: value };
+
+  if (field === "preferredDistrict1") next.preferredTaluka1 = "";
+  if (field === "preferredDistrict2") next.preferredTaluka2 = "";
+  if (field === "preferredDistrict3") next.preferredTaluka3 = "";
+
+  if (field === "occupation" && value !== "employed") {
+    next.organizationType = "";
+    next.currentSchoolLevel = "";
+    next.currentSchoolLevelOther = "";
+    next.currentDesignation = "";
+  }
+
+  if (field === "currentSchoolLevel") {
+    next.currentDesignation = "";
+    if (value !== "other") next.currentSchoolLevelOther = "";
+  }
+
+  if (field === "previousAccreditationWork" && value !== "yes") {
+    next.previousAccreditationDuration = "";
+  }
+
+  if (field === "otherVerificationExperience" && value !== "yes") {
+    next.otherVerificationDetails = "";
+  }
+
+  if (field === "hasVehicle" && value !== "yes") {
+    next.vehicleType = "";
+    next.hasDrivingLicense = "";
+  }
+
+  return next;
+}
+
+function toPayload(form) {
   return {
     fullName: form.fullName.trim(),
     gender: form.gender,
-    teacherCode: form.teacherCode.trim(),
+    teacherCode: form.teacherCode.trim() || null,
     email: form.email.trim(),
     dateOfBirth: form.dateOfBirth,
     mobileNumber: form.mobileNumber.trim(),
@@ -108,9 +144,17 @@ function toPayload(form, fileNames) {
       form.occupation === "employed" ? form.organizationType : null,
     currentSchoolLevel:
       form.occupation === "employed" ? form.currentSchoolLevel : null,
+    currentSchoolLevelOther:
+      form.occupation === "employed" && form.currentSchoolLevel === "other"
+        ? form.currentSchoolLevelOther.trim()
+        : null,
     currentDesignation:
-      form.occupation === "employed" ? form.currentDesignation : null,
+      form.occupation === "employed" ? form.currentDesignation.trim() : null,
     experienceYears: Number(form.experienceYears),
+    experienceMonths:
+      form.experienceMonths === "" || form.experienceMonths == null
+        ? 0
+        : Number(form.experienceMonths),
     previousAccreditationWork: form.previousAccreditationWork,
     previousAccreditationDuration:
       form.previousAccreditationWork === "yes"
@@ -143,7 +187,7 @@ function toPayload(form, fileNames) {
     workDuration: form.workDuration,
     aadhaarNumber: form.aadhaarNumber.trim(),
     confirmAadhaarNumber: form.confirmAadhaarNumber.trim(),
-    aadhaarFileName: fileNames.aadhaarFileName,
+    aadhaarFileName: null,
     bankAccountName: form.bankAccountName.trim(),
     bankAccountNumber: form.bankAccountNumber.trim(),
     bankIfsc: form.bankIfsc.trim().toUpperCase(),
@@ -152,7 +196,7 @@ function toPayload(form, fileNames) {
     bankAddress: form.bankAddress.trim(),
     nocFileName: null,
     selfDeclaration: true,
-    selfDeclarationFileName: fileNames.selfDeclarationFileName || null,
+    selfDeclarationFileName: null,
   };
 }
 
@@ -160,6 +204,8 @@ export function useVerifierRegistrationForm() {
   const [form, setForm] = useState(INITIAL_VERIFIER_FORM);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const formRef = useRef(form);
+  formRef.current = form;
 
   const districts = useDistrictOptions();
   const talukaOptions1 = useTalukaOptions(form.preferredDistrict1);
@@ -171,12 +217,40 @@ export function useVerifierRegistrationForm() {
     [form.dateOfBirth],
   );
 
-  const clearError = (field) => {
+  const clearErrors = (fields) => {
     setErrors((prev) => {
-      if (!prev[field]) return prev;
-      const next = { ...prev };
-      delete next[field];
-      return next;
+      let changed = false;
+      const nextErrors = { ...prev };
+      fields.forEach((field) => {
+        if (nextErrors[field]) {
+          delete nextErrors[field];
+          changed = true;
+        }
+      });
+      return changed ? nextErrors : prev;
+    });
+  };
+
+  const applyFieldErrors = (nextForm, fields) => {
+    setErrors((prev) => {
+      const nextErrors = { ...prev };
+
+      fields.forEach((field) => {
+        let message = validateVerifierRegistrationField(nextForm, field);
+
+        if (field === "confirmAadhaarNumber") {
+          const matchError = getAadhaarConfirmError(
+            nextForm.aadhaarNumber,
+            nextForm.confirmAadhaarNumber,
+          );
+          if (matchError) message = matchError;
+        }
+
+        if (message) nextErrors[field] = message;
+        else delete nextErrors[field];
+      });
+
+      return nextErrors;
     });
   };
 
@@ -186,8 +260,16 @@ export function useVerifierRegistrationForm() {
         ? event.target.checked
         : event.target.value;
 
-    if (field === "experienceYears" || field === "previousAccreditationDuration") {
+    if (
+      field === "experienceYears" ||
+      field === "previousAccreditationDuration"
+    ) {
       value = String(value ?? "").replace(/\D/g, "").slice(0, 2);
+    }
+
+    if (field === "experienceMonths") {
+      value = String(value ?? "").replace(/\D/g, "").slice(0, 2);
+      if (value !== "" && Number(value) > 11) value = "11";
     }
 
     if (field === "teacherCode") {
@@ -217,84 +299,39 @@ export function useVerifierRegistrationForm() {
     }
 
     setForm((prev) => {
-      const next = { ...prev, [field]: value };
-
-      if (field === "preferredDistrict1") next.preferredTaluka1 = "";
-      if (field === "preferredDistrict2") next.preferredTaluka2 = "";
-      if (field === "preferredDistrict3") next.preferredTaluka3 = "";
-
-      if (field === "occupation" && value !== "employed") {
-        next.organizationType = "";
-        next.currentSchoolLevel = "";
-        next.currentDesignation = "";
-        next.nocFile = null;
-      }
-
-      if (field === "currentSchoolLevel") {
-        next.currentDesignation = "";
-      }
-
-      if (field === "previousAccreditationWork" && value !== "yes") {
-        next.previousAccreditationDuration = "";
-      }
-
-      if (field === "otherVerificationExperience" && value !== "yes") {
-        next.otherVerificationDetails = "";
-      }
-
-      if (field === "hasVehicle" && value !== "yes") {
-        next.vehicleType = "";
-        next.hasDrivingLicense = "";
-      }
-
-      if (field === "willingToJoin" && !value) {
-        next.selfDeclarationFile = null;
-      }
-
-      return next;
+      const nextForm = applyFieldSideEffects(prev, field, value);
+      formRef.current = nextForm;
+      return nextForm;
     });
 
-    if (field === "aadhaarNumber" || field === "confirmAadhaarNumber") {
-      const aadhaar = field === "aadhaarNumber" ? value : form.aadhaarNumber;
-      const confirm =
-        field === "confirmAadhaarNumber" ? value : form.confirmAadhaarNumber;
-      const matchError = getAadhaarConfirmError(aadhaar, confirm);
-      setErrors((prev) => {
-        const next = { ...prev };
-        if (field === "aadhaarNumber") delete next.aadhaarNumber;
-        if (matchError) next.confirmAadhaarNumber = matchError;
-        else delete next.confirmAadhaarNumber;
-        return next;
-      });
-      return;
-    }
-
-    clearError(field);
+    // Clear related errors while editing; validate only on blur.
+    clearErrors(getRelatedValidationFields(field));
   };
 
-  const updateFile = (field) => (event) => {
-    const file = event.target.files?.[0] || null;
-    setForm((prev) => ({ ...prev, [field]: file }));
-    clearError(field);
+  const blurField = (field) => () => {
+    applyFieldErrors(formRef.current, [field]);
   };
 
   const toggleMultiValue = (field) => (value) => {
     setForm((prev) => {
       const current = prev[field] || [];
       const exists = current.includes(value);
-      return {
+      const nextForm = {
         ...prev,
         [field]: exists
           ? current.filter((item) => item !== value)
           : [...current, value],
       };
+      formRef.current = nextForm;
+      return nextForm;
     });
-    clearError(field);
+    clearErrors([field]);
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const validationErrors = validateVerifierRegistrationForm(form);
+    const currentForm = formRef.current;
+    const validationErrors = validateVerifierRegistrationForm(currentForm);
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -307,27 +344,15 @@ export function useVerifierRegistrationForm() {
     setSubmitting(true);
 
     try {
-      const aadhaarFileName = resolveLocalFileName(form.aadhaarFile);
-      const selfDeclarationFileName = resolveLocalFileName(
-        form.selfDeclarationFile,
-      );
-
-      if (!aadhaarFileName) {
-        throw new Error("Please select an Aadhaar document");
-      }
-
-      const payload = toPayload(form, {
-        aadhaarFileName,
-        selfDeclarationFileName,
-      });
-
-      const response = await registerVerifier(payload);
+      const payload = toPayload(currentForm);
+      await registerVerifier(payload);
 
       enqueueSnackbar(
-        response?.message || "Verifier registered successfully.",
-        { variant: "success" },
+        "અરજી કર્યાથી વેરિફાયર તરીકે પસંદગી કે કામગીરી માટેનો કોઈ હક કે દાવો કરી શકાશે નહીં. પસંદગીનો અંતિમ નિર્ણય GCERT-GSQAC નો રહેશે.",
+        { variant: "success", autoHideDuration: 8000 },
       );
       setForm(INITIAL_VERIFIER_FORM);
+      formRef.current = INITIAL_VERIFIER_FORM;
       setErrors({});
     } catch (error) {
       const message =
@@ -352,7 +377,7 @@ export function useVerifierRegistrationForm() {
       3: talukaOptions3,
     },
     updateField,
-    updateFile,
+    blurField,
     toggleMultiValue,
     handleSubmit,
   };

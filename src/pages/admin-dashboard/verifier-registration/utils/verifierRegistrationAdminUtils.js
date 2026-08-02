@@ -71,14 +71,19 @@ export function enrichRegistrationRow(row, districts) {
     preferredDistrict2Name: getDistrictLabel(districts, row.preferredDistrict2),
     preferredDistrict3Name: getDistrictLabel(districts, row.preferredDistrict3),
     genderLabel: formatOptionLabel(GENDER_OPTIONS, row.gender),
-    currentSchoolLevelLabel: formatOptionLabel(
-      CURRENT_SCHOOL_LEVEL_OPTIONS,
-      row.currentSchoolLevel,
-    ),
+    currentSchoolLevelLabel:
+      row.currentSchoolLevel === "other" && row.currentSchoolLevelOther
+        ? `Other (${row.currentSchoolLevelOther})`
+        : formatOptionLabel(CURRENT_SCHOOL_LEVEL_OPTIONS, row.currentSchoolLevel),
     currentDesignationLabel: formatOptionLabel(
       ALL_DESIGNATION_OPTIONS,
       row.currentDesignation,
     ),
+    experienceLabel: (() => {
+      const years = Number(row.experienceYears) || 0;
+      const months = Number(row.experienceMonths) || 0;
+      return `${years} yr${years === 1 ? "" : "s"} ${months} mo`;
+    })(),
     educationalQualificationLabel: formatOptionLabel(
       EDUCATIONAL_QUALIFICATIONS,
       row.educationalQualification,
@@ -113,7 +118,7 @@ export const EXCEL_COLUMNS = [
   { key: "userName", label: "Username" },
   { key: "fullName", label: "Full Name" },
   { key: "genderLabel", label: "Gender" },
-  { key: "teacherCode", label: "Teacher Code" },
+  { key: "teacherCode", label: "Teacher Code / CRC Code" },
   { key: "email", label: "Email" },
   { key: "dateOfBirthLabel", label: "Date of Birth" },
   { key: "mobileNumber", label: "Mobile Number" },
@@ -125,7 +130,7 @@ export const EXCEL_COLUMNS = [
   { key: "organizationTypeLabel", label: "Organization Type" },
   { key: "currentSchoolLevelLabel", label: "Current School Level" },
   { key: "currentDesignationLabel", label: "Current Designation" },
-  { key: "experienceYears", label: "Experience (Years)" },
+  { key: "experienceLabel", label: "Experience" },
   { key: "previousAccreditationWorkLabel", label: "Prior Accreditation Work" },
   { key: "previousAccreditationDuration", label: "Prior Accreditation Duration (Years)" },
   { key: "otherVerificationExperienceLabel", label: "Other Verification Experience" },
