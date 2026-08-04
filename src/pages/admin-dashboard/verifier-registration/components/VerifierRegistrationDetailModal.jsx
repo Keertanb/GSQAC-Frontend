@@ -48,6 +48,9 @@ export function VerifierRegistrationDetailModal({ row, onClose }) {
             <DetailItem label="Username" value={row.userName} />
             <DetailItem label="Gender" value={row.genderLabel} />
             <DetailItem label="Teacher Code / CRC Code" value={row.teacherCode || "-"} />
+            <DetailItem label="School DISE Code" value={row.schoolDiseCode || "-"} />
+            <DetailItem label="Native District" value={row.nativeDistrictName} />
+            <DetailItem label="Job District" value={row.jobDistrictName} />
             <DetailItem label="Email" value={row.email} />
             <DetailItem label="Date of Birth" value={row.dateOfBirthLabel} />
             <DetailItem label="Mobile" value={row.mobileNumber} />
@@ -162,6 +165,10 @@ export function VerifierRegistrationDetailModal({ row, onClose }) {
             <DetailItem
               label="Self Declaration"
               value={row.selfDeclarationLabel}
+            />
+            <DetailItem
+              label="Willing to Join"
+              value={row.willingToJoinLabel}
             />
             <DetailItem
               label="Self Declaration File"

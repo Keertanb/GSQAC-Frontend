@@ -70,15 +70,26 @@ export function enrichRegistrationRow(row, districts) {
     preferredDistrict1Name: getDistrictLabel(districts, row.preferredDistrict1),
     preferredDistrict2Name: getDistrictLabel(districts, row.preferredDistrict2),
     preferredDistrict3Name: getDistrictLabel(districts, row.preferredDistrict3),
+    nativeDistrictName: getDistrictLabel(districts, row.nativeDistrictId),
+    jobDistrictName:
+      row.jobDistrictId == null || row.jobDistrictId === ""
+        ? "NA"
+        : getDistrictLabel(districts, row.jobDistrictId),
     genderLabel: formatOptionLabel(GENDER_OPTIONS, row.gender),
     currentSchoolLevelLabel:
       row.currentSchoolLevel === "other" && row.currentSchoolLevelOther
         ? `Other (${row.currentSchoolLevelOther})`
         : formatOptionLabel(CURRENT_SCHOOL_LEVEL_OPTIONS, row.currentSchoolLevel),
-    currentDesignationLabel: formatOptionLabel(
-      ALL_DESIGNATION_OPTIONS,
-      row.currentDesignation,
-    ),
+    currentDesignationLabel: (() => {
+      const fromOptions = formatOptionLabel(
+        ALL_DESIGNATION_OPTIONS,
+        row.currentDesignation,
+      );
+      if (fromOptions !== "-" && fromOptions !== String(row.currentDesignation)) {
+        return fromOptions;
+      }
+      return row.currentDesignation || "-";
+    })(),
     experienceLabel: (() => {
       const years = Number(row.experienceYears) || 0;
       const months = Number(row.experienceMonths) || 0;
@@ -88,10 +99,19 @@ export function enrichRegistrationRow(row, districts) {
       EDUCATIONAL_QUALIFICATIONS,
       row.educationalQualification,
     ),
-    professionalQualificationsLabel: formatCsvCodes(
-      PROFESSIONAL_QUALIFICATIONS,
-      row.professionalQualifications,
-    ),
+    professionalQualificationsLabel: (() => {
+      const base = formatCsvCodes(
+        PROFESSIONAL_QUALIFICATIONS,
+        row.professionalQualifications,
+      );
+      if (
+        String(row.professionalQualifications || "").includes("other") &&
+        row.professionalQualificationOther
+      ) {
+        return `${base} (${row.professionalQualificationOther})`;
+      }
+      return base;
+    })(),
     languageSkillsLabel: formatCsvCodes(LANGUAGE_SKILLS, row.languageSkills),
     occupationLabel: formatOptionLabel(OCCUPATION_OPTIONS, row.occupation),
     organizationTypeLabel: formatOptionLabel(
@@ -110,6 +130,7 @@ export function enrichRegistrationRow(row, districts) {
     dateOfBirthLabel: formatDateDisplay(row.dateOfBirth),
     createdAtLabel: formatDateTimeDisplay(row.createdAt),
     selfDeclarationLabel: row.selfDeclaration ? "Yes" : "No",
+    willingToJoinLabel: row.willingToJoin ? "Yes" : "No",
   };
 }
 
@@ -119,6 +140,9 @@ export const EXCEL_COLUMNS = [
   { key: "fullName", label: "Full Name" },
   { key: "genderLabel", label: "Gender" },
   { key: "teacherCode", label: "Teacher Code / CRC Code" },
+  { key: "schoolDiseCode", label: "School DISE Code" },
+  { key: "nativeDistrictName", label: "Native District" },
+  { key: "jobDistrictName", label: "Job District" },
   { key: "email", label: "Email" },
   { key: "dateOfBirthLabel", label: "Date of Birth" },
   { key: "mobileNumber", label: "Mobile Number" },
@@ -155,6 +179,7 @@ export const EXCEL_COLUMNS = [
   { key: "bankAddress", label: "Bank Address" },
   { key: "nocFileName", label: "NOC File" },
   { key: "selfDeclarationLabel", label: "Self Declaration Accepted" },
+  { key: "willingToJoinLabel", label: "Willing to Join" },
   { key: "selfDeclarationFileName", label: "Self Declaration File" },
   { key: "status", label: "Status" },
   { key: "createdAtLabel", label: "Registered At" },

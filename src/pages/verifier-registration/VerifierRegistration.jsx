@@ -46,6 +46,7 @@ import {
   PRIMARY_DESIGNATION_OPTIONS,
   SECONDARY_DESIGNATION_OPTIONS,
   formatBilingualOption,
+  IF_APPLICABLE_HINT,
 } from "./constants/verifierRegistrationOptions";
 import { DOB_BOUNDS } from "./utils/verifierRegistrationValidation";
 import "./VerifierRegistration.css";
@@ -91,6 +92,20 @@ function RankedLocationFields({
 }) {
   const isNone = districtValue === "none";
   const talukaRequired = required && !isNone && !!districtValue;
+  const selectedTalukas = Array.isArray(talukaValue)
+    ? talukaValue
+    : talukaValue
+      ? [talukaValue]
+      : [];
+
+  const handleTalukaChange = (event) => {
+    const raw = event.target.value;
+    const next = typeof raw === "string" ? raw.split(",") : raw;
+    const limited = (next || []).filter(Boolean).slice(0, 3);
+    onTalukaChange({
+      target: { type: "text", value: limited },
+    });
+  };
 
   return (
     <Box className="vr-reg-ranked-row">
@@ -141,38 +156,57 @@ function RankedLocationFields({
         required={talukaRequired}
         disabled={!districtValue || isNone}
       >
-        <InputLabel>{`બ્લોક / તાલુકો ${rank} / Block / Taluka ${rank}`}</InputLabel>
+        <InputLabel>{`બ્લોક / તાલુકા ${rank} (મહત્તમ 3) / Blocks / Talukas ${rank} (max 3)`}</InputLabel>
         <Select
-          value={isNone ? "" : talukaValue}
-          label={`બ્લોક / તાલુકો ${rank} / Block / Taluka ${rank}`}
-          onChange={onTalukaChange}
+          multiple
+          value={isNone ? [] : selectedTalukas}
+          label={`બ્લોક / તાલુકા ${rank} (મહત્તમ 3) / Blocks / Talukas ${rank} (max 3)`}
+          onChange={handleTalukaChange}
           onBlur={onTalukaBlur}
           onClose={onTalukaBlur}
+          renderValue={(selected) =>
+            selected.length ? selected.join(", ") : ""
+          }
         >
-          <MenuItem value="">
-            <em>
-              {!districtValue
-                ? "પહેલા જિલ્લો પસંદ કરો / Select district first"
-                : isNone
-                  ? "લાગુ નથી / Not applicable"
-                  : talukaOptions.length === 0
-                    ? "બ્લોક મળ્યા નથી / No blocks found"
-                    : "બ્લોક / તાલુકો પસંદ કરો / Select block / taluka"}
-            </em>
-          </MenuItem>
+          {!districtValue && (
+            <MenuItem value="" disabled>
+              <em>પહેલા જિલ્લો પસંદ કરો / Select district first</em>
+            </MenuItem>
+          )}
+          {isNone && (
+            <MenuItem value="" disabled>
+              <em>લાગુ નથી / Not applicable</em>
+            </MenuItem>
+          )}
+          {!isNone && districtValue && talukaOptions.length === 0 && (
+            <MenuItem value="" disabled>
+              <em>બ્લોક મળ્યા નથી / No blocks found</em>
+            </MenuItem>
+          )}
           {!isNone &&
             talukaOptions.map((block) => {
               const id = String(block.value ?? block.blockId ?? block.id ?? "");
               const name = block.name || block.blockName || block.label || id;
               if (!name) return null;
+              const disabled =
+                selectedTalukas.length >= 3 && !selectedTalukas.includes(name);
               return (
-                <MenuItem key={id || name} value={name}>
+                <MenuItem key={id || name} value={name} disabled={disabled}>
+                  <Checkbox
+                    size="small"
+                    checked={selectedTalukas.includes(name)}
+                  />
                   {name}
                 </MenuItem>
               );
             })}
         </Select>
-        {talukaError && <FormHelperText>{talukaError}</FormHelperText>}
+        <FormHelperText>
+          {talukaError ||
+            (!isNone && districtValue
+              ? `${selectedTalukas.length}/3 selected`
+              : " ")}
+        </FormHelperText>
       </FormControl>
     </Box>
   );
@@ -208,6 +242,8 @@ export default function VerifierRegistration() {
   } = useVerifierRegistrationForm();
 
   const isEmployed = form.occupation === "employed";
+  const isNivruti = form.occupation === "nivruti";
+  const showWorkDetails = isEmployed || isNivruti;
   const hasVehicle = form.hasVehicle === "yes";
 
   if (isLoadingStatus) {
@@ -403,10 +439,91 @@ export default function VerifierRegistration() {
                 size="small"
                 inputProps={{ inputMode: "numeric", maxLength: 20 }}
                 error={!!errors.teacherCode}
-                helperText={
-                  errors.teacherCode || "વૈકલ્પિક / Optional — digits only"
-                }
+                helperText={errors.teacherCode || IF_APPLICABLE_HINT}
               />
+
+              <TextField
+                label="શાળા DISE કોડ (School DISE Code)"
+                value={form.schoolDiseCode}
+                onChange={updateField("schoolDiseCode")}
+                onBlur={blurField("schoolDiseCode")}
+                fullWidth
+                size="small"
+                inputProps={{ inputMode: "numeric", maxLength: 15 }}
+                error={!!errors.schoolDiseCode}
+                helperText={errors.schoolDiseCode || IF_APPLICABLE_HINT}
+              />
+
+              <FormControl
+                fullWidth
+                size="small"
+                required
+                error={!!errors.nativeDistrictId}
+              >
+                <InputLabel>વતન નો જિલ્લો (Native District)</InputLabel>
+                <Select
+                  value={form.nativeDistrictId}
+                  label="વતન નો જિલ્લો (Native District)"
+                  onChange={updateField("nativeDistrictId")}
+                  onBlur={blurField("nativeDistrictId")}
+                  onClose={blurField("nativeDistrictId")}
+                >
+                  {districts.map((district) => {
+                    const id = String(
+                      district.districtId ?? district.value ?? district.id ?? "",
+                    );
+                    const name =
+                      district.districtName ||
+                      district.name ||
+                      district.label ||
+                      id;
+                    return (
+                      <MenuItem key={id} value={id}>
+                        {name}
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+                {errors.nativeDistrictId && (
+                  <FormHelperText>{errors.nativeDistrictId}</FormHelperText>
+                )}
+              </FormControl>
+
+              <FormControl
+                fullWidth
+                size="small"
+                required
+                error={!!errors.jobDistrictId}
+              >
+                <InputLabel>નોકરી નો જિલ્લો (Job District)</InputLabel>
+                <Select
+                  value={form.jobDistrictId}
+                  label="નોકરી નો જિલ્લો (Job District)"
+                  onChange={updateField("jobDistrictId")}
+                  onBlur={blurField("jobDistrictId")}
+                  onClose={blurField("jobDistrictId")}
+                >
+                  <MenuItem value="none">કોઈ નહીં / NA</MenuItem>
+                  {districts.map((district) => {
+                    const id = String(
+                      district.districtId ?? district.value ?? district.id ?? "",
+                    );
+                    const name =
+                      district.districtName ||
+                      district.name ||
+                      district.label ||
+                      id;
+                    return (
+                      <MenuItem key={id} value={id}>
+                        {name}
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+                {errors.jobDistrictId && (
+                  <FormHelperText>{errors.jobDistrictId}</FormHelperText>
+                )}
+              </FormControl>
 
               <TextField
                 label="ઈ-મેઈલ આઈડી (Email ID)"
@@ -529,6 +646,20 @@ onClose={blurField("educationalQualification")}
                 )}
               </FormControl>
 
+              {form.professionalQualifications.includes("other") && (
+                <TextField
+                  label="અન્ય વ્યાવસાયિક લાયકાત સ્પષ્ટ કરો (Specify Other Professional Qualification)"
+                  value={form.professionalQualificationOther}
+                  onChange={updateField("professionalQualificationOther")}
+                  onBlur={blurField("professionalQualificationOther")}
+                  fullWidth
+                  required
+                  size="small"
+                  error={!!errors.professionalQualificationOther}
+                  helperText={errors.professionalQualificationOther}
+                />
+              )}
+
               <YesNoGroup
                 labelEn="Computer / IT Knowledge (computer/ mobile/ tablet)"
                 labelGu="કમ્પ્યુટર/આઈટી જ્ઞાન"
@@ -633,7 +764,7 @@ onClose={blurField("organizationType")}
                 </FormControl>
               )}
 
-              {isEmployed && (
+              {showWorkDetails && (
                 <>
                   <FormControl
                     error={!!errors.currentSchoolLevel}
@@ -642,8 +773,14 @@ onClose={blurField("organizationType")}
                     onBlur={blurField("currentSchoolLevel")}
                   >
                     <BilingualFieldLabel
-                      labelGu="વર્તમાન હોદ્દો — શાળા પ્રકાર"
-                      labelEn="Current Post — School Type"
+                      labelGu={
+                        isNivruti
+                          ? "શાળા પ્રકાર"
+                          : "વર્તમાન હોદ્દો — શાળા પ્રકાર"
+                      }
+                      labelEn={
+                        isNivruti ? "School Type" : "Current Post — School Type"
+                      }
                       required
                     />
                     <RadioGroup
@@ -693,9 +830,14 @@ onClose={blurField("organizationType")}
                     />
                   )}
 
-                  {form.currentSchoolLevel === "other" && (
+                  {(form.currentSchoolLevel === "other" ||
+                    form.currentSchoolLevel === "higher_education") && (
                     <TextField
-                      label="વર્તમાન હોદ્દો (Current Designation)"
+                      label={
+                        form.currentSchoolLevel === "higher_education"
+                          ? "વિગતો સ્પષ્ટ કરો (Specify Details)"
+                          : "વર્તમાન હોદ્દો (Current Designation)"
+                      }
                       value={form.currentDesignation}
                       onChange={updateField("currentDesignation")}
                       onBlur={blurField("currentDesignation")}
@@ -842,10 +984,14 @@ onClose={blurField("organizationType")}
               titleEn="Preferred District for Accreditation Work"
               titleGu="એક્રેડિટેશન કામગીરી માટે પસંદગીનો જિલ્લો"
             >
-              <Typography variant="body2" className="vr-reg-section-note">
-                એક જિલ્લામાંથી 3 બ્લોક પસંદ કરી શકો છો, અથવા અન્ય જિલ્લા માટે &quot;કોઈ નહીં / None&quot; પસંદ કરો.
+              <Typography variant="body2" className="vr-reg-section-note vr-reg-section-note--emphasis">
+                <strong>નોંધ / Note:</strong> આ માહિતીનો હેતુ વેરિફિકેશન માટે શાળા ફાળવણીને વધુ સુગમ બનાવવાનો છે. પરંતુ તમે પસંદ કરેલ જિલ્લાઓ અને તાલુકાઓમાં જ શાળાઓ ફાળવાય તે જરૂરી નથી.
                 <span>
-                  You can pick up to 3 blocks (same or different districts). Use None for unused district preferences.
+                  This information is only to make school allocation for verification smoother. It is not necessary that schools will be allotted only in your selected districts and talukas.
+                </span>
+                <span className="vr-reg-section-note__sub">
+                  એક જિલ્લામાંથી 3 બ્લોક / તાલુકા પસંદ કરી શકો છો (કુલ મહત્તમ 9). અન્ય જિલ્લા માટે &quot;કોઈ નહીં / None&quot; પસંદ કરો.
+                  You can select up to 3 blocks/talukas per district (max 9 total). Use &quot;None&quot; for unused district preferences.
                 </span>
               </Typography>
 
@@ -1110,6 +1256,30 @@ onClose={blurField("organizationType")}
                   <FormHelperText>{errors.selfDeclaration}</FormHelperText>
                 )}
               </FormControl>
+
+              <FormControl error={!!errors.willingToJoin} required className="vr-reg-declaration-box">
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={form.willingToJoin}
+                      onChange={updateField("willingToJoin")}
+                      onBlur={blurField("willingToJoin")}
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" className="vr-reg-declaration">
+                      હું મારી સ્વેચ્છાએ આ કામગીરીમાં જોડવા ઈચ્છું છું. *
+                      <br />
+                      <span>
+                        I willingly wish to join this work / assignment.
+                      </span>
+                    </Typography>
+                  }
+                />
+                {errors.willingToJoin && (
+                  <FormHelperText>{errors.willingToJoin}</FormHelperText>
+                )}
+              </FormControl>
             </VerifierFormSection>
 
             <Box className="vr-reg-actions">
@@ -1133,7 +1303,9 @@ onClose={blurField("organizationType")}
                   type="submit"
                   variant="contained"
                   className="vr-reg-btn-submit"
-                  disabled={submitting || !form.selfDeclaration}
+                  disabled={
+                    submitting || !form.selfDeclaration || !form.willingToJoin
+                  }
                 >
                   {submitting
                     ? "સબમિટ થઈ રહ્યું છે... / Submitting..."

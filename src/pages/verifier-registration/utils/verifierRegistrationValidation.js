@@ -117,12 +117,41 @@ export const verifierRegistrationSchema = Yup.object().shape({
       "Only numbers are allowed",
       (value) => !value || /^\d{1,20}$/.test(value),
     ),
+  schoolDiseCode: Yup.string()
+    .trim()
+    .optional()
+    .nullable()
+    .transform((value) => value || "")
+    .test(
+      "digits-if-present",
+      "Only numbers are allowed",
+      (value) => !value || /^\d{1,15}$/.test(value),
+    ),
+  nativeDistrictId: Yup.string()
+    .required(requiredMsg("Native district"))
+    .test(
+      "not-none",
+      requiredMsg("Native district"),
+      (value) => value && value !== "none",
+    ),
+  jobDistrictId: Yup.string().required(requiredMsg("Job district")),
   educationalQualification: Yup.string()
     .oneOf(
       ["class_10", "class_12", "graduate", "postgraduate"],
       requiredMsg("Educational qualification"),
     )
     .required(requiredMsg("Educational qualification")),
+  professionalQualifications: Yup.array().of(Yup.string()).optional(),
+  professionalQualificationOther: Yup.string().when("professionalQualifications", {
+    is: (value) => Array.isArray(value) && value.includes("other"),
+    then: (schema) =>
+      schema
+        .trim()
+        .required(requiredMsg("Other professional qualification"))
+        .min(2, "Must be at least 2 characters")
+        .max(200, "Cannot exceed 200 characters"),
+    otherwise: (schema) => schema.notRequired().nullable(),
+  }),
   computerKnowledge: Yup.string().required(
     requiredMsg("Computer / IT knowledge"),
   ),
@@ -131,7 +160,7 @@ export const verifierRegistrationSchema = Yup.object().shape({
     .min(1, "Select at least one language skill (Read/Write)")
     .required(requiredMsg("Language knowledge")),
   occupation: Yup.string()
-    .oneOf(["employed"], requiredMsg("Occupation"))
+    .oneOf(["employed", "nivruti"], requiredMsg("Occupation"))
     .required(requiredMsg("Occupation")),
   organizationType: Yup.string().when("occupation", {
     is: "employed",
@@ -139,10 +168,13 @@ export const verifierRegistrationSchema = Yup.object().shape({
     otherwise: (schema) => schema.notRequired(),
   }),
   currentSchoolLevel: Yup.string().when("occupation", {
-    is: "employed",
+    is: (value) => value === "employed" || value === "nivruti",
     then: (schema) =>
       schema
-        .oneOf(["primary", "secondary", "other"], requiredMsg("School type"))
+        .oneOf(
+          ["primary", "secondary", "higher_education", "other"],
+          requiredMsg("School type"),
+        )
         .required(requiredMsg("School type")),
     otherwise: (schema) => schema.notRequired(),
   }),
@@ -157,7 +189,7 @@ export const verifierRegistrationSchema = Yup.object().shape({
     otherwise: (schema) => schema.notRequired().nullable(),
   }),
   currentDesignation: Yup.string().when("occupation", {
-    is: "employed",
+    is: (value) => value === "employed" || value === "nivruti",
     then: (schema) =>
       schema.trim().required(requiredMsg("Current designation")),
     otherwise: (schema) => schema.notRequired(),
@@ -219,21 +251,33 @@ export const verifierRegistrationSchema = Yup.object().shape({
     ),
   preferredDistrict2: Yup.string().required(requiredMsg("District 2")),
   preferredDistrict3: Yup.string().required(requiredMsg("District 3")),
-  preferredTaluka1: Yup.string()
-    .trim()
+  preferredTaluka1: Yup.array()
+    .of(Yup.string().trim().min(1))
+    .min(1, "Select at least 1 block / taluka for District 1")
+    .max(3, "Select at most 3 blocks / talukas per district")
     .required(requiredMsg("Block / Taluka 1")),
-  preferredTaluka2: Yup.string().when("preferredDistrict2", {
-    is: (value) => value && value !== "none",
-    then: (schema) =>
-      schema.trim().required(requiredMsg("Block / Taluka 2")),
-    otherwise: (schema) => schema.notRequired().nullable(),
-  }),
-  preferredTaluka3: Yup.string().when("preferredDistrict3", {
-    is: (value) => value && value !== "none",
-    then: (schema) =>
-      schema.trim().required(requiredMsg("Block / Taluka 3")),
-    otherwise: (schema) => schema.notRequired().nullable(),
-  }),
+  preferredTaluka2: Yup.array()
+    .of(Yup.string().trim().min(1))
+    .when("preferredDistrict2", {
+      is: (value) => value && value !== "none",
+      then: (schema) =>
+        schema
+          .min(1, "Select at least 1 block / taluka for District 2")
+          .max(3, "Select at most 3 blocks / talukas per district")
+          .required(requiredMsg("Block / Taluka 2")),
+      otherwise: (schema) => schema.max(0).optional(),
+    }),
+  preferredTaluka3: Yup.array()
+    .of(Yup.string().trim().min(1))
+    .when("preferredDistrict3", {
+      is: (value) => value && value !== "none",
+      then: (schema) =>
+        schema
+          .min(1, "Select at least 1 block / taluka for District 3")
+          .max(3, "Select at most 3 blocks / talukas per district")
+          .required(requiredMsg("Block / Taluka 3")),
+      otherwise: (schema) => schema.max(0).optional(),
+    }),
   hasVehicle: Yup.string().required(requiredMsg("Vehicle facility")),
   vehicleType: Yup.string().when("hasVehicle", {
     is: "yes",
@@ -283,6 +327,10 @@ export const verifierRegistrationSchema = Yup.object().shape({
   selfDeclaration: Yup.boolean().oneOf(
     [true],
     "You must accept the declaration to submit",
+  ),
+  willingToJoin: Yup.boolean().oneOf(
+    [true],
+    "You must confirm willingness to join to submit",
   ),
 });
 
@@ -349,6 +397,16 @@ export function getRelatedValidationFields(field) {
       ];
     case "currentSchoolLevelOther":
       return ["currentSchoolLevelOther"];
+    case "professionalQualifications":
+      return ["professionalQualifications", "professionalQualificationOther"];
+    case "professionalQualificationOther":
+      return ["professionalQualificationOther"];
+    case "nativeDistrictId":
+      return ["nativeDistrictId"];
+    case "jobDistrictId":
+      return ["jobDistrictId"];
+    case "schoolDiseCode":
+      return ["schoolDiseCode"];
     case "experienceYears":
       return ["experienceYears", "experienceMonths"];
     case "experienceMonths":

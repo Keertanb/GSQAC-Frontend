@@ -326,12 +326,30 @@
   font-weight: 600 !important;
 }
 
+.vr-reg-section-note--emphasis {
+  font-size: 0.95rem !important;
+  line-height: 1.6 !important;
+  background: #fff7ed;
+  border-color: rgba(234, 88, 12, 0.28);
+}
+
 .vr-reg-section-note span {
   display: block;
   margin-top: 0.2rem;
   color: var(--vr-muted);
   font-weight: 500;
   font-size: 0.78rem;
+}
+
+.vr-reg-section-note--emphasis span {
+  font-size: 0.88rem;
+  color: #57534e;
+}
+
+.vr-reg-section-note__sub {
+  margin-top: 0.55rem !important;
+  padding-top: 0.45rem;
+  border-top: 1px dashed rgba(148, 163, 184, 0.7);
 }
 
 .vr-reg-grid {
@@ -499,6 +517,10 @@
   background: var(--vr-saffron-soft);
 }
 
+.vr-reg-declaration-box + .vr-reg-declaration-box {
+  margin-top: 0.75rem;
+}
+
 .vr-reg-declaration {
   line-height: 1.55 !important;
   color: #334155 !important;
@@ -525,20 +547,24 @@
 }
 
 .vr-reg-actions__note {
-  font-size: 0.82rem;
-  color: #475569;
-  line-height: 1.45;
+  font-size: 1rem;
+  color: #334155;
+  line-height: 1.65;
+  font-weight: 600;
 }
 
 .vr-reg-actions__note strong {
   color: var(--vr-navy-deep);
+  font-size: 1.05rem;
 }
 
 .vr-reg-actions__note span {
   display: block;
-  margin-top: 0.15rem;
-  color: var(--vr-muted);
-  font-size: 0.76rem;
+  margin-top: 0.35rem;
+  color: #475569;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.55;
 }
 
 .vr-reg-actions__buttons {

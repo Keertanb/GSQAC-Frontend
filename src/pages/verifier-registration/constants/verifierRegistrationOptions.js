@@ -45,8 +45,12 @@ export const PROFESSIONAL_QUALIFICATIONS = [
   { value: "ptc_deled", labelEn: "PTC / D.El.Ed", labelGu: "પી.ટી.સી / ડી.એલ.એડ" },
   { value: "bed", labelEn: "B.Ed", labelGu: "બી.એડ" },
   { value: "med", labelEn: "M.Ed", labelGu: "એમ.એડ" },
+  { value: "mphil", labelEn: "M.Phil", labelGu: "એમ.ફિલ" },
   { value: "phd", labelEn: "Ph.D", labelGu: "પી.એચ.ડી" },
   { value: "gset_net", labelEn: "GSET / NET", labelGu: "જીસેટ / નેટ" },
+  { value: "cped", labelEn: "C.P.Ed", labelGu: "સી.પી.એડ" },
+  { value: "atd", labelEn: "A.T.D", labelGu: "એ.ટી.ડી" },
+  { value: "other", labelEn: "Other", labelGu: "અન્ય" },
 ];
 
 export const LANGUAGE_SKILLS = [
@@ -58,6 +62,7 @@ export const LANGUAGE_SKILLS = [
 
 export const OCCUPATION_OPTIONS = [
   { value: "employed", labelEn: "Employed", labelGu: "નોકરી" },
+  { value: "nivruti", labelEn: "Retired", labelGu: "નિવૃત્તિ" },
 ];
 
 export const GENDER_OPTIONS = [
@@ -69,37 +74,107 @@ export const GENDER_OPTIONS = [
 export const CURRENT_SCHOOL_LEVEL_OPTIONS = [
   { value: "primary", labelEn: "Primary School", labelGu: "પ્રાથમિક શાળા" },
   { value: "secondary", labelEn: "Secondary School", labelGu: "માધ્યમિક શાળા" },
+  {
+    value: "higher_education",
+    labelEn: "Higher Education",
+    labelGu: "ઉચ્ચ શિક્ષણ : શિક્ષણ-તાલીમી સંસ્થાના અધ્યાપકો/વ્યાખ્યાતાશ્રીઓ",
+  },
   { value: "other", labelEn: "Other", labelGu: "અન્ય" },
 ];
 
 export const PRIMARY_DESIGNATION_OPTIONS = [
   {
-    value: "mukhya_shikshak",
-    labelEn: "Head Teacher",
-    labelGu: "મુખ્ય શિક્ષક",
-  },
-  {
-    value: "mukhya_shikshak_h_tat",
-    labelEn: "Head Teacher (H Tat)",
-    labelGu: "મુખ્ય શિક્ષક (એચ તાત)",
-  },
-  {
-    value: "crc_coordinator",
-    labelEn: "CRC Coordinator",
-    labelGu: "સીઆરસી કોઓર્ડિનેટર",
-  },
-  {
     value: "kedavni_nirikshak",
-    labelEn: "Education Inspector",
-    labelGu: "કેડાવણી નિરીક્ષક",
+    labelEn: "Education Inspectors",
+    labelGu: "કેળવણી નિરીક્ષકો",
+  },
+  {
+    value: "brcc",
+    labelEn: "BRCC",
+    labelGu: "બી.આર.સી.કો-ઓર્ડિનેટર્સ (BRCC)",
+  },
+  {
+    value: "crcc",
+    labelEn: "CRCC",
+    labelGu: "સી.આર.સી.કો-ઓર્ડિનેટર્સ (CRCC)",
+  },
+  {
+    value: "mukhya_shikshak_htat",
+    labelEn: "Head Teachers (HTAT)",
+    labelGu: "મુખ્ય શિક્ષકો (HTAT)",
+  },
+  {
+    value: "mukhya_shikshak",
+    labelEn: "Head Teachers",
+    labelGu: "મુખ્ય શિક્ષકો",
+  },
+  {
+    value: "shikshak",
+    labelEn: "Teachers",
+    labelGu: "શિક્ષકો",
+  },
+  {
+    value: "nivrut_acharya_shikshak",
+    labelEn: "Retired Principal-Teacher",
+    labelGu: "નિવૃત આચાર્ય-શિક્ષક",
+  },
+  {
+    value: "award_vijeta_shikshak",
+    labelEn: "Award-winning Teachers",
+    labelGu: "એવાર્ડ વિજેતા શિક્ષકો",
+  },
+  {
+    value: "ngo_education_experts",
+    labelEn: "NGO (Education) Experts",
+    labelGu: "NGO (શિક્ષણ)માં કાર્ય કરતાં હોય તેવા તજજ્ઞો",
   },
 ];
 
 export const SECONDARY_DESIGNATION_OPTIONS = [
   {
-    value: "acharya_varg_2",
-    labelEn: "Acharya (Class 2)",
-    labelGu: "આચાર્ય (વર્ગ 2)",
+    value: "ei",
+    labelEn: "EI",
+    labelGu: "EI",
+  },
+  {
+    value: "acharya_shikshan_seva_varg_2",
+    labelEn: "Principal (Education Service Class-2)",
+    labelGu: "આચાર્ય (શિક્ષણ સેવા વર્ગ-2)",
+  },
+  {
+    value: "acharya_hmat",
+    labelEn: "Principals (HMAT)",
+    labelGu: "આચાર્યો (HMAT)",
+  },
+  {
+    value: "acharya",
+    labelEn: "Principals",
+    labelGu: "આચાર્યો",
+  },
+  {
+    value: "aei",
+    labelEn: "AEI",
+    labelGu: "AEI",
+  },
+  {
+    value: "award_vijeta_shikshak",
+    labelEn: "Award-winning Teachers",
+    labelGu: "એવાર્ડ વિજેતા શિક્ષકો",
+  },
+  {
+    value: "shikshak",
+    labelEn: "Teachers",
+    labelGu: "શિક્ષકો",
+  },
+  {
+    value: "nivrut_acharya_shikshak",
+    labelEn: "Retired Principal-Teacher",
+    labelGu: "નિવૃત આચાર્ય-શિક્ષક",
+  },
+  {
+    value: "ngo_education_experts",
+    labelEn: "NGO (Education) Experts",
+    labelGu: "NGO (શિક્ષણ)માં કાર્ય કરતાં હોય તેવા તજજ્ઞો",
   },
 ];
 
@@ -115,7 +190,6 @@ export const ORGANIZATION_TYPES = [
   { value: "private", labelEn: "Private", labelGu: "ખાનગી" },
   { value: "ngo", labelEn: "NGO", labelGu: "NGO" },
   { value: "freelance", labelEn: "Freelance", labelGu: "ફ્રી-લાન્સ" },
-  { value: "nivrut", labelEn: "Nivrut", labelGu: "નિવૃત્ત" },
 ];
 
 export const VEHICLE_TYPES = [
@@ -140,15 +214,22 @@ export function formatBilingualOption(item) {
   return `${item.labelGu} (${item.labelEn})`;
 }
 
+export const IF_APPLICABLE_HINT =
+  "જો લાગુ પડતું હોય તો / If applicable — વૈકલ્પિક / Optional";
+
 export const INITIAL_VERIFIER_FORM = {
   fullName: "",
   gender: "",
   teacherCode: "",
+  schoolDiseCode: "",
+  nativeDistrictId: "",
+  jobDistrictId: "",
   email: "",
   dateOfBirth: "",
   mobileNumber: "",
   educationalQualification: "",
   professionalQualifications: [],
+  professionalQualificationOther: "",
   computerKnowledge: "",
   languageSkills: [],
   occupation: "",
@@ -165,9 +246,9 @@ export const INITIAL_VERIFIER_FORM = {
   preferredDistrict1: "",
   preferredDistrict2: "",
   preferredDistrict3: "",
-  preferredTaluka1: "",
-  preferredTaluka2: "",
-  preferredTaluka3: "",
+  preferredTaluka1: [],
+  preferredTaluka2: [],
+  preferredTaluka3: [],
   hasVehicle: "",
   vehicleType: "",
   hasDrivingLicense: "",
@@ -181,4 +262,5 @@ export const INITIAL_VERIFIER_FORM = {
   bankName: "",
   bankAddress: "",
   selfDeclaration: false,
+  willingToJoin: false,
 };

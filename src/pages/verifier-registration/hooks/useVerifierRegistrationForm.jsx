@@ -73,8 +73,18 @@ function toDistrictPayload(value) {
 
 function toTalukaPayload(districtValue, talukaValue) {
   if (!districtValue || districtValue === "none") return null;
-  const trimmed = String(talukaValue || "").trim();
-  return trimmed || null;
+  const list = Array.isArray(talukaValue)
+    ? talukaValue
+    : String(talukaValue || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+  const joined = list
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(", ");
+  return joined || null;
 }
 
 function useTalukaOptions(districtId) {
@@ -95,15 +105,19 @@ function getAadhaarConfirmError(aadhaarNumber, confirmAadhaarNumber) {
 function applyFieldSideEffects(prev, field, value) {
   const next = { ...prev, [field]: value };
 
-  if (field === "preferredDistrict1") next.preferredTaluka1 = "";
-  if (field === "preferredDistrict2") next.preferredTaluka2 = "";
-  if (field === "preferredDistrict3") next.preferredTaluka3 = "";
+  if (field === "preferredDistrict1") next.preferredTaluka1 = [];
+  if (field === "preferredDistrict2") next.preferredTaluka2 = [];
+  if (field === "preferredDistrict3") next.preferredTaluka3 = [];
 
-  if (field === "occupation" && value !== "employed") {
-    next.organizationType = "";
-    next.currentSchoolLevel = "";
-    next.currentSchoolLevelOther = "";
-    next.currentDesignation = "";
+  if (field === "occupation") {
+    if (value !== "employed") {
+      next.organizationType = "";
+    }
+    if (value !== "employed" && value !== "nivruti") {
+      next.currentSchoolLevel = "";
+      next.currentSchoolLevelOther = "";
+      next.currentDesignation = "";
+    }
   }
 
   if (field === "currentSchoolLevel") {
@@ -128,28 +142,38 @@ function applyFieldSideEffects(prev, field, value) {
 }
 
 function toPayload(form) {
+  const hasWorkDetails =
+    form.occupation === "employed" || form.occupation === "nivruti";
+  const professionalQualifications = form.professionalQualifications || [];
+
   return {
     fullName: form.fullName.trim(),
     gender: form.gender,
     teacherCode: form.teacherCode.trim() || null,
+    schoolDiseCode: form.schoolDiseCode.trim() || null,
+    nativeDistrictId: toDistrictPayload(form.nativeDistrictId),
+    jobDistrictId: toDistrictPayload(form.jobDistrictId),
     email: form.email.trim(),
     dateOfBirth: form.dateOfBirth,
     mobileNumber: form.mobileNumber.trim(),
     educationalQualification: form.educationalQualification,
-    professionalQualifications: form.professionalQualifications || [],
+    professionalQualifications,
+    professionalQualificationOther: professionalQualifications.includes("other")
+      ? form.professionalQualificationOther.trim()
+      : null,
     computerKnowledge: form.computerKnowledge,
     languageSkills: form.languageSkills || [],
     occupation: form.occupation,
     organizationType:
       form.occupation === "employed" ? form.organizationType : null,
-    currentSchoolLevel:
-      form.occupation === "employed" ? form.currentSchoolLevel : null,
+    currentSchoolLevel: hasWorkDetails ? form.currentSchoolLevel : null,
     currentSchoolLevelOther:
-      form.occupation === "employed" && form.currentSchoolLevel === "other"
+      hasWorkDetails && form.currentSchoolLevel === "other"
         ? form.currentSchoolLevelOther.trim()
         : null,
-    currentDesignation:
-      form.occupation === "employed" ? form.currentDesignation.trim() : null,
+    currentDesignation: hasWorkDetails
+      ? form.currentDesignation.trim()
+      : null,
     experienceYears: Number(form.experienceYears),
     experienceMonths:
       form.experienceMonths === "" || form.experienceMonths == null
@@ -195,7 +219,8 @@ function toPayload(form) {
     bankName: form.bankName.trim(),
     bankAddress: form.bankAddress.trim(),
     nocFileName: null,
-    selfDeclaration: true,
+    selfDeclaration: Boolean(form.selfDeclaration),
+    willingToJoin: Boolean(form.willingToJoin),
     selfDeclarationFileName: null,
   };
 }
@@ -272,8 +297,8 @@ export function useVerifierRegistrationForm() {
       if (value !== "" && Number(value) > 11) value = "11";
     }
 
-    if (field === "teacherCode") {
-      value = String(value ?? "").replace(/\D/g, "").slice(0, 20);
+    if (field === "teacherCode" || field === "schoolDiseCode") {
+      value = String(value ?? "").replace(/\D/g, "").slice(0, field === "schoolDiseCode" ? 15 : 20);
     }
 
     if (field === "bankIfsc") {
@@ -316,16 +341,23 @@ export function useVerifierRegistrationForm() {
     setForm((prev) => {
       const current = prev[field] || [];
       const exists = current.includes(value);
+      const nextValues = exists
+        ? current.filter((item) => item !== value)
+        : [...current, value];
       const nextForm = {
         ...prev,
-        [field]: exists
-          ? current.filter((item) => item !== value)
-          : [...current, value],
+        [field]: nextValues,
       };
+      if (
+        field === "professionalQualifications" &&
+        !nextValues.includes("other")
+      ) {
+        nextForm.professionalQualificationOther = "";
+      }
       formRef.current = nextForm;
       return nextForm;
     });
-    clearErrors([field]);
+    clearErrors(getRelatedValidationFields(field));
   };
 
   const handleSubmit = async (event) => {
