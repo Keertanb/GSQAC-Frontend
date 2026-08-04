@@ -69,6 +69,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import { filterQuestionsByClassRange } from "../../../../utils/classRange";
 
 export function useSchoolVerification() {
   const { t, i18n } = useTranslation();
@@ -478,29 +479,34 @@ export function useSchoolVerification() {
     return 0;
   };
 
-  // All questions for counting (unfiltered by class) - kept for answer checking
+  // All questions for counting (school class-range filtered; not class-selection filtered)
   const allQuestionsForCount = useMemo(() => {
+    let questions = [];
     if (
       allQuestionsData?.data?.data &&
       Array.isArray(allQuestionsData.data.data)
     ) {
-      return allQuestionsData.data.data;
+      questions = allQuestionsData.data.data;
+    } else if (allQuestionsData?.data && Array.isArray(allQuestionsData.data)) {
+      questions = allQuestionsData.data;
     }
-    if (allQuestionsData?.data && Array.isArray(allQuestionsData.data)) {
-      return allQuestionsData.data;
-    }
-    return [];
-  }, [allQuestionsData?.data]);
+    return filterQuestionsByClassRange(questions, lowerClass, upperClass);
+  }, [allQuestionsData?.data, lowerClass, upperClass]);
 
   const allQuestions = useMemo(() => {
+    let questions = [];
     if (questionsData?.data?.data && Array.isArray(questionsData.data.data)) {
-      return questionsData.data.data;
+      questions = questionsData.data.data;
+    } else if (questionsData?.data && Array.isArray(questionsData.data)) {
+      questions = questionsData.data;
     }
-    if (questionsData?.data && Array.isArray(questionsData.data)) {
-      return questionsData.data;
-    }
-    return [];
-  }, [questionsData?.data]);
+    return filterQuestionsByClassRange(
+      questions,
+      lowerClass,
+      upperClass,
+      selectedClass || null,
+    );
+  }, [questionsData?.data, lowerClass, upperClass, selectedClass]);
 
   // Get total counts from API groupWise data
   const generalQuestionsTotalCount = useMemo(() => {
@@ -1589,11 +1595,11 @@ export function useSchoolVerification() {
     };
   }, [selectedDomain, selectedSubdomain, domains]);
 
-  // Define question type tabs
+  // Define question type tabs — only show types that have questions to answer
   const questionTabs = useMemo(() => {
     const tabs = [];
 
-    if (generalQuestions.length > 0 || generalQuestionsTotalCount > 0) {
+    if (generalQuestions.length > 0) {
       tabs.push({
         id: "general",
         label: t("selfAssessment.tabs.generalQuestions"),
@@ -1605,10 +1611,7 @@ export function useSchoolVerification() {
       });
     }
 
-    if (
-      classroomObservationQuestions.length > 0 ||
-      classroomObservationQuestionsTotalCount > 0
-    ) {
+    if (classroomObservationQuestions.length > 0) {
       tabs.push({
         id: "classroom",
         label: t("selfAssessment.tabs.classroomObservation"),
@@ -1620,10 +1623,7 @@ export function useSchoolVerification() {
       });
     }
 
-    if (
-      subjectObservationQuestions.length > 0 ||
-      subjectObservationQuestionsTotalCount > 0
-    ) {
+    if (subjectObservationQuestions.length > 0) {
       tabs.push({
         id: "subject",
         label: t("selfAssessment.tabs.subjectWiseObservation"),
@@ -1635,7 +1635,7 @@ export function useSchoolVerification() {
       });
     }
 
-    if (flnQuestions.length > 0 || flnQuestionsTotalCount > 0) {
+    if (flnQuestions.length > 0) {
       tabs.push({
         id: "fln",
         label: t("selfAssessment.tabs.inputTypeQuestions"),

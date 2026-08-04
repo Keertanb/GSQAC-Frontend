@@ -34,6 +34,7 @@ import { DRAWER_WIDTH } from "../../../../constants/menuItems";
 import useAuthStore from "../../../../store/useAuthStore";
 import { useLogoutMutation } from "../../../../services/authService";
 import { enqueueSnackbar } from "notistack";
+import { filterQuestionsByClassRange } from "../../../../utils/classRange";
 
 export function useCRCAssessment() {
   const navigate = useNavigate();
@@ -498,29 +499,34 @@ export function useCRCAssessment() {
   const isSubmitted =
     selectedAssessment?.isSubmitted ?? domainsData?.isSubmitted ?? false;
 
-  // All questions for counting (unfiltered by class)
+  // All questions for counting (school class-range filtered; not class-selection filtered)
   const allQuestionsForCount = useMemo(() => {
+    let questions = [];
     if (
       allQuestionsData?.data?.data &&
       Array.isArray(allQuestionsData.data.data)
     ) {
-      return allQuestionsData.data.data;
+      questions = allQuestionsData.data.data;
+    } else if (allQuestionsData?.data && Array.isArray(allQuestionsData.data)) {
+      questions = allQuestionsData.data;
     }
-    if (allQuestionsData?.data && Array.isArray(allQuestionsData.data)) {
-      return allQuestionsData.data;
-    }
-    return [];
-  }, [allQuestionsData?.data]);
+    return filterQuestionsByClassRange(questions, lowerClass, upperClass);
+  }, [allQuestionsData?.data, lowerClass, upperClass]);
 
   const allQuestions = useMemo(() => {
+    let questions = [];
     if (questionsData?.data?.data && Array.isArray(questionsData.data.data)) {
-      return questionsData.data.data;
+      questions = questionsData.data.data;
+    } else if (questionsData?.data && Array.isArray(questionsData.data)) {
+      questions = questionsData.data;
     }
-    if (questionsData?.data && Array.isArray(questionsData.data)) {
-      return questionsData.data;
-    }
-    return [];
-  }, [questionsData?.data]);
+    return filterQuestionsByClassRange(
+      questions,
+      lowerClass,
+      upperClass,
+      selectedClass || null,
+    );
+  }, [questionsData?.data, lowerClass, upperClass, selectedClass]);
 
   // Questions for counting (unfiltered)
   const singleChoiceQuestionsForCount = allQuestionsForCount.filter(

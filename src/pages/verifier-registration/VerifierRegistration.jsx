@@ -6,6 +6,10 @@ import {
   Checkbox,
   Chip,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   FormControlLabel,
   FormHelperText,
@@ -26,6 +30,8 @@ import GsqacLogoImg from "../../assets/gsqac_logo.png";
 import VerifierFormSection from "./components/VerifierFormSection";
 import BilingualFieldLabel from "./components/BilingualFieldLabel";
 import { useVerifierRegistrationForm } from "./hooks/useVerifierRegistrationForm";
+import { useGetVerifierRegistrationStatusQuery } from "../../services/verifierRegistrationService";
+import { VERIFIER_REGISTRATION_CLOSED_MESSAGE } from "../../constants/verifierRegistration";
 import {
   EDUCATIONAL_QUALIFICATIONS,
   LANGUAGE_SKILLS,
@@ -175,6 +181,20 @@ function RankedLocationFields({
 export default function VerifierRegistration() {
   const navigate = useNavigate();
   const {
+    data: statusData,
+    isLoading: isLoadingStatus,
+  } = useGetVerifierRegistrationStatusQuery();
+
+  const registrationIsActive =
+    statusData?.data?.isActive === 1 || statusData?.data?.isActive === true;
+  const closedMessage =
+    statusData?.data?.message || VERIFIER_REGISTRATION_CLOSED_MESSAGE;
+
+  const handleClosedDialogClose = () => {
+    navigate(ROOT_URL);
+  };
+
+  const {
     form,
     errors,
     age,
@@ -189,6 +209,53 @@ export default function VerifierRegistration() {
 
   const isEmployed = form.occupation === "employed";
   const hasVehicle = form.hasVehicle === "yes";
+
+  if (isLoadingStatus) {
+    return (
+      <div className="vr-reg-page">
+        <div className="vr-reg-page__accent" aria-hidden />
+        <main className="vr-reg-main">
+          <Container maxWidth="md" className="vr-reg-container">
+            <Paper elevation={0} className="vr-reg-card">
+              <Typography sx={{ p: 4, textAlign: "center" }}>
+                Loading...
+              </Typography>
+            </Paper>
+          </Container>
+        </main>
+      </div>
+    );
+  }
+
+  if (!registrationIsActive) {
+    return (
+      <div className="vr-reg-page">
+        <div className="vr-reg-page__accent" aria-hidden />
+        <Dialog
+          open
+          onClose={handleClosedDialogClose}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>વેરિફાયર રજીસ્ટ્રેશન</DialogTitle>
+          <DialogContent>
+            <Typography sx={{ pt: 1, lineHeight: 1.7, fontSize: "1.05rem" }}>
+              {closedMessage}
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button
+              variant="contained"
+              onClick={handleClosedDialogClose}
+              sx={{ textTransform: "none" }}
+            >
+              ઠીક છે
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </div>
+    );
+  }
 
   return (
     <div className="vr-reg-page">

@@ -48,6 +48,8 @@ import useAuthStore from "../../../store/useAuthStore";
 import { getRoleId, roleIdMap } from "../../../constants/roles";
 import { enqueueSnackbar } from "notistack";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
+import { ClassRangeFields } from "./components/ClassRangeFields";
+import { formatClassRange } from "../../../utils/classRange";
 
 const QuestionsView = ({
   subdomainData,
@@ -108,6 +110,10 @@ const QuestionsView = ({
   const [translationId, setTranslationId] = useState(null); // Store translation ID for subsequent calls
   const [optionTranslationIds, setOptionTranslationIds] = useState({}); // Store translation IDs for each option
   const [questionType, setQuestionType] = useState("single_choice"); // New state for question type
+  const [questionClassRange, setQuestionClassRange] = useState({
+    lowerClass: 1,
+    upperClass: 12,
+  });
   const [flnAnswer, setFlnAnswer] = useState(""); // State for FLN text field answer
   const [optionErrors, setOptionErrors] = useState({}); // State for option validation errors (per option: { [optionId]: { en, hi, gu } })
   const [optionFieldTouched, setOptionFieldTouched] = useState({}); // Show field errors only after blur (per optionId, per lang)
@@ -342,12 +348,21 @@ const QuestionsView = ({
     }
 
     try {
+      if (questionClassRange.lowerClass > questionClassRange.upperClass) {
+        enqueueSnackbar("Lower class cannot be greater than upper class", {
+          variant: "warning",
+        });
+        return;
+      }
+
       const questionPayload = {
         subDomainId,
         questionTextGu: newQuestionText.gu.trim(),
         questionTextEn: newQuestionText.en.trim(),
         questionTextHi: newQuestionText.hi.trim(),
         questionType: questionTypeMap[questionType] || 1,
+        lowerClass: questionClassRange.lowerClass,
+        upperClass: questionClassRange.upperClass,
       };
       if (questionType === "single_choice") {
         questionPayload.allowImageUpload = 0;
@@ -404,6 +419,7 @@ const QuestionsView = ({
         ]);
         setIsClassroomObservation(0);
         setQuestionType("single_choice");
+        setQuestionClassRange({ lowerClass: 1, upperClass: 12 });
         setShowAddQuestion(false);
         setShowOptionsForm(false);
         setEditingQuestion(null);
@@ -564,6 +580,7 @@ const QuestionsView = ({
       ]);
       setIsClassroomObservation(0);
       setQuestionType("single_choice");
+      setQuestionClassRange({ lowerClass: 1, upperClass: 12 });
       setShowAddQuestion(false);
       setShowOptionsForm(false);
       setEditingQuestion(null);
@@ -598,6 +615,10 @@ const QuestionsView = ({
       4: "fln",
     };
     setQuestionType(typeMapping[question.questionType] || "single_choice");
+    setQuestionClassRange({
+      lowerClass: Number(question.lowerClass) || 1,
+      upperClass: Number(question.upperClass) || 12,
+    });
     // Set classroom observation fields
     setIsClassroomObservation(question.isClassroomObservation || 0);
 
@@ -991,6 +1012,7 @@ const QuestionsView = ({
                 ]);
                 setIsClassroomObservation(0);
                 setQuestionType("single_choice");
+                setQuestionClassRange({ lowerClass: 1, upperClass: 12 });
                 setOptionErrors({});
                 setOptionFieldTouched({});
                 setShowAddQuestion(!showAddQuestion);
@@ -1132,6 +1154,28 @@ const QuestionsView = ({
                               </MenuItem>
                             </Select>
                           </FormControl>
+
+                          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", width: "100%" }}>
+                            <ClassRangeFields
+                              lowerClass={questionClassRange.lowerClass}
+                              upperClass={questionClassRange.upperClass}
+                              onLowerClassChange={(value) =>
+                                setQuestionClassRange((prev) => ({
+                                  ...prev,
+                                  lowerClass: value,
+                                  upperClass: Math.max(prev.upperClass, value),
+                                }))
+                              }
+                              onUpperClassChange={(value) =>
+                                setQuestionClassRange((prev) => ({
+                                  ...prev,
+                                  upperClass: value,
+                                }))
+                              }
+                              lowerLabel={t("assessment.management.lowerClass")}
+                              upperLabel={t("assessment.management.upperClass")}
+                            />
+                          </Box>
                           <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                             <TextField
                               fullWidth
@@ -1259,6 +1303,7 @@ const QuestionsView = ({
                               ]);
                               setIsClassroomObservation(0);
                               setQuestionType("single_choice");
+                              setQuestionClassRange({ lowerClass: 1, upperClass: 12 });
                               setEditingQuestion(null);
                               setCurrentQuestionId(null);
                               setOptionErrors({});
@@ -1636,6 +1681,19 @@ const QuestionsView = ({
                           >
                             {getQuestionText(question)}
                           </Typography>
+                          <Chip
+                            label={formatClassRange(
+                              question.lowerClass,
+                              question.upperClass,
+                            )}
+                            size="small"
+                            sx={{
+                              mb: 1,
+                              bgcolor: colors.neutral.gray100,
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                            }}
+                          />
                           {/* For question type chip in question. */}
                           {/* <Chip
                             label={getQuestionTypeLabel(question.questionType)}
@@ -1850,6 +1908,27 @@ const QuestionsView = ({
                         <MenuItem value="fln">Input Type Question</MenuItem>
                       </Select>
                     </FormControl>
+                    <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", width: "100%" }}>
+                      <ClassRangeFields
+                        lowerClass={questionClassRange.lowerClass}
+                        upperClass={questionClassRange.upperClass}
+                        onLowerClassChange={(value) =>
+                          setQuestionClassRange((prev) => ({
+                            ...prev,
+                            lowerClass: value,
+                            upperClass: Math.max(prev.upperClass, value),
+                          }))
+                        }
+                        onUpperClassChange={(value) =>
+                          setQuestionClassRange((prev) => ({
+                            ...prev,
+                            upperClass: value,
+                          }))
+                        }
+                        lowerLabel={t("assessment.management.lowerClass")}
+                        upperLabel={t("assessment.management.upperClass")}
+                      />
+                    </Box>
                     <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                       <TextField
                         fullWidth
@@ -1976,6 +2055,7 @@ const QuestionsView = ({
                         ]);
                         setIsClassroomObservation(0);
                         setQuestionType("single_choice");
+                        setQuestionClassRange({ lowerClass: 1, upperClass: 12 });
                         setEditingQuestion(null);
                         setCurrentQuestionId(null);
                         setOptionErrors({});
@@ -2471,6 +2551,27 @@ const QuestionsView = ({
                         <MenuItem value="fln">Input Type Question</MenuItem>
                       </Select>
                     </FormControl>
+                    <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", width: "100%" }}>
+                      <ClassRangeFields
+                        lowerClass={questionClassRange.lowerClass}
+                        upperClass={questionClassRange.upperClass}
+                        onLowerClassChange={(value) =>
+                          setQuestionClassRange((prev) => ({
+                            ...prev,
+                            lowerClass: value,
+                            upperClass: Math.max(prev.upperClass, value),
+                          }))
+                        }
+                        onUpperClassChange={(value) =>
+                          setQuestionClassRange((prev) => ({
+                            ...prev,
+                            upperClass: value,
+                          }))
+                        }
+                        lowerLabel={t("assessment.management.lowerClass")}
+                        upperLabel={t("assessment.management.upperClass")}
+                      />
+                    </Box>
                     <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                       <TextField
                         fullWidth
@@ -2598,6 +2699,7 @@ const QuestionsView = ({
                         ]);
                         setIsClassroomObservation(0);
                         setQuestionType("single_choice");
+                        setQuestionClassRange({ lowerClass: 1, upperClass: 12 });
                         setEditingQuestion(null);
                         setCurrentQuestionId(null);
                         setOptionErrors({});

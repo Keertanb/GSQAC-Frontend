@@ -3,6 +3,10 @@ import {
   useGetRolesQuery,
   useUpdateRoleStatusMutation,
 } from "../../../services/adminService";
+import {
+  useGetVerifierRegistrationStatusQuery,
+  useUpdateVerifierRegistrationStatusMutation,
+} from "../../../services/verifierRegistrationService";
 import { useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import AppTable from "../../../components/AppTable/AppTable";
@@ -15,6 +19,14 @@ const RoleManagement = () => {
   const queryClient = useQueryClient();
   const { data: rolesData, isLoading, isError } = useGetRolesQuery();
   const roles = rolesData?.data || [];
+
+  const {
+    data: registrationStatusData,
+    isLoading: isLoadingRegistrationStatus,
+  } = useGetVerifierRegistrationStatusQuery();
+  const registrationIsActive =
+    registrationStatusData?.data?.isActive === 1 ||
+    registrationStatusData?.data?.isActive === true;
 
   const updateMutation = useUpdateRoleStatusMutation({
     onSuccess: (data) => {
@@ -31,22 +43,14 @@ const RoleManagement = () => {
     },
   });
 
-  // Pagination
+  const updateRegistrationMutation =
+    useUpdateVerifierRegistrationStatusMutation();
+
   const startIndex = currentPage * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedRoles = roles.slice(startIndex, endIndex);
 
-  // Table columns definition
   const columns = [
-    // {
-    //   id: "roleId",
-    //   label: "Role ID",
-    //   render: (role) => (
-    //     <div className="cell-id">
-    //       <span className="id-badge">{role.roleId}</span>
-    //     </div>
-    //   ),
-    // },
     {
       id: "roleName",
       label: "Role Name",
@@ -111,7 +115,6 @@ const RoleManagement = () => {
     },
   ];
 
-  // Render actions
   const renderActions = (role) => {
     const isActive = role.isActive === 1 || role.isActive === true;
     return (
@@ -166,9 +169,14 @@ const RoleManagement = () => {
     });
   };
 
+  const handleToggleRegistrationStatus = () => {
+    updateRegistrationMutation.mutate({
+      isActive: registrationIsActive ? 0 : 1,
+    });
+  };
+
   return (
     <div className="role-management-container">
-      {/* Header Section */}
       <div className="header-section">
         <div className="header-content">
           <div>
@@ -180,7 +188,81 @@ const RoleManagement = () => {
         </div>
       </div>
 
-      {/* Roles Table */}
+      <div className="feature-toggle-section">
+        <div className="feature-toggle-content">
+          <div>
+            <h2 className="feature-toggle-title">Verifier Registration</h2>
+            <p className="feature-toggle-subtitle">
+              When inactive, public registration is blocked and applicants see a
+              notice message.
+            </p>
+          </div>
+          <div className="feature-toggle-actions">
+            <span
+              className={`status-badge ${
+                registrationIsActive
+                  ? "status-badge-active"
+                  : "status-badge-inactive"
+              }`}
+            >
+              {isLoadingRegistrationStatus
+                ? "Loading..."
+                : registrationIsActive
+                  ? "Active"
+                  : "Inactive"}
+            </span>
+            <button
+              type="button"
+              onClick={handleToggleRegistrationStatus}
+              className={`table-action-button ${
+                registrationIsActive
+                  ? "table-action-deactivate"
+                  : "table-action-activate"
+              }`}
+              title={
+                registrationIsActive
+                  ? "Deactivate verifier registration"
+                  : "Activate verifier registration"
+              }
+              disabled={
+                isLoadingRegistrationStatus ||
+                updateRegistrationMutation.isPending
+              }
+            >
+              {registrationIsActive ? (
+                <svg
+                  className="action-icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="action-icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {isLoading ? (
         <div className="loading-container">
           <div className="loading-spinner"></div>
