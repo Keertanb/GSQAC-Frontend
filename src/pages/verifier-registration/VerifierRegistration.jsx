@@ -395,11 +395,9 @@ export default function VerifierRegistration() {
               variant="body2"
               className="vr-reg-section-note vr-reg-section-note--emphasis"
             >
-              <strong>નોંધ / Note:</strong> નોંધણી માટે એક જ મોબાઈલ નંબર વાપરી શકાશે.
-              એક વાર નોંધણી થયા પછી સમાન મોબાઈલ નંબરથી ફરીથી નોંધણી કરી શકાશે નહીં.
+              <strong>નોંધ / Note:</strong> નોંધણી માટે જે મોબાઈલ નંબરનો ઉપયોગ કરશો તેજ મોબાઇલ નંબર વેરિફાયર ના આઈ.ડી માં ઉપયોગ માં લેવાશે એટલે કે એક ફોન નંબર થી માત્ર એકજ વાર ફોર્મ ભરી શકાશે. એક વાર નોંધણી થયા પછી એજ મોબાઈલ નંબરથી ફરીથી નોંધણી કરી શકાશે નહીં.
               <span>
-                Only one mobile number is allowed for registration. Once registered,
-                the same mobile number cannot be used to register again.
+                The mobile number used for registration will also be used as the Verifier ID, so the form can be filled only once with one phone number. After registration, the same mobile number cannot be used to register again.
               </span>
             </Typography>
 
