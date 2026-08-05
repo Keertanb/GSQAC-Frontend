@@ -248,13 +248,53 @@ export const verifierRegistrationSchema = Yup.object().shape({
       "not-none",
       requiredMsg("District 1"),
       (value) => value && value !== "none",
+    )
+    .test(
+      "unique-district",
+      "District already selected in another preference",
+      function uniqueDistrict1(value) {
+        if (!value || value === "none") return true;
+        const others = [this.parent.preferredDistrict2, this.parent.preferredDistrict3]
+          .filter((item) => item && item !== "none")
+          .map(String);
+        return !others.includes(String(value));
+      },
     ),
-  preferredDistrict2: Yup.string().required(requiredMsg("District 2")),
-  preferredDistrict3: Yup.string().required(requiredMsg("District 3")),
+  preferredDistrict2: Yup.string()
+    .required(requiredMsg("District 2"))
+    .test(
+      "unique-district",
+      "District already selected in another preference",
+      function uniqueDistrict2(value) {
+        if (!value || value === "none") return true;
+        const others = [this.parent.preferredDistrict1, this.parent.preferredDistrict3]
+          .filter((item) => item && item !== "none")
+          .map(String);
+        return !others.includes(String(value));
+      },
+    ),
+  preferredDistrict3: Yup.string()
+    .required(requiredMsg("District 3"))
+    .test(
+      "unique-district",
+      "District already selected in another preference",
+      function uniqueDistrict3(value) {
+        if (!value || value === "none") return true;
+        const others = [this.parent.preferredDistrict1, this.parent.preferredDistrict2]
+          .filter((item) => item && item !== "none")
+          .map(String);
+        return !others.includes(String(value));
+      },
+    ),
   preferredTaluka1: Yup.array()
     .of(Yup.string().trim().min(1))
     .min(1, "Select at least 1 block / taluka for District 1")
     .max(3, "Select at most 3 blocks / talukas per district")
+    .test(
+      "unique-talukas",
+      "Duplicate blocks / talukas are not allowed",
+      (value) => !value || new Set(value).size === value.length,
+    )
     .required(requiredMsg("Block / Taluka 1")),
   preferredTaluka2: Yup.array()
     .of(Yup.string().trim().min(1))
@@ -264,6 +304,11 @@ export const verifierRegistrationSchema = Yup.object().shape({
         schema
           .min(1, "Select at least 1 block / taluka for District 2")
           .max(3, "Select at most 3 blocks / talukas per district")
+          .test(
+            "unique-talukas",
+            "Duplicate blocks / talukas are not allowed",
+            (value) => !value || new Set(value).size === value.length,
+          )
           .required(requiredMsg("Block / Taluka 2")),
       otherwise: (schema) => schema.max(0).optional(),
     }),
@@ -275,6 +320,11 @@ export const verifierRegistrationSchema = Yup.object().shape({
         schema
           .min(1, "Select at least 1 block / taluka for District 3")
           .max(3, "Select at most 3 blocks / talukas per district")
+          .test(
+            "unique-talukas",
+            "Duplicate blocks / talukas are not allowed",
+            (value) => !value || new Set(value).size === value.length,
+          )
           .required(requiredMsg("Block / Taluka 3")),
       otherwise: (schema) => schema.max(0).optional(),
     }),

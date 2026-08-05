@@ -81,6 +81,7 @@ function RankedLocationFields({
   talukaValue,
   districts,
   talukaOptions,
+  excludedDistrictIds = [],
   onDistrictChange,
   onTalukaChange,
   onDistrictBlur,
@@ -101,11 +102,20 @@ function RankedLocationFields({
   const handleTalukaChange = (event) => {
     const raw = event.target.value;
     const next = typeof raw === "string" ? raw.split(",") : raw;
-    const limited = (next || []).filter(Boolean).slice(0, 3);
+    const unique = [...new Set((next || []).filter(Boolean))].slice(0, 3);
     onTalukaChange({
-      target: { type: "text", value: limited },
+      target: { type: "text", value: unique },
     });
   };
+
+  const availableDistricts = districts.filter((district) => {
+    const id = String(
+      district.value ?? district.districtId ?? district.id ?? "",
+    );
+    if (!id) return false;
+    if (id === districtValue) return true;
+    return !excludedDistrictIds.includes(id);
+  });
 
   return (
     <Box className="vr-reg-ranked-row">
@@ -132,7 +142,7 @@ function RankedLocationFields({
               <em>કોઈ નહીં / None</em>
             </MenuItem>
           )}
-          {districts.map((district) => {
+          {availableDistricts.map((district) => {
             const id = String(
               district.value ?? district.districtId ?? district.id ?? "",
             );
@@ -990,29 +1000,39 @@ onClose={blurField("organizationType")}
                   This information is only to make school allocation for verification smoother. It is not necessary that schools will be allotted only in your selected districts and talukas.
                 </span>
                 <span className="vr-reg-section-note__sub">
-                  એક જિલ્લામાંથી 3 બ્લોક / તાલુકા પસંદ કરી શકો છો (કુલ મહત્તમ 9). અન્ય જિલ્લા માટે &quot;કોઈ નહીં / None&quot; પસંદ કરો.
-                  You can select up to 3 blocks/talukas per district (max 9 total). Use &quot;None&quot; for unused district preferences.
+                  દરેક જિલ્લો ફક્ત એક વાર પસંદ કરી શકાય. એક જિલ્લામાંથી 3 બ્લોક / તાલુકા પસંદ કરી શકો છો (કુલ મહત્તમ 9). અન્ય જિલ્લા માટે &quot;કોઈ નહીં / None&quot; પસંદ કરો.
+                  Each district can be selected only once. You can select up to 3 blocks/talukas per district (max 9 total). Use &quot;None&quot; for unused district preferences.
                 </span>
               </Typography>
 
-              {[1, 2, 3].map((rank) => (
-                <RankedLocationFields
-                  key={rank}
-                  rank={rank}
-                  districtValue={form[`preferredDistrict${rank}`]}
-                  talukaValue={form[`preferredTaluka${rank}`]}
-                  districts={districts}
-                  talukaOptions={talukaOptions[rank]}
-                  onDistrictChange={updateField(`preferredDistrict${rank}`)}
-                  onTalukaChange={updateField(`preferredTaluka${rank}`)}
-                  onDistrictBlur={blurField(`preferredDistrict${rank}`)}
-                  onTalukaBlur={blurField(`preferredTaluka${rank}`)}
-                  districtError={errors[`preferredDistrict${rank}`]}
-                  talukaError={errors[`preferredTaluka${rank}`]}
-                  required
-                  allowNone={rank > 1}
-                />
-              ))}
+              {[1, 2, 3].map((rank) => {
+                const excludedDistrictIds = [1, 2, 3]
+                  .filter((otherRank) => otherRank !== rank)
+                  .map((otherRank) =>
+                    String(form[`preferredDistrict${otherRank}`] || ""),
+                  )
+                  .filter((id) => id && id !== "none");
+
+                return (
+                  <RankedLocationFields
+                    key={rank}
+                    rank={rank}
+                    districtValue={form[`preferredDistrict${rank}`]}
+                    talukaValue={form[`preferredTaluka${rank}`]}
+                    districts={districts}
+                    talukaOptions={talukaOptions[rank]}
+                    excludedDistrictIds={excludedDistrictIds}
+                    onDistrictChange={updateField(`preferredDistrict${rank}`)}
+                    onTalukaChange={updateField(`preferredTaluka${rank}`)}
+                    onDistrictBlur={blurField(`preferredDistrict${rank}`)}
+                    onTalukaBlur={blurField(`preferredTaluka${rank}`)}
+                    districtError={errors[`preferredDistrict${rank}`]}
+                    talukaError={errors[`preferredTaluka${rank}`]}
+                    required
+                    allowNone={rank > 1}
+                  />
+                );
+              })}
 
               <YesNoGroup
                 labelEn="Vehicle Facility (own two-wheeler / four-wheeler)?"
