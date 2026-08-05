@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, IconButton } from "@mui/material";
 import {
@@ -14,11 +14,12 @@ import {
   EmojiEvents as EmojiEventsIcon,
   School as SchoolIcon,
   Place as PlaceIcon,
-  RateReview as RateReviewIcon,
+  // RateReview as RateReviewIcon,
 } from "@mui/icons-material";
 import useAuthStore from "../../store/useAuthStore";
-import { GrievanceFeedbackPanel } from "./components/GrievanceFeedbackPanel";
+// import { GrievanceFeedbackPanel } from "./components/GrievanceFeedbackPanel";
 import { VerifierRegistrationBoard } from "./components/VerifierRegistrationBoard";
+import { FaqChatAssistant } from "./components/faq-assistant/FaqChatAssistant";
 import "./dashboard.css";
 
 import LogoImg from "../../assets/logo_image.png";
@@ -56,7 +57,7 @@ const NAV_ITEMS = [
   { id: "home", label: "Home" },
   { id: "schools", label: "Schools" },
   { id: "about", label: "About" },
-  { id: "grievance", label: "Grievance" },
+  // { id: "grievance", label: "Grievance" },
 ];
 
 const Dashboard = () => {
@@ -65,8 +66,8 @@ const Dashboard = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [activeNav, setActiveNav] = useState("home");
-  const [grievanceTab, setGrievanceTab] = useState("feedback");
-  const grievanceRef = useRef(null);
+  // const [grievanceTab, setGrievanceTab] = useState("feedback");
+  // const grievanceRef = useRef(null);
 
   const heroCarouselSlides = useMemo(
     () => [
@@ -145,12 +146,12 @@ const Dashboard = () => {
     setActiveNav(navId);
     closeMobileMenu();
 
-    if (navId === "grievance") {
-      window.setTimeout(() => {
-        grievanceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 50);
-      return;
-    }
+    // if (navId === "grievance") {
+    //   window.setTimeout(() => {
+    //     grievanceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    //   }, 50);
+    //   return;
+    // }
 
     if (navId === "home") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -432,50 +433,9 @@ const Dashboard = () => {
         </div>
       </section>
 
-      <section
-        id="grievance"
-        ref={grievanceRef}
-        className="grievance-section"
-        aria-labelledby="grievance-heading"
-      >
-        <div className="grievance-section-inner">
-          <div className="grievance-section-head">
-            <p className="grievance-kicker">Grievance & Feedback</p>
-            <h2 id="grievance-heading" className="grievance-title">
-              Parent & Community Feedback
-            </h2>
-            <p className="grievance-lede">
-              Share your complete feedback about school quality, accreditation,
-              or any concern. Your voice helps GSQAC improve education across Gujarat.
-            </p>
-          </div>
+      {/* Grievance / Parent Feedback section temporarily disabled */}
 
-          <div className="grievance-panel">
-            <div className="grievance-tabs" role="tablist" aria-label="Grievance sections">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={grievanceTab === "feedback"}
-                className={`grievance-tab${grievanceTab === "feedback" ? " is-active" : ""}`}
-                onClick={() => setGrievanceTab("feedback")}
-              >
-                <RateReviewIcon fontSize="small" />
-                Parent Feedback
-              </button>
-            </div>
-
-            <div
-              className="grievance-tab-panel"
-              role="tabpanel"
-              aria-label="Parent Feedback"
-            >
-              {grievanceTab === "feedback" && (
-                <GrievanceFeedbackPanel feedbackSource="grievance" />
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
+      <FaqChatAssistant />
     </div>
   );
 };
