@@ -391,6 +391,18 @@ export default function VerifierRegistration() {
               className="vr-reg-form"
               noValidate
             >
+            <Typography
+              variant="body2"
+              className="vr-reg-section-note vr-reg-section-note--emphasis"
+            >
+              <strong>નોંધ / Note:</strong> નોંધણી માટે એક જ મોબાઈલ નંબર વાપરી શકાશે.
+              એક વાર નોંધણી થયા પછી સમાન મોબાઈલ નંબરથી ફરીથી નોંધણી કરી શકાશે નહીં.
+              <span>
+                Only one mobile number is allowed for registration. Once registered,
+                the same mobile number cannot be used to register again.
+              </span>
+            </Typography>
+
             {/* Section A */}
             <VerifierFormSection
               step={1}
@@ -1098,6 +1110,13 @@ onClose={blurField("organizationType")}
                 <strong>નોંધ / Note:</strong> આ માહિતીનો હેતુ વેરિફિકેશન માટે શાળા ફાળવણીને વધુ સુગમ બનાવવાનો છે. પરંતુ તમે પસંદ કરેલ જિલ્લાઓ અને તાલુકાઓમાં જ શાળાઓ ફાળવાય તે જરૂરી નથી.
                 <span>
                   This information is only to make school allocation for verification smoother. It is not necessary that schools will be allotted only in your selected districts and talukas.
+                </span>
+              </Typography>
+
+              <Typography variant="body2" className="vr-reg-section-note vr-reg-section-note--emphasis">
+                <strong>નોંધ / Note:</strong> AMC, RMC, VMC અને SMC જિલ્લા પસંદ ન કરો. અન્ય જિલ્લા પસંદ કરો.
+                <span>
+                  Do not select AMC, RMC, VMC, or SMC districts. Please select other districts.
                 </span>
                 <span className="vr-reg-section-note__sub">
                   દરેક જિલ્લો ફક્ત એક વાર પસંદ કરી શકાય. એક જિલ્લામાંથી 3 બ્લોક / તાલુકા પસંદ કરી શકો છો (કુલ મહત્તમ 9). અન્ય જિલ્લા માટે &quot;કોઈ નહીં / None&quot; પસંદ કરો.
