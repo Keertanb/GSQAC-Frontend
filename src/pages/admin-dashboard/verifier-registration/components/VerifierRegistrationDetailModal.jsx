@@ -89,6 +89,18 @@ export function VerifierRegistrationDetailModal({ row, onClose }) {
             />
             <DetailItem label="Experience" value={row.experienceLabel} />
             <DetailItem
+              label="Special Educational Achievement"
+              value={row.specialEducationalAchievementLabel}
+            />
+            <DetailItem
+              label="Special Achievement Details"
+              value={row.specialEducationalAchievementDetails || "-"}
+            />
+            <DetailItem
+              label="Special Achievement Document"
+              value={row.specialEducationalAchievementFileName || "-"}
+            />
+            <DetailItem
               label="Prior Accreditation Work"
               value={row.previousAccreditationWorkLabel}
             />

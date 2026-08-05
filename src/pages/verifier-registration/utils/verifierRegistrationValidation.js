@@ -211,6 +211,21 @@ export const verifierRegistrationSchema = Yup.object().shape({
     .integer("Only whole numbers are allowed")
     .min(0, "Months cannot be negative")
     .max(11, "Months cannot exceed 11"),
+  specialEducationalAchievement: Yup.string()
+    .oneOf(["yes", "no", ""], "Select Yes or No")
+    .notRequired(),
+  specialEducationalAchievementDetails: Yup.string().when(
+    "specialEducationalAchievement",
+    {
+      is: "yes",
+      then: (schema) =>
+        schema
+          .trim()
+          .max(2000, "Too long")
+          .notRequired(),
+      otherwise: (schema) => schema.notRequired().nullable(),
+    },
+  ),
   previousAccreditationWork: Yup.string().required(
     requiredMsg("Previous accreditation work"),
   ),
@@ -461,6 +476,13 @@ export function getRelatedValidationFields(field) {
       return ["experienceYears", "experienceMonths"];
     case "experienceMonths":
       return ["experienceMonths", "experienceYears"];
+    case "specialEducationalAchievement":
+      return [
+        "specialEducationalAchievement",
+        "specialEducationalAchievementDetails",
+      ];
+    case "specialEducationalAchievementDetails":
+      return ["specialEducationalAchievementDetails"];
     case "previousAccreditationWork":
       return ["previousAccreditationWork", "previousAccreditationDuration"];
     case "otherVerificationExperience":

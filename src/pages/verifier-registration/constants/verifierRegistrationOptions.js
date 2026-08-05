@@ -187,10 +187,12 @@ export const ORGANIZATION_TYPES = [
   { value: "government", labelEn: "Government", labelGu: "સરકારી" },
   { value: "grant_in_aid", labelEn: "Grant-in-Aid", labelGu: "અનુદાનિત" },
   { value: "non_grant_in_aid", labelEn: "Non-Grant-in-Aid", labelGu: "બિન-અનુદાનિત" },
-  { value: "private", labelEn: "Private", labelGu: "ખાનગી" },
   { value: "ngo", labelEn: "NGO", labelGu: "NGO" },
   { value: "freelance", labelEn: "Freelance", labelGu: "ફ્રી-લાન્સ" },
 ];
+
+/** Municipal corporation entries excluded from district dropdowns */
+export const EXCLUDED_DISTRICT_NAME_PATTERN = /\b(AMC|RMC|VMC|SMC)\b/i;
 
 export const VEHICLE_TYPES = [
   { value: "two_wheeler", labelEn: "Two-wheeler", labelGu: "ટૂ-વ્હીલર" },
@@ -239,6 +241,9 @@ export const INITIAL_VERIFIER_FORM = {
   currentDesignation: "",
   experienceYears: "",
   experienceMonths: "",
+  specialEducationalAchievement: "",
+  specialEducationalAchievementDetails: "",
+  specialEducationalAchievementFile: null,
   previousAccreditationWork: "",
   previousAccreditationDuration: "",
   otherVerificationExperience: "",

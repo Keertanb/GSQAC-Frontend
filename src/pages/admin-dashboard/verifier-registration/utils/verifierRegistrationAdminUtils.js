@@ -95,6 +95,9 @@ export function enrichRegistrationRow(row, districts) {
       const months = Number(row.experienceMonths) || 0;
       return `${years} yr${years === 1 ? "" : "s"} ${months} mo`;
     })(),
+    specialEducationalAchievementLabel: formatYesNo(
+      row.specialEducationalAchievement,
+    ),
     educationalQualificationLabel: formatOptionLabel(
       EDUCATIONAL_QUALIFICATIONS,
       row.educationalQualification,
@@ -155,6 +158,18 @@ export const EXCEL_COLUMNS = [
   { key: "currentSchoolLevelLabel", label: "Current School Level" },
   { key: "currentDesignationLabel", label: "Current Designation" },
   { key: "experienceLabel", label: "Experience" },
+  {
+    key: "specialEducationalAchievementLabel",
+    label: "Special Educational Achievement",
+  },
+  {
+    key: "specialEducationalAchievementDetails",
+    label: "Special Achievement Details",
+  },
+  {
+    key: "specialEducationalAchievementFileName",
+    label: "Special Achievement Document",
+  },
   { key: "previousAccreditationWorkLabel", label: "Prior Accreditation Work" },
   { key: "previousAccreditationDuration", label: "Prior Accreditation Duration (Years)" },
   { key: "otherVerificationExperienceLabel", label: "Other Verification Experience" },

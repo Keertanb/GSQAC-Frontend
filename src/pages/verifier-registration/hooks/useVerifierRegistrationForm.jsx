@@ -6,8 +6,10 @@ import {
 } from "../../../services/adminService";
 import {
   registerVerifier,
+  uploadVerifierRegistrationDocument,
 } from "../../../services/verifierRegistrationService";
 import {
+  EXCLUDED_DISTRICT_NAME_PATTERN,
   INITIAL_VERIFIER_FORM,
   STATIC_GUJARAT_DISTRICTS,
 } from "../constants/verifierRegistrationOptions";
@@ -35,7 +37,10 @@ function normalizeDistrictOptions(list) {
         name: districtName,
       };
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter(
+      (district) => !EXCLUDED_DISTRICT_NAME_PATTERN.test(district.districtName),
+    );
 }
 
 function normalizeBlockOptions(list) {
@@ -125,6 +130,11 @@ function applyFieldSideEffects(prev, field, value) {
     if (value !== "other") next.currentSchoolLevelOther = "";
   }
 
+  if (field === "specialEducationalAchievement" && value !== "yes") {
+    next.specialEducationalAchievementDetails = "";
+    next.specialEducationalAchievementFile = null;
+  }
+
   if (field === "previousAccreditationWork" && value !== "yes") {
     next.previousAccreditationDuration = "";
   }
@@ -141,10 +151,11 @@ function applyFieldSideEffects(prev, field, value) {
   return next;
 }
 
-function toPayload(form) {
+function toPayload(form, specialEducationalAchievementFileName = null) {
   const hasWorkDetails =
     form.occupation === "employed" || form.occupation === "nivruti";
   const professionalQualifications = form.professionalQualifications || [];
+  const hasSpecialAchievement = form.specialEducationalAchievement === "yes";
 
   return {
     fullName: form.fullName.trim(),
@@ -179,6 +190,13 @@ function toPayload(form) {
       form.experienceMonths === "" || form.experienceMonths == null
         ? 0
         : Number(form.experienceMonths),
+    specialEducationalAchievement: form.specialEducationalAchievement || null,
+    specialEducationalAchievementDetails: hasSpecialAchievement
+      ? form.specialEducationalAchievementDetails.trim() || null
+      : null,
+    specialEducationalAchievementFileName: hasSpecialAchievement
+      ? specialEducationalAchievementFileName
+      : null,
     previousAccreditationWork: form.previousAccreditationWork,
     previousAccreditationDuration:
       form.previousAccreditationWork === "yes"
@@ -229,6 +247,7 @@ export function useVerifierRegistrationForm() {
   const [form, setForm] = useState(INITIAL_VERIFIER_FORM);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const formRef = useRef(form);
   formRef.current = form;
 
@@ -298,7 +317,9 @@ export function useVerifierRegistrationForm() {
     }
 
     if (field === "teacherCode" || field === "schoolDiseCode") {
-      value = String(value ?? "").replace(/\D/g, "").slice(0, field === "schoolDiseCode" ? 15 : 20);
+      value = String(value ?? "")
+        .replace(/\D/g, "")
+        .slice(0, field === "schoolDiseCode" ? 15 : 20);
     }
 
     if (field === "bankIfsc") {
@@ -329,8 +350,18 @@ export function useVerifierRegistrationForm() {
       return nextForm;
     });
 
-    // Clear related errors while editing; validate only on blur.
     clearErrors(getRelatedValidationFields(field));
+  };
+
+  const setSpecialAchievementFile = (file) => {
+    setForm((prev) => {
+      const nextForm = {
+        ...prev,
+        specialEducationalAchievementFile: file || null,
+      };
+      formRef.current = nextForm;
+      return nextForm;
+    });
   };
 
   const blurField = (field) => () => {
@@ -360,7 +391,7 @@ export function useVerifierRegistrationForm() {
     clearErrors(getRelatedValidationFields(field));
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
     const currentForm = formRef.current;
     const validationErrors = validateVerifierRegistrationForm(currentForm);
@@ -373,16 +404,48 @@ export function useVerifierRegistrationForm() {
       return;
     }
 
+    setPreviewOpen(true);
+  };
+
+  const closePreview = () => {
+    if (submitting) return;
+    setPreviewOpen(false);
+  };
+
+  const handleConfirmSubmit = async () => {
+    const currentForm = formRef.current;
+    const validationErrors = validateVerifierRegistrationForm(currentForm);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setPreviewOpen(false);
+      enqueueSnackbar("Please correct the highlighted fields.", {
+        variant: "warning",
+      });
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      const payload = toPayload(currentForm);
+      let specialFileName = null;
+      if (
+        currentForm.specialEducationalAchievement === "yes" &&
+        currentForm.specialEducationalAchievementFile
+      ) {
+        specialFileName = await uploadVerifierRegistrationDocument(
+          currentForm.specialEducationalAchievementFile,
+        );
+      }
+
+      const payload = toPayload(currentForm, specialFileName);
       await registerVerifier(payload);
 
       enqueueSnackbar(
         "અરજી કર્યાથી વેરિફાયર તરીકે પસંદગી કે કામગીરી માટેનો કોઈ હક કે દાવો કરી શકાશે નહીં. પસંદગીનો અંતિમ નિર્ણય GCERT-GSQAC નો રહેશે.",
         { variant: "success", autoHideDuration: 8000 },
       );
+      setPreviewOpen(false);
       setForm(INITIAL_VERIFIER_FORM);
       formRef.current = INITIAL_VERIFIER_FORM;
       setErrors({});
@@ -402,6 +465,7 @@ export function useVerifierRegistrationForm() {
     errors,
     age,
     submitting,
+    previewOpen,
     districts,
     talukaOptions: {
       1: talukaOptions1,
@@ -411,6 +475,9 @@ export function useVerifierRegistrationForm() {
     updateField,
     blurField,
     toggleMultiValue,
+    setSpecialAchievementFile,
     handleSubmit,
+    closePreview,
+    handleConfirmSubmit,
   };
 }

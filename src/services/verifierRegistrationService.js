@@ -1,6 +1,7 @@
 import axiosInstance from "../config/axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
+import { uploadFileToPresignedUrl } from "./evidenceService";
 
 export async function registerVerifier(payload) {
   const response = await axiosInstance.post(
@@ -8,6 +9,34 @@ export async function registerVerifier(payload) {
     payload,
   );
   return response.data;
+}
+
+export async function uploadVerifierRegistrationDocument(file) {
+  if (!file) return null;
+
+  const extension = file.name.split(".").pop()?.toLowerCase() || "pdf";
+  const allowed = ["jpg", "jpeg", "png", "pdf"];
+  if (!allowed.includes(extension)) {
+    throw new Error("Invalid file type. Allowed formats: JPG, PNG, PDF.");
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error("File exceeds the maximum allowed size of 5 MB.");
+  }
+
+  const response = await axiosInstance.post("/common/get-upload-url", {
+    extension,
+    contentType: file.type || "application/octet-stream",
+    uploadType: "verifierRegistration",
+  });
+
+  const uploadPayload = response?.data?.data || response?.data;
+  if (!uploadPayload?.uploadURL || !uploadPayload?.fileName) {
+    throw new Error("Unable to prepare document upload.");
+  }
+
+  await uploadFileToPresignedUrl(uploadPayload.uploadURL, file);
+  return uploadPayload.fileName;
 }
 
 export function resolveLocalFileName(file) {

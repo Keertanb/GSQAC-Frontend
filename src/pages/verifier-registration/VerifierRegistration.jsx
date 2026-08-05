@@ -24,11 +24,13 @@ import {
   Typography,
 } from "@mui/material";
 import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
+import { enqueueSnackbar } from "notistack";
 import { ROOT_URL } from "../../routes/routeUrls";
 import LogoImg from "../../assets/logo_image.png";
 import GsqacLogoImg from "../../assets/gsqac_logo.png";
 import VerifierFormSection from "./components/VerifierFormSection";
 import BilingualFieldLabel from "./components/BilingualFieldLabel";
+import VerifierRegistrationPreviewModal from "./components/VerifierRegistrationPreviewModal";
 import { useVerifierRegistrationForm } from "./hooks/useVerifierRegistrationForm";
 import { useGetVerifierRegistrationStatusQuery } from "../../services/verifierRegistrationService";
 import { VERIFIER_REGISTRATION_CLOSED_MESSAGE } from "../../constants/verifierRegistration";
@@ -243,12 +245,16 @@ export default function VerifierRegistration() {
     errors,
     age,
     submitting,
+    previewOpen,
     districts,
     talukaOptions,
     updateField,
     blurField,
     toggleMultiValue,
+    setSpecialAchievementFile,
     handleSubmit,
+    closePreview,
+    handleConfirmSubmit,
   } = useVerifierRegistrationForm();
 
   const isEmployed = form.occupation === "employed";
@@ -828,7 +834,7 @@ onClose={blurField("organizationType")}
 
                   {form.currentSchoolLevel === "other" && (
                     <TextField
-                      label="અન્ય શાળા પ્રકાર સ્પષ્ટ કરો (Specify Other School Type)"
+                      label="અન્ય કામગીરીની વિગત (Other work details)"
                       value={form.currentSchoolLevelOther}
                       onChange={updateField("currentSchoolLevelOther")}
                       onBlur={blurField("currentSchoolLevelOther")}
@@ -845,7 +851,7 @@ onClose={blurField("organizationType")}
                     <TextField
                       label={
                         form.currentSchoolLevel === "higher_education"
-                          ? "વિગતો સ્પષ્ટ કરો (Specify Details)"
+                          ? "વર્તમાન કામગીરીની વિગતો સ્પષ્ટ કરો (Specify current work details)"
                           : "વર્તમાન હોદ્દો (Current Designation)"
                       }
                       value={form.currentDesignation}
@@ -927,6 +933,93 @@ onClose={blurField("organizationType")}
                   helperText={errors.experienceMonths || "0–11 મહિના / months"}
                 />
               </Box>
+
+              <YesNoGroup
+                labelEn="Do you hold any special educational achievement?"
+                labelGu="કોઈ વિશેષ શૈક્ષણિક સિદ્ધિ ધરાવો છો?"
+                name="specialEducationalAchievement"
+                value={form.specialEducationalAchievement}
+                onChange={updateField("specialEducationalAchievement")}
+                onBlur={blurField("specialEducationalAchievement")}
+                error={errors.specialEducationalAchievement}
+              />
+
+              {form.specialEducationalAchievement === "yes" && (
+                <>
+                  <TextField
+                    label="સિદ્ધિની વિગત (Achievement details)"
+                    value={form.specialEducationalAchievementDetails}
+                    onChange={updateField("specialEducationalAchievementDetails")}
+                    onBlur={blurField("specialEducationalAchievementDetails")}
+                    fullWidth
+                    size="small"
+                    multiline
+                    minRows={2}
+                    error={!!errors.specialEducationalAchievementDetails}
+                    helperText={
+                      errors.specialEducationalAchievementDetails ||
+                      "વૈકલ્પિક / Optional"
+                    }
+                  />
+                  <Box className="vr-reg-file-field">
+                    <Typography variant="body2" className="vr-reg-file-field__label">
+                      દસ્તાવેજ અપલોડ (Document upload) - વૈકલ્પિક / Optional
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      size="small"
+                      className="vr-reg-file-field__button"
+                    >
+                      ફાઈલ પસંદ કરો / Choose file
+                      <input
+                        hidden
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0] || null;
+                          event.target.value = "";
+                          if (!file) {
+                            setSpecialAchievementFile(null);
+                            return;
+                          }
+                          const extension =
+                            file.name.split(".").pop()?.toLowerCase() || "";
+                          if (!["pdf", "jpg", "jpeg", "png"].includes(extension)) {
+                            enqueueSnackbar(
+                              "Invalid file type. Allowed formats: JPG, PNG, PDF.",
+                              { variant: "warning" },
+                            );
+                            return;
+                          }
+                          if (file.size > 5 * 1024 * 1024) {
+                            enqueueSnackbar(
+                              "File exceeds the maximum allowed size of 5 MB.",
+                              { variant: "warning" },
+                            );
+                            return;
+                          }
+                          setSpecialAchievementFile(file);
+                        }}
+                      />
+                    </Button>
+                    <Typography variant="caption" color="text.secondary">
+                      {form.specialEducationalAchievementFile?.name ||
+                        "PDF, JPG, PNG - max 5 MB"}
+                    </Typography>
+                    {form.specialEducationalAchievementFile && (
+                      <Button
+                        type="button"
+                        size="small"
+                        color="inherit"
+                        onClick={() => setSpecialAchievementFile(null)}
+                      >
+                        દૂર કરો / Remove
+                      </Button>
+                    )}
+                  </Box>
+                </>
+              )}
 
               <YesNoGroup
                 labelEn="Prior work in School Accreditation / Verification?"
@@ -1346,6 +1439,14 @@ onClose={blurField("organizationType")}
           </Paper>
         </Container>
       </main>
+      <VerifierRegistrationPreviewModal
+        open={previewOpen}
+        form={form}
+        districts={districts}
+        submitting={submitting}
+        onClose={closePreview}
+        onConfirm={handleConfirmSubmit}
+      />
     </div>
   );
 }
