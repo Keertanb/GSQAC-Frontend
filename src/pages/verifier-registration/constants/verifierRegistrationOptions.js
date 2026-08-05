@@ -191,8 +191,9 @@ export const ORGANIZATION_TYPES = [
   { value: "freelance", labelEn: "Freelance", labelGu: "ફ્રી-લાન્સ" },
 ];
 
-/** Municipal corporation entries excluded from district dropdowns */
-export const EXCLUDED_DISTRICT_NAME_PATTERN = /\b(AMC|RMC|VMC|SMC)\b/i;
+/** Entries excluded from district dropdowns (municipal corps + test data) */
+export const EXCLUDED_DISTRICT_NAME_PATTERN =
+  /\b(AMC|RMC|VMC|SMC)\b|test\s*district/i;
 
 export const VEHICLE_TYPES = [
   { value: "two_wheeler", labelEn: "Two-wheeler", labelGu: "ટૂ-વ્હીલર" },
