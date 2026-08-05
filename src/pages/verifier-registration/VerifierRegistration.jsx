@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -240,6 +240,8 @@ export default function VerifierRegistration() {
     navigate(ROOT_URL);
   };
 
+  const [submitNoticeOpen, setSubmitNoticeOpen] = useState(false);
+
   const {
     form,
     errors,
@@ -252,10 +254,15 @@ export default function VerifierRegistration() {
     blurField,
     toggleMultiValue,
     setSpecialAchievementFile,
-    handleSubmit,
     closePreview,
     handleConfirmSubmit,
   } = useVerifierRegistrationForm();
+
+  // Temporary: show start-time notice instead of preview/submit.
+  const handleFormSubmit = (event) => {
+    event.preventDefault();
+    setSubmitNoticeOpen(true);
+  };
 
   const isEmployed = form.occupation === "employed";
   const isNivruti = form.occupation === "nivruti";
@@ -380,7 +387,7 @@ export default function VerifierRegistration() {
 
             <Box
               component="form"
-              onSubmit={handleSubmit}
+              onSubmit={handleFormSubmit}
               className="vr-reg-form"
               noValidate
             >
@@ -1447,6 +1454,30 @@ onClose={blurField("organizationType")}
         onClose={closePreview}
         onConfirm={handleConfirmSubmit}
       />
+
+      <Dialog
+        open={submitNoticeOpen}
+        onClose={() => setSubmitNoticeOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        disablePortal
+      >
+        <DialogTitle>વેરિફાયર રજીસ્ટ્રેશન</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ pt: 1, lineHeight: 1.7, fontSize: "1.05rem" }}>
+            {VERIFIER_REGISTRATION_CLOSED_MESSAGE}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            variant="contained"
+            onClick={() => setSubmitNoticeOpen(false)}
+            sx={{ textTransform: "none" }}
+          >
+            ઠીક છે
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
