@@ -14,6 +14,8 @@ import {
   Business,
   AccountCircle,
   ManageAccounts,
+  Newspaper,
+  FolderShared,
 } from "@mui/icons-material";
 
 const DRAWER_WIDTH = {
@@ -196,6 +198,20 @@ export const adminMenuItems = [
     icon: Feedback,
     url: "/admin-dashboard/parent-feedback",
     activeFinder: ["/admin-dashboard/parent-feedback"],
+  },
+  {
+    id: "latest-news",
+    label: "Latest News",
+    icon: Newspaper,
+    url: "/admin-dashboard/latest-news",
+    activeFinder: ["/admin-dashboard/latest-news"],
+  },
+  {
+    id: "important-documents",
+    label: "Important Documents",
+    icon: FolderShared,
+    url: "/admin-dashboard/important-documents",
+    activeFinder: ["/admin-dashboard/important-documents"],
   },
   {
     id: "role-management",

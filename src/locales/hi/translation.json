@@ -61,7 +61,8 @@
       },
       "schoolManagementTypes": {
         "privateSchool": "निजी विद्यालय",
-        "governmentSchool": "सरकारी विद्यालय"
+        "governmentSchool": "सरकारी विद्यालय",
+        "grantInAidSchool": "अनुदानित विद्यालय"
       },
       "addProperAssessmentName": "सही मूल्यांकन नाम जोड़ें",
       "cloning": "डुप्लिकेट किया जा रहा है...",

@@ -88,7 +88,43 @@ export const getAssessmentSchoolTypeShortLabel = (schoolType, t) => {
   return null;
 };
 
-/** GET /admin/assessment `management`: 1 = Private, 2 = Government */
+/** Canonical options for Add/Edit Assessment school-management dropdown */
+export const DEFAULT_SCHOOL_MANAGEMENT_OPTIONS = [
+  { smId: 1, managementName: "Private" },
+  { smId: 2, managementName: "Government" },
+  { smId: 3, managementName: "Grant-in-Aid" },
+];
+
+/**
+ * Merge API master rows with required defaults so Grant-in-Aid always appears
+ * in the Add Assessment dropdown even if DB has not been migrated yet.
+ */
+export const ensureSchoolManagementOptions = (apiOptions = []) => {
+  const list = Array.isArray(apiOptions) ? [...apiOptions] : [];
+  const hasGrant = list.some((option) => {
+    const id = Number(option?.smId);
+    const name = String(option?.managementName || "")
+      .trim()
+      .toLowerCase();
+    return (
+      id === 3 ||
+      name.includes("grant") ||
+      name.includes("aided") ||
+      name.includes("anudan")
+    );
+  });
+
+  if (!hasGrant) {
+    list.push(DEFAULT_SCHOOL_MANAGEMENT_OPTIONS[2]);
+  }
+
+  return list.sort((a, b) => Number(a.smId) - Number(b.smId));
+};
+
+/**
+ * GET /admin/assessment `management`:
+ * 1 = Private, 2 = Government, 3 = Grant-in-Aid
+ */
 export const getAssessmentManagementId = (assessment) => {
   if (!assessment) return null;
   const raw =
@@ -100,7 +136,21 @@ export const getAssessmentManagementId = (assessment) => {
   const name = assessment.managementName;
   if (name == null || name === "") return null;
   const n = String(name).trim().toLowerCase();
-  if (n === "private" || n.includes("private")) return 1;
+  if (
+    n === "private" ||
+    n.includes("private") ||
+    n.includes("unaided") ||
+    n.includes("self-financ")
+  ) {
+    return 1;
+  }
+  if (
+    n.includes("grant") ||
+    n.includes("aided") ||
+    n.includes("anudan")
+  ) {
+    return 3;
+  }
   if (
     n === "government" ||
     n.includes("government") ||
@@ -108,6 +158,19 @@ export const getAssessmentManagementId = (assessment) => {
     n.includes("public")
   ) {
     return 2;
+  }
+  return null;
+};
+
+export const getAssessmentManagementLabelKey = (managementId) => {
+  if (managementId === 1) {
+    return "assessment.management.schoolManagementTypes.privateSchool";
+  }
+  if (managementId === 2) {
+    return "assessment.management.schoolManagementTypes.governmentSchool";
+  }
+  if (managementId === 3) {
+    return "assessment.management.schoolManagementTypes.grantInAidSchool";
   }
   return null;
 };

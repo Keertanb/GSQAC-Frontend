@@ -1,0 +1,131 @@
+.ln-admin {
+  padding: 0.25rem 0 1.5rem;
+}
+
+.ln-admin__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.ln-admin__header h1 {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ln-admin__header p {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.ln-admin__state {
+  display: grid;
+  place-items: center;
+  gap: 0.75rem;
+  min-height: 220px;
+  color: #64748b;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+}
+
+.ln-admin__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.ln-admin__card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.95rem;
+}
+
+.ln-admin__thumb {
+  position: relative;
+  min-height: 150px;
+  background: #f1f5f9 center/cover no-repeat;
+  display: grid;
+  place-items: center;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.ln-admin__badge {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.ln-admin__badge.is-on {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.ln-admin__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.95rem 1rem 1.05rem;
+}
+
+.ln-admin__body h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.ln-admin__body p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ln-admin__body a {
+  font-size: 0.78rem;
+  color: #2563eb;
+  word-break: break-all;
+}
+
+.ln-admin__meta {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.ln-admin__actions {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.ln-admin__file-label {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.ln-admin__file-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}

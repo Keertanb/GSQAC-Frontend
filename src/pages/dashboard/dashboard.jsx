@@ -20,6 +20,8 @@ import useAuthStore from "../../store/useAuthStore";
 // import { GrievanceFeedbackPanel } from "./components/GrievanceFeedbackPanel";
 import { VerifierRegistrationBoard } from "./components/VerifierRegistrationBoard";
 import { FaqChatAssistant } from "./components/faq-assistant/FaqChatAssistant";
+import { LatestNewsSection } from "./components/LatestNewsSection";
+import { ImportantDocumentsSection } from "./components/ImportantDocumentsSection";
 import "./dashboard.css";
 
 import LogoImg from "../../assets/logo_image.png";
@@ -57,6 +59,7 @@ const NAV_ITEMS = [
   { id: "home", label: "Home" },
   { id: "schools", label: "Schools" },
   { id: "about", label: "About" },
+  { id: "documents", label: "Important Documents" },
   // { id: "grievance", label: "Grievance" },
 ];
 
@@ -146,16 +149,25 @@ const Dashboard = () => {
     setActiveNav(navId);
     closeMobileMenu();
 
-    // if (navId === "grievance") {
-    //   window.setTimeout(() => {
-    //     grievanceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    //   }, 50);
-    //   return;
-    // }
-
-    if (navId === "home") {
+    if (navId === "home" || navId === "about") {
       window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
     }
+
+    const sectionId =
+      navId === "schools"
+        ? "schools"
+        : navId === "documents"
+          ? "documents"
+          : null;
+
+    if (!sectionId) return;
+
+    window.setTimeout(() => {
+      document
+        .getElementById(sectionId)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
   };
 
   return (
@@ -407,10 +419,22 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Latest News stays on the blue hero background */}
+        <div className="hero-news-band">
+          <div className="hero-news-band__inner">
+            <LatestNewsSection />
+          </div>
+        </div>
       </section>
 
-      <section className="stats-section" aria-label="Key statistics">
-        <div className="stats-section-inner">
+      {/* White stats pill cuts across blue → page background */}
+      <section
+        id="schools"
+        className="stats-cut"
+        aria-label="Key statistics"
+      >
+        <div className="stats-cut__inner">
           <div className="stats-grid">
             {STATS.map((stat) => {
               const StatIcon = stat.icon;
@@ -432,6 +456,8 @@ const Dashboard = () => {
           </div>
         </div>
       </section>
+
+      <ImportantDocumentsSection />
 
       {/* Grievance / Parent Feedback section temporarily disabled */}
 

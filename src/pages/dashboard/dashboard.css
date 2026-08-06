@@ -7,13 +7,23 @@
   --surface: #ffffff;
   --border-subtle: #e5e7eb;
   --header-h: 80px;
+  --landing-max: 1280px;
+  --landing-gutter: clamp(1.25rem, 4vw, 2rem);
 
   font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: #f8fafc;
   min-height: 100vh;
+  overflow-x: clip;
+  max-width: 100vw;
 }
 
 /* —— Header —— */
+#schools,
+#documents,
+#news {
+  scroll-margin-top: 5.5rem;
+}
+
 .dashboard-header {
   position: sticky;
   top: 0;
@@ -250,17 +260,35 @@
 /* —— Hero —— */
 .hero-section {
   position: relative;
-  min-height: clamp(640px, 84vh, 860px);
+  min-height: clamp(520px, 68vh, 720px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   text-align: left;
   background-size: cover;
   background-position: center;
   color: white;
-  padding: 2.5rem 1.5rem 3.75rem;
+  padding: 1.75rem 0 2.75rem;
   overflow-x: clip;
+}
+
+/* Latest News tray — inside blue hero, same width as stats */
+.hero-news-band {
+  position: relative;
+  z-index: 4;
+  width: 100%;
+  flex: 0 0 auto;
+  margin-top: 1.75rem;
+  padding: 0 var(--landing-gutter);
+  box-sizing: border-box;
+}
+
+.hero-news-band__inner {
+  width: 100%;
+  max-width: min(var(--landing-max), 100%);
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .hero-overlay {
@@ -297,18 +325,19 @@
   position: relative;
   z-index: 2;
   width: 100%;
-  max-width: 1480px;
+  max-width: min(var(--landing-max), 100%);
   margin: 0 auto;
-  padding: 0 clamp(0.65rem, 1.5vw, 1.25rem);
+  padding: 0 var(--landing-gutter);
   box-sizing: border-box;
+  flex: 1 1 auto;
 }
 
 /* Reference layout: carousel (left) | copy + mini-cards + CTAs (right) */
 .hero-split {
   display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
-  gap: clamp(1.25rem, 3vw, 2.75rem);
-  align-items: start;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(1.5rem, 3.5vw, 2.75rem);
+  align-items: center;
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
@@ -334,8 +363,8 @@
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
-  max-width: 40rem;
-  gap: 1rem;
+  max-width: 36rem;
+  gap: 1.1rem;
   padding: 0;
   box-sizing: border-box;
 }
@@ -653,44 +682,67 @@
   border-color: rgba(255, 255, 255, 0.5);
 }
 
-/* —— Stats —— */
-.stats-section {
+/* —— White stats pill: cuts across blue hero → light page —— */
+.stats-cut {
   position: relative;
-  z-index: 5;
-  margin-top: clamp(-3.25rem, -5.5vw, -2.5rem);
-  padding: 0 clamp(1rem, 4vw, 2rem) 2rem;
+  z-index: 6;
+  margin-top: -1.65rem;
+  padding: 0 var(--landing-gutter) 2rem;
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  overflow-x: clip;
 }
 
-.stats-section-inner {
-  max-width: 1480px;
+.stats-cut__inner {
+  width: 100%;
+  max-width: min(var(--landing-max), 100%);
   margin: 0 auto;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(0.5rem, 1.5vw, 0.85rem);
-  background: var(--surface);
-  border-radius: 16px;
-  padding: clamp(0.55rem, 1.4vw, 0.85rem) clamp(0.65rem, 1.8vw, 1rem);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 0.55rem 0.35rem;
   box-shadow:
-    0 4px 6px -1px rgba(15, 23, 42, 0.06),
-    0 18px 44px -12px rgba(15, 23, 42, 0.12);
-  border: 1px solid rgba(229, 231, 235, 0.95);
+    0 10px 18px -6px rgba(15, 23, 42, 0.12),
+    0 24px 48px -18px rgba(15, 23, 42, 0.2);
+  border: 1px solid #e8edf3;
+  overflow: hidden;
 }
+
 
 .stat-card {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 0.55rem;
+  justify-content: center;
+  gap: 0.6rem;
   text-align: left;
-  padding: 0.2rem 0.15rem;
+  padding: 0.25rem 0.85rem;
   min-height: 0;
   border: none;
   outline: none;
   box-shadow: none;
   background: transparent;
+  position: relative;
+}
+
+.stat-card + .stat-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 1px;
+  background: #e5e7eb;
 }
 
 .stat-card:focus,
@@ -703,8 +755,8 @@
 
 .stat-card-icon-wrap {
   flex-shrink: 0;
-  width: 2.35rem;
-  height: 2.35rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -720,7 +772,7 @@
 }
 
 .stat-card-icon {
-  font-size: 1.15rem !important;
+  font-size: 1.05rem !important;
 }
 
 .stat-card--orange .stat-card-icon {
@@ -739,27 +791,51 @@
 }
 
 .stat-value {
-  font-size: clamp(1.15rem, 2vw, 1.55rem);
+  font-size: clamp(1.05rem, 1.7vw, 1.3rem);
   font-weight: 800;
   color: var(--primary-blue);
   letter-spacing: -0.02em;
-  line-height: 1.08;
+  line-height: 1.05;
 }
 
 .stat-label {
-  font-size: clamp(0.7rem, 1vw, 0.8rem);
+  font-size: clamp(0.68rem, 0.95vw, 0.76rem);
   color: var(--text-light);
   font-weight: 500;
-  line-height: 1.25;
+  line-height: 1.2;
   max-width: 10rem;
 }
 
 /* Hero stacks on narrow viewports — copy first, then carousel */
 @media (max-width: 960px) {
   .hero-section {
+    height: auto;
+    max-height: none;
     min-height: auto;
-    padding: 1.5rem 1rem 2.75rem;
-    align-items: flex-start;
+    padding: 1.25rem 0 2.75rem;
+    align-items: stretch;
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+  .hero-news-band {
+    margin-top: 1.15rem;
+  }
+
+  .stats-cut {
+    margin-top: -1.65rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-radius: 18px;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .stat-card + .stat-card::before {
+    display: none;
   }
 
   .hero-verifier-board-wrap {
@@ -904,8 +980,8 @@
     gap: 0.25rem;
   }
 
-  .stats-section {
-    margin-top: -1.5rem;
+  .stats-cut {
+    margin-top: -1.65rem;
     padding: 0 0.875rem 1.5rem;
   }
 
@@ -1012,7 +1088,7 @@
   }
 
   .hero-section {
-    padding: 1.25rem 0.875rem 2.25rem;
+    padding: 1.25rem 0 3.5rem;
   }
 
   .hero-overlay {
@@ -1024,8 +1100,13 @@
     );
   }
 
-  .stats-section {
-    margin-top: -1.75rem;
+  .hero-news-band {
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+
+  .stats-cut {
+    margin-top: -1.5rem;
     padding-bottom: 1.5rem;
     padding-left: 0.875rem;
     padding-right: 0.875rem;
@@ -1035,6 +1116,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.55rem;
     padding: 0.7rem;
+    border-radius: 16px;
   }
 
   .stat-card {

@@ -4,6 +4,7 @@ import { enqueueSnackbar } from "notistack";
 import { colors } from "../../../../constants/colors";
 
 import {
+  ensureSchoolManagementOptions,
   getAssessmentManagementForApi,
   getCurrentYear,
   getMinDateInCurrentYear,
@@ -306,7 +307,9 @@ export function useAssessmentManagement() {
   } = useGetAssessmentsQuery();
 
   const { data: schoolManagementData } = useGetSchoolManagementQuery();
-  const schoolManagementOptions = schoolManagementData?.data || [];
+  const schoolManagementOptions = ensureSchoolManagementOptions(
+    schoolManagementData?.data || [],
+  );
 
   const handleDuplicateAssessment = (assessment) => {
     setEditingAssessment(null);

@@ -62,7 +62,8 @@
       },
       "schoolManagementTypes": {
         "privateSchool": "Private School",
-        "governmentSchool": "Government School"
+        "governmentSchool": "Government School",
+        "grantInAidSchool": "Grant-in-Aid School"
       },
       "addProperAssessmentName": "Add proper assessment name",
       "cloning": "Cloning...",

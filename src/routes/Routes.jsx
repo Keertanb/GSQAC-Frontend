@@ -325,6 +325,26 @@ export const adminRoutes = [
           </ProtectedRoute>
         ),
       },
+      {
+        path: ROUTE_URLS.ADMIN_LATEST_NEWS_URL,
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <Suspense fallback={<LazyLoad />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTE_URLS.ADMIN_IMPORTANT_DOCUMENTS_URL,
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <Suspense fallback={<LazyLoad />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
   {

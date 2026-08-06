@@ -1,0 +1,128 @@
+.id-section {
+  --id-ink: #12263a;
+  --id-muted: #607080;
+  --id-accent: #1d4ed8;
+  padding: 3.25rem 1.25rem 4rem;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f4f7fb 100%);
+}
+
+.id-section__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.id-section__head {
+  margin-bottom: 1.6rem;
+  max-width: 40rem;
+}
+
+.id-section__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--id-accent);
+}
+
+.id-section__head h2 {
+  margin: 0;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: clamp(1.8rem, 3vw, 2.35rem);
+  color: var(--id-ink);
+  letter-spacing: -0.02em;
+}
+
+.id-section__head p {
+  margin: 0.55rem 0 0;
+  color: var(--id-muted);
+  line-height: 1.5;
+}
+
+.id-section__empty {
+  min-height: 140px;
+  display: grid;
+  place-items: center;
+  color: var(--id-muted);
+  border: 1px dashed #cbd5e1;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.id-section__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.95rem;
+}
+
+.id-card {
+  display: flex;
+  gap: 0.9rem;
+  padding: 1.15rem 1.15rem 1.2rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.id-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(18, 38, 58, 0.08);
+}
+
+.id-card__icon {
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 0.75rem;
+  display: grid;
+  place-items: center;
+  color: #1d4ed8;
+  background: #eff6ff;
+  flex-shrink: 0;
+}
+
+.id-card__body h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  color: var(--id-ink);
+}
+
+.id-card__body p {
+  margin: 0.35rem 0 0;
+  color: var(--id-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.id-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+}
+
+.id-card__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--id-accent);
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.id-card__btn--solid {
+  color: #fff;
+  background: var(--id-accent);
+  border-color: var(--id-accent);
+}
+
+.id-card__unavailable {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}

@@ -61,7 +61,8 @@
       },
       "schoolManagementTypes": {
         "privateSchool": "ખાનગી શાળા",
-        "governmentSchool": "સરકારી શાળા"
+        "governmentSchool": "સરકારી શાળા",
+        "grantInAidSchool": "અનુદાનિત શાળા"
       },
       "addProperAssessmentName": "યોગ્ય મૂલ્યાંકન નામ ઉમેરો",
       "cloning": "નકલ કરી રહ્યા છીએ...",

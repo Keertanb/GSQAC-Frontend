@@ -22,6 +22,8 @@ import SchoolAllocation from "./school-allocation/SchoolAllocation";
 import SchoolAssessmentStatus from "./school-assessment-status/SchoolAssessmentStatus";
 import SchoolSelfAssessmentMonitor from "./school-self-assessment-monitor/SchoolSelfAssessmentMonitor";
 import ParentFeedback from "./parent-feedback/ParentFeedback";
+import LatestNewsAdmin from "./latest-news/LatestNewsAdmin";
+import ImportantDocumentsAdmin from "./important-documents/ImportantDocumentsAdmin";
 import AdminOverview from "./overview/AdminOverview";
 import DistrictNodalOfficers from "./district-nodal-officers/DistrictNodalOfficers";
 import RoleManagement from "./role-management/RoleManagement";
@@ -36,6 +38,8 @@ import {
   ADMIN_ROLE_MANAGEMENT_URL,
   ADMIN_DISTRICT_NODAL_OFFICERS_URL,
   ADMIN_PARENT_FEEDBACK_URL,
+  ADMIN_LATEST_NEWS_URL,
+  ADMIN_IMPORTANT_DOCUMENTS_URL,
 } from "../../routes/routeUrls";
 import ConfirmationModal from "../../components/ConfirmationModal/ConfirmationModal";
 import "./admin-dashboard.css";
@@ -94,6 +98,10 @@ const AdminDashboard = () => {
       return "role-management";
     } else if (location.pathname === ADMIN_PARENT_FEEDBACK_URL) {
       return "parent-feedback";
+    } else if (location.pathname === ADMIN_LATEST_NEWS_URL) {
+      return "latest-news";
+    } else if (location.pathname === ADMIN_IMPORTANT_DOCUMENTS_URL) {
+      return "important-documents";
     }
     return "dashboard";
   };
@@ -389,6 +397,10 @@ const AdminDashboard = () => {
             )}
             {currentView === "role-management" && <RoleManagement />}
             {currentView === "parent-feedback" && <ParentFeedback />}
+            {currentView === "latest-news" && <LatestNewsAdmin />}
+            {currentView === "important-documents" && (
+              <ImportantDocumentsAdmin />
+            )}
             {currentView === "dashboard" && <AdminOverview />}
           </Box>
         </Box>
