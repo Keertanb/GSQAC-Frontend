@@ -11,7 +11,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Add, Delete } from "@mui/icons-material";
+import { Add, Delete, Edit, Close } from "@mui/icons-material";
 import { colors } from "../../../../constants/colors";
 import {
   useDeleteEvidenceSlotMutation,
@@ -19,17 +19,38 @@ import {
   useUpsertEvidenceSlotMutation,
 } from "../../../../services/evidenceService";
 
-export function EvidenceSlotEditor({ subDomainId, initialSlots = [], disabled = false }) {
-  const [slotName, setSlotName] = useState("");
-  const [isMandatory, setIsMandatory] = useState("yes");
+const EMPTY_FORM = {
+  evidenceSlotId: null,
+  gu: "",
+  en: "",
+  hi: "",
+  isMandatory: "yes",
+};
+
+function isMandatorySlot(slot) {
+  return (
+    slot?.isMandatory === 1 ||
+    slot?.isMandatory === true ||
+    slot?.isMandatory === "1"
+  );
+}
+
+export function EvidenceSlotEditor({
+  subDomainId,
+  initialSlots = [],
+  disabled = false,
+}) {
+  const [form, setForm] = useState(EMPTY_FORM);
   const [localSlots, setLocalSlots] = useState(initialSlots);
 
-  const { data: slotsData, refetch } = useEvidenceSlotsQuery(subDomainId, !!subDomainId);
+  const { data: slotsData, refetch } = useEvidenceSlotsQuery(
+    subDomainId,
+    !!subDomainId,
+  );
 
   const upsertMutation = useUpsertEvidenceSlotMutation({
     onSuccess: () => {
-      setSlotName("");
-      setIsMandatory("yes");
+      setForm(EMPTY_FORM);
       refetch();
     },
   });
@@ -44,33 +65,58 @@ export function EvidenceSlotEditor({ subDomainId, initialSlots = [], disabled = 
       setLocalSlots(fetched);
     } else if (initialSlots?.length) {
       setLocalSlots(initialSlots);
+    } else {
+      setLocalSlots([]);
     }
   }, [slotsData, initialSlots]);
 
-  const handleAddSlot = async () => {
+  const resetForm = () => setForm(EMPTY_FORM);
+
+  const startEdit = (slot) => {
+    setForm({
+      evidenceSlotId: slot.evidenceSlotId,
+      gu: slot.slotNameGu || "",
+      en: slot.slotNameEn || slot.slotName || "",
+      hi: slot.slotNameHi || "",
+      isMandatory: isMandatorySlot(slot) ? "yes" : "no",
+    });
+  };
+
+  const handleSave = async () => {
     if (!subDomainId) return;
-    const trimmed = slotName.trim();
-    if (!trimmed) return;
+
+    const slotNameGu = form.gu.trim();
+    const slotNameEn = form.en.trim();
+    const slotNameHi = form.hi.trim();
+
+    if (!slotNameGu || !slotNameEn) {
+      return;
+    }
 
     await upsertMutation.mutateAsync({
+      evidenceSlotId: form.evidenceSlotId || null,
       subDomainId,
-      slotName: trimmed,
-      isMandatory: isMandatory === "yes" ? 1 : 0,
+      slotNameGu,
+      slotNameEn,
+      slotNameHi: slotNameHi || null,
+      isMandatory: form.isMandatory === "yes" ? 1 : 0,
     });
   };
 
   const handleDeleteSlot = (evidenceSlotId) => {
     if (!evidenceSlotId) return;
+    if (form.evidenceSlotId === evidenceSlotId) {
+      resetForm();
+    }
     deleteMutation.mutate(evidenceSlotId);
     setLocalSlots((prev) =>
       prev.filter((slot) => slot.evidenceSlotId !== evidenceSlotId),
     );
   };
 
-  const mandatoryCount = localSlots.filter(
-    (slot) =>
-      slot.isMandatory === 1 || slot.isMandatory === true || slot.isMandatory === "1",
-  ).length;
+  const mandatoryCount = localSlots.filter(isMandatorySlot).length;
+  const canSave = form.gu.trim() && form.en.trim() && !upsertMutation.isPending;
+  const isEditing = !!form.evidenceSlotId;
 
   return (
     <Box
@@ -92,7 +138,7 @@ export function EvidenceSlotEditor({ subDomainId, initialSlots = [], disabled = 
         }}
       >
         <Typography variant="subtitle2" fontWeight={700}>
-          Evidence slots (આધાર)
+          Evidence slots
         </Typography>
         <Chip
           size="small"
@@ -101,8 +147,14 @@ export function EvidenceSlotEditor({ subDomainId, initialSlots = [], disabled = 
         />
       </Box>
 
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
-        Schools must upload files for mandatory slots. Optional slots can be skipped.
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        display="block"
+        sx={{ mb: 1.5 }}
+      >
+        Enter evidence names in Gujarati, English and Hindi. Schools must upload
+        files for mandatory slots.
       </Typography>
 
       {localSlots.length > 0 ? (
@@ -112,44 +164,64 @@ export function EvidenceSlotEditor({ subDomainId, initialSlots = [], disabled = 
               key={slot.evidenceSlotId || index}
               sx={{
                 display: "flex",
-                alignItems: "center",
+                alignItems: "flex-start",
                 gap: 1,
-                p: 1,
+                p: 1.25,
                 borderRadius: 1.5,
                 bgcolor: colors.neutral.gray100,
+                border:
+                  form.evidenceSlotId === slot.evidenceSlotId
+                    ? `1px solid ${colors.primary.blue}`
+                    : "1px solid transparent",
               }}
             >
-              <Typography variant="body2" sx={{ flex: 1, fontWeight: 600 }}>
-                {slot.slotName || slot.slotNameEn}
-              </Typography>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  GU: {slot.slotNameGu || "—"}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                >
+                  EN: {slot.slotNameEn || slot.slotName || "—"}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                >
+                  HI: {slot.slotNameHi || "—"}
+                </Typography>
+              </Box>
               <Chip
                 size="small"
-                label={
-                  slot.isMandatory === 1 ||
-                  slot.isMandatory === true ||
-                  slot.isMandatory === "1"
-                    ? "Mandatory"
-                    : "Optional"
-                }
-                color={
-                  slot.isMandatory === 1 ||
-                  slot.isMandatory === true ||
-                  slot.isMandatory === "1"
-                    ? "error"
-                    : "default"
-                }
+                label={isMandatorySlot(slot) ? "Mandatory" : "Optional"}
+                color={isMandatorySlot(slot) ? "error" : "default"}
                 variant="outlined"
                 sx={{ fontWeight: 600 }}
               />
               {!disabled ? (
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={() => handleDeleteSlot(slot.evidenceSlotId)}
-                  disabled={deleteMutation.isPending}
-                >
-                  <Delete fontSize="small" />
-                </IconButton>
+                <>
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    onClick={() => startEdit(slot)}
+                    disabled={upsertMutation.isPending}
+                    title="Edit"
+                  >
+                    <Edit fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDeleteSlot(slot.evidenceSlotId)}
+                    disabled={deleteMutation.isPending}
+                    title="Delete"
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </>
               ) : null}
             </Box>
           ))}
@@ -162,19 +234,40 @@ export function EvidenceSlotEditor({ subDomainId, initialSlots = [], disabled = 
 
       {!disabled && subDomainId ? (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          <Typography variant="subtitle2" fontWeight={700}>
+            {isEditing ? "Edit evidence slot" : "Add evidence slot"}
+          </Typography>
           <TextField
             size="small"
             fullWidth
-            label="Evidence name"
+            label="Evidence name (Gujarati)"
+            placeholder="e.g. Classroom photo"
+            value={form.gu}
+            onChange={(e) => setForm((p) => ({ ...p, gu: e.target.value }))}
+          />
+          <TextField
+            size="small"
+            fullWidth
+            label="Evidence name (English)"
             placeholder="e.g. Classroom photo, attendance register"
-            value={slotName}
-            onChange={(e) => setSlotName(e.target.value)}
+            value={form.en}
+            onChange={(e) => setForm((p) => ({ ...p, en: e.target.value }))}
+          />
+          <TextField
+            size="small"
+            fullWidth
+            label="Evidence name (Hindi)"
+            placeholder="e.g. Classroom photo"
+            value={form.hi}
+            onChange={(e) => setForm((p) => ({ ...p, hi: e.target.value }))}
           />
           <FormControl component="fieldset" size="small">
             <RadioGroup
               row
-              value={isMandatory}
-              onChange={(e) => setIsMandatory(e.target.value)}
+              value={form.isMandatory}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, isMandatory: e.target.value }))
+              }
             >
               <FormControlLabel
                 value="yes"
@@ -188,20 +281,36 @@ export function EvidenceSlotEditor({ subDomainId, initialSlots = [], disabled = 
               />
             </RadioGroup>
           </FormControl>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={handleAddSlot}
-            disabled={!slotName.trim() || upsertMutation.isPending}
-            sx={{
-              alignSelf: "flex-start",
-              bgcolor: colors.primary.blue,
-              textTransform: "none",
-              fontWeight: 700,
-            }}
-          >
-            Add evidence
-          </Button>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            <Button
+              variant="contained"
+              startIcon={isEditing ? <Edit /> : <Add />}
+              onClick={handleSave}
+              disabled={!canSave}
+              sx={{
+                bgcolor: colors.primary.blue,
+                textTransform: "none",
+                fontWeight: 700,
+              }}
+            >
+              {upsertMutation.isPending
+                ? "Saving..."
+                : isEditing
+                  ? "Update evidence"
+                  : "Add evidence"}
+            </Button>
+            {isEditing ? (
+              <Button
+                variant="outlined"
+                startIcon={<Close />}
+                onClick={resetForm}
+                disabled={upsertMutation.isPending}
+                sx={{ textTransform: "none", fontWeight: 700 }}
+              >
+                Cancel
+              </Button>
+            ) : null}
+          </Box>
         </Box>
       ) : !subDomainId ? (
         <Typography variant="caption" color="text.secondary">
