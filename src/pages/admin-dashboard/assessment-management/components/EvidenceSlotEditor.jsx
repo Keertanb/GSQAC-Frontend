@@ -11,9 +11,18 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Add, Delete, Edit, Close } from "@mui/icons-material";
+import {
+  Add,
+  Close,
+  ContentCopy,
+  ContentPaste,
+  Delete,
+  Edit,
+} from "@mui/icons-material";
+import { enqueueSnackbar } from "notistack";
 import { colors } from "../../../../constants/colors";
 import {
+  upsertEvidenceSlot,
   useDeleteEvidenceSlotMutation,
   useEvidenceSlotsQuery,
   useUpsertEvidenceSlotMutation,
@@ -27,12 +36,71 @@ const EMPTY_FORM = {
   isMandatory: "yes",
 };
 
+const CLIPBOARD_TYPE_SINGLE = "gsqac-evidence-slot";
+const CLIPBOARD_TYPE_ALL = "gsqac-evidence-slots";
+
 function isMandatorySlot(slot) {
   return (
     slot?.isMandatory === 1 ||
     slot?.isMandatory === true ||
     slot?.isMandatory === "1"
   );
+}
+
+function serializeSlot(slot) {
+  const mandatory =
+    isMandatorySlot(slot) ||
+    slot.isMandatory === "yes" ||
+    slot.isMandatory === true;
+
+  return {
+    slotNameGu: String(slot.slotNameGu || slot.gu || "").trim(),
+    slotNameEn: String(
+      slot.slotNameEn || slot.slotName || slot.en || "",
+    ).trim(),
+    slotNameHi: String(slot.slotNameHi || slot.hi || "").trim(),
+    isMandatory: mandatory ? 1 : 0,
+  };
+}
+
+function normalizePastedSlot(raw) {
+  if (!raw || typeof raw !== "object") return null;
+
+  const slotNameGu = String(raw.slotNameGu || raw.gu || "").trim();
+  const slotNameEn = String(
+    raw.slotNameEn || raw.slotName || raw.en || "",
+  ).trim();
+  const slotNameHi = String(raw.slotNameHi || raw.hi || "").trim();
+
+  if (!slotNameGu && !slotNameEn) return null;
+
+  return {
+    slotNameGu,
+    slotNameEn,
+    slotNameHi,
+    isMandatory:
+      raw.isMandatory === 0 ||
+      raw.isMandatory === false ||
+      raw.isMandatory === "0" ||
+      raw.isMandatory === "no"
+        ? 0
+        : 1,
+  };
+}
+
+async function writeClipboard(payload) {
+  await navigator.clipboard.writeText(JSON.stringify(payload));
+}
+
+async function readClipboardPayload() {
+  const text = (await navigator.clipboard.readText()).trim();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }
 
 export function EvidenceSlotEditor({
@@ -42,6 +110,7 @@ export function EvidenceSlotEditor({
 }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [localSlots, setLocalSlots] = useState(initialSlots);
+  const [isPasting, setIsPasting] = useState(false);
 
   const { data: slotsData, refetch } = useEvidenceSlotsQuery(
     subDomainId,
@@ -82,6 +151,142 @@ export function EvidenceSlotEditor({
     });
   };
 
+  const handleCopySlot = async (slot) => {
+    try {
+      const serialized = serializeSlot(slot);
+      await writeClipboard({
+        type: CLIPBOARD_TYPE_SINGLE,
+        version: 1,
+        slot: serialized,
+      });
+      enqueueSnackbar("Evidence slot copied (Gu / En / Hi).", {
+        variant: "success",
+      });
+    } catch {
+      enqueueSnackbar("Could not copy evidence slot. Check clipboard permission.", {
+        variant: "error",
+      });
+    }
+  };
+
+  const handleCopyAllSlots = async () => {
+    if (!localSlots.length) {
+      enqueueSnackbar("No evidence slots to copy.", { variant: "warning" });
+      return;
+    }
+
+    try {
+      await writeClipboard({
+        type: CLIPBOARD_TYPE_ALL,
+        version: 1,
+        slots: localSlots.map(serializeSlot),
+      });
+      enqueueSnackbar(
+        `Copied ${localSlots.length} evidence slot${localSlots.length === 1 ? "" : "s"} (Gu / En / Hi).`,
+        { variant: "success" },
+      );
+    } catch {
+      enqueueSnackbar("Could not copy evidence slots. Check clipboard permission.", {
+        variant: "error",
+      });
+    }
+  };
+
+  const applySlotToForm = (slot) => {
+    setForm({
+      evidenceSlotId: null,
+      gu: slot.slotNameGu || "",
+      en: slot.slotNameEn || "",
+      hi: slot.slotNameHi || "",
+      isMandatory: slot.isMandatory === 0 ? "no" : "yes",
+    });
+  };
+
+  const handlePaste = async () => {
+    if (!subDomainId || disabled) return;
+
+    setIsPasting(true);
+    try {
+      const payload = await readClipboardPayload();
+      if (!payload || typeof payload !== "object") {
+        enqueueSnackbar(
+          "Clipboard has no evidence slot data. Copy a slot first.",
+          { variant: "warning" },
+        );
+        return;
+      }
+
+      if (payload.type === CLIPBOARD_TYPE_SINGLE) {
+        const slot = normalizePastedSlot(payload.slot);
+        if (!slot || !slot.slotNameGu || !slot.slotNameEn) {
+          enqueueSnackbar("Copied evidence slot is incomplete.", {
+            variant: "warning",
+          });
+          return;
+        }
+        applySlotToForm(slot);
+        enqueueSnackbar(
+          "Evidence slot pasted into the form. Review and click Add evidence.",
+          { variant: "success" },
+        );
+        return;
+      }
+
+      if (payload.type === CLIPBOARD_TYPE_ALL) {
+        const slots = (Array.isArray(payload.slots) ? payload.slots : [])
+          .map(normalizePastedSlot)
+          .filter((slot) => slot?.slotNameGu && slot?.slotNameEn);
+
+        if (!slots.length) {
+          enqueueSnackbar("Copied evidence slots list is empty or invalid.", {
+            variant: "warning",
+          });
+          return;
+        }
+
+        for (const slot of slots) {
+          await upsertEvidenceSlot({
+            evidenceSlotId: null,
+            subDomainId,
+            slotNameGu: slot.slotNameGu,
+            slotNameEn: slot.slotNameEn,
+            slotNameHi: slot.slotNameHi || null,
+            isMandatory: slot.isMandatory,
+          });
+        }
+
+        await refetch();
+        enqueueSnackbar(
+          `Pasted ${slots.length} evidence slot${slots.length === 1 ? "" : "s"} with Gu / En / Hi.`,
+          { variant: "success" },
+        );
+        return;
+      }
+
+      // Fallback: raw single-slot object without wrapper type
+      const looseSlot = normalizePastedSlot(payload);
+      if (looseSlot?.slotNameGu && looseSlot?.slotNameEn) {
+        applySlotToForm(looseSlot);
+        enqueueSnackbar(
+          "Evidence slot pasted into the form. Review and click Add evidence.",
+          { variant: "success" },
+        );
+        return;
+      }
+
+      enqueueSnackbar(
+        "Clipboard is not an evidence slot copy. Copy from Evidence slots first.",
+        { variant: "warning" },
+      );
+    } catch {
+      enqueueSnackbar("Could not paste. Check clipboard permission.", {
+        variant: "error",
+      });
+    } finally {
+      setIsPasting(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!subDomainId) return;
 
@@ -117,6 +322,7 @@ export function EvidenceSlotEditor({
   const mandatoryCount = localSlots.filter(isMandatorySlot).length;
   const canSave = form.gu.trim() && form.en.trim() && !upsertMutation.isPending;
   const isEditing = !!form.evidenceSlotId;
+  const busy = upsertMutation.isPending || deleteMutation.isPending || isPasting;
 
   return (
     <Box
@@ -140,11 +346,37 @@ export function EvidenceSlotEditor({
         <Typography variant="subtitle2" fontWeight={700}>
           Evidence slots
         </Typography>
-        <Chip
-          size="small"
-          label={`${localSlots.length} total · ${mandatoryCount} mandatory`}
-          sx={{ fontWeight: 600 }}
-        />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+          <Chip
+            size="small"
+            label={`${localSlots.length} total · ${mandatoryCount} mandatory`}
+            sx={{ fontWeight: 600 }}
+          />
+          {!disabled && subDomainId ? (
+            <>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<ContentCopy />}
+                onClick={handleCopyAllSlots}
+                disabled={!localSlots.length || busy}
+                sx={{ textTransform: "none", fontWeight: 700 }}
+              >
+                Copy all
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<ContentPaste />}
+                onClick={handlePaste}
+                disabled={busy}
+                sx={{ textTransform: "none", fontWeight: 700 }}
+              >
+                Paste
+              </Button>
+            </>
+          ) : null}
+        </Box>
       </Box>
 
       <Typography
@@ -153,8 +385,9 @@ export function EvidenceSlotEditor({
         display="block"
         sx={{ mb: 1.5 }}
       >
-        Enter evidence names in Gujarati, English and Hindi. Schools must upload
-        files for mandatory slots.
+        Enter evidence names in Gujarati, English and Hindi. Use Copy / Paste to
+        reuse complete slots (all languages) on another subdomain — no
+        translation fetch needed.
       </Typography>
 
       {localSlots.length > 0 ? (
@@ -206,8 +439,17 @@ export function EvidenceSlotEditor({
                   <IconButton
                     size="small"
                     color="primary"
+                    onClick={() => handleCopySlot(slot)}
+                    disabled={busy}
+                    title="Copy slot (Gu / En / Hi)"
+                  >
+                    <ContentCopy fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="primary"
                     onClick={() => startEdit(slot)}
-                    disabled={upsertMutation.isPending}
+                    disabled={busy}
                     title="Edit"
                   >
                     <Edit fontSize="small" />
@@ -216,7 +458,7 @@ export function EvidenceSlotEditor({
                     size="small"
                     color="error"
                     onClick={() => handleDeleteSlot(slot.evidenceSlotId)}
-                    disabled={deleteMutation.isPending}
+                    disabled={busy}
                     title="Delete"
                   >
                     <Delete fontSize="small" />
@@ -286,7 +528,7 @@ export function EvidenceSlotEditor({
               variant="contained"
               startIcon={isEditing ? <Edit /> : <Add />}
               onClick={handleSave}
-              disabled={!canSave}
+              disabled={!canSave || isPasting}
               sx={{
                 bgcolor: colors.primary.blue,
                 textTransform: "none",
@@ -299,12 +541,21 @@ export function EvidenceSlotEditor({
                   ? "Update evidence"
                   : "Add evidence"}
             </Button>
+            <Button
+              variant="outlined"
+              startIcon={<ContentPaste />}
+              onClick={handlePaste}
+              disabled={busy}
+              sx={{ textTransform: "none", fontWeight: 700 }}
+            >
+              Paste
+            </Button>
             {isEditing ? (
               <Button
                 variant="outlined"
                 startIcon={<Close />}
                 onClick={resetForm}
-                disabled={upsertMutation.isPending}
+                disabled={busy}
                 sx={{ textTransform: "none", fontWeight: 700 }}
               >
                 Cancel
