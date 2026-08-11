@@ -427,7 +427,7 @@ export function useUpsertEvidenceSlotMutation(options = {}) {
         queryKey: ["evidence-slots", entityKey],
       });
       queryClient.invalidateQueries({ queryKey: ["admin", "domains"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "subdomainQuestions"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "subdomain-questions"] });
       enqueueSnackbar(data?.message || "Evidence slot saved.", {
         variant: "success",
       });
@@ -457,6 +457,7 @@ export function useDeleteEvidenceSlotMutation(options = {}) {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["evidence-slots"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "domains"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "subdomain-questions"] });
       enqueueSnackbar(data?.message || "Evidence slot removed.", {
         variant: "success",
       });

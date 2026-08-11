@@ -1727,11 +1727,110 @@ const QuestionsView = ({
                             size="small"
                             sx={{
                               mb: 1,
+                              mr: 1,
                               bgcolor: colors.neutral.gray100,
                               fontWeight: 600,
                               fontSize: "0.75rem",
                             }}
                           />
+                          <Chip
+                            label={
+                              question.requireEvidence === 1 ||
+                              question.requireEvidence === true ||
+                              question.requireEvidence === "1" ||
+                              (question.evidenceSlots || []).length > 0
+                                ? `Evidence: Yes${
+                                    (question.evidenceSlots || []).length
+                                      ? ` · ${question.evidenceSlots.length} slot(s)`
+                                      : ""
+                                  }`
+                                : "Evidence: No"
+                            }
+                            size="small"
+                            color={
+                              question.requireEvidence === 1 ||
+                              question.requireEvidence === true ||
+                              question.requireEvidence === "1" ||
+                              (question.evidenceSlots || []).length > 0
+                                ? "warning"
+                                : "default"
+                            }
+                            variant="outlined"
+                            sx={{
+                              mb: 1,
+                              fontWeight: 700,
+                              fontSize: "0.75rem",
+                            }}
+                          />
+                          {(question.evidenceSlots || []).length > 0 ? (
+                            <Box
+                              sx={{
+                                mt: 1,
+                                mb: 1,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 1,
+                              }}
+                            >
+                              <Typography
+                                variant="caption"
+                                sx={{ fontWeight: 700, color: "text.secondary" }}
+                              >
+                                Evidence slots
+                              </Typography>
+                              {(question.evidenceSlots || []).map((slot, slotIndex) => (
+                                <Box
+                                  key={slot.evidenceSlotId || slotIndex}
+                                  sx={{
+                                    p: 1.25,
+                                    borderRadius: 1.5,
+                                    bgcolor: colors.neutral.gray100,
+                                    border: "1px solid rgba(0,0,0,0.06)",
+                                  }}
+                                >
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ fontWeight: 700, mb: 0.25 }}
+                                  >
+                                    GU: {slot.slotNameGu || "—"}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    display="block"
+                                  >
+                                    EN: {slot.slotNameEn || slot.slotName || "—"}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    display="block"
+                                  >
+                                    HI: {slot.slotNameHi || "—"}
+                                  </Typography>
+                                  <Chip
+                                    size="small"
+                                    label={
+                                      slot.isMandatory === 1 ||
+                                      slot.isMandatory === true ||
+                                      slot.isMandatory === "1"
+                                        ? "Mandatory"
+                                        : "Optional"
+                                    }
+                                    color={
+                                      slot.isMandatory === 1 ||
+                                      slot.isMandatory === true ||
+                                      slot.isMandatory === "1"
+                                        ? "error"
+                                        : "default"
+                                    }
+                                    variant="outlined"
+                                    sx={{ mt: 0.75, fontWeight: 600 }}
+                                  />
+                                </Box>
+                              ))}
+                            </Box>
+                          ) : null}
                           {/* For question type chip in question. */}
                           {/* <Chip
                             label={getQuestionTypeLabel(question.questionType)}
