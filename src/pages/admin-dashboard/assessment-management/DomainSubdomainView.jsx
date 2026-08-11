@@ -443,43 +443,7 @@ const DomainSubdomainView = ({
                   upperLabel={t("assessment.management.upperClass")}
                 />
               </Box>
-              <FormControl component="fieldset" fullWidth size="small">
-                <FormLabel
-                  component="legend"
-                  sx={{
-                    fontSize: "0.875rem",
-                    fontWeight: 600,
-                    color: "text.primary",
-                    mb: 1,
-                  }}
-                >
-                  Require evidence upload for this subdomain?
-                </FormLabel>
-                <RadioGroup
-                  row
-                  value={requireEvidence}
-                  onChange={(e) => setRequireEvidence(e.target.value)}
-                >
-                  <FormControlLabel
-                    value="yes"
-                    control={<Radio size="small" />}
-                    label="Yes"
-                  />
-                  <FormControlLabel
-                    value="no"
-                    control={<Radio size="small" />}
-                    label="No"
-                  />
-                </RadioGroup>
-              </FormControl>
-              {requireEvidence === "yes" ? (
-                <EvidenceSlotEditor
-                  subDomainId={
-                    editingSubdomain?.subDomainId || editingSubdomain?.id || null
-                  }
-                  initialSlots={editingSubdomain?.evidenceSlots || []}
-                />
-              ) : null}
+              {/* Evidence is configured per question in Assessment Management */}
             </Box>
             <Box sx={{ display: "flex", gap: 2 }}>
               <Button

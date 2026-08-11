@@ -635,19 +635,17 @@ export function SubdomainQuestionFlow({
             }}
           >
             <SubdomainEvidencePanel
-              subDomainId={selectedSubdomain?.subDomainId || selectedSubdomain?.id}
+              questionId={question?.questionId}
+              question={question}
               schoolId={userName}
               assessmentId={
                 selectedAssessment?.assessmentId ?? selectedAssessmentId ?? null
               }
               selectedAssessment={selectedAssessment}
               assessmentTheme={assessmentTheme}
-              subdomain={selectedSubdomain}
-              domainName={getDomainName(selectedDomain)}
               readOnly={isReadOnly}
               className="sa-subdomain-evidence"
               languageCode={(languageCode || "EN").toLowerCase()}
-              onProgressChange={handleEvidenceProgressChange}
             />
             {!matchDownMD ? (
               <Chip

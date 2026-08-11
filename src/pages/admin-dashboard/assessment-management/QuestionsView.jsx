@@ -49,6 +49,7 @@ import { getRoleId, roleIdMap } from "../../../constants/roles";
 import { enqueueSnackbar } from "notistack";
 import ConfirmationModal from "../../../components/ConfirmationModal/ConfirmationModal";
 import { ClassRangeFields } from "./components/ClassRangeFields";
+import { EvidenceSlotEditor } from "./components/EvidenceSlotEditor";
 import { formatClassRange } from "../../../utils/classRange";
 
 const QuestionsView = ({
@@ -114,6 +115,7 @@ const QuestionsView = ({
     lowerClass: 1,
     upperClass: 12,
   });
+  const [requireEvidence, setRequireEvidence] = useState("no");
   const [flnAnswer, setFlnAnswer] = useState(""); // State for FLN text field answer
   const [optionErrors, setOptionErrors] = useState({}); // State for option validation errors (per option: { [optionId]: { en, hi, gu } })
   const [optionFieldTouched, setOptionFieldTouched] = useState({}); // Show field errors only after blur (per optionId, per lang)
@@ -363,6 +365,7 @@ const QuestionsView = ({
         questionType: questionTypeMap[questionType] || 1,
         lowerClass: questionClassRange.lowerClass,
         upperClass: questionClassRange.upperClass,
+        requireEvidence: requireEvidence === "yes" ? 1 : 0,
       };
       if (questionType === "single_choice") {
         questionPayload.allowImageUpload = 0;
@@ -420,6 +423,7 @@ const QuestionsView = ({
         setIsClassroomObservation(0);
         setQuestionType("single_choice");
         setQuestionClassRange({ lowerClass: 1, upperClass: 12 });
+        setRequireEvidence("no");
         setShowAddQuestion(false);
         setShowOptionsForm(false);
         setEditingQuestion(null);
@@ -581,6 +585,7 @@ const QuestionsView = ({
       setIsClassroomObservation(0);
       setQuestionType("single_choice");
       setQuestionClassRange({ lowerClass: 1, upperClass: 12 });
+      setRequireEvidence("no");
       setShowAddQuestion(false);
       setShowOptionsForm(false);
       setEditingQuestion(null);
@@ -619,6 +624,13 @@ const QuestionsView = ({
       lowerClass: Number(question.lowerClass) || 1,
       upperClass: Number(question.upperClass) || 12,
     });
+    setRequireEvidence(
+      question.requireEvidence === 1 ||
+        question.requireEvidence === true ||
+        question.requireEvidence === "1"
+        ? "yes"
+        : "no",
+    );
     // Set classroom observation fields
     setIsClassroomObservation(question.isClassroomObservation || 0);
 
@@ -1013,6 +1025,7 @@ const QuestionsView = ({
                 setIsClassroomObservation(0);
                 setQuestionType("single_choice");
                 setQuestionClassRange({ lowerClass: 1, upperClass: 12 });
+                setRequireEvidence("no");
                 setOptionErrors({});
                 setOptionFieldTouched({});
                 setShowAddQuestion(!showAddQuestion);
@@ -1176,6 +1189,30 @@ const QuestionsView = ({
                               upperLabel={t("assessment.management.upperClass")}
                             />
                           </Box>
+                          <FormControl component="fieldset" sx={{ width: "100%" }}>
+                            <FormLabel component="legend" sx={{ fontSize: 13, mb: 0.5 }}>
+                              Does this question include evidence upload?
+                            </FormLabel>
+                            <RadioGroup
+                              row
+                              value={requireEvidence}
+                              onChange={(e) => setRequireEvidence(e.target.value)}
+                            >
+                              <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
+                              <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+                            </RadioGroup>
+                          </FormControl>
+                          {requireEvidence === "yes" && (currentQuestionId || editingQuestion?.questionId) ? (
+                            <Box sx={{ width: "100%" }}>
+                              <EvidenceSlotEditor
+                                questionId={currentQuestionId || editingQuestion?.questionId}
+                              />
+                            </Box>
+                          ) : requireEvidence === "yes" ? (
+                            <Typography variant="caption" color="text.secondary">
+                              Save the question first, then add evidence slots (Gu / En / Hi).
+                            </Typography>
+                          ) : null}
                           <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                             <TextField
                               fullWidth
@@ -1304,6 +1341,7 @@ const QuestionsView = ({
                               setIsClassroomObservation(0);
                               setQuestionType("single_choice");
                               setQuestionClassRange({ lowerClass: 1, upperClass: 12 });
+                              setRequireEvidence("no");
                               setEditingQuestion(null);
                               setCurrentQuestionId(null);
                               setOptionErrors({});
@@ -1929,6 +1967,30 @@ const QuestionsView = ({
                         upperLabel={t("assessment.management.upperClass")}
                       />
                     </Box>
+                    <FormControl component="fieldset" sx={{ width: "100%" }}>
+                      <FormLabel component="legend" sx={{ fontSize: 13, mb: 0.5 }}>
+                        Does this question include evidence upload?
+                      </FormLabel>
+                      <RadioGroup
+                        row
+                        value={requireEvidence}
+                        onChange={(e) => setRequireEvidence(e.target.value)}
+                      >
+                        <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
+                        <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+                      </RadioGroup>
+                    </FormControl>
+                    {requireEvidence === "yes" && (currentQuestionId || editingQuestion?.questionId) ? (
+                      <Box sx={{ width: "100%" }}>
+                        <EvidenceSlotEditor
+                          questionId={currentQuestionId || editingQuestion?.questionId}
+                        />
+                      </Box>
+                    ) : requireEvidence === "yes" ? (
+                      <Typography variant="caption" color="text.secondary">
+                        Save the question first, then add evidence slots (Gu / En / Hi).
+                      </Typography>
+                    ) : null}
                     <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                       <TextField
                         fullWidth
@@ -2056,6 +2118,7 @@ const QuestionsView = ({
                         setIsClassroomObservation(0);
                         setQuestionType("single_choice");
                         setQuestionClassRange({ lowerClass: 1, upperClass: 12 });
+                        setRequireEvidence("no");
                         setEditingQuestion(null);
                         setCurrentQuestionId(null);
                         setOptionErrors({});
@@ -2572,6 +2635,30 @@ const QuestionsView = ({
                         upperLabel={t("assessment.management.upperClass")}
                       />
                     </Box>
+                    <FormControl component="fieldset" sx={{ width: "100%" }}>
+                      <FormLabel component="legend" sx={{ fontSize: 13, mb: 0.5 }}>
+                        Does this question include evidence upload?
+                      </FormLabel>
+                      <RadioGroup
+                        row
+                        value={requireEvidence}
+                        onChange={(e) => setRequireEvidence(e.target.value)}
+                      >
+                        <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
+                        <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+                      </RadioGroup>
+                    </FormControl>
+                    {requireEvidence === "yes" && (currentQuestionId || editingQuestion?.questionId) ? (
+                      <Box sx={{ width: "100%" }}>
+                        <EvidenceSlotEditor
+                          questionId={currentQuestionId || editingQuestion?.questionId}
+                        />
+                      </Box>
+                    ) : requireEvidence === "yes" ? (
+                      <Typography variant="caption" color="text.secondary">
+                        Save the question first, then add evidence slots (Gu / En / Hi).
+                      </Typography>
+                    ) : null}
                     <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
                       <TextField
                         fullWidth
@@ -2700,6 +2787,7 @@ const QuestionsView = ({
                         setIsClassroomObservation(0);
                         setQuestionType("single_choice");
                         setQuestionClassRange({ lowerClass: 1, upperClass: 12 });
+                        setRequireEvidence("no");
                         setEditingQuestion(null);
                         setCurrentQuestionId(null);
                         setOptionErrors({});

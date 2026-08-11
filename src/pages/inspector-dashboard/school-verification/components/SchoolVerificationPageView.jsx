@@ -944,22 +944,8 @@ export function SchoolVerificationPageView({ c }) {
                       {getSubdomainName(selectedSubdomain).toLowerCase()}
                     </Typography>
                   </Box>
-                  <SubdomainEvidencePanel
-                    subDomainId={
-                      selectedSubdomain?.subDomainId || selectedSubdomain?.id
-                    }
-                    schoolId={schoolId}
-                    assessmentId={
-                      selectedAssessment?.assessmentId ??
-                      selectedAssessmentId ??
-                      null
-                    }
-                    selectedAssessment={selectedAssessment}
-                    subdomain={selectedSubdomain}
-                    domainName={getDomainName(selectedDomain)}
-                    readOnly={isSubmitted === 1 || isSubmitted === true}
-                    className="verifier-subdomain-evidence"
-                  />
+                  {/* Evidence uploads are per question (shown on each question with requireEvidence). */}
+                  <Box sx={{ display: "none" }} />
                 </Box>
               </Box>
 
@@ -1536,6 +1522,24 @@ export function SchoolVerificationPageView({ c }) {
                                       {/* Question Content - Expandable */}
                                       {isExpanded && (
                                         <CardContent sx={{ p: 3, pt: 2.5 }}>
+                                          <Box sx={{ mb: 2 }}>
+                                            <SubdomainEvidencePanel
+                                              questionId={question.questionId}
+                                              question={question}
+                                              schoolId={schoolId}
+                                              assessmentId={
+                                                selectedAssessment?.assessmentId ??
+                                                selectedAssessmentId ??
+                                                null
+                                              }
+                                              selectedAssessment={selectedAssessment}
+                                              readOnly={
+                                                isSubmitted === 1 || isSubmitted === true
+                                              }
+                                              className="verifier-subdomain-evidence"
+                                              languageCode={(languageCode || "EN").toLowerCase()}
+                                            />
+                                          </Box>
                                           {question.isClassroomObservation ===
                                             1 &&
                                             question.observationCount && (

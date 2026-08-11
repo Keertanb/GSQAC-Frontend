@@ -104,17 +104,21 @@ async function readClipboardPayload() {
 }
 
 export function EvidenceSlotEditor({
-  subDomainId,
+  subDomainId = null,
+  questionId = null,
   initialSlots = [],
   disabled = false,
 }) {
+  const entityId = questionId || subDomainId;
+  const isQuestionScoped = !!questionId;
+
   const [form, setForm] = useState(EMPTY_FORM);
   const [localSlots, setLocalSlots] = useState(initialSlots);
   const [isPasting, setIsPasting] = useState(false);
 
   const { data: slotsData, refetch } = useEvidenceSlotsQuery(
-    subDomainId,
-    !!subDomainId,
+    { subDomainId, questionId },
+    !!entityId,
   );
 
   const upsertMutation = useUpsertEvidenceSlotMutation({
@@ -203,7 +207,7 @@ export function EvidenceSlotEditor({
   };
 
   const handlePaste = async () => {
-    if (!subDomainId || disabled) return;
+    if (!entityId || disabled) return;
 
     setIsPasting(true);
     try {
@@ -247,7 +251,9 @@ export function EvidenceSlotEditor({
         for (const slot of slots) {
           await upsertEvidenceSlot({
             evidenceSlotId: null,
-            subDomainId,
+            ...(isQuestionScoped
+              ? { questionId }
+              : { subDomainId }),
             slotNameGu: slot.slotNameGu,
             slotNameEn: slot.slotNameEn,
             slotNameHi: slot.slotNameHi || null,
@@ -288,7 +294,7 @@ export function EvidenceSlotEditor({
   };
 
   const handleSave = async () => {
-    if (!subDomainId) return;
+    if (!entityId) return;
 
     const slotNameGu = form.gu.trim();
     const slotNameEn = form.en.trim();
@@ -300,7 +306,7 @@ export function EvidenceSlotEditor({
 
     await upsertMutation.mutateAsync({
       evidenceSlotId: form.evidenceSlotId || null,
-      subDomainId,
+      ...(isQuestionScoped ? { questionId } : { subDomainId }),
       slotNameGu,
       slotNameEn,
       slotNameHi: slotNameHi || null,
@@ -313,7 +319,10 @@ export function EvidenceSlotEditor({
     if (form.evidenceSlotId === evidenceSlotId) {
       resetForm();
     }
-    deleteMutation.mutate(evidenceSlotId);
+    deleteMutation.mutate({
+      evidenceSlotId,
+      questionId: isQuestionScoped ? questionId : undefined,
+    });
     setLocalSlots((prev) =>
       prev.filter((slot) => slot.evidenceSlotId !== evidenceSlotId),
     );
@@ -352,7 +361,7 @@ export function EvidenceSlotEditor({
             label={`${localSlots.length} total · ${mandatoryCount} mandatory`}
             sx={{ fontWeight: 600 }}
           />
-          {!disabled && subDomainId ? (
+          {!disabled && entityId ? (
             <>
               <Button
                 size="small"
@@ -474,7 +483,7 @@ export function EvidenceSlotEditor({
         </Typography>
       )}
 
-      {!disabled && subDomainId ? (
+      {!disabled && entityId ? (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
           <Typography variant="subtitle2" fontWeight={700}>
             {isEditing ? "Edit evidence slot" : "Add evidence slot"}
@@ -563,9 +572,10 @@ export function EvidenceSlotEditor({
             ) : null}
           </Box>
         </Box>
-      ) : !subDomainId ? (
+      ) : !entityId ? (
         <Typography variant="caption" color="text.secondary">
-          Save the subdomain first, then add evidence slots.
+          Save the {isQuestionScoped ? "question" : "subdomain"} first, then add
+          evidence slots.
         </Typography>
       ) : null}
     </Box>

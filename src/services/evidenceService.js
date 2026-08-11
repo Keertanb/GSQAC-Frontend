@@ -209,6 +209,21 @@ export const prepareSubdomainEvidenceUpload = async (payload) => {
   return response.data;
 };
 
+export const getQuestionEvidence = async (params) => {
+  const response = await axiosInstance.get("/common/question-evidence", {
+    params,
+  });
+  return response.data;
+};
+
+export const prepareQuestionEvidenceUpload = async (payload) => {
+  const response = await axiosInstance.post(
+    "/common/question-evidence/prepare-upload",
+    payload,
+  );
+  return response.data;
+};
+
 export const getEvidenceSlots = async (params) => {
   const response = await axiosInstance.get("/questionnaire/evidence-slots", {
     params,
@@ -224,12 +239,20 @@ export const upsertEvidenceSlot = async (payload) => {
   return response.data;
 };
 
-export const deleteEvidenceSlot = async (evidenceSlotId) => {
+export const deleteEvidenceSlot = async (evidenceSlotId, extras = {}) => {
   const response = await axiosInstance.delete("/questionnaire/evidence-slots", {
-    params: { evidenceSlotId },
+    params: { evidenceSlotId, ...extras },
   });
   return response.data;
 };
+
+export function questionRequiresEvidence(question) {
+  return (
+    question?.requireEvidence === 1 ||
+    question?.requireEvidence === true ||
+    question?.requireEvidence === "1"
+  );
+}
 
 export function useSubdomainEvidenceQuery(
   { subDomainId, schoolId, languageCode },
@@ -244,11 +267,30 @@ export function useSubdomainEvidenceQuery(
   });
 }
 
-export function useEvidenceSlotsQuery(subDomainId, enabled = true) {
+export function useQuestionEvidenceQuery(
+  { questionId, schoolId, languageCode },
+  enabled = true,
+) {
   return useQuery({
-    queryKey: ["evidence-slots", subDomainId],
-    queryFn: () => getEvidenceSlots({ subDomainId }),
-    enabled: enabled && !!subDomainId,
+    queryKey: ["question-evidence", questionId, schoolId, languageCode],
+    queryFn: () => getQuestionEvidence({ questionId, schoolId, languageCode }),
+    enabled: enabled && !!questionId && !!schoolId,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useEvidenceSlotsQuery(
+  { subDomainId = null, questionId = null } = {},
+  enabled = true,
+) {
+  const entityKey = questionId ? `q-${questionId}` : `sd-${subDomainId}`;
+  return useQuery({
+    queryKey: ["evidence-slots", entityKey],
+    queryFn: () =>
+      getEvidenceSlots(
+        questionId ? { questionId } : { subDomainId },
+      ),
+    enabled: enabled && !!(questionId || subDomainId),
     staleTime: 30 * 1000,
   });
 }
@@ -378,10 +420,14 @@ export function useUpsertEvidenceSlotMutation(options = {}) {
   return useMutation({
     mutationFn: upsertEvidenceSlot,
     onSuccess: (data, variables) => {
+      const entityKey = variables.questionId
+        ? `q-${variables.questionId}`
+        : `sd-${variables.subDomainId}`;
       queryClient.invalidateQueries({
-        queryKey: ["evidence-slots", variables.subDomainId],
+        queryKey: ["evidence-slots", entityKey],
       });
       queryClient.invalidateQueries({ queryKey: ["admin", "domains"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "subdomainQuestions"] });
       enqueueSnackbar(data?.message || "Evidence slot saved.", {
         variant: "success",
       });
@@ -403,20 +449,58 @@ export function useDeleteEvidenceSlotMutation(options = {}) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteEvidenceSlot,
-    onSuccess: (data, evidenceSlotId) => {
+    mutationFn: ({ evidenceSlotId, questionId }) =>
+      deleteEvidenceSlot(
+        evidenceSlotId,
+        questionId != null ? { questionId } : {},
+      ),
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["evidence-slots"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "domains"] });
       enqueueSnackbar(data?.message || "Evidence slot removed.", {
         variant: "success",
       });
-      options.onSuccess?.(data, evidenceSlotId);
+      options.onSuccess?.(data, variables);
     },
     onError: (error) => {
       enqueueSnackbar(
         error?.response?.data?.message ||
           error?.message ||
           "Failed to delete evidence slot.",
+        { variant: "error" },
+      );
+      options.onError?.(error);
+    },
+  });
+}
+
+export function usePrepareQuestionEvidenceMutation(options = {}) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: prepareQuestionEvidenceUpload,
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [
+          "question-evidence",
+          variables.questionId,
+          variables.schoolId,
+        ],
+      });
+      queryClient.invalidateQueries({ queryKey: ["questionnaire", "domain"] });
+      queryClient.invalidateQueries({ queryKey: ["school", "domains"] });
+      queryClient.invalidateQueries({ queryKey: ["verifier", "domains"] });
+      queryClient.invalidateQueries({ queryKey: ["crc", "domains"] });
+      enqueueSnackbar(data?.message || "Evidence uploaded successfully.", {
+        variant: "success",
+      });
+      options.onSuccess?.(data, variables);
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to upload evidence.",
         { variant: "error" },
       );
       options.onError?.(error);

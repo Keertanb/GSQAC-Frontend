@@ -32,9 +32,12 @@ import {
   EVIDENCE_ACCEPT,
   getEvidenceSlotName,
   MAX_EVIDENCE_SIZE_BYTES,
+  questionRequiresEvidence,
   subdomainRequiresEvidence,
   uploadFileToPresignedUrl,
+  usePrepareQuestionEvidenceMutation,
   usePrepareSubdomainEvidenceMutation,
+  useQuestionEvidenceQuery,
   useSubdomainEvidenceQuery,
 } from "../../services/evidenceService";
 import { enqueueSnackbar } from "notistack";
@@ -410,6 +413,8 @@ function EvidenceUploadModal({
 
 export function SubdomainEvidencePanel({
   subDomainId,
+  questionId = null,
+  question = null,
   schoolId,
   assessmentId,
   subdomain,
@@ -422,6 +427,7 @@ export function SubdomainEvidencePanel({
   assessmentTheme: assessmentThemeProp,
   selectedAssessment,
 }) {
+  const isQuestionScoped = !!questionId;
   const resolvedTheme = resolveEvidenceTheme({
     assessmentTheme: assessmentThemeProp,
     selectedAssessment,
@@ -439,14 +445,24 @@ export function SubdomainEvidencePanel({
   const [viewingSlot, setViewingSlot] = useState(null);
   const [uploadingSlotId, setUploadingSlotId] = useState(null);
   const [activeSlotId, setActiveSlotId] = useState(null);
-  const requiresEvidence = subdomainRequiresEvidence(subdomain);
+  const requiresEvidence = isQuestionScoped
+    ? questionRequiresEvidence(question)
+    : subdomainRequiresEvidence(subdomain);
   const lang = languageCode || i18n.language || "en";
   const evidenceLabel = t("selfAssessment.evidence.label", { defaultValue: "Evidence" });
 
-  const { data, isLoading, isFetching, refetch } = useSubdomainEvidenceQuery(
+  const subdomainQuery = useSubdomainEvidenceQuery(
     { subDomainId, schoolId, languageCode: lang.toUpperCase() },
-    requiresEvidence,
+    requiresEvidence && !isQuestionScoped,
   );
+  const questionQuery = useQuestionEvidenceQuery(
+    { questionId, schoolId, languageCode: lang.toUpperCase() },
+    requiresEvidence && isQuestionScoped,
+  );
+
+  const { data, isLoading, isFetching, refetch } = isQuestionScoped
+    ? questionQuery
+    : subdomainQuery;
 
   const payload = data?.data || data || {};
   const slots = payload.slots || [];
@@ -475,13 +491,23 @@ export function SubdomainEvidencePanel({
     onProgressChangeRef.current?.(progress);
   }, [isLoading, progress]);
 
-  const uploadMutation = usePrepareSubdomainEvidenceMutation({
+  const subdomainUploadMutation = usePrepareSubdomainEvidenceMutation({
     onSuccess: () => {
       setUploadingSlotId(null);
       refetch();
     },
     onError: () => setUploadingSlotId(null),
   });
+  const questionUploadMutation = usePrepareQuestionEvidenceMutation({
+    onSuccess: () => {
+      setUploadingSlotId(null);
+      refetch();
+    },
+    onError: () => setUploadingSlotId(null),
+  });
+  const uploadMutation = isQuestionScoped
+    ? questionUploadMutation
+    : subdomainUploadMutation;
 
   if (!requiresEvidence) return null;
 
@@ -533,15 +559,27 @@ export function SubdomainEvidencePanel({
 
     try {
       setUploadingSlotId(evidenceSlotId);
-      const response = await uploadMutation.mutateAsync({
-        subDomainId,
-        evidenceSlotId,
-        schoolId,
-        assessmentId: assessmentId ?? null,
-        extension,
-        contentType: file.type || "application/octet-stream",
-        fileSizeBytes: file.size,
-      });
+      const response = await uploadMutation.mutateAsync(
+        isQuestionScoped
+          ? {
+              questionId,
+              evidenceSlotId,
+              schoolId,
+              assessmentId: assessmentId ?? null,
+              extension,
+              contentType: file.type || "application/octet-stream",
+              fileSizeBytes: file.size,
+            }
+          : {
+              subDomainId,
+              evidenceSlotId,
+              schoolId,
+              assessmentId: assessmentId ?? null,
+              extension,
+              contentType: file.type || "application/octet-stream",
+              fileSizeBytes: file.size,
+            },
+      );
 
       const uploadPayload = response?.data || response;
       if (uploadPayload?.uploadURL) {
