@@ -128,14 +128,15 @@ export function buildVerifierRegistrationAnalytics(rows = [], districts = []) {
   const districtInterest = mapToSortedList(districtInterestMap, (id) =>
     getDistrictLabel(districts, id),
   );
-  const districtFirstChoice = mapToSortedList(districtFirstChoiceMap, (id) =>
+  // Registered count = 1st-choice preferred district (one count per application)
+  const districtRegistered = mapToSortedList(districtFirstChoiceMap, (id) =>
     getDistrictLabel(districts, id),
   );
 
-  const highestInterest = districtInterest[0] || null;
+  const highestInterest = districtRegistered[0] || null;
   const lowestInterest =
-    districtInterest.length > 0
-      ? districtInterest[districtInterest.length - 1]
+    districtRegistered.length > 0
+      ? districtRegistered[districtRegistered.length - 1]
       : null;
 
   const pct = (n) => (total ? Math.round((n / total) * 100) : 0);
@@ -155,12 +156,12 @@ export function buildVerifierRegistrationAnalytics(rows = [], districts = []) {
       previousAccreditationYes,
       specialAchievementYes,
       hasVehicleYes,
-      districtsWithInterest: districtInterest.length,
+      districtsWithInterest: districtRegistered.length,
     },
     insights: {
       highestInterest,
       lowestInterest,
-      topFirstChoice: districtFirstChoice[0] || null,
+      topFirstChoice: districtRegistered[0] || null,
     },
     gender: mapToSortedList(genderMap, (k) => labelOf(GENDER_OPTIONS, k)),
     occupation: mapToSortedList(occupationMap, (k) =>
@@ -195,7 +196,8 @@ export function buildVerifierRegistrationAnalytics(rows = [], districts = []) {
       labelOf(VEHICLE_TYPES, k),
     ),
     districtInterest,
-    districtFirstChoice,
+    districtRegistered,
+    districtFirstChoice: districtRegistered,
     nativeDistrict: mapToSortedList(nativeDistrictMap, (id) =>
       getDistrictLabel(districts, id),
     ),

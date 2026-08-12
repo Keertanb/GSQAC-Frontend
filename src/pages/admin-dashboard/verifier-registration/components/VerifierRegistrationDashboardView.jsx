@@ -59,7 +59,7 @@ function ChartTooltip({ active, payload, label }) {
   return (
     <div className="vrda-tooltip">
       <strong>{label || payload[0]?.payload?.name}</strong>
-      <span>{payload[0]?.value} applicants</span>
+      <span>{payload[0]?.value} registered</span>
     </div>
   );
 }
@@ -145,7 +145,9 @@ function InsightCard({ title, name, count, tone }) {
       <p className="vrda-insight__title">{title}</p>
       <p className="vrda-insight__name">{name || "—"}</p>
       <p className="vrda-insight__count">
-        {count != null ? `${count} preference${count === 1 ? "" : "s"}` : "No data"}
+        {count != null
+          ? `${count} registered`
+          : "No data"}
       </p>
     </div>
   );
@@ -178,7 +180,10 @@ export function VerifierRegistrationDashboardView({
   }
 
   const a = analytics;
-  const topDistricts = a.districtInterest.slice(0, 10);
+  const topDistricts = (a.districtRegistered || a.districtFirstChoice || []).slice(
+    0,
+    10,
+  );
   const schoolLevelShort = a.schoolLevel.map((item) => ({
     ...item,
     name:
@@ -200,8 +205,8 @@ export function VerifierRegistrationDashboardView({
           <p className="vrda-eyebrow">Live overview</p>
           <h2 className="vrda-title">Registration Insights</h2>
           <p className="vrda-desc">
-            District interest, school levels, qualifications, and other form
-            metrics from verifier applications.
+            District-wise registrations, school levels, qualifications, and other
+            form metrics from verifier applications.
           </p>
         </div>
         <div className="vrda-intro__meta">
@@ -256,22 +261,22 @@ export function VerifierRegistrationDashboardView({
           tone="rose"
         />
         <StatCard
-          label="Districts Interested"
+          label="Districts with Registrations"
           value={a.cards.districtsWithInterest}
-          sub="Unique preferred districts"
+          sub="Unique 1st-choice districts"
           tone="slate"
         />
       </div>
 
       <div className="vrda-insight-row">
         <InsightCard
-          title="Highest district interest"
+          title="Highest district registrations"
           name={a.insights.highestInterest?.name}
           count={a.insights.highestInterest?.count}
           tone="high"
         />
         <InsightCard
-          title="Lowest district interest"
+          title="Lowest district registrations"
           name={a.insights.lowestInterest?.name}
           count={a.insights.lowestInterest?.count}
           tone="low"
@@ -286,8 +291,8 @@ export function VerifierRegistrationDashboardView({
 
       <div className="vrda-grid">
         <Panel
-          title="District interest"
-          subtitle="Counts across preferred districts 1–3"
+          title="District-wise registrations"
+          subtitle="Count of registered applicants by 1st-choice preferred district"
           wide
         >
           <HorizontalBars data={topDistricts} maxItems={12} />
