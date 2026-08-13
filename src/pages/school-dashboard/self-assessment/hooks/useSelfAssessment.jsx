@@ -129,6 +129,9 @@ export function useSelfAssessment() {
   const [selectedQuestionTab, setSelectedQuestionTab] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
+  /** Optimistic કક્ષા 0/4 evidence exemptions: { [subDomainId]: { [questionId]: { exempt, slotTotal, slotUploaded } } } */
+  const [evidenceAnswerAdjustmentsBySubdomain, setEvidenceAnswerAdjustmentsBySubdomain] =
+    useState({});
   const [chartDrilldownAssessmentId, setChartDrilldownAssessmentId] =
     useState(null);
 
@@ -415,10 +418,27 @@ export function useSelfAssessment() {
     [selectedAssessment],
   );
 
-  const domains = useMemo(
-    () => selectedAssessment?.domains || [],
-    [selectedAssessment?.domains],
-  );
+  const domains = useMemo(() => {
+    const raw = selectedAssessment?.domains || [];
+    if (!raw.length) return raw;
+
+    return raw.map((domain) => ({
+      ...domain,
+      subDomain: (domain.subDomain || []).map((subdomain) => {
+        const subDomainId = subdomain.subDomainId || subdomain.id;
+        const adjustments =
+          evidenceAnswerAdjustmentsBySubdomain[subDomainId] ||
+          evidenceAnswerAdjustmentsBySubdomain[String(subDomainId)];
+        if (!adjustments || !Object.keys(adjustments).length) {
+          return subdomain;
+        }
+        return {
+          ...subdomain,
+          evidenceAnswerAdjustments: adjustments,
+        };
+      }),
+    }));
+  }, [selectedAssessment?.domains, evidenceAnswerAdjustmentsBySubdomain]);
 
   useEffect(() => {
     if (hostelValue !== 0 || !selectedDomain) return;
@@ -447,19 +467,35 @@ export function useSelfAssessment() {
     [assessments],
   );
 
-  const allAssessmentsMandatoryEvidenceProgress = useMemo(
-    () =>
-      getAssessmentMandatoryEvidenceProgress(
-        assessments.flatMap((assessment) => assessment.domains || []),
-      ),
-    [assessments],
-  );
+  const allAssessmentsMandatoryEvidenceProgress = useMemo(() => {
+    const allDomains = assessments.flatMap((assessment) => {
+      if (
+        selectedAssessmentId != null &&
+        Number(assessment.assessmentId) === Number(selectedAssessmentId)
+      ) {
+        return domains;
+      }
+      return assessment.domains || [];
+    });
+    return getAssessmentMandatoryEvidenceProgress(allDomains);
+  }, [assessments, domains, selectedAssessmentId]);
 
   const allAssessmentsComplete = useMemo(
     () =>
       assessments.length > 0 &&
-      assessments.every((assessment) => isAssessmentFullyComplete(assessment)),
-    [assessments],
+      assessments.every((assessment) => {
+        if (
+          selectedAssessmentId != null &&
+          Number(assessment.assessmentId) === Number(selectedAssessmentId)
+        ) {
+          return (
+            isAssessmentAnswersComplete(assessment) &&
+            getAssessmentMandatoryEvidenceProgress(domains).isComplete
+          );
+        }
+        return isAssessmentFullyComplete(assessment);
+      }),
+    [assessments, domains, selectedAssessmentId],
   );
 
   const incompleteAssessments = useMemo(
@@ -1441,6 +1477,14 @@ export function useSelfAssessment() {
             ...prev,
             [subdomainId]: { ...answers },
           }));
+          // Backend summary will reflect કક્ષા 0/4 exemptions after refetch.
+          setEvidenceAnswerAdjustmentsBySubdomain((prev) => {
+            if (!prev[subdomainId] && !prev[String(subdomainId)]) return prev;
+            const next = { ...prev };
+            delete next[subdomainId];
+            delete next[String(subdomainId)];
+            return next;
+          });
         }
         const domainsResult = await refetchDomains();
         const freshSessionId = getSessionIdFromDomainsResponse(
@@ -1544,25 +1588,30 @@ export function useSelfAssessment() {
       return;
     }
 
+    if (!allAssessmentsAnswersComplete) {
+      enqueueSnackbar(
+        t("selfAssessment.submitBlocked.allAssessmentsDomainsIncomplete", {
+          defaultValue:
+            "Please complete all domains (100%) in every assessment before submitting.",
+        }),
+        { variant: "warning" },
+      );
+      return;
+    }
+
+    if (!allAssessmentsMandatoryEvidenceComplete) {
+      enqueueSnackbar(
+        t("selfAssessment.submitBlocked.evidenceIncomplete", {
+          remaining: allAssessmentsMandatoryEvidenceProgress.remaining,
+          defaultValue:
+            "Please upload all mandatory evidence before submitting ({{remaining}} remaining).",
+        }),
+        { variant: "warning" },
+      );
+      return;
+    }
+
     if (!canSubmitAssessment) {
-      if (!allAssessmentsAnswersComplete) {
-        enqueueSnackbar(
-          t("selfAssessment.submitBlocked.allAssessmentsDomainsIncomplete", {
-            defaultValue:
-              "Please complete all domains (100%) in every assessment before submitting.",
-          }),
-          { variant: "warning" },
-        );
-      } else if (!allAssessmentsMandatoryEvidenceComplete) {
-        enqueueSnackbar(
-          t("selfAssessment.submitBlocked.evidenceIncomplete", {
-            remaining: allAssessmentsMandatoryEvidenceProgress.remaining,
-            defaultValue:
-              "Please upload all mandatory evidence before submitting.",
-          }),
-          { variant: "warning" },
-        );
-      }
       return;
     }
 
@@ -1629,7 +1678,11 @@ export function useSelfAssessment() {
       return;
     }
 
-    if (!canSubmitAssessment) {
+    if (
+      !allAssessmentsAnswersComplete ||
+      !allAssessmentsMandatoryEvidenceComplete ||
+      !canSubmitAssessment
+    ) {
       return;
     }
 
@@ -1649,6 +1702,21 @@ export function useSelfAssessment() {
           freshData.data,
           hostelValue,
         );
+      }
+
+      const freshEvidenceProgress = getAssessmentMandatoryEvidenceProgress(
+        freshAssessments.flatMap((assessment) => assessment.domains || []),
+      );
+      if (!freshEvidenceProgress.isComplete) {
+        enqueueSnackbar(
+          t("selfAssessment.submitBlocked.evidenceIncomplete", {
+            remaining: freshEvidenceProgress.remaining,
+            defaultValue:
+              "Please upload all mandatory evidence before submitting ({{remaining}} remaining).",
+          }),
+          { variant: "warning" },
+        );
+        return;
       }
 
       const pendingAssessments = freshAssessments.filter(
@@ -1760,6 +1828,30 @@ export function useSelfAssessment() {
       const subDomainId =
         selectedSubdomain?.subDomainId || selectedSubdomain?.id;
       if (!subDomainId || progress == null) return;
+
+      if (progress.questionId != null) {
+        const questionKey = String(progress.questionId);
+        setEvidenceAnswerAdjustmentsBySubdomain((prev) => {
+          const current = { ...(prev[subDomainId] || prev[String(subDomainId)] || {}) };
+          if (progress.exempt) {
+            current[questionKey] = {
+              exempt: true,
+              slotTotal: Number(progress.slotTotal ?? progress.rawTotal) || 0,
+              slotUploaded:
+                Number(progress.slotUploaded ?? progress.rawUploaded) || 0,
+            };
+          } else if (current[questionKey]) {
+            delete current[questionKey];
+          } else {
+            return prev;
+          }
+          return {
+            ...prev,
+            [subDomainId]: current,
+          };
+        });
+      }
+
       updateDomainsCacheSubdomainEvidence(queryClient, subDomainId, progress);
     },
     [queryClient, selectedSubdomain],
@@ -1770,7 +1862,9 @@ export function useSelfAssessment() {
     allAssessmentsMandatoryEvidenceProgress.isComplete;
 
   const canSubmitAssessment =
-    allAssessmentsComplete && !allAssessmentsSubmitted;
+    allAssessmentsAnswersComplete &&
+    allAssessmentsMandatoryEvidenceComplete &&
+    !allAssessmentsSubmitted;
 
   // Prepare chart data for bar graph
   const domainChartData = useMemo(() => {

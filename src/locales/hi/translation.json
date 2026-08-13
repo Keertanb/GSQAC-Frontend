@@ -223,7 +223,11 @@
       "progressLabel": "साक्ष्य: {{uploaded}}/{{total}}",
       "domainProgressLabel": "अनिवार्य साक्ष्य: {{uploaded}}/{{total}}",
       "remaining": "{{count}} शेष",
-      "complete": "पूर्ण"
+      "complete": "पूर्ण",
+      "optionalComplete": "आवश्यक नहीं",
+      "optionalForLevel": "कक्षा 0 या कक्षा 4 (NA) के लिए साक्ष्य अपलोड आवश्यक नहीं है।",
+      "countComplete": "साक्ष्य {{uploaded}}/{{total}}",
+      "countRemaining": "साक्ष्य {{uploaded}}/{{total}} · {{remaining}} शेष"
     },
     "level": "कक्षा {{level}}",
     "criterionLabel": "मापदंड",
@@ -280,4 +284,3 @@
     "block": "ब्लॉक"
   }
 }
-

@@ -426,6 +426,8 @@ export function SubdomainEvidencePanel({
   onProgressChange,
   assessmentTheme: assessmentThemeProp,
   selectedAssessment,
+  /** When true (કક્ષા 0 / કક્ષા 4 NA), upload is blocked and evidence is optional. */
+  evidenceOptional = false,
 }) {
   const isQuestionScoped = !!questionId;
   const resolvedTheme = resolveEvidenceTheme({
@@ -450,6 +452,7 @@ export function SubdomainEvidencePanel({
     : subdomainRequiresEvidence(subdomain);
   const lang = languageCode || i18n.language || "en";
   const evidenceLabel = t("selfAssessment.evidence.label", { defaultValue: "Evidence" });
+  const uploadDisabled = Boolean(evidenceOptional) || readOnly;
 
   const subdomainQuery = useSubdomainEvidenceQuery(
     { subDomainId, schoolId, languageCode: lang.toUpperCase() },
@@ -466,10 +469,20 @@ export function SubdomainEvidencePanel({
 
   const payload = data?.data || data || {};
   const slots = payload.slots || [];
-  const progress = useMemo(
+  const rawProgress = useMemo(
     () => computeMandatoryEvidenceProgress(slots),
     [slots],
   );
+  const progress = useMemo(() => {
+    if (!evidenceOptional) return rawProgress;
+    return {
+      total: 0,
+      uploaded: 0,
+      remaining: 0,
+      percentage: 100,
+      isComplete: true,
+    };
+  }, [evidenceOptional, rawProgress]);
 
   const onProgressChangeRef = React.useRef(onProgressChange);
   onProgressChangeRef.current = onProgressChange;
@@ -478,18 +491,32 @@ export function SubdomainEvidencePanel({
   React.useEffect(() => {
     if (isLoading) return;
 
+    const report = {
+      ...progress,
+      questionId: questionId ?? null,
+      exempt: Boolean(evidenceOptional),
+      slotTotal: rawProgress.total,
+      slotUploaded: rawProgress.uploaded,
+      rawTotal: rawProgress.total,
+      rawUploaded: rawProgress.uploaded,
+    };
+
     const prev = lastReportedProgressRef.current;
     if (
       prev &&
-      prev.uploaded === progress.uploaded &&
-      prev.total === progress.total &&
-      prev.percentage === progress.percentage
+      prev.uploaded === report.uploaded &&
+      prev.total === report.total &&
+      prev.percentage === report.percentage &&
+      prev.exempt === report.exempt &&
+      prev.slotTotal === report.slotTotal &&
+      prev.slotUploaded === report.slotUploaded &&
+      String(prev.questionId ?? "") === String(report.questionId ?? "")
     ) {
       return;
     }
-    lastReportedProgressRef.current = progress;
-    onProgressChangeRef.current?.(progress);
-  }, [isLoading, progress]);
+    lastReportedProgressRef.current = report;
+    onProgressChangeRef.current?.(report);
+  }, [isLoading, progress, rawProgress, evidenceOptional, questionId]);
 
   const subdomainUploadMutation = usePrepareSubdomainEvidenceMutation({
     onSuccess: () => {
@@ -516,12 +543,13 @@ export function SubdomainEvidencePanel({
 
   const handleOpenUploadModal = (event) => {
     event?.stopPropagation?.();
+    if (uploadDisabled && evidenceOptional) return;
     setUploadModalOpen(true);
     refetch();
   };
 
   const handleUploadClick = (slot) => {
-    if (readOnly || isUploading) return;
+    if (uploadDisabled || isUploading) return;
     setActiveSlotId(slot.evidenceSlotId);
     inputRef.current?.click();
   };
@@ -605,14 +633,37 @@ export function SubdomainEvidencePanel({
         ? `${slots.filter((s) => s.evidence?.evidenceId).length}/${slots.length}`
         : "Not configured";
 
-  if (variant === "compact") {
+  if (evidenceOptional) {
+    return (
+      <Box
+        className={`subdomain-evidence-optional ${className}`.trim()}
+        style={themeVars}
+        sx={{
+          mt: variant === "question" ? 2 : 0,
+          p: 1.5,
+          borderRadius: 2,
+          border: `1px dashed ${at.primary}40`,
+          bgcolor: `${at.primary}08`,
+        }}
+      >
+        <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text.secondary }}>
+          {t("selfAssessment.evidence.optionalForLevel", {
+            defaultValue:
+              "Evidence upload is not required for કક્ષા 0 or કક્ષા 4 (NA).",
+          })}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (variant === "compact" || variant === "question") {
     const compactContent = (
       <Box
         className={`subdomain-evidence-compact subdomain-evidence-compact--${at.kind} ${
           progress.percentage === 100 ? "subdomain-evidence-compact--done" : ""
         } ${isPhone ? "subdomain-evidence-compact--mobile" : ""} ${
           isTablet ? "subdomain-evidence-compact--tablet" : ""
-        } ${className}`.trim()}
+        } ${variant === "question" ? "subdomain-evidence-compact--question" : ""} ${className}`.trim()}
         style={themeVars}
         onClick={handleOpenUploadModal}
         role="button"
@@ -620,6 +671,7 @@ export function SubdomainEvidencePanel({
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") handleOpenUploadModal(e);
         }}
+        sx={variant === "question" ? { mt: 2, width: "100%" } : undefined}
       >
         {isLoading ? (
           <Box className="subdomain-evidence-compact__loading">

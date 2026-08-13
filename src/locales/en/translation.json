@@ -225,7 +225,11 @@
       "progressLabel": "Evidence: {{uploaded}}/{{total}}",
       "domainProgressLabel": "Mandatory evidence: {{uploaded}}/{{total}}",
       "remaining": "{{count}} left",
-      "complete": "Complete"
+      "complete": "Complete",
+      "optionalComplete": "Not required",
+      "optionalForLevel": "Evidence upload is not required for કક્ષા 0 or કક્ષા 4 (NA).",
+      "countComplete": "Evidence {{uploaded}}/{{total}}",
+      "countRemaining": "Evidence {{uploaded}}/{{total}} · {{remaining}} left"
     },
     "level": "કક્ષા {{level}}",
     "criterionLabel": "માપદંડ",
@@ -282,4 +286,3 @@
     "block": "Block"
   }
 }
-

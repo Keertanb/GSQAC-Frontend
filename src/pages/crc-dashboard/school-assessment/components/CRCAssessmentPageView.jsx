@@ -56,6 +56,7 @@ import { renderAssessmentOptionLabel } from "../../../../utils/assessmentOptionL
 import { AssessmentNavProgressBar } from "../../../../components/AssessmentNavProgressBar/AssessmentNavProgressBar";
 import { AssessmentChipSelector } from "../../../../components/AssessmentChipSelector/AssessmentChipSelector";
 import { SubdomainEvidencePanel } from "../../../../components/SubdomainEvidencePanel/SubdomainEvidencePanel";
+import { isEvidenceOptionalForSelectedOption } from "../../../../services/evidenceService";
 import {
   BarChart,
   Bar,
@@ -1818,26 +1819,6 @@ export function CRCAssessmentPageView({ c }) {
                                   {/* Question Content - Expandable */}
                                   {isExpanded && (
                                     <CardContent sx={{ p: 3, pt: 2.5 }}>
-                                      <Box sx={{ mb: 2 }}>
-                                        <SubdomainEvidencePanel
-                                          questionId={question.questionId}
-                                          question={question}
-                                          schoolId={schoolCode || schoolId}
-                                          assessmentId={
-                                            selectedAssessment?.assessmentId ??
-                                            selectedAssessmentId ??
-                                            null
-                                          }
-                                          selectedAssessment={selectedAssessment}
-                                          readOnly={
-                                            !isPublished ||
-                                            isSubmitted === 1 ||
-                                            isSubmitted === true
-                                          }
-                                          className="crc-subdomain-evidence"
-                                          languageCode={(languageCode || "EN").toLowerCase()}
-                                        />
-                                      </Box>
                                       {question.isClassroomObservation === 1 &&
                                         question.observationCount && (
                                           <Chip
@@ -1924,6 +1905,31 @@ export function CRCAssessmentPageView({ c }) {
                                           </RadioGroup>
                                         </FormControl>
                                       )}
+
+                                      <SubdomainEvidencePanel
+                                        questionId={question.questionId}
+                                        question={question}
+                                        schoolId={schoolCode || schoolId}
+                                        assessmentId={
+                                          selectedAssessment?.assessmentId ??
+                                          selectedAssessmentId ??
+                                          null
+                                        }
+                                        selectedAssessment={selectedAssessment}
+                                        readOnly={
+                                          !isPublished ||
+                                          isSubmitted === 1 ||
+                                          isSubmitted === true
+                                        }
+                                        evidenceOptional={isEvidenceOptionalForSelectedOption(
+                                          question,
+                                          selectedAnswer,
+                                          parseOptions,
+                                        )}
+                                        variant="question"
+                                        className="crc-subdomain-evidence"
+                                        languageCode={(languageCode || "EN").toLowerCase()}
+                                      />
                                     </CardContent>
                                   )}
                                 </Card>

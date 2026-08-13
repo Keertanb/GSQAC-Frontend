@@ -21,6 +21,7 @@ import { renderAssessmentOptionLabel } from "../../../../utils/assessmentOptionL
 import { AssessmentNavProgressBar } from "../../../../components/AssessmentNavProgressBar/AssessmentNavProgressBar";
 import { AssessmentChipSelector } from "../../../../components/AssessmentChipSelector/AssessmentChipSelector";
 import { SubdomainEvidencePanel } from "../../../../components/SubdomainEvidencePanel/SubdomainEvidencePanel";
+import { isEvidenceOptionalForSelectedOption } from "../../../../services/evidenceService";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import "../../../school-dashboard/self-assessment/SelfAssessment.css";
 
@@ -1522,24 +1523,6 @@ export function SchoolVerificationPageView({ c }) {
                                       {/* Question Content - Expandable */}
                                       {isExpanded && (
                                         <CardContent sx={{ p: 3, pt: 2.5 }}>
-                                          <Box sx={{ mb: 2 }}>
-                                            <SubdomainEvidencePanel
-                                              questionId={question.questionId}
-                                              question={question}
-                                              schoolId={schoolId}
-                                              assessmentId={
-                                                selectedAssessment?.assessmentId ??
-                                                selectedAssessmentId ??
-                                                null
-                                              }
-                                              selectedAssessment={selectedAssessment}
-                                              readOnly={
-                                                isSubmitted === 1 || isSubmitted === true
-                                              }
-                                              className="verifier-subdomain-evidence"
-                                              languageCode={(languageCode || "EN").toLowerCase()}
-                                            />
-                                          </Box>
                                           {question.isClassroomObservation ===
                                             1 &&
                                             question.observationCount && (
@@ -1644,6 +1627,29 @@ export function SchoolVerificationPageView({ c }) {
                                               </RadioGroup>
                                             </FormControl>
                                           )}
+
+                                          <SubdomainEvidencePanel
+                                            questionId={question.questionId}
+                                            question={question}
+                                            schoolId={schoolId}
+                                            assessmentId={
+                                              selectedAssessment?.assessmentId ??
+                                              selectedAssessmentId ??
+                                              null
+                                            }
+                                            selectedAssessment={selectedAssessment}
+                                            readOnly={
+                                              isSubmitted === 1 || isSubmitted === true
+                                            }
+                                            evidenceOptional={isEvidenceOptionalForSelectedOption(
+                                              question,
+                                              selectedAnswer,
+                                              parseOptions,
+                                            )}
+                                            variant="question"
+                                            className="verifier-subdomain-evidence"
+                                            languageCode={(languageCode || "EN").toLowerCase()}
+                                          />
                                         </CardContent>
                                       )}
                                     </Card>

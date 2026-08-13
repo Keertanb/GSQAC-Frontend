@@ -30,8 +30,9 @@ import { colors } from "../../../../constants/colors";
 import { SubdomainEvidencePanel } from "../../../../components/SubdomainEvidencePanel/SubdomainEvidencePanel";
 import {
   getSubdomainEvidenceProgress,
+  isEvidenceOptionalForSelectedOption,
+  questionRequiresEvidence,
   subdomainHasMandatoryEvidence,
-  subdomainRequiresEvidence,
   zeroMandatoryEvidenceProgress,
 } from "../../../../services/evidenceService";
 import { renderAssessmentOptionLabel } from "../../../../utils/assessmentOptionLabel";
@@ -189,7 +190,13 @@ function ClassroomSubjectFilters({ c, tabId }) {
   );
 }
 
-function McqQuestionBody({ question, c, questionNumber, isMobile = false }) {
+function McqQuestionBody({
+  question,
+  c,
+  questionNumber,
+  isMobile = false,
+  onEvidenceProgressChange,
+}) {
   const {
     answers,
     handleAnswerChange,
@@ -201,6 +208,10 @@ function McqQuestionBody({ question, c, questionNumber, isMobile = false }) {
     t,
     getOptionText,
     assessmentTheme,
+    userName,
+    selectedAssessmentId,
+    selectedAssessment,
+    languageCode,
   } = c;
 
   const at = assessmentTheme || {
@@ -216,6 +227,12 @@ function McqQuestionBody({ question, c, questionNumber, isMobile = false }) {
       ? String(question.selectedOptionId)
       : null;
   const selectedAnswer = userSelectedAnswer || apiSelectedAnswer;
+  const evidenceOptional = isEvidenceOptionalForSelectedOption(
+    question,
+    selectedAnswer,
+    parseOptions,
+  );
+  const showEvidence = questionRequiresEvidence(question);
 
   return (
     <Card className="sa-wizard-question-card" elevation={0}>
@@ -298,6 +315,25 @@ function McqQuestionBody({ question, c, questionNumber, isMobile = false }) {
               ))}
             </RadioGroup>
           </FormControl>
+        ) : null}
+
+        {showEvidence ? (
+          <SubdomainEvidencePanel
+            questionId={question?.questionId}
+            question={question}
+            schoolId={userName}
+            assessmentId={
+              selectedAssessment?.assessmentId ?? selectedAssessmentId ?? null
+            }
+            selectedAssessment={selectedAssessment}
+            assessmentTheme={assessmentTheme}
+            readOnly={isReadOnly}
+            evidenceOptional={evidenceOptional}
+            variant="question"
+            className="sa-question-evidence"
+            languageCode={(languageCode || "EN").toLowerCase()}
+            onProgressChange={onEvidenceProgressChange}
+          />
         ) : null}
       </CardContent>
     </Card>
@@ -434,38 +470,75 @@ export function SubdomainQuestionFlow({
     submitSubdomainWiseAnswersMutation,
     isPublished,
     isReadOnly,
-    userName,
-    selectedAssessmentId,
-    selectedAssessment,
     assessmentTheme,
     selectedClass,
     selectedSection,
     selectedSubject,
-    languageCode,
     handleSubdomainEvidenceProgressChange,
   } = c;
 
-  const [evidenceProgress, setEvidenceProgress] = useState(() =>
-    selectedSubdomain
-      ? getSubdomainEvidenceProgress(selectedSubdomain)
-      : zeroMandatoryEvidenceProgress(),
+  const [questionEvidenceProgress, setQuestionEvidenceProgress] = useState(
+    zeroMandatoryEvidenceProgress(),
+  );
+  const [subdomainEvidenceProgress, setSubdomainEvidenceProgress] = useState(
+    () =>
+      selectedSubdomain
+        ? getSubdomainEvidenceProgress(selectedSubdomain)
+        : zeroMandatoryEvidenceProgress(),
   );
 
   useEffect(() => {
     if (!selectedSubdomain) {
-      setEvidenceProgress(zeroMandatoryEvidenceProgress());
+      setSubdomainEvidenceProgress(zeroMandatoryEvidenceProgress());
       return;
     }
-    setEvidenceProgress(getSubdomainEvidenceProgress(selectedSubdomain));
+    setSubdomainEvidenceProgress(getSubdomainEvidenceProgress(selectedSubdomain));
   }, [selectedSubdomain]);
 
   const handleEvidenceProgressChange = useCallback(
     (progress) => {
-      setEvidenceProgress(progress);
+      setQuestionEvidenceProgress(progress || zeroMandatoryEvidenceProgress());
       handleSubdomainEvidenceProgressChange?.(progress);
+
+      if (!selectedSubdomain || progress?.questionId == null) return;
+
+      const questionKey = String(progress.questionId);
+      const prevAdjustments = selectedSubdomain.evidenceAnswerAdjustments || {};
+      const nextAdjustments = { ...prevAdjustments };
+      if (progress.exempt) {
+        nextAdjustments[questionKey] = {
+          exempt: true,
+          slotTotal: Number(progress.slotTotal ?? progress.rawTotal) || 0,
+          slotUploaded:
+            Number(progress.slotUploaded ?? progress.rawUploaded) || 0,
+        };
+      } else {
+        delete nextAdjustments[questionKey];
+      }
+
+      setSubdomainEvidenceProgress(
+        getSubdomainEvidenceProgress({
+          ...selectedSubdomain,
+          evidenceAnswerAdjustments: nextAdjustments,
+        }),
+      );
     },
-    [handleSubdomainEvidenceProgressChange],
+    [handleSubdomainEvidenceProgressChange, selectedSubdomain],
   );
+
+  useEffect(() => {
+    if (!selectedSubdomain) return;
+    setSubdomainEvidenceProgress(getSubdomainEvidenceProgress(selectedSubdomain));
+  }, [
+    selectedSubdomain,
+    selectedSubdomain?.mandatoryEvidenceTotal,
+    selectedSubdomain?.mandatoryEvidenceUploaded,
+    selectedSubdomain?.evidenceAnswerAdjustments,
+  ]);
+
+  useEffect(() => {
+    setQuestionEvidenceProgress(zeroMandatoryEvidenceProgress());
+  }, [currentQuestionEntry?.question?.questionId]);
 
   const at = assessmentTheme || {
     primary: colors.primary.blue,
@@ -634,19 +707,6 @@ export function SubdomainQuestionFlow({
               justifyContent: { xs: "stretch", sm: "flex-end" },
             }}
           >
-            <SubdomainEvidencePanel
-              questionId={question?.questionId}
-              question={question}
-              schoolId={userName}
-              assessmentId={
-                selectedAssessment?.assessmentId ?? selectedAssessmentId ?? null
-              }
-              selectedAssessment={selectedAssessment}
-              assessmentTheme={assessmentTheme}
-              readOnly={isReadOnly}
-              className="sa-subdomain-evidence"
-              languageCode={(languageCode || "EN").toLowerCase()}
-            />
             {!matchDownMD ? (
               <Chip
                 label={tabLabel}
@@ -676,7 +736,7 @@ export function SubdomainQuestionFlow({
             },
           }}
         />
-        {subdomainHasMandatoryEvidence(selectedSubdomain) ? (
+        {questionRequiresEvidence(question) ? (
           <Box sx={{ mt: 1 }}>
             <Box
               sx={{
@@ -688,21 +748,26 @@ export function SubdomainQuestionFlow({
             >
               <Typography variant="caption" fontWeight={700} color="text.secondary">
                 {t("selfAssessment.evidence.progressLabel", {
-                  uploaded: evidenceProgress.uploaded,
-                  total: evidenceProgress.total,
+                  uploaded: questionEvidenceProgress.uploaded,
+                  total: questionEvidenceProgress.total,
                 })}
               </Typography>
               <Typography variant="caption" fontWeight={800} color="primary">
-                {evidenceProgress.remaining > 0
-                  ? t("selfAssessment.evidence.remaining", {
-                      count: evidenceProgress.remaining,
+                {questionEvidenceProgress.exempt ||
+                questionEvidenceProgress.total === 0
+                  ? t("selfAssessment.evidence.optionalComplete", {
+                      defaultValue: "Not required",
                     })
-                  : t("selfAssessment.evidence.complete")}
+                  : questionEvidenceProgress.remaining > 0
+                    ? t("selfAssessment.evidence.remaining", {
+                        count: questionEvidenceProgress.remaining,
+                      })
+                    : t("selfAssessment.evidence.complete")}
               </Typography>
             </Box>
             <LinearProgress
               variant="determinate"
-              value={evidenceProgress.percentage}
+              value={questionEvidenceProgress.percentage}
               sx={{
                 height: { xs: 6, sm: 8 },
                 borderRadius: 99,
@@ -710,7 +775,48 @@ export function SubdomainQuestionFlow({
                 "& .MuiLinearProgress-bar": {
                   borderRadius: 99,
                   bgcolor:
-                    evidenceProgress.percentage === 100
+                    questionEvidenceProgress.percentage === 100
+                      ? colors.accent.green
+                      : at.primary,
+                },
+              }}
+            />
+          </Box>
+        ) : subdomainHasMandatoryEvidence(selectedSubdomain) ? (
+          <Box sx={{ mt: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 0.5,
+              }}
+            >
+              <Typography variant="caption" fontWeight={700} color="text.secondary">
+                {t("selfAssessment.evidence.progressLabel", {
+                  uploaded: subdomainEvidenceProgress.uploaded,
+                  total: subdomainEvidenceProgress.total,
+                })}
+              </Typography>
+              <Typography variant="caption" fontWeight={800} color="primary">
+                {subdomainEvidenceProgress.remaining > 0
+                  ? t("selfAssessment.evidence.remaining", {
+                      count: subdomainEvidenceProgress.remaining,
+                    })
+                  : t("selfAssessment.evidence.complete")}
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={subdomainEvidenceProgress.percentage}
+              sx={{
+                height: { xs: 6, sm: 8 },
+                borderRadius: 99,
+                bgcolor: colors.neutral.gray200,
+                "& .MuiLinearProgress-bar": {
+                  borderRadius: 99,
+                  bgcolor:
+                    subdomainEvidenceProgress.percentage === 100
                       ? colors.accent.green
                       : at.primary,
                 },
@@ -757,6 +863,7 @@ export function SubdomainQuestionFlow({
                 c={c}
                 questionNumber={questionNumber}
                 isMobile={matchDownMD}
+                onEvidenceProgressChange={handleEvidenceProgressChange}
               />
             )}
           </>

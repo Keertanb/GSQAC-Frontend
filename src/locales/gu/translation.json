@@ -223,7 +223,11 @@
       "progressLabel": "આધાર: {{uploaded}}/{{total}}",
       "domainProgressLabel": "ફરજિયાત આધાર: {{uploaded}}/{{total}}",
       "remaining": "{{count}} બાકી",
-      "complete": "પૂર્ણ"
+      "complete": "પૂર્ણ",
+      "optionalComplete": "જરૂરી નથી",
+      "optionalForLevel": "કક્ષા 0 અથવા કક્ષા 4 (NA) માટે આધાર અપલોડ જરૂરી નથી.",
+      "countComplete": "આધાર {{uploaded}}/{{total}}",
+      "countRemaining": "આધાર {{uploaded}}/{{total}} · {{remaining}} બાકી"
     },
     "level": "કક્ષા {{level}}",
     "criterionLabel": "માપદંડ",
@@ -280,4 +284,3 @@
     "block": "બ્લોક"
   }
 }
-

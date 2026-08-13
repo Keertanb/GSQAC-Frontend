@@ -62,11 +62,156 @@ import { AssessmentChipSelector } from "../../../../components/AssessmentChipSel
 import {
   getSubdomainEvidenceProgress,
   getDomainMandatoryEvidenceProgress,
-  subdomainHasMandatoryEvidence,
 } from "../../../../services/evidenceService";
 import { SubdomainQuestionFlow } from "./SubdomainQuestionFlow";
 import { AssessmentProgressOverview } from "./AssessmentProgressOverview";
 import "../SelfAssessment.css";
+
+function EvidenceCountChip({ progress, t, compact = false }) {
+  if (!progress?.total) return null;
+
+  const isComplete = progress.remaining <= 0 || progress.percentage >= 100;
+
+  return (
+    <Chip
+      size="small"
+      label={
+        isComplete
+          ? t("selfAssessment.evidence.countComplete", {
+              uploaded: progress.uploaded,
+              total: progress.total,
+              defaultValue: `Evidence ${progress.uploaded}/${progress.total}`,
+            })
+          : t("selfAssessment.evidence.countRemaining", {
+              uploaded: progress.uploaded,
+              total: progress.total,
+              remaining: progress.remaining,
+              defaultValue: `Evidence ${progress.uploaded}/${progress.total} · ${progress.remaining} left`,
+            })
+      }
+      sx={{
+        height: compact ? 20 : 22,
+        maxWidth: compact ? 150 : 180,
+        fontSize: compact ? "0.6rem" : "0.625rem",
+        fontWeight: 800,
+        flexShrink: 0,
+        bgcolor: isComplete
+          ? `${colors.accent.green}18`
+          : `${colors.semantic.warning}18`,
+        color: isComplete ? colors.accent.green : colors.semantic.warning,
+        border: `1px solid ${
+          isComplete
+            ? `${colors.accent.green}40`
+            : `${colors.semantic.warning}40`
+        }`,
+        "& .MuiChip-label": {
+          px: 0.75,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        },
+      }}
+    />
+  );
+}
+
+function EvidenceCountProgress({
+  uploaded,
+  total,
+  remaining,
+  percentage,
+  getProgressColor,
+  t,
+  mobile = false,
+  scope = "subdomain",
+}) {
+  if (!total) return null;
+
+  const isComplete = remaining <= 0 || percentage >= 100;
+  const progressColor = isComplete
+    ? colors.accent.green
+    : getProgressColor(percentage);
+
+  return (
+    <Box
+      className={`sa-evidence-count-progress sa-evidence-count-progress--${scope}`}
+      sx={{
+        mt: mobile ? 1.25 : 0.75,
+        width: "100%",
+        pt: mobile ? 1 : 0.75,
+        borderTop: `1px dashed ${colors.neutral.gray200}`,
+      }}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 1,
+          mb: 0.6,
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{
+            fontSize: mobile ? "0.75rem" : "0.6875rem",
+            color: colors.text.secondary,
+            fontWeight: 700,
+            lineHeight: 1.3,
+          }}
+        >
+          {scope === "domain"
+            ? t("selfAssessment.evidence.domainProgressLabel", {
+                uploaded,
+                total,
+              })
+            : t("selfAssessment.evidence.progressLabel", {
+                uploaded,
+                total,
+              })}
+        </Typography>
+        <Chip
+          size="small"
+          label={
+            isComplete
+              ? t("selfAssessment.evidence.complete")
+              : t("selfAssessment.evidence.remaining", { count: remaining })
+          }
+          sx={{
+            height: mobile ? 22 : 20,
+            fontSize: mobile ? "0.6875rem" : "0.625rem",
+            fontWeight: 800,
+            bgcolor: isComplete
+              ? `${colors.accent.green}18`
+              : `${colors.semantic.warning}18`,
+            color: isComplete
+              ? colors.accent.green
+              : colors.semantic.warning,
+            border: `1px solid ${
+              isComplete
+                ? `${colors.accent.green}40`
+                : `${colors.semantic.warning}40`
+            }`,
+            "& .MuiChip-label": { px: 0.9 },
+          }}
+        />
+      </Box>
+      <LinearProgress
+        variant="determinate"
+        value={Math.min(100, Math.max(0, percentage))}
+        sx={{
+          height: mobile ? 7 : 5,
+          borderRadius: 99,
+          bgcolor: colors.neutral.gray200,
+          "& .MuiLinearProgress-bar": {
+            borderRadius: 99,
+            bgcolor: progressColor,
+          },
+        }}
+      />
+    </Box>
+  );
+}
 
 function SubdomainEvidenceProgressBar({
   subdomain,
@@ -74,20 +219,19 @@ function SubdomainEvidenceProgressBar({
   t,
   mobile = false,
 }) {
-  if (!subdomainHasMandatoryEvidence(subdomain)) return null;
-
   const evidenceProgress = getSubdomainEvidenceProgress(subdomain);
   if (!evidenceProgress.total) return null;
 
   return (
-    <AssessmentNavProgressBar
-      progress={evidenceProgress.percentage}
+    <EvidenceCountProgress
+      uploaded={evidenceProgress.uploaded}
+      total={evidenceProgress.total}
+      remaining={evidenceProgress.remaining}
+      percentage={evidenceProgress.percentage}
       getProgressColor={getProgressColor}
-      label={t("selfAssessment.evidence.progressLabel", {
-        uploaded: evidenceProgress.uploaded,
-        total: evidenceProgress.total,
-      })}
+      t={t}
       mobile={mobile}
+      scope="subdomain"
     />
   );
 }
@@ -102,17 +246,16 @@ function DomainEvidenceProgressBar({
   if (!evidenceProgress.total) return null;
 
   return (
-    <Box sx={{ mt: mobile ? 1.25 : 0.75 }}>
-      <AssessmentNavProgressBar
-        progress={evidenceProgress.percentage}
-        getProgressColor={getProgressColor}
-        label={t("selfAssessment.evidence.domainProgressLabel", {
-          uploaded: evidenceProgress.uploaded,
-          total: evidenceProgress.total,
-        })}
-        mobile={mobile}
-      />
-    </Box>
+    <EvidenceCountProgress
+      uploaded={evidenceProgress.uploaded}
+      total={evidenceProgress.total}
+      remaining={evidenceProgress.remaining}
+      percentage={evidenceProgress.percentage}
+      getProgressColor={getProgressColor}
+      t={t}
+      mobile={mobile}
+      scope="domain"
+    />
   );
 }
 
@@ -1229,6 +1372,8 @@ export function SelfAssessmentLayout({ c }) {
                                 subdomain.subDomainId || subdomain.id;
                               const subdomainProgress =
                                 getSubdomainProgress(subdomain);
+                              const subdomainEvidenceProgress =
+                                getSubdomainEvidenceProgress(subdomain);
                               const isSubdomainSelected =
                                 selectedSubdomain?.subDomainId ===
                                   subdomainId ||
@@ -1297,12 +1442,15 @@ export function SelfAssessmentLayout({ c }) {
                                       >
                                         {getSubdomainName(subdomain)}
                                       </Typography>
+                                      <EvidenceCountChip
+                                        progress={subdomainEvidenceProgress}
+                                        t={t}
+                                      />
                                       {subdomainProgress === 100 && (
                                         <CheckCircle
                                           sx={{
                                             color: colors.accent.green,
                                             fontSize: 18,
-                                            ml: "auto",
                                           }}
                                         />
                                       )}
@@ -1344,6 +1492,8 @@ export function SelfAssessmentLayout({ c }) {
                       >
                         {domains.map((domain, domainIndex) => {
                           const progress = getDomainProgress(domain);
+                          const domainEvidenceProgress =
+                            getDomainMandatoryEvidenceProgress(domain);
                           const isDomainSelected =
                             selectedDomain?.domainId === domain.domainId;
                           const DomainIcon = getDomainIcon(domain);
@@ -1433,6 +1583,11 @@ export function SelfAssessmentLayout({ c }) {
                                         {getDomainName(domain)}
                                       </Typography>
                                     </Box>
+                                    <EvidenceCountChip
+                                      progress={domainEvidenceProgress}
+                                      t={t}
+                                      compact
+                                    />
                                     {progress === 100 && (
                                       <CheckCircle
                                         sx={{
@@ -1515,6 +1670,8 @@ export function SelfAssessmentLayout({ c }) {
                                           subdomain.subDomainId || subdomain.id;
                                         const subdomainProgress =
                                           getSubdomainProgress(subdomain);
+                                        const subdomainEvidenceProgress =
+                                          getSubdomainEvidenceProgress(subdomain);
                                         const isSubdomainSelected =
                                           selectedSubdomain?.subDomainId ===
                                           subdomainId;
@@ -1587,6 +1744,11 @@ export function SelfAssessmentLayout({ c }) {
                                                     {getSubdomainName(subdomain)}
                                                   </Typography>
                                                 </Box>
+                                                <EvidenceCountChip
+                                                  progress={subdomainEvidenceProgress}
+                                                  t={t}
+                                                  compact
+                                                />
                                                 {isSubdomainSelected &&
                                                   subdomainProgress === 100 && (
                                                     <CheckCircle
@@ -1719,6 +1881,9 @@ export function SelfAssessmentLayout({ c }) {
                           disabled={
                             submitAssessmentMutation.isPending ||
                             isSubmittingAllAssessments ||
+                            !allAssessmentsAnswersComplete ||
+                            !allAssessmentsMandatoryEvidenceComplete ||
+                            allAssessmentsSubmitted ||
                             !canSubmitAssessment
                           }
                           title={
@@ -1735,7 +1900,7 @@ export function SelfAssessmentLayout({ c }) {
                                     remaining:
                                       allAssessmentsMandatoryEvidenceProgress.remaining,
                                     defaultValue:
-                                      "Please upload all mandatory evidence before submitting.",
+                                      "Please upload all mandatory evidence before submitting ({{remaining}} remaining).",
                                   })
                                 : t("selfAssessment.submitBlocked.readyAll", {
                                     defaultValue:

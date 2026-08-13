@@ -11,6 +11,42 @@ export function isMandatoryEvidenceSlot(slot) {
   return value === 1 || value === true || value === "1";
 }
 
+/** Option levels (કક્ષા index) where evidence upload is not required / not allowed. */
+export const EVIDENCE_OPTIONAL_OPTION_LEVELS = new Set([0, 4]);
+
+export function getQuestionOptionLevelIndex(question, selectedOptionId, parseOptions) {
+  if (selectedOptionId == null || selectedOptionId === "") return -1;
+  const options = typeof parseOptions === "function"
+    ? parseOptions(question?.options)
+    : Array.isArray(question?.options)
+      ? question.options
+      : [];
+  return options.findIndex(
+    (option) => String(option.optionId) === String(selectedOptionId),
+  );
+}
+
+export function isEvidenceOptionalForSelectedOption(
+  question,
+  selectedOptionId,
+  parseOptions,
+) {
+  const level = getQuestionOptionLevelIndex(
+    question,
+    selectedOptionId,
+    parseOptions,
+  );
+  return EVIDENCE_OPTIONAL_OPTION_LEVELS.has(level);
+}
+
+export function questionRequiresEvidence(question) {
+  return (
+    question?.requireEvidence === 1 ||
+    question?.requireEvidence === true ||
+    question?.requireEvidence === "1"
+  );
+}
+
 export function getMandatoryEvidenceSlots(subdomain) {
   return (subdomain?.evidenceSlots || []).filter(isMandatoryEvidenceSlot);
 }
@@ -31,7 +67,9 @@ export function subdomainHasMandatoryEvidence(subdomain) {
 
 export function subdomainEvidenceIsEnabled(subdomain) {
   const value = subdomain?.requireEvidence;
-  return value === 1 || value === "1" || value === true;
+  if (value === 1 || value === "1" || value === true) return true;
+  // Question-level evidence enrichment may set totals without the legacy flag.
+  return (Number(subdomain?.mandatoryEvidenceTotal) || 0) > 0;
 }
 
 export function subdomainRequiresEvidence(subdomain) {
@@ -69,67 +107,98 @@ export function computeMandatoryEvidenceProgress(slots = []) {
   };
 }
 
+export function applyEvidenceAnswerAdjustments(progress, adjustments) {
+  if (!progress) return zeroMandatoryEvidenceProgress();
+  if (!adjustments || typeof adjustments !== "object") return progress;
+
+  let deductTotal = 0;
+  let deductUploaded = 0;
+
+  Object.values(adjustments).forEach((adjustment) => {
+    if (!adjustment?.exempt) return;
+    deductTotal += Number(adjustment.slotTotal) || 0;
+    deductUploaded += Number(adjustment.slotUploaded) || 0;
+  });
+
+  if (deductTotal === 0 && deductUploaded === 0) return progress;
+
+  const total = Math.max(0, (Number(progress.total) || 0) - deductTotal);
+  const uploaded = Math.min(
+    total,
+    Math.max(0, (Number(progress.uploaded) || 0) - deductUploaded),
+  );
+
+  return {
+    total,
+    uploaded,
+    remaining: Math.max(0, total - uploaded),
+    percentage: total > 0 ? Math.round((uploaded / total) * 100) : 100,
+    isComplete: total === 0 || uploaded >= total,
+  };
+}
+
 export function getSubdomainEvidenceProgress(subdomain) {
   if (!subdomainEvidenceIsEnabled(subdomain)) {
     return zeroMandatoryEvidenceProgress();
   }
 
   const slots = subdomain?.evidenceSlots;
+  let baseProgress;
 
-  if (Array.isArray(slots)) {
+  // Prefer concrete slot rows only when they are actually present.
+  // Domains API often returns evidenceSlots: [] with totals on the subdomain.
+  if (Array.isArray(slots) && slots.length > 0) {
     const mandatorySlots = getMandatoryEvidenceSlots(subdomain);
     if (mandatorySlots.length === 0) {
-      return zeroMandatoryEvidenceProgress();
+      baseProgress = zeroMandatoryEvidenceProgress();
+    } else {
+      const mandatoryTotal = mandatorySlots.length;
+      const hasSlotEvidence = mandatorySlots.some(
+        (slot) => slot.evidence !== undefined,
+      );
+      const mandatoryUploaded = hasSlotEvidence
+        ? mandatorySlots.filter((slot) => slot.evidence?.evidenceId).length
+        : Math.min(
+            Number(subdomain?.mandatoryEvidenceUploaded) || 0,
+            mandatoryTotal,
+          );
+
+      baseProgress = {
+        total: mandatoryTotal,
+        uploaded: mandatoryUploaded,
+        remaining: Math.max(0, mandatoryTotal - mandatoryUploaded),
+        percentage:
+          mandatoryTotal > 0
+            ? Math.round((mandatoryUploaded / mandatoryTotal) * 100)
+            : 100,
+        isComplete: mandatoryUploaded >= mandatoryTotal,
+      };
     }
+  } else {
+    const mandatoryTotal = Number(subdomain?.mandatoryEvidenceTotal) || 0;
 
-    const mandatoryTotal = mandatorySlots.length;
-    const hasSlotEvidence = mandatorySlots.some(
-      (slot) => slot.evidence !== undefined,
-    );
-    const mandatoryUploaded = hasSlotEvidence
-      ? mandatorySlots.filter((slot) => slot.evidence?.evidenceId).length
-      : Math.min(
-          Number(subdomain?.mandatoryEvidenceUploaded) || 0,
-          mandatoryTotal,
-        );
+    if (mandatoryTotal === 0) {
+      baseProgress = zeroMandatoryEvidenceProgress();
+    } else {
+      const mandatoryUploaded = Math.min(
+        Number(subdomain?.mandatoryEvidenceUploaded) || 0,
+        mandatoryTotal,
+      );
 
-    return {
-      total: mandatoryTotal,
-      uploaded: mandatoryUploaded,
-      remaining: Math.max(0, mandatoryTotal - mandatoryUploaded),
-      percentage:
-        mandatoryTotal > 0
-          ? Math.round((mandatoryUploaded / mandatoryTotal) * 100)
-          : 100,
-      isComplete: mandatoryUploaded >= mandatoryTotal,
-    };
+      baseProgress = {
+        total: mandatoryTotal,
+        uploaded: mandatoryUploaded,
+        remaining: Math.max(0, mandatoryTotal - mandatoryUploaded),
+        percentage: Math.round((mandatoryUploaded / mandatoryTotal) * 100),
+        isComplete: mandatoryUploaded >= mandatoryTotal,
+      };
+    }
   }
 
-  const configuredSlotCount = Number(subdomain?.evidenceSlotCount);
-  const mandatoryTotal = Number(subdomain?.mandatoryEvidenceTotal) || 0;
-
-  if (
-    mandatoryTotal === 0 ||
-    configuredSlotCount === 0
-  ) {
-    return zeroMandatoryEvidenceProgress();
-  }
-
-  const mandatoryUploaded = Math.min(
-    Number(subdomain?.mandatoryEvidenceUploaded) || 0,
-    mandatoryTotal,
+  return applyEvidenceAnswerAdjustments(
+    baseProgress,
+    subdomain?.evidenceAnswerAdjustments,
   );
-
-  return {
-    total: mandatoryTotal,
-    uploaded: mandatoryUploaded,
-    remaining: Math.max(0, mandatoryTotal - mandatoryUploaded),
-    percentage:
-      mandatoryTotal > 0
-        ? Math.round((mandatoryUploaded / mandatoryTotal) * 100)
-        : 100,
-    isComplete: mandatoryUploaded >= mandatoryTotal,
-  };
 }
 
 export function getDomainMandatoryEvidenceProgress(domain) {
@@ -246,14 +315,6 @@ export const deleteEvidenceSlot = async (evidenceSlotId, extras = {}) => {
   return response.data;
 };
 
-export function questionRequiresEvidence(question) {
-  return (
-    question?.requireEvidence === 1 ||
-    question?.requireEvidence === true ||
-    question?.requireEvidence === "1"
-  );
-}
-
 export function useSubdomainEvidenceQuery(
   { subDomainId, schoolId, languageCode },
   enabled = true,
@@ -299,9 +360,8 @@ function patchSubdomainEvidenceInDomains(domains, subDomainId, progress) {
   if (!Array.isArray(domains)) return domains;
 
   const targetId = Number(subDomainId);
-  const total = Number(progress?.total) || 0;
-  const uploaded = Number(progress?.uploaded) || 0;
-  const remaining = Math.max(0, total - uploaded);
+  const questionId =
+    progress?.questionId != null ? String(progress.questionId) : null;
   let changed = false;
 
   const nextDomains = domains.map((domain) => ({
@@ -309,6 +369,48 @@ function patchSubdomainEvidenceInDomains(domains, subDomainId, progress) {
     subDomain: (domain.subDomain || []).map((subdomain) => {
       const currentId = Number(subdomain.subDomainId || subdomain.id);
       if (currentId !== targetId) return subdomain;
+
+      // Question-scoped updates only adjust કક્ષા 0/4 exemptions; keep API totals intact.
+      if (questionId) {
+        const prevAdjustments = subdomain.evidenceAnswerAdjustments || {};
+        const nextAdjustments = { ...prevAdjustments };
+        const slotTotal = Number(
+          progress.slotTotal ?? progress.rawTotal ?? progress.total,
+        ) || 0;
+        const slotUploaded = Number(
+          progress.slotUploaded ?? progress.rawUploaded ?? progress.uploaded,
+        ) || 0;
+
+        if (progress.exempt) {
+          const prev = prevAdjustments[questionId];
+          if (
+            prev?.exempt &&
+            Number(prev.slotTotal) === slotTotal &&
+            Number(prev.slotUploaded) === slotUploaded
+          ) {
+            return subdomain;
+          }
+          nextAdjustments[questionId] = {
+            exempt: true,
+            slotTotal,
+            slotUploaded,
+          };
+        } else if (prevAdjustments[questionId]) {
+          delete nextAdjustments[questionId];
+        } else {
+          return subdomain;
+        }
+
+        changed = true;
+        return {
+          ...subdomain,
+          evidenceAnswerAdjustments: nextAdjustments,
+        };
+      }
+
+      const total = Number(progress?.total) || 0;
+      const uploaded = Number(progress?.uploaded) || 0;
+      const remaining = Math.max(0, total - uploaded);
 
       if (
         Number(subdomain.mandatoryEvidenceTotal) === total &&
