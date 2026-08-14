@@ -15,14 +15,14 @@ export const roles = [
   //   color: "#f97316",
   //   dashboardRoute: "/parent-dashboard",
   // },
-  {
-    value: "inspector",
-    label: "Verifier",
-    description: "Verification & inspection",
-    authMethod: "Verifier ID",
-    color: "#10b981",
-    dashboardRoute: "/inspector-dashboard",
-  },
+  // {
+  //   value: "inspector",
+  //   label: "Verifier",
+  //   description: "Verification & inspection",
+  //   authMethod: "Verifier ID",
+  //   color: "#10b981",
+  //   dashboardRoute: "/inspector-dashboard",
+  // },
   {
     value: "admin",
     label: "GSQAC Admin",
@@ -31,14 +31,14 @@ export const roles = [
     color: "#1e3a8a",
     dashboardRoute: "/admin-dashboard",
   },
-  {
-    value: "crc",
-    label: "CRC",
-    description: "Cluster Resource Coordinator",
-    authMethod: "Cluster ID",
-    color: "#8b5cf6",
-    dashboardRoute: "/crc-dashboard",
-  },
+  // {
+  //   value: "crc",
+  //   label: "CRC",
+  //   description: "Cluster Resource Coordinator",
+  //   authMethod: "Cluster ID",
+  //   color: "#8b5cf6",
+  //   dashboardRoute: "/crc-dashboard",
+  // },
 ];
 
 export const getRoleByValue = (value) => {
