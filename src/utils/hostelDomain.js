@@ -73,9 +73,15 @@ export function sumProgressFromDomains(domains) {
     0,
   );
   const answerPercentage =
-    totalQuestions > 0 ? (totalAnswer / totalQuestions) * 100 : 0;
+    totalQuestions > 0
+      ? Math.min(100, Math.max(0, (Math.min(totalAnswer, totalQuestions) / totalQuestions) * 100))
+      : 0;
 
-  return { totalQuestions, totalAnswer, answerPercentage };
+  return {
+    totalQuestions,
+    totalAnswer: Math.min(totalAnswer, totalQuestions),
+    answerPercentage,
+  };
 }
 
 export function filterAssessmentsByHostelFacility(assessments, hostelFacility) {

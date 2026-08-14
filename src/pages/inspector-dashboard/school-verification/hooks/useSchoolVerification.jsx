@@ -70,6 +70,10 @@ import {
   Cell,
 } from "recharts";
 import { filterQuestionsByClassRange } from "../../../../utils/classRange";
+import {
+  clampProgressPercentage,
+  sanitizeDomainsProgress,
+} from "../../../../utils/assessmentSubmit";
 
 export function useSchoolVerification() {
   const { t, i18n } = useTranslation();
@@ -287,24 +291,30 @@ export function useSchoolVerification() {
   }, [subjectsData]);
 
   const assessments = useMemo(() => {
+    let list = [];
     if (Array.isArray(domainsData?.data)) {
       if (domainsData.data.length > 0 && domainsData.data[0]?.domains) {
-        return domainsData.data;
+        list = domainsData.data;
+      } else {
+        list = [
+          {
+            assessmentId: null,
+            assessmentName: "Assessment",
+            domains: domainsData.data,
+            isPublished: domainsData?.isPublished,
+            startDate: domainsData?.startDate,
+            endDate: domainsData?.endDate,
+            isSubmitted: domainsData?.isSubmitted,
+            sessionId: domainsData?.sessionId,
+          },
+        ];
       }
-      return [
-        {
-          assessmentId: null,
-          assessmentName: "Assessment",
-          domains: domainsData.data,
-          isPublished: domainsData?.isPublished,
-          startDate: domainsData?.startDate,
-          endDate: domainsData?.endDate,
-          isSubmitted: domainsData?.isSubmitted,
-          sessionId: domainsData?.sessionId,
-        },
-      ];
     }
-    return [];
+    return list.map((assessment) => ({
+      ...assessment,
+      answerPercentage: clampProgressPercentage(assessment.answerPercentage),
+      domains: sanitizeDomainsProgress(assessment.domains || []),
+    }));
   }, [domainsData]);
 
   useEffect(() => {
@@ -627,14 +637,13 @@ export function useSchoolVerification() {
   // Calculate subdomain progress
   const getSubdomainProgress = (subdomain) => {
     const subdomainId = subdomain.subDomainId || subdomain.id;
-    const subdomainIdKey = subdomainId;
 
     // If subdomain has answerPercentage from API, use it
     if (
       subdomain.answerPercentage !== undefined &&
       subdomain.answerPercentage !== null
     ) {
-      return subdomain.answerPercentage;
+      return clampProgressPercentage(subdomain.answerPercentage);
     }
 
     // If this is the currently selected subdomain, calculate from current answers
@@ -669,7 +678,9 @@ export function useSchoolVerification() {
             : null;
         return answers[q.questionId] || apiAnswer;
       }).length;
-      return (answeredQuestions / totalQuestions) * 100;
+      return clampProgressPercentage(
+        (answeredQuestions / totalQuestions) * 100,
+      );
     }
 
     return 0;
@@ -682,7 +693,7 @@ export function useSchoolVerification() {
       domain.answerPercentage !== undefined &&
       domain.answerPercentage !== null
     ) {
-      return domain.answerPercentage;
+      return clampProgressPercentage(domain.answerPercentage);
     }
 
     if (!domain.subDomain || domain.subDomain.length === 0) return 0;
@@ -697,7 +708,9 @@ export function useSchoolVerification() {
       subdomainCount++;
     });
 
-    return subdomainCount > 0 ? totalProgress / subdomainCount : 0;
+    return clampProgressPercentage(
+      subdomainCount > 0 ? totalProgress / subdomainCount : 0,
+    );
   };
 
   // Helper function to check if API answer should be shown based on question type and selected dropdowns

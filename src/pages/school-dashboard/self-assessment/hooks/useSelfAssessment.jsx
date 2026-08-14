@@ -51,6 +51,8 @@ import {
   isAssessmentAnswersComplete,
   isAssessmentFullyComplete,
   getIncompleteAssessments,
+  clampProgressPercentage,
+  sanitizeDomainsProgress,
 } from "../../../../utils/assessmentSubmit";
 import { getAssessmentTheme } from "../../../../utils/assessmentTheme";
 import {
@@ -387,7 +389,10 @@ export function useSelfAssessment() {
 
     return filterAssessmentsByHostelFacility(list, hostelValue).map((assessment) => ({
       ...assessment,
-      domains: sanitizeDomainsEvidence(assessment.domains || []),
+      answerPercentage: clampProgressPercentage(assessment.answerPercentage),
+      domains: sanitizeDomainsProgress(
+        sanitizeDomainsEvidence(assessment.domains || []),
+      ),
     }));
   }, [domainsData, hostelValue, t]);
 
@@ -924,14 +929,13 @@ export function useSelfAssessment() {
 
   const getSubdomainProgress = (subdomain) => {
     const subdomainId = subdomain.subDomainId || subdomain.id;
-    const subdomainIdKey = subdomainId;
 
     // If subdomain has answerPercentage from API, use it
     if (
       subdomain.answerPercentage !== undefined &&
       subdomain.answerPercentage !== null
     ) {
-      return subdomain.answerPercentage;
+      return clampProgressPercentage(subdomain.answerPercentage);
     }
 
     // If this is the currently selected subdomain, calculate from current answers
@@ -944,7 +948,9 @@ export function useSelfAssessment() {
       const answeredQuestions = allQuestions.filter(
         (q) => answers[q.questionId],
       ).length;
-      return (answeredQuestions / totalQuestions) * 100;
+      return clampProgressPercentage(
+        (answeredQuestions / totalQuestions) * 100,
+      );
     }
 
     return 0;
@@ -956,7 +962,7 @@ export function useSelfAssessment() {
       domain.answerPercentage !== undefined &&
       domain.answerPercentage !== null
     ) {
-      return domain.answerPercentage;
+      return clampProgressPercentage(domain.answerPercentage);
     }
 
     if (!domain.subDomain || domain.subDomain.length === 0) return 0;
@@ -971,7 +977,9 @@ export function useSelfAssessment() {
       subdomainCount++;
     });
 
-    return subdomainCount > 0 ? totalProgress / subdomainCount : 0;
+    return clampProgressPercentage(
+      subdomainCount > 0 ? totalProgress / subdomainCount : 0,
+    );
   };
 
   // Get domain name based on language

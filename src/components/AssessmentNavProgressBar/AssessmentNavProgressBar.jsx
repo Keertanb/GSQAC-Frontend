@@ -1,9 +1,10 @@
 import React from "react";
 import { Box, Typography, LinearProgress } from "@mui/material";
 import { colors } from "../../constants/colors";
+import { clampProgressPercentage } from "../../utils/assessmentSubmit";
 
 export function formatProgressPercentage(progress) {
-  const value = Number(progress) || 0;
+  const value = clampProgressPercentage(progress);
   if (value > 0 && value < 1) return Number(value.toFixed(1));
   return Math.round(value);
 }
@@ -14,7 +15,7 @@ export function AssessmentNavProgressBar({
   label = "Progress",
   mobile = false,
 }) {
-  const clampedProgress = Math.min(100, Math.max(0, Number(progress) || 0));
+  const clampedProgress = clampProgressPercentage(progress);
   const progressColor = getProgressColor(clampedProgress);
   const displayPercentage = formatProgressPercentage(clampedProgress);
 

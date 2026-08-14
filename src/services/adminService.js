@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "../config/axios";
 import { queryKeys } from "../config/queryClient";
 import { enqueueSnackbar } from "notistack";
@@ -1389,6 +1389,36 @@ export const useGetSchoolAssessmentStatusDetailQuery = (schoolId, enabled = true
     queryFn: () => getSchoolAssessmentStatusDetail(schoolId),
     enabled: enabled && !!schoolId,
     staleTime: 2 * 60 * 1000,
+  });
+};
+
+/**
+ * Reset school self-assessment form (answers, sessions, evidence)
+ */
+export const resetSchoolAssessmentForm = async ({ schoolId }) => {
+  const response = await axiosInstance.post("/admin/school-form-reset", {
+    schoolId,
+  });
+  return response.data;
+};
+
+export const useResetSchoolAssessmentFormMutation = (options = {}) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resetSchoolAssessmentForm,
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "school-assessment-status-detail", variables.schoolId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "school-assessment-status"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "school-self-assessment-monitor"],
+      });
+      options.onSuccess?.(data, variables, context);
+    },
+    onError: options.onError,
   });
 };
 

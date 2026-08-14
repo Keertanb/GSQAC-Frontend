@@ -35,6 +35,10 @@ import useAuthStore from "../../../../store/useAuthStore";
 import { useLogoutMutation } from "../../../../services/authService";
 import { enqueueSnackbar } from "notistack";
 import { filterQuestionsByClassRange } from "../../../../utils/classRange";
+import {
+  clampProgressPercentage,
+  sanitizeDomainsProgress,
+} from "../../../../utils/assessmentSubmit";
 
 export function useCRCAssessment() {
   const navigate = useNavigate();
@@ -288,24 +292,30 @@ export function useCRCAssessment() {
   // Note: Removed auto-selection of subject to allow manual selection only
 
   const assessments = useMemo(() => {
+    let list = [];
     if (Array.isArray(domainsData?.data)) {
       if (domainsData.data.length > 0 && domainsData.data[0]?.domains) {
-        return domainsData.data;
+        list = domainsData.data;
+      } else {
+        list = [
+          {
+            assessmentId: null,
+            assessmentName: "Assessment",
+            domains: domainsData.data,
+            isPublished: domainsData?.isPublished,
+            startDate: domainsData?.startDate,
+            endDate: domainsData?.endDate,
+            isSubmitted: domainsData?.isSubmitted,
+            sessionId: domainsData?.sessionId,
+          },
+        ];
       }
-      return [
-        {
-          assessmentId: null,
-          assessmentName: "Assessment",
-          domains: domainsData.data,
-          isPublished: domainsData?.isPublished,
-          startDate: domainsData?.startDate,
-          endDate: domainsData?.endDate,
-          isSubmitted: domainsData?.isSubmitted,
-          sessionId: domainsData?.sessionId,
-        },
-      ];
     }
-    return [];
+    return list.map((assessment) => ({
+      ...assessment,
+      answerPercentage: clampProgressPercentage(assessment.answerPercentage),
+      domains: sanitizeDomainsProgress(assessment.domains || []),
+    }));
   }, [domainsData]);
 
   useEffect(() => {
@@ -800,14 +810,13 @@ export function useCRCAssessment() {
 
   const getSubdomainProgress = (subdomain) => {
     const subdomainId = subdomain.subDomainId || subdomain.id;
-    const subdomainIdKey = subdomainId;
 
     // If subdomain has answerPercentage from API, use it
     if (
       subdomain.answerPercentage !== undefined &&
       subdomain.answerPercentage !== null
     ) {
-      return subdomain.answerPercentage;
+      return clampProgressPercentage(subdomain.answerPercentage);
     }
 
     // If this is the currently selected subdomain, calculate from current answers
@@ -820,7 +829,9 @@ export function useCRCAssessment() {
       const answeredQuestions = allQuestions.filter(
         (q) => answers[q.questionId],
       ).length;
-      return (answeredQuestions / totalQuestions) * 100;
+      return clampProgressPercentage(
+        (answeredQuestions / totalQuestions) * 100,
+      );
     }
 
     return 0;
@@ -832,7 +843,7 @@ export function useCRCAssessment() {
       domain.answerPercentage !== undefined &&
       domain.answerPercentage !== null
     ) {
-      return domain.answerPercentage;
+      return clampProgressPercentage(domain.answerPercentage);
     }
 
     if (!domain.subDomain || domain.subDomain.length === 0) return 0;
@@ -847,7 +858,9 @@ export function useCRCAssessment() {
       subdomainCount++;
     });
 
-    return subdomainCount > 0 ? totalProgress / subdomainCount : 0;
+    return clampProgressPercentage(
+      subdomainCount > 0 ? totalProgress / subdomainCount : 0,
+    );
   };
 
   // Get domain name based on language

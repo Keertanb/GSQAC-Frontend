@@ -16,6 +16,7 @@ import {
   ManageAccounts,
   Newspaper,
   FolderShared,
+  RestartAlt,
 } from "@mui/icons-material";
 
 const DRAWER_WIDTH = {
@@ -191,6 +192,13 @@ export const adminMenuItems = [
     icon: Assignment,
     url: "/admin-dashboard/school-assessment-status",
     activeFinder: ["/admin-dashboard/school-assessment-status"],
+  },
+  {
+    id: "school-form-reset",
+    label: "School Form Reset",
+    icon: RestartAlt,
+    url: "/admin-dashboard/school-form-reset",
+    activeFinder: ["/admin-dashboard/school-form-reset"],
   },
   {
     id: "parent-feedback",

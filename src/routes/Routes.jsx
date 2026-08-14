@@ -296,6 +296,16 @@ export const adminRoutes = [
         ),
       },
       {
+        path: ROUTE_URLS.ADMIN_SCHOOL_FORM_RESET_URL,
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <Suspense fallback={<LazyLoad />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: ROUTE_URLS.ADMIN_DISTRICT_NODAL_OFFICERS_URL,
         element: (
           <ProtectedRoute requiredRole="admin">
