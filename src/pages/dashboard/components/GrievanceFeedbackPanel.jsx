@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from "react";
 import {
-  RateReview as FeedbackIcon,
+  ReportProblem as GrievanceIcon,
   Send as SendIcon,
   CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material";
 import { CircularProgress } from "@mui/material";
 import { useSubmitParentFeedbackMutation } from "../../../services/feedbackService";
+import { GRIEVANCE_SECTIONS } from "../data/grievanceStandards";
 
 const INITIAL_FORM = {
   submitterName: "",
@@ -13,6 +14,10 @@ const INITIAL_FORM = {
   email: "",
   schoolId: "",
   schoolName: "",
+  sectionId: "",
+  domainName: "",
+  subdomainName: "",
+  questionText: "",
   feedbackText: "",
 };
 
@@ -27,21 +32,56 @@ export function GrievanceFeedbackPanel({ feedbackSource = "grievance" }) {
     },
   });
 
+  const selectedSection = useMemo(
+    () => GRIEVANCE_SECTIONS.find((section) => section.id === form.sectionId) || null,
+    [form.sectionId],
+  );
+  const selectedDomain = useMemo(
+    () => selectedSection?.domains.find((domain) => domain.name === form.domainName) || null,
+    [selectedSection, form.domainName],
+  );
+  const selectedSubdomain = useMemo(
+    () =>
+      selectedDomain?.subdomains.find((item) => item.name === form.subdomainName) || null,
+    [selectedDomain, form.subdomainName],
+  );
+
   const charCount = form.feedbackText.length;
   const isValid = useMemo(() => {
     return (
       form.submitterName.trim().length >= 2 &&
+      form.schoolName.trim().length >= 2 &&
+      form.sectionId &&
+      form.domainName &&
+      form.subdomainName &&
+      form.questionText &&
       form.feedbackText.trim().length >= 10 &&
       charCount <= 5000
     );
-  }, [form.submitterName, form.feedbackText, charCount]);
+  }, [form, charCount]);
 
-  const handleChange = (field) => (e) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  const handleChange = (field) => (event) => {
+    const value = event.target.value;
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "sectionId") {
+        next.domainName = "";
+        next.subdomainName = "";
+        next.questionText = "";
+      }
+      if (field === "domainName") {
+        next.subdomainName = "";
+        next.questionText = "";
+      }
+      if (field === "subdomainName") {
+        next.questionText = "";
+      }
+      return next;
+    });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (event) => {
+    event.preventDefault();
     if (!isValid || submitMutation.isPending) return;
 
     submitMutation.mutate({
@@ -49,7 +89,11 @@ export function GrievanceFeedbackPanel({ feedbackSource = "grievance" }) {
       mobileNumber: form.mobileNumber.trim() || undefined,
       email: form.email.trim() || undefined,
       schoolId: form.schoolId.trim() || undefined,
-      schoolName: form.schoolName.trim() || undefined,
+      schoolName: form.schoolName.trim(),
+      sectionName: selectedSection?.name || undefined,
+      domainName: form.domainName,
+      subdomainName: form.subdomainName,
+      questionText: form.questionText,
       feedbackText: form.feedbackText.trim(),
       feedbackSource,
     });
@@ -59,17 +103,16 @@ export function GrievanceFeedbackPanel({ feedbackSource = "grievance" }) {
     return (
       <div className="grievance-success">
         <CheckCircleIcon className="grievance-success__icon" />
-        <h3>Thank you for your feedback</h3>
+        <h3>ફરિયાદ મળી ગઈ છે</h3>
         <p>
-          Your message has been received. GSQAC will review it and take
-          appropriate action where required.
+          તમારી ફરિયાદ GSQAC પાસે પહોંચી ગઈ છે. જરૂર મુજબ તેની સમીક્ષા કરવામાં આવશે.
         </p>
         <button
           type="button"
           className="grievance-btn grievance-btn--outline"
           onClick={() => setSubmitted(false)}
         >
-          Submit another response
+          બીજી ફરિયાદ નોંધાવો
         </button>
       </div>
     );
@@ -78,12 +121,11 @@ export function GrievanceFeedbackPanel({ feedbackSource = "grievance" }) {
   return (
     <form className="grievance-form" onSubmit={handleSubmit} noValidate>
       <div className="grievance-form__intro">
-        <FeedbackIcon className="grievance-form__intro-icon" />
+        <GrievanceIcon className="grievance-form__intro-icon" />
         <div>
-          <h3>Share your feedback</h3>
+          <h3>ફરિયાદ નોંધાવો</h3>
           <p>
-            Parents, guardians, and community members can share complete
-            feedback about school quality, accreditation, or related concerns.
+            શાળાનું નામ, મુખ્યક્ષેત્ર, પેટાક્ષેત્ર અને માપદંડ પસંદ કરીને તમારી ફરિયાદ લખો.
           </p>
         </div>
       </div>
@@ -91,31 +133,56 @@ export function GrievanceFeedbackPanel({ feedbackSource = "grievance" }) {
       <div className="grievance-form__grid">
         <label className="grievance-field">
           <span>
-            Full name <em>*</em>
+            પૂરું નામ <em>*</em>
           </span>
           <input
             type="text"
             value={form.submitterName}
             onChange={handleChange("submitterName")}
-            placeholder="Enter your full name"
+            placeholder="તમારું પૂરું નામ"
             maxLength={150}
             required
           />
         </label>
 
         <label className="grievance-field">
-          <span>Mobile number</span>
+          <span>મોબાઇલ નંબર</span>
           <input
             type="tel"
             value={form.mobileNumber}
             onChange={handleChange("mobileNumber")}
-            placeholder="10-digit mobile number"
+            placeholder="10 અંકનો મોબાઇલ નંબર"
+            maxLength={15}
+          />
+        </label>
+
+        <label className="grievance-field grievance-field--full">
+          <span>
+            શાળાનું નામ <em>*</em>
+          </span>
+          <input
+            type="text"
+            value={form.schoolName}
+            onChange={handleChange("schoolName")}
+            placeholder="શાળાનું પૂરું નામ"
+            maxLength={300}
+            required
+          />
+        </label>
+
+        <label className="grievance-field">
+          <span>UDISE / School ID</span>
+          <input
+            type="text"
+            value={form.schoolId}
+            onChange={handleChange("schoolId")}
+            placeholder="UDISE કોડ (વૈકલ્પિક)"
             maxLength={15}
           />
         </label>
 
         <label className="grievance-field">
-          <span>Email</span>
+          <span>ઇમેઇલ</span>
           <input
             type="email"
             value={form.email}
@@ -126,41 +193,90 @@ export function GrievanceFeedbackPanel({ feedbackSource = "grievance" }) {
         </label>
 
         <label className="grievance-field">
-          <span>UDISE / School ID</span>
-          <input
-            type="text"
-            value={form.schoolId}
-            onChange={handleChange("schoolId")}
-            placeholder="School UDISE code (optional)"
-            maxLength={15}
-          />
+          <span>
+            વિભાગ <em>*</em>
+          </span>
+          <select value={form.sectionId} onChange={handleChange("sectionId")} required>
+            <option value="">વિભાગ પસંદ કરો</option>
+            {GRIEVANCE_SECTIONS.map((section) => (
+              <option key={section.id} value={section.id}>
+                {section.name}
+              </option>
+            ))}
+          </select>
         </label>
 
-        <label className="grievance-field grievance-field--full">
-          <span>School name</span>
-          <input
-            type="text"
-            value={form.schoolName}
-            onChange={handleChange("schoolName")}
-            placeholder="Name of the school (optional)"
-            maxLength={300}
-          />
+        <label className="grievance-field">
+          <span>
+            મુખ્યક્ષેત્ર <em>*</em>
+          </span>
+          <select
+            value={form.domainName}
+            onChange={handleChange("domainName")}
+            disabled={!selectedSection}
+            required
+          >
+            <option value="">મુખ્યક્ષેત્ર પસંદ કરો</option>
+            {(selectedSection?.domains || []).map((domain) => (
+              <option key={domain.name} value={domain.name}>
+                {domain.name}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className="grievance-field grievance-field--full">
           <span>
-            Your feedback <em>*</em>
+            પેટાક્ષેત્ર <em>*</em>
+          </span>
+          <select
+            value={form.subdomainName}
+            onChange={handleChange("subdomainName")}
+            disabled={!selectedDomain}
+            required
+          >
+            <option value="">પેટાક્ષેત્ર પસંદ કરો</option>
+            {(selectedDomain?.subdomains || []).map((item) => (
+              <option key={item.name} value={item.name}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="grievance-field grievance-field--full">
+          <span>
+            માપદંડ / પ્રશ્ન <em>*</em>
+          </span>
+          <select
+            value={form.questionText}
+            onChange={handleChange("questionText")}
+            disabled={!selectedSubdomain}
+            required
+          >
+            <option value="">માપદંડ પસંદ કરો</option>
+            {(selectedSubdomain?.questions || []).map((question) => (
+              <option key={question} value={question}>
+                {question}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="grievance-field grievance-field--full">
+          <span>
+            ફરિયાદ / પ્રતિસાદ <em>*</em>
           </span>
           <textarea
             value={form.feedbackText}
             onChange={handleChange("feedbackText")}
-            placeholder="Write your complete feedback, suggestions, or grievance in detail..."
+            placeholder="પસંદ કરેલા માપદંડ અંગેની તમારી ફરિયાદ વિગતવાર લખો..."
             rows={7}
             maxLength={5000}
             required
           />
           <small className={charCount > 5000 ? "is-error" : ""}>
-            {charCount}/5000 characters (minimum 10)
+            {charCount}/5000 અક્ષરો (ઓછામાં ઓછા 10)
           </small>
         </label>
       </div>
@@ -176,7 +292,7 @@ export function GrievanceFeedbackPanel({ feedbackSource = "grievance" }) {
           ) : (
             <SendIcon fontSize="small" />
           )}
-          Submit Feedback
+          ફરિયાદ સબમિટ કરો
         </button>
       </div>
     </form>

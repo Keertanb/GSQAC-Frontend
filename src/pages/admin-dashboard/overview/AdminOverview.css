@@ -375,13 +375,25 @@
 }
 
 .ado-stats-grid--self-assessment {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
 }
 
 @media (max-width: 900px) {
   .ado-stats-grid--self-assessment {
     grid-template-columns: 1fr;
   }
+}
+
+.ado-self-assessment-overview {
+  margin: 1.25rem 0 1.5rem;
+  padding: 1.15rem 1.2rem 1.25rem;
+  border: 1px solid var(--ado-slate-200);
+  border-radius: var(--ado-radius-md);
+  background: #fff;
+}
+
+.ado-self-assessment-overview .ado-section-heading-row {
+  margin-bottom: 0.75rem;
 }
 
 .ado-section-heading-row {
@@ -811,6 +823,10 @@
 .ado-chart-accent-amber::before { background: var(--ado-amber); }
 
 .ado-chart-full { width: 100%; }
+
+.ado-charts-row .ado-chart-full {
+  grid-column: 1 / -1;
+}
 
 .ado-chart-header {
   display: flex;
@@ -1774,6 +1790,9 @@
 .ado-map-school-row-body small {
   font-size: 0.68rem;
   color: var(--ado-slate-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ado-map-school-row-status {
@@ -1857,6 +1876,12 @@
   font-size: 0.875rem;
   font-weight: 800;
   color: var(--ado-slate-900);
+}
+
+.ado-map-tooltip-meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  color: var(--ado-slate-500);
 }
 
 .ado-map-tooltip-rate {

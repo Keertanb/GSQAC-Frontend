@@ -388,7 +388,7 @@ const Login = () => {
       <div className="lp-visual">
         <div className="lp-visual-pattern" />
 
-        {/* Hero copy — mirrors dashboard Gunotsav 2.0 section */}
+        {/* Hero copy — mirrors dashboard ગુણાંકન - 2026 section */}
         <div className="lp-hero-copy">
           {/* <p className="lp-drive-pill">
             <StarIcon
@@ -399,8 +399,13 @@ const Login = () => {
             Gujarat&apos;s school quality drive
           </p> */}
 
-          <h1 className="lp-hero-title">
-            Gunotsav <span className="lp-hero-accent">2.0</span>
+          <h1 className="lp-hero-title" lang="gu">
+            <span className="lp-hero-title-gu">ગુણાંકન</span>
+            <span className="lp-hero-title-sep" aria-hidden>
+              {" "}
+              -{" "}
+            </span>
+            <span className="lp-hero-accent">2026</span>
           </h1>
 
           {/* <div className="lp-mini-cards">

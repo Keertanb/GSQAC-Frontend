@@ -38,20 +38,16 @@ export function useAdminDashboard() {
       true,
     );
 
-  const { data: statewideData } = useGetAdminDashboardQuery({}, Boolean(districtId));
-
   const dashboard = data?.data || {};
-  const statewideDashboard = statewideData?.data || {};
   const overview = dashboard.overview || {};
   const verificationStatus = dashboard.verificationStatus || [];
   const assessmentStatus = dashboard.assessmentStatus || [];
   const selfAssessmentCounts = dashboard.selfAssessmentCounts || {};
   const districtBreakdown = dashboard.districtBreakdown || [];
-  const statewideDistrictBreakdown =
-    districtId && statewideDashboard.districtBreakdown?.length
-      ? statewideDashboard.districtBreakdown
-      : districtBreakdown;
+  const statewideDistrictBreakdown = districtBreakdown;
   const blockBreakdown = dashboard.blockBreakdown || [];
+  const managementBreakdown = dashboard.managementBreakdown || [];
+  const categoryBreakdown = dashboard.categoryBreakdown || [];
   const verifierWorkload = dashboard.verifierWorkload || [];
 
   const selectedDistrict = useMemo(() => {
@@ -490,6 +486,8 @@ export function useAdminDashboard() {
     districtChartData,
     blockChartData,
     blockBreakdown,
+    managementBreakdown,
+    categoryBreakdown,
     districtBreakdown,
     statewideDistrictBreakdown,
     verifierChartData,

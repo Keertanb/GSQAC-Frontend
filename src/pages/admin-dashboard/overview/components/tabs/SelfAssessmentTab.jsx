@@ -2,32 +2,62 @@ import React from "react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import { StatCard, ChartCard, CustomTooltip, DonutCenter } from "../shared/chartPrimitives";
 
-export function SelfAssessmentTab({ c }) {
-  const { selfAssessmentCounts } = c;
+const ICONS = {
+  schools: (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+    </svg>
+  ),
+  check: (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  play: (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  clock: (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+};
 
-  const selfAssessmentTotal = selfAssessmentCounts.totalEligibleSchools ?? 0;
-  const selfAssessmentRequired = selfAssessmentCounts.requiredAssessmentsPerSchool ?? 0;
-  const selfAssessmentSlotTotal = selfAssessmentCounts.totalAssessmentSlots ?? 0;
-  const hasSelfAssessmentData = selfAssessmentTotal > 0 || selfAssessmentSlotTotal > 0;
-  const selfAssessmentChartData = selfAssessmentCounts.chartData || [];
+export function SchoolSelfAssessmentStatusSection({
+  c,
+  heading = "School Self-Assessment Status",
+  compact = false,
+}) {
+  const { districtId, selectedDistrict, selfAssessmentCounts } = c;
+
+  const totalSchools = selfAssessmentCounts.totalEligibleSchools ?? 0;
+  const requiredPerSchool = selfAssessmentCounts.requiredAssessmentsPerSchool ?? 0;
+  const hasData = totalSchools > 0 || (selfAssessmentCounts.totalAssessmentSlots ?? 0) > 0;
+  const chartData = selfAssessmentCounts.chartData || [];
+  const scopeName = selectedDistrict?.name || (districtId ? "selected district" : "all school logins");
+  const requiredLabel =
+    requiredPerSchool > 0
+      ? `each school is counted against the ${requiredPerSchool} form${requiredPerSchool > 1 ? "s" : ""} that match its management and school type`
+      : "each school is counted only against the forms it is required to fill";
 
   return (
-    <div className="ado-tab-panel-inner">
+    <div className={compact ? "ado-self-assessment-embed" : ""}>
       <div className="ado-section-heading-row">
         <div>
-          <h2 className="ado-section-title">School Self-Assessment</h2>
+          {!compact && <p className="ado-section-eyebrow">School forms</p>}
+          <h2 className="ado-section-title">{heading}</h2>
           <p className="ado-section-desc">
-            Distinct schools from assessment_session
-            {selfAssessmentRequired > 0
-              ? ` · each school may have up to ${selfAssessmentRequired} assessment session${
-                  selfAssessmentRequired > 1 ? "s" : ""
-                } (e.g. Administrative & Academic)`
-              : ""}
+            {districtId
+              ? `Of ${totalSchools} schools in ${scopeName} · ${requiredLabel}`
+              : `Of ${totalSchools} schools with a login · select a district for the full school list · ${requiredLabel}`}
           </p>
         </div>
-        {hasSelfAssessmentData && (
+        {hasData && (
           <span className="ado-section-badge">
-            {selfAssessmentCounts.distinctStartedSchools ?? 0}/{selfAssessmentTotal} schools started
+            {selfAssessmentCounts.completedSchools ?? 0}/{totalSchools} schools completed
           </span>
         )}
       </div>
@@ -35,56 +65,49 @@ export function SelfAssessmentTab({ c }) {
       <div className="ado-self-assessment-band">
         <div className="ado-stats-grid ado-stats-grid--self-assessment">
           <StatCard
-            label="Schools Completed"
+            label="Total Schools"
+            value={totalSchools}
+            sub={districtId ? "Schools in the selected district" : "School logins statewide"}
+            tone="indigo"
+            icon={ICONS.schools}
+          />
+          <StatCard
+            label="Completed"
             value={selfAssessmentCounts.completedSchools ?? 0}
-            sub={`Distinct schools · submitted all ${selfAssessmentRequired || 2} assessments`}
+            sub="Filled every required form"
             tone="green"
             progress={selfAssessmentCounts.completionRate}
-            icon={
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            }
+            icon={ICONS.check}
           />
           <StatCard
-            label="Schools Started"
-            value={selfAssessmentCounts.distinctStartedSchools ?? 0}
-            sub={`Distinct school IDs in assessment_session · ${selfAssessmentCounts.startedSchools ?? 0} in progress · ${selfAssessmentCounts.completedSchools ?? 0} completed`}
+            label="Started"
+            value={selfAssessmentCounts.startedSchools ?? 0}
+            sub="Began at least one required form"
             tone="blue"
-            progress={selfAssessmentCounts.startedRate}
-            icon={
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            }
+            icon={ICONS.play}
           />
           <StatCard
-            label="Schools Remaining"
+            label="Pending"
             value={selfAssessmentCounts.notStartedSchools ?? 0}
-            sub={`No assessment_session row yet · of ${selfAssessmentTotal} allocated schools`}
+            sub="Not started any required form"
             tone="amber"
-            icon={
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            }
+            icon={ICONS.clock}
           />
         </div>
 
-        {hasSelfAssessmentData && selfAssessmentChartData.length > 0 && (
+        {hasData && chartData.length > 0 && (
           <ChartCard
-            title="School breakdown"
-            subtitle={`${selfAssessmentTotal} allocated schools · ${selfAssessmentCounts.submittedSessions ?? 0} submitted / ${selfAssessmentCounts.inProgressSessions ?? 0} in-progress sessions`}
+            title="School status"
+            subtitle={`${totalSchools} schools · completed / started / pending`}
             className="ado-self-assessment-chart"
             accent="cyan"
             icon="📊"
           >
             <div className="ado-donut-wrap ado-self-assessment-chart-wrap">
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height={compact ? 200 : 220}>
                 <PieChart>
                   <Pie
-                    data={selfAssessmentChartData}
+                    data={chartData}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
@@ -93,7 +116,7 @@ export function SelfAssessmentTab({ c }) {
                     outerRadius={82}
                     paddingAngle={3}
                   >
-                    {selfAssessmentChartData.map((entry) => (
+                    {chartData.map((entry) => (
                       <Cell key={entry.name} fill={entry.color} />
                     ))}
                   </Pie>
@@ -101,11 +124,19 @@ export function SelfAssessmentTab({ c }) {
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
-              <DonutCenter total={selfAssessmentTotal} label="Schools" />
+              <DonutCenter total={totalSchools} label="Schools" />
             </div>
           </ChartCard>
         )}
       </div>
+    </div>
+  );
+}
+
+export function SelfAssessmentTab({ c }) {
+  return (
+    <div className="ado-tab-panel-inner">
+      <SchoolSelfAssessmentStatusSection c={c} />
     </div>
   );
 }

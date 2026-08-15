@@ -150,19 +150,21 @@ export function buildDistrictMapStats(districtBreakdown, districts) {
     const key = matchDistrictKey(item.districtName);
     if (!key) return;
 
-    const allocated = item.allocatedSchools ?? 0;
-    const completed = item.completedVerification ?? 0;
-    const pending = item.pendingVerification ?? 0;
+    const total = item.totalSchools ?? item.allocatedSchools ?? 0;
+    const completed = item.completedSchools ?? item.completedVerification ?? 0;
+    const started = item.startedSchools ?? item.inProgress ?? 0;
+    const pending = item.notStartedSchools ?? item.pendingVerification ?? 0;
 
     statsByKey[key] = {
       districtId: item.districtId,
       districtName: item.districtName,
-      allocated,
+      total,
+      allocated: total,
       completed,
+      started,
       pending,
-      verifiers: item.activeVerifiers ?? 0,
-      completionRate: pct(completed, completed + pending),
-      hasData: allocated > 0 || completed > 0 || pending > 0,
+      completionRate: pct(completed, total),
+      hasData: total > 0 || completed > 0 || started > 0 || pending > 0,
     };
   });
 
@@ -174,9 +176,10 @@ export function buildDistrictMapStats(districtBreakdown, districts) {
       districtId: district.value,
       districtName: district.name,
       allocated: 0,
+      total: 0,
       completed: 0,
+      started: 0,
       pending: 0,
-      verifiers: 0,
       completionRate: 0,
       hasData: false,
     };

@@ -68,7 +68,7 @@ function getMapSubtitle(mapLevel, districtName, blockName) {
   if (mapLevel === "blocks") {
     return `Satellite view — blocks in ${districtName || "district"}`;
   }
-  return "Gujarat satellite map — click a district to drill down";
+  return "Gujarat satellite map — click a district to see school self-assessment";
 }
 
 function MapViewController({ fitBounds, mapLevel }) {
@@ -149,19 +149,26 @@ export function GujaratSatelliteMap({
         page: 0,
         limit: 500,
       },
-      mapLevel === "schools" &&
-        !!selectedBlockId &&
-        !isLoadingSchoolList &&
-        !(schoolsListData?.data?.rows?.length > 0),
+      mapLevel === "schools" && !!selectedBlockId,
     );
 
   const schools = useMemo(() => {
     const fromList = schoolsListData?.data?.rows || [];
-    if (fromList.length > 0) return fromList;
-    return schoolsAssessmentData?.data?.rows || [];
+    const fromStatus = schoolsAssessmentData?.data?.rows || [];
+    if (!fromList.length) return fromStatus;
+    if (!fromStatus.length) return fromList;
+
+    const statusById = new Map(
+      fromStatus.map((school) => [String(school.schoolId), school]),
+    );
+
+    return fromList.map((school) => ({
+      ...school,
+      ...(statusById.get(String(school.schoolId)) || {}),
+    }));
   }, [schoolsListData, schoolsAssessmentData]);
 
-  const isLoadingSchools = isLoadingSchoolList || isLoadingAssessment;
+  const isLoadingSchools = isLoadingSchoolList && !schools.length;
 
   useEffect(() => {
     if (String(prevDistrictIdRef.current) === String(selectedDistrictId)) {
@@ -223,10 +230,11 @@ export function GujaratSatelliteMap({
           stats: statsByKey[key] || {
             districtId: null,
             districtName: feature.properties?.name,
+            total: 0,
             allocated: 0,
             completed: 0,
+            started: 0,
             pending: 0,
-            verifiers: 0,
             completionRate: 0,
             hasData: false,
           },
@@ -407,8 +415,9 @@ export function GujaratSatelliteMap({
               region.stats.completionRate,
               region.stats.hasData,
             ),
-            allocated: region.stats.allocated,
+            allocated: region.stats.total || region.stats.allocated,
             completed: region.stats.completed,
+            started: region.stats.started,
             pending: region.stats.pending,
             x: event.originalEvent.clientX,
             y: event.originalEvent.clientY,
@@ -579,6 +588,7 @@ export function GujaratSatelliteMap({
                             tone: block.tone,
                             total: block.total,
                             completed: block.completed,
+                            started: block.inProgress,
                             pending: block.pending,
                             x: event.originalEvent.clientX,
                             y: event.originalEvent.clientY,
@@ -621,7 +631,15 @@ export function GujaratSatelliteMap({
                             name: school.schoolName,
                             status: school.status,
                             tone: school.tone,
-                            verifier: school.verifierUserName,
+                            schoolId: school.schoolId,
+                            management: school.managementName,
+                            category: school.categoryName,
+                            classes:
+                              school.lowerClass != null && school.upperClass != null
+                                ? `Classes ${school.lowerClass}–${school.upperClass}`
+                                : "",
+                            formsCompleted: school.formsCompleted,
+                            formsTotal: school.formsTotal,
                             x: event.originalEvent.clientX,
                             y: event.originalEvent.clientY,
                           });
@@ -650,15 +668,18 @@ export function GujaratSatelliteMap({
               {tooltip.type === "district" ? (
                 <>
                   <p className="ado-map-tooltip-rate">
-                    <span>Verification</span>
+                    <span>Self-assessment</span>
                     <strong>{tooltip.rate}%</strong>
                   </p>
                   <div className="ado-map-tooltip-grid">
                     <span>
-                      Allocated <strong>{tooltip.allocated}</strong>
+                      Schools <strong>{tooltip.allocated}</strong>
                     </span>
                     <span>
                       Done <strong>{tooltip.completed}</strong>
+                    </span>
+                    <span>
+                      Started <strong>{tooltip.started ?? 0}</strong>
                     </span>
                     <span>
                       Pending <strong>{tooltip.pending}</strong>
@@ -674,10 +695,13 @@ export function GujaratSatelliteMap({
                   </p>
                   <div className="ado-map-tooltip-grid">
                     <span>
-                      Total <strong>{tooltip.total}</strong>
+                      Schools <strong>{tooltip.total}</strong>
                     </span>
                     <span>
                       Done <strong>{tooltip.completed}</strong>
+                    </span>
+                    <span>
+                      Started <strong>{tooltip.started ?? 0}</strong>
                     </span>
                     <span>
                       Pending <strong>{tooltip.pending}</strong>
@@ -688,12 +712,22 @@ export function GujaratSatelliteMap({
               {tooltip.type === "school" ? (
                 <>
                   <p className="ado-map-tooltip-rate">
-                    <span>Assessment</span>
+                    <span>Status</span>
                     <strong>{tooltip.status}</strong>
                   </p>
-                  {tooltip.verifier ? (
-                    <p className="ado-map-tooltip-verifier">
-                      Verifier: <strong>{tooltip.verifier}</strong>
+                  <p className="ado-map-tooltip-meta">UDISE {tooltip.schoolId}</p>
+                  {tooltip.management ? (
+                    <p className="ado-map-tooltip-meta">{tooltip.management}</p>
+                  ) : null}
+                  {tooltip.category ? (
+                    <p className="ado-map-tooltip-meta">{tooltip.category}</p>
+                  ) : null}
+                  {tooltip.classes ? (
+                    <p className="ado-map-tooltip-meta">{tooltip.classes}</p>
+                  ) : null}
+                  {tooltip.formsTotal > 0 ? (
+                    <p className="ado-map-tooltip-meta">
+                      Forms {tooltip.formsCompleted}/{tooltip.formsTotal}
                     </p>
                   ) : null}
                 </>
@@ -706,7 +740,11 @@ export function GujaratSatelliteMap({
               <div className="ado-map-school-panel-header">
                 <h4>Schools in {selectedBlockName || "block"}</h4>
                 <span>
-                  {isLoadingSchools ? "Loading…" : `${schools.length} schools`}
+                  {isLoadingSchools
+                    ? "Loading…"
+                    : isLoadingAssessment
+                      ? `${schools.length} schools · updating status`
+                      : `${schools.length} schools`}
                 </span>
               </div>
               <div className="ado-map-school-list">
@@ -741,7 +779,17 @@ export function GujaratSatelliteMap({
                         />
                         <span className="ado-map-school-row-body">
                           <strong>{school.schoolName}</strong>
-                          <small>{school.schoolId}</small>
+                          <small>
+                            {[
+                              school.schoolId,
+                              stats.managementName,
+                              stats.formsTotal > 0
+                                ? `Forms ${stats.formsCompleted}/${stats.formsTotal}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </small>
                         </span>
                         <span
                           className={`ado-map-school-row-status ado-map-rate-pill ado-map-rate-pill--${stats.tone}`}
@@ -766,7 +814,7 @@ export function GujaratSatelliteMap({
             <h3>
               {mapLevel === "schools"
                 ? "School assessment status"
-                : "Verification completion"}
+                : "School self-assessment completion"}
             </h3>
             {mapLevel === "schools" ? (
               <ul>
@@ -810,11 +858,32 @@ export function GujaratSatelliteMap({
                 </span>
               </div>
               <h3>{activeSchool.schoolName}</h3>
-              <p className="ado-map-focus-meta">{activeSchool.schoolId}</p>
-              {activeSchool.verifierUserName ? (
+              <p className="ado-map-focus-meta">UDISE {activeSchool.schoolId}</p>
+              {activeSchool.districtName || activeSchool.blockName ? (
                 <p className="ado-map-focus-meta">
-                  Verifier: {activeSchool.verifierUserName}
+                  {[activeSchool.districtName, activeSchool.blockName]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </p>
+              ) : null}
+              {activeSchool.managementName ? (
+                <p className="ado-map-focus-meta">{activeSchool.managementName}</p>
+              ) : null}
+              {activeSchool.categoryName ? (
+                <p className="ado-map-focus-meta">{activeSchool.categoryName}</p>
+              ) : null}
+              {activeSchool.lowerClass != null && activeSchool.upperClass != null ? (
+                <p className="ado-map-focus-meta">
+                  Classes {activeSchool.lowerClass}–{activeSchool.upperClass}
+                </p>
+              ) : null}
+              {activeSchool.formsTotal > 0 ? (
+                <p className="ado-map-focus-meta">
+                  Required forms {activeSchool.formsCompleted}/{activeSchool.formsTotal}
+                </p>
+              ) : null}
+              {activeSchool.lastUpdated ? (
+                <p className="ado-map-focus-meta">Last activity {activeSchool.lastUpdated}</p>
               ) : null}
             </div>
           ) : mapLevel === "blocks" && activeBlock ? (
@@ -853,8 +922,8 @@ export function GujaratSatelliteMap({
                   <small>Pending</small>
                 </div>
                 <div>
-                  <span>{activeBlock.notAllocated}</span>
-                  <small>Unalloc.</small>
+                  <span>{activeBlock.inProgress}</span>
+                  <small>Started</small>
                 </div>
               </div>
               <button
@@ -909,20 +978,20 @@ export function GujaratSatelliteMap({
               </div>
               <div className="ado-map-focus-stats">
                 <div>
-                  <span>{previewDistrict.stats.allocated}</span>
-                  <small>Allocated</small>
+                  <span>{previewDistrict.stats.total || previewDistrict.stats.allocated}</span>
+                  <small>Schools</small>
                 </div>
                 <div>
                   <span>{previewDistrict.stats.completed}</span>
                   <small>Completed</small>
                 </div>
                 <div>
-                  <span>{previewDistrict.stats.pending}</span>
-                  <small>Pending</small>
+                  <span>{previewDistrict.stats.started || 0}</span>
+                  <small>Started</small>
                 </div>
                 <div>
-                  <span>{previewDistrict.stats.verifiers}</span>
-                  <small>Verifiers</small>
+                  <span>{previewDistrict.stats.pending}</span>
+                  <small>Pending</small>
                 </div>
               </div>
               {mapLevel === "state" ? (

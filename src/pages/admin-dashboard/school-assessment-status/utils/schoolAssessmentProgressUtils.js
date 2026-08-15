@@ -6,16 +6,19 @@ export function getSchoolSelfAssessmentProgress(assessments = [], fallback = {})
   const schoolAssessments = assessments.filter(
     (item) => item.roleId === SCHOOL_ROLE_ID && Number(item.isPublished) === 1,
   );
-  const hasSubmitted = schoolAssessments.some((item) => Number(item.isSubmitted) === 1);
 
-  if (schoolAssessments.length > 0 || hasSubmitted) {
-    return { completed: hasSubmitted ? 1 : 0, total: 1 };
+  if (schoolAssessments.length > 0) {
+    return {
+      completed: schoolAssessments.filter((item) => Number(item.isSubmitted) === 1).length,
+      total: schoolAssessments.length,
+    };
   }
 
   const fallbackCompleted = Number(fallback.selfAssessmentsCompleted) || 0;
+  const fallbackTotal = Number(fallback.selfAssessmentsTotal) || 0;
   return {
-    completed: fallbackCompleted > 0 ? 1 : 0,
-    total: 1,
+    completed: fallbackCompleted,
+    total: fallbackTotal,
   };
 }
 

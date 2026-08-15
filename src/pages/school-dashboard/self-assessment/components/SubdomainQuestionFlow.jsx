@@ -477,9 +477,6 @@ export function SubdomainQuestionFlow({
     handleSubdomainEvidenceProgressChange,
   } = c;
 
-  const [questionEvidenceProgress, setQuestionEvidenceProgress] = useState(
-    zeroMandatoryEvidenceProgress(),
-  );
   const [subdomainEvidenceProgress, setSubdomainEvidenceProgress] = useState(
     () =>
       selectedSubdomain
@@ -497,7 +494,6 @@ export function SubdomainQuestionFlow({
 
   const handleEvidenceProgressChange = useCallback(
     (progress) => {
-      setQuestionEvidenceProgress(progress || zeroMandatoryEvidenceProgress());
       handleSubdomainEvidenceProgressChange?.(progress);
 
       if (!selectedSubdomain || progress?.questionId == null) return;
@@ -535,10 +531,6 @@ export function SubdomainQuestionFlow({
     selectedSubdomain?.mandatoryEvidenceUploaded,
     selectedSubdomain?.evidenceAnswerAdjustments,
   ]);
-
-  useEffect(() => {
-    setQuestionEvidenceProgress(zeroMandatoryEvidenceProgress());
-  }, [currentQuestionEntry?.question?.questionId]);
 
   const at = assessmentTheme || {
     primary: colors.primary.blue,
@@ -736,53 +728,7 @@ export function SubdomainQuestionFlow({
             },
           }}
         />
-        {questionRequiresEvidence(question) ? (
-          <Box sx={{ mt: 1 }}>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 0.5,
-              }}
-            >
-              <Typography variant="caption" fontWeight={700} color="text.secondary">
-                {t("selfAssessment.evidence.progressLabel", {
-                  uploaded: questionEvidenceProgress.uploaded,
-                  total: questionEvidenceProgress.total,
-                })}
-              </Typography>
-              <Typography variant="caption" fontWeight={800} color="primary">
-                {questionEvidenceProgress.exempt ||
-                questionEvidenceProgress.total === 0
-                  ? t("selfAssessment.evidence.optionalComplete", {
-                      defaultValue: "Not required",
-                    })
-                  : questionEvidenceProgress.remaining > 0
-                    ? t("selfAssessment.evidence.remaining", {
-                        count: questionEvidenceProgress.remaining,
-                      })
-                    : t("selfAssessment.evidence.complete")}
-              </Typography>
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={questionEvidenceProgress.percentage}
-              sx={{
-                height: { xs: 6, sm: 8 },
-                borderRadius: 99,
-                bgcolor: colors.neutral.gray200,
-                "& .MuiLinearProgress-bar": {
-                  borderRadius: 99,
-                  bgcolor:
-                    questionEvidenceProgress.percentage === 100
-                      ? colors.accent.green
-                      : at.primary,
-                },
-              }}
-            />
-          </Box>
-        ) : subdomainHasMandatoryEvidence(selectedSubdomain) ? (
+        {subdomainHasMandatoryEvidence(selectedSubdomain) ? (
           <Box sx={{ mt: 1 }}>
             <Box
               sx={{
@@ -799,11 +745,15 @@ export function SubdomainQuestionFlow({
                 })}
               </Typography>
               <Typography variant="caption" fontWeight={800} color="primary">
-                {subdomainEvidenceProgress.remaining > 0
-                  ? t("selfAssessment.evidence.remaining", {
-                      count: subdomainEvidenceProgress.remaining,
+                {subdomainEvidenceProgress.total === 0
+                  ? t("selfAssessment.evidence.optionalComplete", {
+                      defaultValue: "Not required",
                     })
-                  : t("selfAssessment.evidence.complete")}
+                  : subdomainEvidenceProgress.remaining > 0
+                    ? t("selfAssessment.evidence.remaining", {
+                        count: subdomainEvidenceProgress.remaining,
+                      })
+                    : t("selfAssessment.evidence.complete")}
               </Typography>
             </Box>
             <LinearProgress

@@ -1,5 +1,6 @@
 import React from "react";
 import AppTable from "../../../../components/AppTable/AppTable";
+import AppButton from "../../../../components/AppButton/AppButton";
 
 function formatDate(value) {
   if (!value) return "—";
@@ -29,31 +30,52 @@ export function ParentFeedbackPageView({ c }) {
     total,
     isLoading,
     isError,
-    refetch,
     currentPage,
     setCurrentPage,
     itemsPerPage,
     handleItemsPerPageChange,
     search,
     handleSearchChange,
+    exporting,
+    handleExportToExcel,
   } = c;
 
   return (
     <div className="parent-feedback-container">
       <div className="pf-header">
         <div>
-          <h1 className="pf-title">Parent Feedback</h1>
+          <h1 className="pf-title">Grievance</h1>
           <p className="pf-subtitle">
-            Feedback and grievances submitted from the public portal
+            Public grievances submitted with school name and selected SQAAF criteria
           </p>
         </div>
-        <div className="pf-search-wrap">
-          <input
-            type="search"
-            className="pf-search-input"
-            placeholder="Search by name, school, mobile, or feedback..."
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
+        <div className="pf-header-actions">
+          <div className="pf-search-wrap">
+            <input
+              type="search"
+              className="pf-search-input"
+              placeholder="Search by name, school, domain, or grievance..."
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+            />
+          </div>
+          <AppButton
+            variant="plain"
+            size="icon"
+            iconOnly
+            onClick={handleExportToExcel}
+            disabled={exporting || isLoading}
+            title="Download all grievances to Excel"
+            icon={
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            }
           />
         </div>
       </div>
@@ -72,11 +94,6 @@ export function ParentFeedbackPageView({ c }) {
               render: (row) => row.submitterName || "—",
             },
             {
-              id: "mobileNumber",
-              label: "Mobile",
-              render: (row) => row.mobileNumber || "—",
-            },
-            {
               id: "school",
               label: "School",
               render: (row) => (
@@ -87,8 +104,22 @@ export function ParentFeedbackPageView({ c }) {
               ),
             },
             {
+              id: "criteria",
+              label: "Criteria",
+              render: (row) => (
+                <div className="pf-school-cell">
+                  <strong>{row.questionText || "—"}</strong>
+                  <span>
+                    {[row.domainName, row.subdomainName].filter(Boolean).join(" · ") ||
+                      row.sectionName ||
+                      ""}
+                  </span>
+                </div>
+              ),
+            },
+            {
               id: "feedbackText",
-              label: "Feedback",
+              label: "Grievance",
               render: (row) => <FeedbackTextCell text={row.feedbackText} />,
             },
             {
@@ -109,8 +140,8 @@ export function ParentFeedbackPageView({ c }) {
           onItemsPerPageChange={handleItemsPerPageChange}
           totalCount={total}
           serverSidePagination
-          emptyTitle="No feedback yet"
-          emptySubtitle="Submitted parent feedback will appear here"
+          emptyTitle="No grievances yet"
+          emptySubtitle="Submitted grievances will appear here"
         />
       </div>
     </div>

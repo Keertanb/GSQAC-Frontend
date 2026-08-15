@@ -213,12 +213,22 @@ export function layoutSchoolMarkers(items, bounds, padding = 14, gap = 3) {
   });
 }
 
+const SCHOOL_STATUS_LABELS = {
+  submitted: "Completed",
+  completed: "Completed",
+  inprogress: "Started",
+  started: "Started",
+  notstarted: "Pending",
+  pending: "Pending",
+};
+
 const SCHOOL_STATUS_COLORS = {
   completed: "#059669",
+  submitted: "#059669",
+  started: "#3b82f6",
   inprogress: "#3b82f6",
   pending: "#f59e0b",
-  notallocated: "#94a3b8",
-  allocated: "#6366f1",
+  notstarted: "#f59e0b",
 };
 
 export function normalizeSchoolStatus(status) {
@@ -234,25 +244,37 @@ export function getSchoolStatusColor(status) {
 
 export function getSchoolStatusTone(status) {
   const key = normalizeSchoolStatus(status);
-  if (key === "completed") return "excellent";
-  if (key === "inprogress" || key === "allocated") return "good";
-  if (key === "pending") return "moderate";
-  if (key === "notallocated") return "none";
+  if (key === "completed" || key === "submitted") return "excellent";
+  if (key === "inprogress" || key === "started") return "good";
+  if (key === "pending" || key === "notstarted") return "moderate";
   return "none";
 }
 
+export function formatSchoolActivityDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+}
+
 export function buildSchoolStats(school) {
+  const rawStatus = school?.selfAssessmentStatus || "Not Started";
   const status =
-    school?.overallStatus ||
-    school?.status ||
-    school?.allocationStatus ||
-    "Pending";
+    SCHOOL_STATUS_LABELS[normalizeSchoolStatus(rawStatus)] || rawStatus;
 
   return {
     schoolId: school?.schoolId,
     schoolName: school?.schoolName || "School",
     status,
-    verifierUserName: school?.verifierUserName || school?.verifierName || "",
+    managementName: school?.schoolManagementName || school?.managementName || "",
+    categoryName: school?.schoolCategoryName || school?.schoolCategory || "",
+    lowerClass: school?.lowerClass,
+    upperClass: school?.upperClass,
+    districtName: school?.districtName || "",
+    blockName: school?.blockName || "",
+    formsCompleted: Number(school?.selfAssessmentsCompleted) || 0,
+    formsTotal: Number(school?.selfAssessmentsTotal) || 0,
+    lastUpdated: formatSchoolActivityDate(school?.selfAssessmentLastUpdated),
     fill: getSchoolStatusColor(status),
     tone: getSchoolStatusTone(status),
   };
@@ -288,9 +310,8 @@ export function splitMapLabel(label, maxLineLength = 12) {
 
 export const SCHOOL_LEGEND_STOPS = [
   { label: "Completed", color: "#059669" },
-  { label: "In progress", color: "#3b82f6" },
+  { label: "Started", color: "#3b82f6" },
   { label: "Pending", color: "#f59e0b" },
-  { label: "Not allocated", color: "#94a3b8" },
 ];
 
 const NORMALIZED_BOUNDS = [

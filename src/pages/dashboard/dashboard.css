@@ -20,7 +20,8 @@
 /* —— Header —— */
 #schools,
 #documents,
-#news {
+#news,
+#grievance {
   scroll-margin-top: 5.5rem;
 }
 
@@ -393,17 +394,35 @@
 
 .hero-hero-title {
   margin: 0;
-  font-size: clamp(2.35rem, 1.5rem + 4.5vw, 3.85rem);
-  font-weight: 800;
-  line-height: 1.04;
-  letter-spacing: -0.035em;
+  font-family: "Noto Serif Gujarati", "Noto Sans Gujarati", serif;
+  font-size: clamp(2.45rem, 1.45rem + 4.6vw, 4.05rem);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: 0.01em;
   color: #fff;
   text-shadow: 0 2px 32px rgba(0, 0, 0, 0.35);
 }
 
+.hero-hero-title-gu {
+  font-family: inherit;
+  font-weight: 700;
+}
+
+.hero-hero-title-sep {
+  font-family: inherit;
+  font-weight: 600;
+  opacity: 0.72;
+}
+
 .hero-hero-title-accent {
-  color: #fff;
-  font-weight: 800;
+  font-family: "Noto Serif Gujarati", "Noto Sans Gujarati", Georgia, serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: linear-gradient(180deg, #fff7ed 0%, #fdba74 78%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #fdba74;
 }
 
 .hero-lede {
@@ -891,7 +910,7 @@
   }
 
   .hero-hero-title {
-    font-size: clamp(2rem, 8vw, 2.75rem);
+    font-size: clamp(2.15rem, 8.2vw, 2.85rem);
   }
 
   .hero-lede {
@@ -1160,17 +1179,66 @@
   }
 
   .hero-hero-title {
-    font-size: 1.85rem;
+    font-size: 1.95rem;
   }
 }
 
 /* —— Grievance & Feedback —— */
+.grievance-form {
+  font-family: "Noto Sans Gujarati", "Noto Serif Gujarati", Inter, sans-serif;
+}
+
+.grievance-field select,
+.grievance-field input,
+.grievance-field textarea {
+  font-family: "Noto Sans Gujarati", "Noto Serif Gujarati", Inter, sans-serif;
+}
+
+.grievance-section-head .grievance-title {
+  font-family: "Noto Serif Gujarati", "Noto Sans Gujarati", Georgia, serif;
+}
+
 .grievance-section {
-  padding: 3.5rem clamp(1rem, 4vw, 2rem) 4rem;
-  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 45%, #f1f5f9 100%);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 3.75rem clamp(1rem, 4vw, 2rem) 4.25rem;
+  background:
+    radial-gradient(ellipse 55% 48% at 8% 18%, rgba(37, 99, 235, 0.18), transparent 62%),
+    radial-gradient(ellipse 50% 42% at 96% 88%, rgba(249, 115, 22, 0.16), transparent 58%),
+    radial-gradient(ellipse 40% 36% at 78% 12%, rgba(30, 58, 138, 0.12), transparent 68%),
+    linear-gradient(165deg, #e8eefc 0%, #f4f7fb 42%, #fff4eb 100%);
+}
+
+.grievance-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(30, 58, 138, 0.11) 1.15px, transparent 1.15px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 78% 72% at 50% 42%, #000 18%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 78% 72% at 50% 42%, #000 18%, transparent 78%);
+}
+
+.grievance-section::after {
+  content: "";
+  position: absolute;
+  width: 22rem;
+  height: 22rem;
+  right: -7rem;
+  top: -8rem;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 50%;
+  border: 18px solid rgba(37, 99, 235, 0.08);
+  box-shadow: 0 0 0 34px rgba(249, 115, 22, 0.05);
 }
 
 .grievance-section-inner {
+  position: relative;
+  z-index: 1;
   max-width: 920px;
   margin: 0 auto;
 }
@@ -1178,19 +1246,6 @@
 .grievance-section-head {
   text-align: center;
   margin-bottom: 2rem;
-}
-
-.grievance-kicker {
-  display: inline-block;
-  margin: 0 0 0.75rem;
-  padding: 0.35rem 0.85rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--primary-blue);
-  background: rgba(30, 58, 138, 0.08);
 }
 
 .grievance-title {
@@ -1210,11 +1265,15 @@
 }
 
 .grievance-panel {
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 1.25rem;
-  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.06);
+  box-shadow:
+    0 18px 50px rgba(30, 58, 138, 0.12),
+    0 2px 0 rgba(255, 255, 255, 0.8) inset;
   overflow: hidden;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .grievance-tabs {
@@ -1315,6 +1374,7 @@
 }
 
 .grievance-field input,
+.grievance-field select,
 .grievance-field textarea {
   width: 100%;
   border: 1px solid #e5e7eb;
@@ -1334,7 +1394,23 @@
   line-height: 1.55;
 }
 
+.grievance-field select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%236b7280' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  padding-right: 2.4rem;
+  cursor: pointer;
+}
+
+.grievance-field select:disabled {
+  background-color: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
 .grievance-field input:focus,
+.grievance-field select:focus,
 .grievance-field textarea:focus {
   outline: none;
   border-color: var(--primary-blue-soft);

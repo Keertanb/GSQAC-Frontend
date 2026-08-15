@@ -1,13 +1,28 @@
 import React from "react";
 import {
-  Description as DescriptionIcon,
   Download as DownloadIcon,
-  Visibility as VisibilityIcon,
+  OpenInNew as OpenInNewIcon,
+  FolderOpen as FolderOpenIcon,
 } from "@mui/icons-material";
 import { usePublicDocumentsQuery } from "../../../services/landingContentService";
 import "./ImportantDocumentsSection.css";
 
-/** Only renders when published documents exist — no empty placeholder. */
+function getFileMeta(doc) {
+  const name = `${doc.originalFileName || doc.fileName || ""}`.toLowerCase();
+  const ext = name.includes(".") ? name.split(".").pop() : "";
+
+  if (ext === "pdf") return { label: "PDF", tone: "pdf" };
+  if (["doc", "docx"].includes(ext)) return { label: "DOC", tone: "doc" };
+  if (["xls", "xlsx", "csv"].includes(ext)) return { label: "XLS", tone: "xls" };
+  if (["ppt", "pptx"].includes(ext)) return { label: "PPT", tone: "ppt" };
+  if (["jpg", "jpeg", "png", "webp"].includes(ext)) return { label: "IMG", tone: "img" };
+  return { label: "FILE", tone: "file" };
+}
+
+function getDisplayFileName(doc) {
+  return doc.originalFileName || doc.fileName || "";
+}
+
 export function ImportantDocumentsSection() {
   const { data, isLoading } = usePublicDocumentsQuery();
   const items = Array.isArray(data?.data)
@@ -28,7 +43,9 @@ export function ImportantDocumentsSection() {
     >
       <div className="id-section__inner">
         <header className="id-section__head">
-          <p className="id-section__eyebrow">Resources</p>
+          <span className="id-section__kicker">
+            <FolderOpenIcon fontSize="inherit" /> Resources
+          </span>
           <h2>Important Documents</h2>
           <p>
             Official guidelines, circulars and reference files for schools and
@@ -36,39 +53,54 @@ export function ImportantDocumentsSection() {
           </p>
         </header>
 
-        <div className="id-section__grid">
-          {items.map((doc) => (
-            <article key={doc.documentId} className="id-card">
-              <div className="id-card__icon" aria-hidden>
-                <DescriptionIcon />
-              </div>
-              <div className="id-card__body">
-                <h3>{doc.title}</h3>
-                {doc.description ? <p>{doc.description}</p> : null}
-                <div className="id-card__actions">
+        <div className="id-section__panel">
+          <div className="id-section__panel-bar">
+            <span>{items.length} {items.length === 1 ? "file" : "files"}</span>
+            <span>View online or download</span>
+          </div>
+
+          <ul className="id-section__list">
+            {items.map((doc) => {
+              const meta = getFileMeta(doc);
+              const fileName = getDisplayFileName(doc);
+
+              return (
+                <li key={doc.documentId} className="id-row">
+                  <div className={`id-row__type id-row__type--${meta.tone}`} aria-hidden>
+                    {meta.label}
+                  </div>
+
+                  <div className="id-row__body">
+                    <h3>{doc.title}</h3>
+                    {doc.description ? <p>{doc.description}</p> : null}
+                    {fileName ? <small>{fileName}</small> : null}
+                  </div>
+
                   {doc.fileUrl ? (
-                    <>
+                    <div className="id-row__actions">
                       <a
                         href={doc.fileUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="id-card__btn"
+                        className="id-row__btn"
                       >
-                        <VisibilityIcon fontSize="inherit" /> View
+                        <OpenInNewIcon fontSize="inherit" />
+                        View
                       </a>
                       <a
                         href={doc.fileUrl}
                         download={doc.originalFileName || true}
-                        className="id-card__btn id-card__btn--solid"
+                        className="id-row__btn id-row__btn--primary"
                       >
-                        <DownloadIcon fontSize="inherit" /> Download
+                        <DownloadIcon fontSize="inherit" />
+                        Download
                       </a>
-                    </>
+                    </div>
                   ) : null}
-                </div>
-              </div>
-            </article>
-          ))}
+                </li>
+              );
+            })}
+          </ul>
         </div>
       </div>
     </section>

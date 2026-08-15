@@ -202,8 +202,8 @@ export const adminMenuItems = [
   },
   {
     id: "parent-feedback",
-    label: "Parent Feedback",
-    icon: Feedback,
+    label: "Grievance",
+    icon: ReportProblem,
     url: "/admin-dashboard/parent-feedback",
     activeFinder: ["/admin-dashboard/parent-feedback"],
   },

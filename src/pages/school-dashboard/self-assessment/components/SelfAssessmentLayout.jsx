@@ -1066,7 +1066,6 @@ export function SelfAssessmentLayout({ c }) {
                 >
                   <ToggleButton value="gu">ગુ</ToggleButton>
                   <ToggleButton value="en">EN</ToggleButton>
-                  <ToggleButton value="hi">हिं</ToggleButton>
                 </ToggleButtonGroup>
               </Box>
             </Box>
@@ -1139,7 +1138,6 @@ export function SelfAssessmentLayout({ c }) {
                 >
                   <ToggleButton value="gu">ગુ</ToggleButton>
                   <ToggleButton value="en">EN</ToggleButton>
-                  <ToggleButton value="hi">हिं</ToggleButton>
                 </ToggleButtonGroup>
               </Box>
             )}

@@ -14,10 +14,9 @@ import {
   EmojiEvents as EmojiEventsIcon,
   School as SchoolIcon,
   Place as PlaceIcon,
-  // RateReview as RateReviewIcon,
 } from "@mui/icons-material";
 import useAuthStore from "../../store/useAuthStore";
-// import { GrievanceFeedbackPanel } from "./components/GrievanceFeedbackPanel";
+import { GrievanceFeedbackPanel } from "./components/GrievanceFeedbackPanel";
 import { VerifierRegistrationBoard } from "./components/VerifierRegistrationBoard";
 import { FaqChatAssistant } from "./components/faq-assistant/FaqChatAssistant";
 import { LatestNewsSection } from "./components/LatestNewsSection";
@@ -60,7 +59,7 @@ const NAV_ITEMS = [
   { id: "schools", label: "Schools" },
   { id: "about", label: "About" },
   { id: "documents", label: "Important Documents" },
-  // { id: "grievance", label: "Grievance" },
+  { id: "grievance", label: "Grievance" },
 ];
 
 const Dashboard = () => {
@@ -69,8 +68,6 @@ const Dashboard = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [activeNav, setActiveNav] = useState("home");
-  // const [grievanceTab, setGrievanceTab] = useState("feedback");
-  // const grievanceRef = useRef(null);
 
   const heroCarouselSlides = useMemo(
     () => [
@@ -159,7 +156,9 @@ const Dashboard = () => {
         ? "schools"
         : navId === "documents"
           ? "documents"
-          : null;
+          : navId === "grievance"
+            ? "grievance"
+            : null;
 
     if (!sectionId) return;
 
@@ -361,8 +360,13 @@ const Dashboard = () => {
                   <StarIcon className="hero-drive-pill-star" aria-hidden />
                   Gujarat&apos;s school quality drive
                 </p>
-                <h1 className="hero-hero-title">
-                  Gunotsav <span className="hero-hero-title-accent">2.0</span>
+                <h1 className="hero-hero-title" lang="gu">
+                  <span className="hero-hero-title-gu">ગુણાંકન</span>
+                  <span className="hero-hero-title-sep" aria-hidden>
+                    {" "}
+                    -{" "}
+                  </span>
+                  <span className="hero-hero-title-accent">2026</span>
                 </h1>
                 <p className="hero-lede">
                   A statewide initiative to assess, assure and enhance the
@@ -459,7 +463,22 @@ const Dashboard = () => {
 
       <ImportantDocumentsSection />
 
-      {/* Grievance / Parent Feedback section temporarily disabled */}
+      <section id="grievance" className="grievance-section" aria-label="Grievance">
+        <div className="grievance-section-inner">
+          <div className="grievance-section-head">
+            <h2 className="grievance-title">ફરિયાદ (Grievance)</h2>
+            <p className="grievance-lede">
+              શાળાનું નામ અને માપદંડ પસંદ કરીને તમારી ફરિયાદ નોંધાવો. તમારો પ્રતિસાદ
+              GSQAC સુધી પહોંચશે.
+            </p>
+          </div>
+          <div className="grievance-panel">
+            <div className="grievance-tab-panel">
+              <GrievanceFeedbackPanel feedbackSource="grievance" />
+            </div>
+          </div>
+        </div>
+      </section>
 
       <FaqChatAssistant />
     </div>

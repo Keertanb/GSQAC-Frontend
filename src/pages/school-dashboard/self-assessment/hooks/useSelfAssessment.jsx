@@ -88,19 +88,26 @@ export function useSelfAssessment() {
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
   const { logout, user, userId, userName } = useAuthStore();
   const { t, i18n } = useTranslation();
-  const [currentLanguage, setCurrentLanguage] = useState(getStoredAppLanguage);
+  const [currentLanguage, setCurrentLanguage] = useState(() => {
+    const stored = getStoredAppLanguage();
+    return stored === "hi" ? "gu" : stored;
+  });
 
   useEffect(() => {
-    const lang = getStoredAppLanguage();
+    const stored = getStoredAppLanguage();
+    const lang = stored === "hi" ? "gu" : stored;
     if (i18n.language !== lang) {
       i18n.changeLanguage(lang);
+    }
+    if (stored === "hi") {
+      persistAppLanguage("gu");
     }
     setCurrentLanguage(lang);
   }, [i18n]);
 
   const handleLanguageChange = useCallback(
     (newLanguage) => {
-      if (newLanguage == null) return;
+      if (newLanguage == null || newLanguage === "hi") return;
       setCurrentLanguage(newLanguage);
       i18n.changeLanguage(newLanguage);
       persistAppLanguage(newLanguage);
@@ -444,6 +451,24 @@ export function useSelfAssessment() {
       }),
     }));
   }, [selectedAssessment?.domains, evidenceAnswerAdjustmentsBySubdomain]);
+
+  // Keep selected subdomain in sync with domains payload (evidence totals, adjustments).
+  const resolvedSelectedSubdomain = useMemo(() => {
+    if (!selectedSubdomain) return null;
+    const selectedId = Number(
+      selectedSubdomain.subDomainId || selectedSubdomain.id,
+    );
+    if (!Number.isFinite(selectedId)) return selectedSubdomain;
+
+    for (const domain of domains) {
+      const match = (domain.subDomain || []).find(
+        (subdomain) =>
+          Number(subdomain.subDomainId || subdomain.id) === selectedId,
+      );
+      if (match) return match;
+    }
+    return selectedSubdomain;
+  }, [selectedSubdomain, domains]);
 
   useEffect(() => {
     if (hostelValue !== 0 || !selectedDomain) return;
@@ -2392,7 +2417,7 @@ export function useSelfAssessment() {
     handleLanguageChange,
     selectedDomain,
     setSelectedDomain,
-    selectedSubdomain,
+    selectedSubdomain: resolvedSelectedSubdomain,
     setSelectedSubdomain,
     answers,
     setAnswers,

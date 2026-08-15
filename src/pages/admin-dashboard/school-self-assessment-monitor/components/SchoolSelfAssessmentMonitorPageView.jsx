@@ -259,6 +259,13 @@ export function SchoolSelfAssessmentMonitorPageView({ c }) {
       render: (row) => <StatusChip status={row.selfAssessmentStatus} />,
     },
     {
+      id: "forms",
+      label: "Required forms",
+      minWidth: 110,
+      render: (row) =>
+        `${row.selfAssessmentsCompleted ?? 0}/${row.selfAssessmentsTotal ?? 0}`,
+    },
+    {
       id: "lastUpdated",
       label: "Last activity",
       minWidth: 140,
@@ -391,9 +398,9 @@ export function SchoolSelfAssessmentMonitorPageView({ c }) {
             <StatCard
               tone="green"
               icon={<CheckCircle />}
-              label="Submitted"
+              label="Completed"
               value={summary.submitted}
-              sub={`${summary.submissionRate}% completion`}
+              sub={`${summary.submissionRate}% filled all required forms`}
             />
             <StatCard
               tone="blue"

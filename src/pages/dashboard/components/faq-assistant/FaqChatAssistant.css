@@ -133,8 +133,11 @@
 
 .faq-chat-header__sub {
   margin: 0.15rem 0 0;
-  font-size: 0.72rem;
-  opacity: 0.85;
+  font-family: "Noto Serif Gujarati", "Noto Sans Gujarati", "Inter", serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+  opacity: 0.9;
 }
 
 .faq-chat-header__actions {

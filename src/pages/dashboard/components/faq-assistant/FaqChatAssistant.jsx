@@ -223,7 +223,7 @@ export function FaqChatAssistant() {
               <div>
                 <p className="faq-chat-header__title">SQAAF FAQ Assistant</p>
                 <p className="faq-chat-header__sub">
-                  Gunotsav 2.0 · GCERT & GSQAC
+                  ગુણાંકન - 2026 · GCERT & GSQAC
                 </p>
               </div>
             </div>

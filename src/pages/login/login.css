@@ -10,7 +10,7 @@
 }
 
 /* ══════════════════════════════
-   LEFT PANEL — Gunotsav 2.0 hero
+   LEFT PANEL — ગુણાંકન - 2026 hero
    ══════════════════════════════ */
 
 .lp-visual {
@@ -129,21 +129,37 @@
 
 /* Big heading */
 .lp-hero-title {
-  font-size: clamp(2rem, 3.5vw, 3rem);
-  font-weight: 900;
+  font-family: "Noto Serif Gujarati", "Noto Sans Gujarati", serif;
+  font-size: clamp(2.15rem, 3.4vw, 3.15rem);
+  font-weight: 700;
   color: #fff;
   margin: 0 0 1.1rem 0;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
   width: 100%;
   text-align: center;
 }
 
+.lp-hero-title-gu {
+  font-family: inherit;
+  font-weight: 700;
+}
+
+.lp-hero-title-sep {
+  font-family: inherit;
+  font-weight: 600;
+  opacity: 0.72;
+}
+
 .lp-hero-accent {
-  background: linear-gradient(90deg, #f6f6f6 0%, #ffffff 100%);
+  font-family: "Noto Serif Gujarati", "Noto Sans Gujarati", Georgia, serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: linear-gradient(180deg, #fff7ed 0%, #fdba74 78%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  color: #fdba74;
 }
 
 /* Lede / subtitle */
