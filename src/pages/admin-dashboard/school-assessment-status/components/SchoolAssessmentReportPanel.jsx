@@ -49,6 +49,8 @@ export function SchoolAssessmentReportPanel({
             <h3 className="sas-section-title">School Accreditation Report</h3>
             <p className="sas-report-panel-subtitle">
               Submitted self-assessment report card
+              {report?.academicYear ? ` · ${report.academicYear}` : ""}
+              {report?.round != null && report.round !== "" ? ` · Round ${report.round}` : ""}
             </p>
           </div>
         </div>
@@ -72,6 +74,8 @@ export function SchoolAssessmentReportPanel({
           <h3 className="sas-section-title">School Accreditation Report</h3>
           <p className="sas-report-panel-subtitle">
             Submitted self-assessment report card
+            {report.academicYear ? ` · ${report.academicYear}` : ""}
+            {report.round != null && report.round !== "" ? ` · Round ${report.round}` : ""}
           </p>
         </div>
         <button

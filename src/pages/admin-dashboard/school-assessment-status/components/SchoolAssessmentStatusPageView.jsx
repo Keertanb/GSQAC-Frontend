@@ -153,6 +153,22 @@ function SchoolDetailView({
                   label="Category"
                   value={school.schoolCategoryName}
                 />
+                <DetailRow
+                  label="Academic Year"
+                  value={
+                    report?.academicYear ||
+                    schoolDetail?.assessments?.[0]?.academicYear ||
+                    "-"
+                  }
+                />
+                <DetailRow
+                  label="Round"
+                  value={
+                    report?.round ??
+                    schoolDetail?.assessments?.[0]?.round ??
+                    "-"
+                  }
+                />
               </div>
             </div>
 
@@ -267,6 +283,16 @@ function SchoolDetailView({
                             <StatusChip status={item.status} />
                           </div>
                           <div className="sas-assessment-meta">
+                            {(item.academicYear || item.round != null) && (
+                              <span>
+                                {[
+                                  item.academicYear,
+                                  item.round != null ? `Round ${item.round}` : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </span>
+                            )}
                             <span>
                               {item.startDate} – {item.endDate}
                             </span>

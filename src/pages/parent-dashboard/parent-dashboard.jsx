@@ -190,10 +190,10 @@ const ParentDashboard = () => {
                       sx={{ fontSize: 48, color: "#f97316", mb: 2 }}
                     />
                     <Typography variant="h6" gutterBottom>
-                      Grievance
+                      રજૂઆત / ફીડબેક
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      File a grievance or complaint
+                      Submit your representation / feedback
                     </Typography>
                   </CardContent>
                 </Card>

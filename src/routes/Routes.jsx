@@ -11,6 +11,9 @@ const OtpVerify = lazy(() => import("../pages/otp-verify/otp-verify"));
 const VerifierRegistration = lazy(() =>
   import("../pages/verifier-registration/VerifierRegistration")
 );
+const GrievancePage = lazy(() =>
+  import("../pages/dashboard/GrievancePage")
+);
 
 const SchoolDashboard = lazy(() =>
   import("../pages/school-dashboard/school-dashboard")
@@ -79,6 +82,16 @@ export const publicRoutes = [
           <PublicRoute>
             <Suspense fallback={<LazyLoad />}>
               <VerifierRegistration />
+            </Suspense>
+          </PublicRoute>
+        ),
+      },
+      {
+        path: ROUTE_URLS.GRIEVANCE_URL,
+        element: (
+          <PublicRoute>
+            <Suspense fallback={<LazyLoad />}>
+              <GrievancePage />
             </Suspense>
           </PublicRoute>
         ),

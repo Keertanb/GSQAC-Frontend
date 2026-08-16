@@ -12,12 +12,14 @@ const EXCEL_COLUMNS = [
   { id: "mobileNumber", label: "Mobile" },
   { id: "email", label: "Email" },
   { id: "schoolName", label: "School name" },
-  { id: "schoolId", label: "UDISE / School ID" },
+  { id: "schoolId", label: "ડાયસ / UDISE" },
+  { id: "districtName", label: "District" },
+  { id: "blockName", label: "Block" },
   { id: "sectionName", label: "Section" },
   { id: "domainName", label: "Domain" },
   { id: "subdomainName", label: "Subdomain" },
   { id: "questionText", label: "Question / Criteria" },
-  { id: "feedbackText", label: "Grievance" },
+  { id: "feedbackText", label: "રજૂઆત / ફીડબેક" },
   { id: "feedbackSource", label: "Source" },
 ];
 
@@ -71,7 +73,7 @@ export function useParentFeedback() {
       const list = response?.data?.rows || response?.rows || [];
 
       if (!list.length) {
-        enqueueSnackbar("No grievances to export", { variant: "warning" });
+        enqueueSnackbar("No submissions to export", { variant: "warning" });
         return;
       }
 
@@ -81,10 +83,10 @@ export function useParentFeedback() {
           createdAt: formatExportDate(row.createdAt),
         })),
         EXCEL_COLUMNS,
-        "grievances",
-        "Grievances",
+        "feedback",
+        "RepresentationFeedback",
       );
-      enqueueSnackbar("All grievances downloaded", { variant: "success" });
+      enqueueSnackbar("All submissions downloaded", { variant: "success" });
     } catch (error) {
       enqueueSnackbar(
         error?.response?.data?.message || "Failed to export Excel",

@@ -27,7 +27,7 @@ import {
   Save,
 } from "@mui/icons-material";
 import { colors } from "../../../../constants/colors";
-import { SubdomainEvidencePanel } from "../../../../components/SubdomainEvidencePanel/SubdomainEvidencePanel";
+import { SelectedKakshaBanner } from "../../../../components/SelectedKakshaBanner/SelectedKakshaBanner";
 import {
   getSubdomainEvidenceProgress,
   isEvidenceOptionalForSelectedOption,
@@ -36,6 +36,9 @@ import {
   zeroMandatoryEvidenceProgress,
 } from "../../../../services/evidenceService";
 import { renderAssessmentOptionLabel } from "../../../../utils/assessmentOptionLabel";
+import {
+  getKakshaLevelFromQuestion,
+} from "../../../../utils/assessmentMeta";
 
 function ClassroomSubjectFilters({ c, tabId }) {
   const {
@@ -293,7 +296,11 @@ function McqQuestionBody({
                     getOptionText,
                     option,
                     optIndex,
-                    { assessmentTheme, isMobile },
+                    {
+                      assessmentTheme,
+                      isMobile,
+                      isSelected: selectedAnswer === String(option.optionId),
+                    },
                   )}
                   sx={{
                     mb: 1.25,
@@ -316,6 +323,14 @@ function McqQuestionBody({
             </RadioGroup>
           </FormControl>
         ) : null}
+
+        <SelectedKakshaBanner
+          level={getKakshaLevelFromQuestion(
+            { ...question, options },
+            selectedAnswer,
+          )}
+          accent={at.primary}
+        />
 
         {showEvidence ? (
           <SubdomainEvidencePanel

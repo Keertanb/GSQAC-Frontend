@@ -55,6 +55,7 @@ import { useAssessmentMobileLayout } from "../../../../hooks/useAssessmentMobile
 import { renderAssessmentOptionLabel } from "../../../../utils/assessmentOptionLabel";
 import { AssessmentNavProgressBar } from "../../../../components/AssessmentNavProgressBar/AssessmentNavProgressBar";
 import { AssessmentChipSelector } from "../../../../components/AssessmentChipSelector/AssessmentChipSelector";
+import { AssessmentPeriodChips } from "../../../../components/AssessmentPeriodChips/AssessmentPeriodChips";
 import { SubdomainEvidencePanel } from "../../../../components/SubdomainEvidencePanel/SubdomainEvidencePanel";
 import { isEvidenceOptionalForSelectedOption } from "../../../../services/evidenceService";
 import {
@@ -246,8 +247,10 @@ export function CRCAssessmentPageView({ c }) {
     setTextAnswers,
   });
 
-  const renderOptionLabel = (option, optIndex) =>
-    renderAssessmentOptionLabel(t, getOptionText, option, optIndex);
+  const renderOptionLabel = (option, optIndex, isSelected = false) =>
+    renderAssessmentOptionLabel(t, getOptionText, option, optIndex, {
+      isSelected,
+    });
 
   return (
     <Box
@@ -440,6 +443,10 @@ export function CRCAssessmentPageView({ c }) {
             <Typography variant="h5" sx={{ fontWeight: 700 }}>
               {t("selfAssessment.title")}
             </Typography>
+            <AssessmentPeriodChips
+              academicYear={selectedAssessment?.academicYear}
+              round={selectedAssessment?.round}
+            />
             {/* Status Message */}
             {endDate && (
               <Typography
@@ -1875,6 +1882,7 @@ export function CRCAssessmentPageView({ c }) {
                                                 label={renderOptionLabel(
                                                   option,
                                                   optIndex,
+                                                  selectedAnswer === String(option.optionId),
                                                 )}
                                                 sx={{
                                                   mb: 1.5,
@@ -2486,6 +2494,7 @@ export function CRCAssessmentPageView({ c }) {
                                                 label={renderOptionLabel(
                                                   option,
                                                   optIndex,
+                                                  selectedAnswer === String(option.optionId),
                                                 )}
                                                 sx={{
                                                   mb: 1.5,
@@ -3102,6 +3111,7 @@ export function CRCAssessmentPageView({ c }) {
                                               label={renderOptionLabel(
                                                 option,
                                                 optIndex,
+                                                selectedAnswer === String(option.optionId),
                                               )}
                                               sx={{
                                                 mb: 1.5,

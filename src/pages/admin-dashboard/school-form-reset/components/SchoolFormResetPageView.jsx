@@ -208,6 +208,9 @@ export function SchoolFormResetPageView({ c }) {
             <DetailRow label="Principal" value={school.principalName} />
             <DetailRow label="Mobile" value={school.principalMobile} />
             <DetailRow label="Academic year" value={school.academicYear} />
+            {school.round != null && school.round !== "" ? (
+              <DetailRow label="Round" value={school.round} />
+            ) : null}
           </Box>
 
           <Box

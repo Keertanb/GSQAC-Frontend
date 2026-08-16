@@ -20,13 +20,7 @@ import {
 import {
   School,
   Business,
-  BarChart,
-  Build,
   Person,
-  WaterDrop,
-  Home,
-  Bolt,
-  Wc,
   Hotel,
   Menu,
 } from "@mui/icons-material";
@@ -181,110 +175,6 @@ const InfoField = ({
   </Box>
 );
 
-const StatCard = ({ label, value, icon: Icon, color }) => (
-  <Box
-    className="sd-stat-card"
-    sx={{
-      bgcolor: `${color}08`,
-      borderColor: `${color}22`,
-      border: `1px solid ${color}22`,
-      "&:hover": { boxShadow: `0 10px 24px ${color}18` },
-    }}
-  >
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-      <Box className="sd-stat-card__icon" sx={{ bgcolor: color }}>
-        {Icon && <Icon sx={{ fontSize: 22 }} />}
-      </Box>
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography
-          variant="caption"
-          sx={{
-            color: colors.text.secondary,
-            fontWeight: 700,
-            fontSize: "0.6875rem",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            display: "block",
-            mb: 0.25,
-          }}
-        >
-          {label}
-        </Typography>
-        <Typography
-          variant="h5"
-          sx={{
-            color: colors.text.primary,
-            fontWeight: 800,
-            fontSize: "1.625rem",
-            lineHeight: 1.15,
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {value}
-        </Typography>
-      </Box>
-    </Box>
-  </Box>
-);
-
-const FacilityCard = ({ label, value, icon: Icon, onChange, disabled = false }) => (
-  <Box className="sd-facility-card">
-    <Box className="sd-facility-card__label-row">
-      <Box className="sd-facility-card__icon">
-        {Icon && <Icon sx={{ fontSize: 18 }} />}
-      </Box>
-      <Typography
-        variant="body2"
-        sx={{
-          color: colors.text.primary,
-          fontWeight: 700,
-          fontSize: "0.875rem",
-          lineHeight: 1.4,
-          wordBreak: "break-word",
-        }}
-      >
-        {label}
-      </Typography>
-    </Box>
-    <FormControl
-      fullWidth
-      size="small"
-      sx={{
-        "& .MuiOutlinedInput-root": {
-          borderRadius: 1.5,
-          bgcolor: "white",
-          "& .MuiOutlinedInput-notchedOutline": {
-            borderColor: colors.neutral.gray200,
-          },
-          "&:hover .MuiOutlinedInput-notchedOutline": {
-            borderColor: THEME.primary,
-          },
-          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-            borderColor: THEME.primary,
-            borderWidth: "2px",
-          },
-        },
-      }}
-    >
-      <Select
-        value={value}
-        onChange={(e) => onChange && onChange(e.target.value)}
-        disabled={disabled}
-        sx={{
-          fontWeight: 600,
-          fontSize: "0.8125rem",
-          "& .MuiSelect-select": { py: 0.875 },
-        }}
-      >
-        <MenuItem value="Yes">Yes</MenuItem>
-        <MenuItem value="No">No</MenuItem>
-        <MenuItem value="Available">Available</MenuItem>
-        <MenuItem value="Not Available">Not Available</MenuItem>
-      </Select>
-    </FormControl>
-  </Box>
-);
-
 export function SchoolDetailsPageView({ c }) {
   const {
     navigate,
@@ -300,7 +190,6 @@ export function SchoolDetailsPageView({ c }) {
     currentYear,
     schoolId,
     logoutMutation,
-    updateInfrastructureMutation,
     handleDrawerToggle,
     handleLogout,
     schoolDataResponse,
@@ -308,14 +197,6 @@ export function SchoolDetailsPageView({ c }) {
     isError,
     error,
     schoolData,
-    setSchoolData,
-    extractValue,
-    convertInfrastructureValue,
-    handleChange,
-    handleFacilityChange,
-    handleSave,
-    getFieldName,
-    infrastructureMutation,
   } = c;
 
   return (
@@ -562,72 +443,6 @@ export function SchoolDetailsPageView({ c }) {
                     </Grid>
                     <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
                       <InfoField label="Classes To" value={schoolData.classesTo} />
-                    </Grid>
-                  </Grid>
-                </SectionCard>
-
-                <SectionCard title="Statistics" icon={BarChart} iconColor={colors.semantic.warning}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={6} lg={4} sx={gridItemStyles}>
-                      <StatCard
-                        label="Total Teachers"
-                        value={schoolData.totalTeachers}
-                        icon={Person}
-                        color={THEME.primary}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={6} lg={4} sx={gridItemStyles}>
-                      <StatCard
-                        label="Total Students"
-                        value={schoolData.totalStudents}
-                        icon={Person}
-                        color={colors.accent.green}
-                      />
-                    </Grid>
-                  </Grid>
-                </SectionCard>
-
-                <SectionCard title="Infrastructure & Facilities" icon={Build} iconColor={colors.accent.green}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={6}>
-                      <FacilityCard
-                        label="Drinking Water"
-                        value={schoolData.drinkingWater}
-                        icon={WaterDrop}
-                        onChange={(value) =>
-                          handleFacilityChange(getFieldName("Drinking Water"), value)
-                        }
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={6}>
-                      <FacilityCard
-                        label="Pucca Building"
-                        value={schoolData.puccaBuilding}
-                        icon={Home}
-                        onChange={(value) =>
-                          handleFacilityChange(getFieldName("Pucca Building"), value)
-                        }
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={6}>
-                      <FacilityCard
-                        label="Electricity"
-                        value={schoolData.electricity}
-                        icon={Bolt}
-                        onChange={(value) =>
-                          handleFacilityChange(getFieldName("Electricity"), value)
-                        }
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={6}>
-                      <FacilityCard
-                        label="Functional Toilets"
-                        value={schoolData.functionalToilets}
-                        icon={Wc}
-                        onChange={(value) =>
-                          handleFacilityChange(getFieldName("Functional Toilets"), value)
-                        }
-                      />
                     </Grid>
                   </Grid>
                 </SectionCard>

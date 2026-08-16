@@ -12,7 +12,11 @@
     "entries": "प्रविष्टियां",
     "noRecordsFound": "कोई रिकॉर्ड नहीं मिला",
     "error": "एक त्रुटि हुई",
-    "na": "N/A"
+    "na": "N/A",
+    "academicYear": "शैक्षणिक वर्ष",
+    "round": "राउंड",
+    "academicYearValue": "शैक्षणिक वर्ष {{year}}",
+    "roundValue": "राउंड {{round}}"
   },
   "assessment": {
     "title": "मूल्यांकन प्रबंधन",
@@ -194,7 +198,7 @@
     "submitSuccess": "मूल्यांकन सफलतापूर्वक सबमिट हुआ!",
     "allAssessmentsSubmitted": "सभी मूल्यांकन सफलतापूर्वक सबमिट हुए!",
     "allAssessmentsAlreadySubmitted": "सभी मूल्यांकन पहले से सबमिट हैं।",
-    "assessmentSubmittedReadonly": "यह मूल्यांकन सबमिट हो चुका है और केवल पढ़ने योग्य है।",
+    "assessmentSubmittedReadonly": "आपका मूल्यांकन सफलतापूर्वक सबमिट हो गया है। अब आप इस मूल्यांकन में कोई परिवर्तन नहीं कर सकते। सबमिट किए गए मूल्यांकन को देखने के लिए आप किसी भी समय पुनः लॉगिन कर सकते हैं।",
     "submitting": "सबमिट हो रहा है...",
     "submitBlocked": {
       "domainsIncomplete": "सबमिट करने से पहले सभी डोमेन (100%) पूरे करें।",
@@ -230,14 +234,19 @@
       "countRemaining": "साक्ष्य {{uploaded}}/{{total}} · {{remaining}} शेष"
     },
     "level": "कक्षा {{level}}",
+    "selectedKakshaLabel": "चयनित कक्षा",
+    "selectedKakshaValue": "चयनित कक्षा: कक्षा {{level}}",
     "criterionLabel": "मापदंड",
     "criterionProgress": "मापदंड {{current}} / {{total}}",
     "submitPreview": {
       "title": "जमा किए गए उत्तरों की समीक्षा",
-      "description": "प्रतिक्रिया के लिए आगे बढ़ने से पहले कृपया प्रत्येक डोमेन और प्रश्न के अनुसार अपने जमा किए गए उत्तरों की समीक्षा करें।",
+      "description": "कृपया प्रत्येक डोमेन और प्रश्न के अनुसार अपने जमा किए गए उत्तरों की समीक्षा करें। इसके बाद आपका मूल्यांकन जमा हो जाएगा और उसमें बदलाव नहीं किया जा सकेगा।",
       "emptyMessage": "पूर्वावलोकन के लिए कोई जमा किया गया उत्तर नहीं मिला।",
-      "confirm": "ठीक है, आगे बढ़ें",
-      "cancel": "वापस जाएं"
+      "confirm": "मूल्यांकन जमा करें",
+      "cancel": "वापस जाएं",
+      "downloadPdf": "PDF डाउनलोड करें",
+      "downloadingPdf": "PDF तैयार हो रहा है...",
+      "downloadFailed": "PDF डाउनलोड नहीं हो सका। कृपया फिर से कोशिश करें।"
     },
     "submitFeedback": {
       "title": "मूल्यांकन जमा करें",

@@ -409,6 +409,7 @@
 
 .rpt-compact-table--questions .rpt-q-num { width: 48px; }
 .rpt-compact-table--questions .rpt-q-text { width: auto; }
+.rpt-compact-table--questions .rpt-q-kaksha { width: 76px; font-weight: 800; color: #1d4ed8; white-space: nowrap; }
 .rpt-compact-table--questions td.rpt-num { width: 52px; }
 
 .rpt-num-badge {

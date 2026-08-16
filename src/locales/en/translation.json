@@ -13,7 +13,11 @@
     "noRecordsFound": "No records found",
     "error": "An error occurred",
     "back": "Back",
-    "na": "N/A"
+    "na": "N/A",
+    "academicYear": "Academic Year",
+    "round": "Round",
+    "academicYearValue": "Academic Year {{year}}",
+    "roundValue": "Round {{round}}"
   },
   "assessment": {
     "title": "Assessment Management",
@@ -196,7 +200,7 @@
     "submitSuccess": "Assessment submitted successfully!",
     "allAssessmentsSubmitted": "All assessments submitted successfully!",
     "allAssessmentsAlreadySubmitted": "All assessments are already submitted.",
-    "assessmentSubmittedReadonly": "This assessment has been submitted and is read-only.",
+    "assessmentSubmittedReadonly": "Your assessment has been submitted successfully. You can no longer make any changes to this assessment. To view the submitted assessment again, you may log in at any time.",
     "submitting": "Submitting...",
     "submitBlocked": {
       "domainsIncomplete": "Please complete all domains (100%) before submitting.",
@@ -232,14 +236,19 @@
       "countRemaining": "Evidence {{uploaded}}/{{total}} · {{remaining}} left"
     },
     "level": "કક્ષા {{level}}",
+    "selectedKakshaLabel": "Selected કક્ષા",
+    "selectedKakshaValue": "Selected કક્ષા: કક્ષા {{level}}",
     "criterionLabel": "માપદંડ",
     "criterionProgress": "Criterion {{current}} of {{total}}",
     "submitPreview": {
       "title": "Review Submitted Answers",
-      "description": "Please review your submitted responses by domain and question before continuing to feedback.",
+      "description": "Please review your submitted responses by domain and question. After this, your assessment will be submitted and cannot be changed.",
       "emptyMessage": "No submitted answers were found to preview.",
-      "confirm": "OK, Continue",
-      "cancel": "Go Back"
+      "confirm": "Submit Assessment",
+      "cancel": "Go Back",
+      "downloadPdf": "Download PDF",
+      "downloadingPdf": "Preparing PDF...",
+      "downloadFailed": "Failed to download PDF. Please try again."
     },
     "submitFeedback": {
       "title": "Submit Assessment",

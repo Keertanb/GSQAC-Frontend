@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "../config/axios";
 import { enqueueSnackbar } from "notistack";
+import {
+  getKakshaLevelFromQuestion,
+  parseQuestionOptions,
+} from "../utils/assessmentMeta";
 
 export const MAX_EVIDENCE_SIZE_BYTES = 5 * 1024 * 1024;
 export const EVIDENCE_ACCEPT =
@@ -16,14 +20,17 @@ export const EVIDENCE_OPTIONAL_OPTION_LEVELS = new Set([0, 4]);
 
 export function getQuestionOptionLevelIndex(question, selectedOptionId, parseOptions) {
   if (selectedOptionId == null || selectedOptionId === "") return -1;
-  const options = typeof parseOptions === "function"
-    ? parseOptions(question?.options)
-    : Array.isArray(question?.options)
-      ? question.options
-      : [];
-  return options.findIndex(
-    (option) => String(option.optionId) === String(selectedOptionId),
+  const level = getKakshaLevelFromQuestion(
+    {
+      ...question,
+      options:
+        typeof parseOptions === "function"
+          ? parseOptions(question?.options)
+          : parseQuestionOptions(question?.options),
+    },
+    selectedOptionId,
   );
+  return level == null ? -1 : Number(level);
 }
 
 export function isEvidenceOptionalForSelectedOption(

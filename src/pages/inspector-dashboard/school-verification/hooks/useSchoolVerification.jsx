@@ -70,6 +70,7 @@ import {
   Cell,
 } from "recharts";
 import { filterQuestionsByClassRange } from "../../../../utils/classRange";
+import { parseQuestionOptions, resolveAssessmentPeriod } from "../../../../utils/assessmentMeta";
 import {
   clampProgressPercentage,
   sanitizeDomainsProgress,
@@ -301,6 +302,8 @@ export function useSchoolVerification() {
             assessmentId: null,
             assessmentName: "Assessment",
             domains: domainsData.data,
+            academicYear: domainsData?.academicYear,
+            round: domainsData?.round,
             isPublished: domainsData?.isPublished,
             startDate: domainsData?.startDate,
             endDate: domainsData?.endDate,
@@ -312,6 +315,10 @@ export function useSchoolVerification() {
     }
     return list.map((assessment) => ({
       ...assessment,
+      ...resolveAssessmentPeriod({
+        academicYear: assessment.academicYear || domainsData?.academicYear,
+        round: assessment.round ?? domainsData?.round,
+      }),
       answerPercentage: clampProgressPercentage(assessment.answerPercentage),
       domains: sanitizeDomainsProgress(assessment.domains || []),
     }));
@@ -800,20 +807,7 @@ export function useSchoolVerification() {
     }));
   };
 
-  const parseOptions = (options) => {
-    try {
-      if (Array.isArray(options)) {
-        return options;
-      }
-      if (typeof options === "string") {
-        return JSON.parse(options);
-      }
-      return options || [];
-    } catch (e) {
-      console.error("Error parsing options:", e);
-      return [];
-    }
-  };
+  const parseOptions = (options) => parseQuestionOptions(options);
 
   const handleDomainSelect = (domain) => {
     // Toggle domain selection - if already selected, deselect it

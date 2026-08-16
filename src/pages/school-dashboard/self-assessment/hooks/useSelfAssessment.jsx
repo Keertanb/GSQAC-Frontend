@@ -46,6 +46,7 @@ import {
   sumProgressFromDomains,
 } from "../../../../utils/hostelDomain";
 import { filterQuestionsByClassRange } from "../../../../utils/classRange";
+import { parseQuestionOptions, resolveAssessmentPeriod } from "../../../../utils/assessmentMeta";
 import {
   isAssessmentSubmitted,
   isAssessmentAnswersComplete,
@@ -384,6 +385,8 @@ export function useSelfAssessment() {
               defaultValue: "Assessment",
             }),
             domains: domainsData.data,
+            academicYear: domainsData?.academicYear,
+            round: domainsData?.round,
             isPublished: domainsData?.isPublished,
             startDate: domainsData?.startDate,
             endDate: domainsData?.endDate,
@@ -396,6 +399,10 @@ export function useSelfAssessment() {
 
     return filterAssessmentsByHostelFacility(list, hostelValue).map((assessment) => ({
       ...assessment,
+      ...resolveAssessmentPeriod({
+        academicYear: assessment.academicYear || domainsData?.academicYear,
+        round: assessment.round ?? domainsData?.round,
+      }),
       answerPercentage: clampProgressPercentage(assessment.answerPercentage),
       domains: sanitizeDomainsProgress(
         sanitizeDomainsEvidence(assessment.domains || []),
@@ -1144,20 +1151,7 @@ export function useSelfAssessment() {
     }));
   };
 
-  const parseOptions = (options) => {
-    try {
-      if (Array.isArray(options)) {
-        return options;
-      }
-      if (typeof options === "string") {
-        return JSON.parse(options);
-      }
-      return options || [];
-    } catch (e) {
-      console.error("Error parsing options:", e);
-      return [];
-    }
-  };
+  const parseOptions = (options) => parseQuestionOptions(options);
 
   const handleDomainSelect = (domain) => {
     // Toggle domain selection - if already selected, deselect it
@@ -1612,7 +1606,7 @@ export function useSelfAssessment() {
     },
   });
 
-  // Handler to open answer preview, then feedback modal for final submit
+  // Handler to open answer preview, then final submit from that modal
   const handleOpenSubmitConfirmation = async () => {
     if (!userId) {
       enqueueSnackbar("User ID is missing. Please login again.", {
@@ -1687,22 +1681,7 @@ export function useSelfAssessment() {
     setSubmitPreviewError(null);
   };
 
-  const handleConfirmSubmitPreview = () => {
-    setShowSubmitPreview(false);
-    setSubmitPreviewError(null);
-    setSubmitFeedback("");
-    setShowSubmitConfirmation(true);
-  };
-
-  const handleCloseSubmitFeedback = () => {
-    if (submitAssessmentMutation.isPending || isFetchingDomains || isSubmittingAllAssessments) {
-      return;
-    }
-    setShowSubmitConfirmation(false);
-    setSubmitFeedback("");
-  };
-
-  // Handler to confirm final submit with optional feedback (empty → "NA")
+  // Handler to confirm final submit from the preview (empty feedback → "NA")
   const handleConfirmSubmit = async () => {
     if (!userId) {
       enqueueSnackbar("User ID is missing. Please login again.", {
@@ -1766,7 +1745,7 @@ export function useSelfAssessment() {
         return;
       }
 
-      const feedback = submitFeedback.trim() || "NA";
+      const feedback = "NA";
 
       for (const assessment of pendingAssessments) {
         const freshSessionId = getSessionIdFromDomainsResponse(
@@ -1785,6 +1764,9 @@ export function useSelfAssessment() {
         });
       }
 
+      setShowSubmitPreview(false);
+      setSubmitPreviewData([]);
+      setSubmitPreviewError(null);
       setShowSubmitConfirmation(false);
       setSubmitFeedback("");
 
@@ -1828,6 +1810,8 @@ export function useSelfAssessment() {
       setIsSubmittingAllAssessments(false);
     }
   };
+
+  const handleConfirmSubmitPreview = handleConfirmSubmit;
 
   const submitPreviewAnswerCount = useMemo(() => {
     if (!Array.isArray(submitPreviewData)) return 0;
@@ -2450,9 +2434,6 @@ export function useSelfAssessment() {
     submitPreviewAnswerCount,
     handleCloseSubmitPreview,
     handleConfirmSubmitPreview,
-    submitFeedback,
-    setSubmitFeedback,
-    handleCloseSubmitFeedback,
     selectedQuestionTab,
     setSelectedQuestionTab,
     currentQuestionIndex,

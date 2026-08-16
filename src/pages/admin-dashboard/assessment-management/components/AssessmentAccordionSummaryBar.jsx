@@ -13,6 +13,7 @@ import {
   getAssessmentManagementLabelKey,
   getAssessmentSchoolTypeShortLabel,
 } from "../utils/assessmentManagementUtils";
+import { AssessmentPeriodChips } from "../../../../components/AssessmentPeriodChips/AssessmentPeriodChips";
 
 const MANAGEMENT_CHIP_STYLES = {
   1: { color: "#ea580c" },
@@ -64,6 +65,10 @@ export function AssessmentAccordionSummaryBar({
         <Typography sx={{ fontWeight: 700 }}>
           {getAssessmentName(assessment)}
         </Typography>
+        <AssessmentPeriodChips
+          academicYear={assessment?.academicYear}
+          round={assessment?.round}
+        />
         {schoolTypeLabel && (
           <Chip
             size="small"

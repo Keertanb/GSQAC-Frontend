@@ -4,6 +4,16 @@ export function formatYearLabel(academicYear) {
   return academicYear?.replace("-", " – ") || "2024 – 2025";
 }
 
+export function formatRoundLabel(round) {
+  if (round == null || round === "") return null;
+  return `રાઉન્ડ ${round}`;
+}
+
+export function formatKakshaLabel(level) {
+  if (level == null || level === "" || Number.isNaN(Number(level))) return "—";
+  return `કક્ષા ${Number(level)}`;
+}
+
 export function formatMarks(value) {
   const num = Number(value) || 0;
   return num % 1 === 0 ? String(num) : num.toFixed(1);

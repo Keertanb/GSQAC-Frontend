@@ -12,7 +12,11 @@
     "entries": "પ્રવેશો",
     "noRecordsFound": "કોઈ રેકોર્ડ મળ્યા નથી",
     "error": "એક ભૂલ આવી",
-    "na": "N/A"
+    "na": "N/A",
+    "academicYear": "શૈક્ષણિક વર્ષ",
+    "round": "રાઉન્ડ",
+    "academicYearValue": "શૈક્ષણિક વર્ષ {{year}}",
+    "roundValue": "રાઉન્ડ {{round}}"
   },
   "assessment": {
     "title": "મૂલ્યાંકન વ્યવસ્થાપન",
@@ -194,7 +198,7 @@
     "submitSuccess": "મૂલ્યાંકન સફળતાપૂર્વક સબમિટ થયું!",
     "allAssessmentsSubmitted": "બધા મૂલ્યાંકન સફળતાપૂર્વક સબમિટ થયા!",
     "allAssessmentsAlreadySubmitted": "બધા મૂલ્યાંકન પહેલેથી સબમિટ થયેલા છે.",
-    "assessmentSubmittedReadonly": "આ મૂલ્યાંકન સબમિટ થયેલું છે અને ફક્ત વાંચવા યોગ્ય છે.",
+    "assessmentSubmittedReadonly": "આપનું મૂલ્યાંકન સફળ રીતે સબમિટ થઈ ગયું છે. હવે આપ આ મૂલ્યાંકનમાં કોઈ ફેરફાર કરી શકશો નહીં. કરેલ મૂલ્યાંકન ને ફરી થી જોવા માટે આપ કોઈ પણ સમયે પુનઃ લૉગિન કરી ને જોઈ શકશો.",
     "submitting": "સબમિટ થઈ રહ્યું છે...",
     "submitBlocked": {
       "domainsIncomplete": "સબમિટ કરતા પહેલાં બધા મુખ્યક્ષેત્ર (100%) પૂર્ણ કરો.",
@@ -230,14 +234,19 @@
       "countRemaining": "આધાર {{uploaded}}/{{total}} · {{remaining}} બાકી"
     },
     "level": "કક્ષા {{level}}",
+    "selectedKakshaLabel": "પસંદ કરેલી કક્ષા",
+    "selectedKakshaValue": "પસંદ કરેલી કક્ષા: કક્ષા {{level}}",
     "criterionLabel": "માપદંડ",
     "criterionProgress": "માપદંડ {{current}} / {{total}}",
     "submitPreview": {
       "title": "સબમિટ કરેલા જવાબોની સમીક્ષા",
-      "description": "પ્રતિસાદ મોડલ પર જતા પહેલાં કૃપા કરીને દરેક મુખ્યક્ષેત્ર અને માપદંડ મુજબ તમારા સબમિટ કરેલા જવાબોની સમીક્ષા કરો.",
+      "description": "કૃપા કરીને દરેક મુખ્યક્ષેત્ર અને માપદંડ મુજબ તમારા જવાબોની સમીક્ષા કરો. આ પછી તમારું મૂલ્યાંકન સબમિટ થશે અને તેમાં ફેરફાર કરી શકાશે નહીં.",
       "emptyMessage": "પૂર્વાવલોકન માટે કોઈ સબમિટ કરેલા જવાબો મળ્યા નથી.",
-      "confirm": "ઠીક છે, આગળ વધો",
-      "cancel": "પાછા જાઓ"
+      "confirm": "મૂલ્યાંકન સબમિટ કરો",
+      "cancel": "પાછા જાઓ",
+      "downloadPdf": "PDF ડાઉનલોડ કરો",
+      "downloadingPdf": "PDF તૈયાર થઈ રહ્યું છે...",
+      "downloadFailed": "PDF ડાઉનલોડ ન થઈ શક્યું. કૃપા કરીને ફરી પ્રયાસ કરો."
     },
     "submitFeedback": {
       "title": "મૂલ્યાંકન સબમિટ કરો",

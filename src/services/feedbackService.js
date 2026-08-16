@@ -17,7 +17,7 @@ export const useSubmitParentFeedbackMutation = (options = {}) =>
     mutationFn: submitParentFeedback,
     onSuccess: (data, variables, context) => {
       enqueueSnackbar(
-        data?.message || "Thank you! Your grievance has been submitted.",
+        data?.message || "આભાર! તમારી રજૂઆત / ફીડબેક સબમિટ થઈ ગઈ છે.",
         { variant: "success" },
       );
       options.onSuccess?.(data, variables, context);
@@ -26,7 +26,7 @@ export const useSubmitParentFeedbackMutation = (options = {}) =>
       enqueueSnackbar(
         error?.response?.data?.message ||
           error?.message ||
-          "Failed to submit grievance. Please try again.",
+          "રજૂઆત / ફીડબેક સબમિટ થઈ શકી નહીં. ફરી પ્રયાસ કરો.",
         { variant: "error" },
       );
       options.onError?.(error, variables, context);

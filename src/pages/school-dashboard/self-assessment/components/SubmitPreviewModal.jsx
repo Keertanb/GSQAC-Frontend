@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -14,10 +14,18 @@ import {
 import {
   Preview as PreviewIcon,
   Close as CloseIcon,
+  Download as DownloadIcon,
 } from "@mui/icons-material";
+import { enqueueSnackbar } from "notistack";
 import { colors } from "../../../../constants/colors";
 import { useTranslation } from "react-i18next";
 import { AssessmentOptionText } from "../../../../utils/assessmentOptionText";
+import { AssessmentPeriodChips } from "../../../../components/AssessmentPeriodChips/AssessmentPeriodChips";
+import {
+  formatKakshaLabel,
+  getAssessmentPeriodFromList,
+} from "../../../../utils/assessmentMeta";
+import { generateSubmitPreviewPdf } from "../utils/generateSubmitPreviewPdf";
 
 export function SubmitPreviewModal({
   open,
@@ -25,6 +33,7 @@ export function SubmitPreviewModal({
   onConfirm,
   previewData,
   isLoading,
+  isSubmitting = false,
   error,
   title,
   description,
@@ -32,13 +41,23 @@ export function SubmitPreviewModal({
   confirmText,
   cancelText,
   totalAnswered,
+  academicYear,
+  round,
 }) {
   const { t } = useTranslation();
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const hasData =
     Array.isArray(previewData) &&
     previewData.some((domain) =>
       domain.subdomains?.some((subdomain) => subdomain.questions?.length > 0),
     );
+  const period = useMemo(() => {
+    const fromPreview = getAssessmentPeriodFromList(previewData || []);
+    return {
+      academicYear: academicYear || fromPreview.academicYear,
+      round: round ?? fromPreview.round,
+    };
+  }, [academicYear, round, previewData]);
 
   return (
     <Dialog
@@ -101,14 +120,28 @@ export function SubmitPreviewModal({
             >
               {title}
             </Typography>
-            {typeof totalAnswered === "number" && totalAnswered > 0 && (
-              <Typography
-                variant="caption"
-                sx={{ color: colors.text.secondary, fontWeight: 600 }}
-              >
-                {totalAnswered} responses
-              </Typography>
-            )}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                mt: 0.5,
+                flexWrap: "wrap",
+              }}
+            >
+              <AssessmentPeriodChips
+                academicYear={period.academicYear}
+                round={period.round}
+              />
+              {typeof totalAnswered === "number" && totalAnswered > 0 && (
+                <Typography
+                  variant="caption"
+                  sx={{ color: colors.text.secondary, fontWeight: 600 }}
+                >
+                  {totalAnswered} responses
+                </Typography>
+              )}
+            </Box>
           </Box>
           <IconButton
             onClick={onClose}
@@ -271,6 +304,19 @@ export function SubmitPreviewModal({
                                 color: colors.accent.orangeDark,
                               }}
                             />
+                            {formatKakshaLabel(question.kakshaLevel, t) ? (
+                              <Chip
+                                label={formatKakshaLabel(question.kakshaLevel, t)}
+                                size="small"
+                                sx={{
+                                  height: 22,
+                                  fontSize: "0.7rem",
+                                  fontWeight: 800,
+                                  bgcolor: colors.primary.blue,
+                                  color: "#fff",
+                                }}
+                              />
+                            ) : null}
                             {question.context && (
                               <Chip
                                 label={question.context}
@@ -295,6 +341,22 @@ export function SubmitPreviewModal({
                           >
                             {question.questionText}
                           </Typography>
+                          {formatKakshaLabel(question.kakshaLevel, t) ? (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                display: "block",
+                                color: colors.primary.dark,
+                                fontWeight: 800,
+                                mb: 0.5,
+                              }}
+                            >
+                              {t("selfAssessment.selectedKakshaValue", {
+                                level: question.kakshaLevel,
+                                defaultValue: `Selected કક્ષા ${question.kakshaLevel}`,
+                              })}
+                            </Typography>
+                          ) : null}
                           <Box
                             sx={{
                               color: colors.primary.blue,
@@ -330,9 +392,59 @@ export function SubmitPreviewModal({
         }}
       >
         <Button
+          onClick={async () => {
+            if (!hasData || isDownloadingPdf) return;
+            setIsDownloadingPdf(true);
+            try {
+              await generateSubmitPreviewPdf({
+                previewData,
+                academicYear: period.academicYear,
+                round: period.round,
+                totalAnswered,
+                title,
+                fileName: "self-assessment-preview.pdf",
+              });
+            } catch (pdfError) {
+              console.error("Failed to download preview PDF:", pdfError);
+              enqueueSnackbar(
+                t("selfAssessment.submitPreview.downloadFailed", {
+                  defaultValue: "Failed to download PDF. Please try again.",
+                }),
+                { variant: "error" },
+              );
+            } finally {
+              setIsDownloadingPdf(false);
+            }
+          }}
+          variant="outlined"
+          disabled={isLoading || isSubmitting || !hasData || isDownloadingPdf}
+          startIcon={
+            isDownloadingPdf ? (
+              <CircularProgress size={16} />
+            ) : (
+              <DownloadIcon fontSize="small" />
+            )
+          }
+          sx={{
+            minWidth: { sm: 140 },
+            textTransform: "none",
+            fontWeight: 600,
+            borderRadius: 2,
+            mr: { sm: "auto" },
+          }}
+        >
+          {isDownloadingPdf
+            ? t("selfAssessment.submitPreview.downloadingPdf", {
+                defaultValue: "Preparing PDF...",
+              })
+            : t("selfAssessment.submitPreview.downloadPdf", {
+                defaultValue: "Download PDF",
+              })}
+        </Button>
+        <Button
           onClick={onClose}
           variant="outlined"
-          disabled={isLoading}
+          disabled={isLoading || isSubmitting || isDownloadingPdf}
           sx={{
             minWidth: { sm: 100 },
             textTransform: "none",
@@ -345,7 +457,12 @@ export function SubmitPreviewModal({
         <Button
           onClick={onConfirm}
           variant="contained"
-          disabled={isLoading || !!error}
+          disabled={isLoading || isSubmitting || !!error || isDownloadingPdf}
+          startIcon={
+            isSubmitting ? (
+              <CircularProgress size={16} sx={{ color: "inherit" }} />
+            ) : null
+          }
           sx={{
             minWidth: { sm: 120 },
             textTransform: "none",
@@ -354,7 +471,9 @@ export function SubmitPreviewModal({
             bgcolor: colors.primary.blue,
           }}
         >
-          {confirmText}
+          {isSubmitting
+            ? t("selfAssessment.submitting", { defaultValue: "Submitting..." })
+            : confirmText}
         </Button>
       </DialogActions>
     </Dialog>

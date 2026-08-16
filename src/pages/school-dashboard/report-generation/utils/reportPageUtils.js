@@ -2,7 +2,7 @@ export const A4_WIDTH_PX = 794;
 export const A4_HEIGHT_PX = 1123;
 
 const SUMMARY_ROWS_PER_PAGE = 14;
-const DOMAIN_QUESTIONS_PER_PAGE = 18;
+const DOMAIN_QUESTIONS_PER_PAGE = 16;
 
 export function splitDomainsForSummary(domains = []) {
   if (!domains.length) return [[]];

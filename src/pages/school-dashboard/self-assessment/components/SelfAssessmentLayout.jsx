@@ -55,10 +55,10 @@ import {
 import { colors } from "../../../../constants/colors";
 import AppDrawer from "../../../../components/AppDrawer/AppDrawer";
 import { DRAWER_WIDTH } from "../../../../constants/menuItems";
-import { SubmitFeedbackModal, countFeedbackWords } from "./SubmitFeedbackModal";
 import { SubmitPreviewModal } from "./SubmitPreviewModal";
 import { AssessmentNavProgressBar } from "../../../../components/AssessmentNavProgressBar/AssessmentNavProgressBar";
 import { AssessmentChipSelector } from "../../../../components/AssessmentChipSelector/AssessmentChipSelector";
+import { AssessmentPeriodChips } from "../../../../components/AssessmentPeriodChips/AssessmentPeriodChips";
 import {
   getSubdomainEvidenceProgress,
   getDomainMandatoryEvidenceProgress,
@@ -301,8 +301,6 @@ export function SelfAssessmentLayout({ c }) {
     setTextAnswers,
     expandedQuestions,
     setExpandedQuestions,
-    showSubmitConfirmation,
-    setShowSubmitConfirmation,
     showSubmitPreview,
     submitPreviewData,
     isLoadingSubmitPreview,
@@ -310,9 +308,6 @@ export function SelfAssessmentLayout({ c }) {
     submitPreviewAnswerCount,
     handleCloseSubmitPreview,
     handleConfirmSubmitPreview,
-    submitFeedback,
-    setSubmitFeedback,
-    handleCloseSubmitFeedback,
     selectedQuestionTab,
     setSelectedQuestionTab,
     sessionId,
@@ -992,8 +987,12 @@ export function SelfAssessmentLayout({ c }) {
                       border: `1px solid ${at.primary}30`,
                     }}
                   />
+                  <AssessmentPeriodChips
+                    academicYear={selectedAssessment?.academicYear}
+                    round={selectedAssessment?.round}
+                  />
                   {/* Status Message */}
-                  {endDate && (
+                  {!isSubmitted && endDate && (
                     <Typography
                       variant="body2"
                       sx={{
@@ -1005,18 +1004,30 @@ export function SelfAssessmentLayout({ c }) {
                       }}
                     >
                       {isReadOnly
-                        ? isSubmitted
-                          ? t("selfAssessment.assessmentSubmittedReadonly", {
-                              defaultValue:
-                                "This assessment has been submitted and is read-only.",
-                            })
-                          : t("selfAssessment.submissionClosedOn", {
-                              date: endDate,
-                            })
+                        ? t("selfAssessment.submissionClosedOn", {
+                            date: endDate,
+                          })
                         : t("selfAssessment.submitBefore", { date: endDate })}
                     </Typography>
                   )}
                 </Box>
+                {isSubmitted && (
+                  <Typography
+                    sx={{
+                      mt: 1.25,
+                      color: "#dc2626",
+                      fontWeight: 700,
+                      fontSize: "0.9rem",
+                      lineHeight: 1.55,
+                      maxWidth: 780,
+                    }}
+                  >
+                    {t("selfAssessment.assessmentSubmittedReadonly", {
+                      defaultValue:
+                        "આપનું મૂલ્યાંકન સફળ રીતે સબમિટ થઈ ગયું છે. હવે આપ આ મૂલ્યાંકનમાં કોઈ ફેરફાર કરી શકશો નહીં. કરેલ મૂલ્યાંકન ને ફરી થી જોવા માટે આપ કોઈ પણ સમયે પુનઃ લૉગિન કરી ને જોઈ શકશો.",
+                    })}
+                  </Typography>
+                )}
                 {isErrorDomains && (
                   <Alert
                     severity="warning"
@@ -1084,7 +1095,24 @@ export function SelfAssessmentLayout({ c }) {
                   flexShrink: 0,
                 }}
               >
-                {endDate ? (
+                {isSubmitted ? (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      color: "#dc2626",
+                      fontWeight: 700,
+                      fontSize: "0.75rem",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {t("selfAssessment.assessmentSubmittedReadonly", {
+                      defaultValue:
+                        "આપનું મૂલ્યાંકન સફળ રીતે સબમિટ થઈ ગયું છે. હવે આપ આ મૂલ્યાંકનમાં કોઈ ફેરફાર કરી શકશો નહીં. કરેલ મૂલ્યાંકન ને ફરી થી જોવા માટે આપ કોઈ પણ સમયે પુનઃ લૉગિન કરી ને જોઈ શકશો.",
+                    })}
+                  </Typography>
+                ) : endDate ? (
                   <Typography
                     variant="caption"
                     sx={{
@@ -1099,14 +1127,9 @@ export function SelfAssessmentLayout({ c }) {
                     }}
                   >
                     {isReadOnly
-                      ? isSubmitted
-                        ? t("selfAssessment.assessmentSubmittedReadonly", {
-                            defaultValue:
-                              "This assessment has been submitted and is read-only.",
-                          })
-                        : t("selfAssessment.submissionClosedOn", {
-                            date: endDate,
-                          })
+                      ? t("selfAssessment.submissionClosedOn", {
+                          date: endDate,
+                        })
                       : t("selfAssessment.submitBefore", { date: endDate })}
                   </Typography>
                 ) : (
@@ -2596,54 +2619,27 @@ export function SelfAssessmentLayout({ c }) {
         </Box>
       </Box>
 
-      {/* Answer preview before final submit feedback */}
+      {/* Answer preview — confirm button does the final submit */}
       <SubmitPreviewModal
         open={showSubmitPreview}
         onClose={handleCloseSubmitPreview}
         onConfirm={handleConfirmSubmitPreview}
         previewData={submitPreviewData}
         isLoading={isLoadingSubmitPreview}
+        isSubmitting={
+          isFetchingDomains ||
+          submitAssessmentMutation.isPending ||
+          isSubmittingAllAssessments
+        }
         error={submitPreviewError}
         totalAnswered={submitPreviewAnswerCount}
         title={t("selfAssessment.submitPreview.title")}
         description={t("selfAssessment.submitPreview.description")}
         emptyMessage={t("selfAssessment.submitPreview.emptyMessage")}
-        confirmText={t("selfAssessment.submitPreview.confirm")}
+        confirmText={t("selfAssessment.submitAssessment")}
         cancelText={t("selfAssessment.submitPreview.cancel")}
-      />
-
-      {/* Confirmation Modal for Final Submit */}
-      <SubmitFeedbackModal
-        open={showSubmitConfirmation}
-        onClose={handleCloseSubmitFeedback}
-        onConfirm={handleConfirmSubmit}
-        feedback={submitFeedback}
-        onFeedbackChange={setSubmitFeedback}
-        title={t("selfAssessment.submitFeedback.title")}
-        description={t("selfAssessment.submitFeedback.description")}
-        testingNotice={t("selfAssessment.submitFeedback.testingNotice")}
-        testingNoticeTitle={t(
-          "selfAssessment.submitFeedback.testingNoticeTitle",
-        )}
-        testingNoticePoints={t(
-          "selfAssessment.submitFeedback.testingNoticePoints",
-          {
-            returnObjects: true,
-          },
-        )}
-        placeholder={t("selfAssessment.submitFeedback.placeholder")}
-        optionalHint={t("selfAssessment.submitFeedback.optionalHint")}
-        wordLimitText={t("selfAssessment.submitFeedback.wordLimit", {
-          count: countFeedbackWords(submitFeedback),
-          max: 250,
-        })}
-        confirmText={t("selfAssessment.submitFeedback.confirm")}
-        cancelText={t("selfAssessment.submitFeedback.cancel")}
-        isLoading={
-          isFetchingDomains ||
-          submitAssessmentMutation.isPending ||
-          isSubmittingAllAssessments
-        }
+        academicYear={selectedAssessment?.academicYear}
+        round={selectedAssessment?.round}
       />
     </Box>
   );

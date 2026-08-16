@@ -44,9 +44,9 @@ export function ParentFeedbackPageView({ c }) {
     <div className="parent-feedback-container">
       <div className="pf-header">
         <div>
-          <h1 className="pf-title">Grievance</h1>
+          <h1 className="pf-title">રજૂઆત / ફીડબેક</h1>
           <p className="pf-subtitle">
-            Public grievances submitted with school name and selected SQAAF criteria
+            Public submissions with school, district, block and selected SQAAF criteria
           </p>
         </div>
         <div className="pf-header-actions">
@@ -54,7 +54,7 @@ export function ParentFeedbackPageView({ c }) {
             <input
               type="search"
               className="pf-search-input"
-              placeholder="Search by name, school, domain, or grievance..."
+              placeholder="Search by name, school, district, or details..."
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
             />
@@ -65,7 +65,7 @@ export function ParentFeedbackPageView({ c }) {
             iconOnly
             onClick={handleExportToExcel}
             disabled={exporting || isLoading}
-            title="Download all grievances to Excel"
+            title="Download all submissions to Excel"
             icon={
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -104,6 +104,16 @@ export function ParentFeedbackPageView({ c }) {
               ),
             },
             {
+              id: "location",
+              label: "District / Block",
+              render: (row) => (
+                <div className="pf-school-cell">
+                  <strong>{row.districtName || "—"}</strong>
+                  {row.blockName ? <span>{row.blockName}</span> : null}
+                </div>
+              ),
+            },
+            {
               id: "criteria",
               label: "Criteria",
               render: (row) => (
@@ -119,7 +129,7 @@ export function ParentFeedbackPageView({ c }) {
             },
             {
               id: "feedbackText",
-              label: "Grievance",
+              label: "રજૂઆત / ફીડબેક",
               render: (row) => <FeedbackTextCell text={row.feedbackText} />,
             },
             {
@@ -140,8 +150,8 @@ export function ParentFeedbackPageView({ c }) {
           onItemsPerPageChange={handleItemsPerPageChange}
           totalCount={total}
           serverSidePagination
-          emptyTitle="No grievances yet"
-          emptySubtitle="Submitted grievances will appear here"
+          emptyTitle="No submissions yet"
+          emptySubtitle="Submitted representation / feedback will appear here"
         />
       </div>
     </div>

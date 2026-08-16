@@ -51,6 +51,7 @@ import ConfirmationModal from "../../../components/ConfirmationModal/Confirmatio
 import { ClassRangeFields } from "./components/ClassRangeFields";
 import { EvidenceSlotEditor } from "./components/EvidenceSlotEditor";
 import { formatClassRange } from "../../../utils/classRange";
+import { parseQuestionOptions } from "../../../utils/assessmentMeta";
 
 const QuestionsView = ({
   subdomainData,
@@ -229,17 +230,7 @@ const QuestionsView = ({
   };
 
   // Parse options JSON string
-  const parseOptions = (optionsString) => {
-    try {
-      if (typeof optionsString === "string") {
-        return JSON.parse(optionsString);
-      }
-      return optionsString || [];
-    } catch (e) {
-      console.error("Error parsing options:", e);
-      return [];
-    }
-  };
+  const parseOptions = (optionsString) => parseQuestionOptions(optionsString);
 
   const handleAddOption = () => {
     const newOptionId = Math.max(...newOptions.map((opt) => opt.id), 0) + 1;
@@ -1483,14 +1474,12 @@ const QuestionsView = ({
                                 }}
                               >
                                 <Chip
-                                  label={`${t("assessment.question.options")} ${
-                                    optIndex + 1
-                                  }`}
+                                  label={t("selfAssessment.level", { level: optIndex })}
                                   size="small"
                                   sx={{
                                     bgcolor: colors.primary.lightest,
                                     color: colors.primary.blue,
-                                    fontWeight: 600,
+                                    fontWeight: 700,
                                   }}
                                 />
                                 {newOptions.length > 2 && (
@@ -1920,6 +1909,19 @@ const QuestionsView = ({
                                     gap: 1.5,
                                   }}
                                 >
+                                  <Chip
+                                    label={t("selfAssessment.level", {
+                                      level: option.kakshaLevel ?? optIndex,
+                                    })}
+                                    size="small"
+                                    sx={{
+                                      height: 24,
+                                      fontWeight: 800,
+                                      bgcolor: `${colors.primary.blue}14`,
+                                      color: colors.primary.blue,
+                                      flexShrink: 0,
+                                    }}
+                                  />
                                   <Typography
                                     variant="body2"
                                     sx={{
@@ -2389,9 +2391,7 @@ const QuestionsView = ({
                               }}
                             >
                               <Chip
-                                label={`${t("assessment.question.options")} ${
-                                  optIndex + 1
-                                }`}
+                                label={t("selfAssessment.level", { level: optIndex })}
                                 size="small"
                                 sx={{
                                   bgcolor: colors.primary.lightest,
@@ -3020,9 +3020,7 @@ const QuestionsView = ({
                             }}
                           >
                             <Chip
-                              label={`${t("assessment.question.options")} ${
-                                optIndex + 1
-                              }`}
+                              label={t("selfAssessment.level", { level: optIndex })}
                               size="small"
                               sx={{
                                 bgcolor: colors.primary.lightest,

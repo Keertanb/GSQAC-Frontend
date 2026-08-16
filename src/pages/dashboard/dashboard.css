@@ -20,8 +20,7 @@
 /* —— Header —— */
 #schools,
 #documents,
-#news,
-#grievance {
+#news {
   scroll-margin-top: 5.5rem;
 }
 
@@ -1198,6 +1197,35 @@
   font-family: "Noto Serif Gujarati", "Noto Sans Gujarati", Georgia, serif;
 }
 
+.grievance-page .grievance-section {
+  min-height: calc(100vh - var(--header-h));
+}
+
+.grievance-page__brand {
+  display: flex;
+  align-items: center;
+  gap: inherit;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.grievance-page__home-btn {
+  text-transform: none !important;
+  font-weight: 700 !important;
+  border-color: #cbd5e1 !important;
+  color: var(--primary-blue) !important;
+}
+
+@media (max-width: 720px) {
+  .grievance-page__home-btn {
+    min-width: auto;
+    padding-left: 0.7rem !important;
+    padding-right: 0.7rem !important;
+  }
+}
+
 .grievance-section {
   position: relative;
   isolation: isolate;
@@ -1262,6 +1290,52 @@
   font-size: 0.95rem;
   line-height: 1.65;
   color: var(--text-light);
+}
+
+.grievance-hardcopy-note {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.15rem 1.1rem;
+  text-align: left;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-left: 4px solid var(--accent-orange);
+  border-radius: 1rem;
+  box-shadow: 0 8px 22px rgba(249, 115, 22, 0.08);
+  font-family: "Noto Sans Gujarati", "Noto Serif Gujarati", Inter, sans-serif;
+}
+
+.grievance-hardcopy-note p {
+  margin: 0 0 0.85rem;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.7;
+  color: #9a3412;
+}
+
+.grievance-hardcopy-note__error {
+  display: block;
+  margin-top: 0.65rem;
+  color: #dc2626;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.grievance-btn--pdf {
+  color: #fff;
+  background: linear-gradient(135deg, #c2410c 0%, var(--accent-orange) 100%);
+  box-shadow: 0 6px 16px rgba(194, 65, 12, 0.25);
+}
+
+.grievance-btn--pdf:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(194, 65, 12, 0.3);
+}
+
+.grievance-btn--pdf:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .grievance-panel {
@@ -1415,6 +1489,32 @@
   outline: none;
   border-color: var(--primary-blue-soft);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.grievance-field.is-invalid input,
+.grievance-field.is-invalid select,
+.grievance-field.is-invalid textarea {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.grievance-field.is-invalid input:focus,
+.grievance-field.is-invalid select:focus,
+.grievance-field.is-invalid textarea:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+
+.grievance-form__alert {
+  margin: 0 0 1.15rem;
+  padding: 0.75rem 0.95rem;
+  border-radius: 0.75rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: "Noto Sans Gujarati", "Noto Serif Gujarati", Inter, sans-serif;
 }
 
 .grievance-field small {

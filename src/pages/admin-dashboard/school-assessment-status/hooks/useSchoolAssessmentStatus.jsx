@@ -18,6 +18,7 @@ import {
   getRoleAssessmentProgress,
   getSubmittedSchoolSelfAssessment,
 } from "../utils/schoolAssessmentProgressUtils";
+import { resolveAssessmentPeriod } from "../../../../utils/assessmentMeta";
 
 export function useSchoolAssessmentStatus() {
   const [filters, setFilters] = useState({
@@ -93,8 +94,18 @@ export function useSchoolAssessmentStatus() {
 
     const school = schoolDetail?.school || selectedSchool || {};
 
+    const assessments = schoolDetail?.assessments || [];
+    const periodSource = assessments.find((item) => item.academicYear || item.round != null) || {};
+
+    const period = resolveAssessmentPeriod({
+      academicYear: baseReport.academicYear || periodSource.academicYear,
+      round: baseReport.round ?? periodSource.round,
+    });
+
     return {
       ...baseReport,
+      academicYear: period.academicYear,
+      round: period.round,
       school: {
         schoolId: selectedSchoolId,
         schoolName: school.schoolName || school.schoolNameEn || baseReport.school?.schoolName || "",

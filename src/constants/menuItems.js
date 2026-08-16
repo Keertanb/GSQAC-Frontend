@@ -102,7 +102,7 @@ export const parentMenuItems = [
   },
   {
     id: "grievance",
-    label: "Grievance",
+    label: "રજૂઆત / ફીડબેક",
     icon: ReportProblem,
     url: "/parent-dashboard/grievance",
     activeFinder: ["/parent-dashboard/grievance"],
@@ -202,7 +202,7 @@ export const adminMenuItems = [
   },
   {
     id: "parent-feedback",
-    label: "Grievance",
+    label: "રજૂઆત / ફીડબેક",
     icon: ReportProblem,
     url: "/admin-dashboard/parent-feedback",
     activeFinder: ["/admin-dashboard/parent-feedback"],

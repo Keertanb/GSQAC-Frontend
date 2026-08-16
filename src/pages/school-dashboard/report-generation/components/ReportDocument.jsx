@@ -6,6 +6,8 @@ import studentsBanner from "../../../../assets/students_image.jpeg";
 import { buildReportPageList } from "../utils/reportPageUtils";
 import {
   formatYearLabel,
+  formatRoundLabel,
+  formatKakshaLabel,
   formatMarks,
   formatPercent,
   getPerformanceTier,
@@ -166,8 +168,9 @@ function InsightCard({ title, tone, mainDomain, mainPct, subDomains }) {
 }
 
 function CoverPage({ report, pageNumber, totalPages }) {
-  const { school, summary, domains, strengths, improvements, academicYear } = report;
+  const { school, summary, domains, strengths, improvements, academicYear, round } = report;
   const yearLabel = formatYearLabel(academicYear);
+  const roundLabel = formatRoundLabel(round);
   const stats = useMemo(() => computeReportStats(report), [report]);
 
   return (
@@ -187,7 +190,10 @@ function CoverPage({ report, pageNumber, totalPages }) {
                 <td className="rpt-hero__center">
                   <p className="rpt-hero__org">ગુજરાત શૈક્ષણિક સંશોધન અને તાલીમ પરિષદ · GSQAC</p>
                   <h1>સ્કૂલ એક્રેડિટેશન રિપોર્ટ કાર્ડ</h1>
-                  <p className="rpt-hero__year">શૈક્ષણિક વર્ષ {yearLabel}</p>
+                  <p className="rpt-hero__year">
+                    શૈક્ષણિક વર્ષ {yearLabel}
+                    {roundLabel ? ` · ${roundLabel}` : ""}
+                  </p>
                 </td>
                 <td className="rpt-hero__logo-cell">
                   <img src={logoImage} alt="" className="rpt-hero__logo" />
@@ -261,8 +267,9 @@ function CoverPage({ report, pageNumber, totalPages }) {
 }
 
 function SummaryTablePage({ report, rows, showTotal, showOverview, pageNumber, totalPages }) {
-  const { summary, academicYear } = report;
+  const { summary, academicYear, round } = report;
   const yearLabel = formatYearLabel(academicYear);
+  const roundLabel = formatRoundLabel(round);
   const stats = useMemo(() => computeReportStats(report), [report]);
 
   return (
@@ -270,7 +277,7 @@ function SummaryTablePage({ report, rows, showTotal, showOverview, pageNumber, t
       <PageHeader
         sectionTag="સારાંશ"
         title="સ્કોર સારાંશ"
-        subtitle={`Score Summary · શૈક્ષણિક વર્ષ ${yearLabel}`}
+        subtitle={`Score Summary · શૈક્ષણિક વર્ષ ${yearLabel}${roundLabel ? ` · ${roundLabel}` : ""}`}
         pageNumber={pageNumber}
         totalPages={totalPages}
       />
@@ -351,6 +358,7 @@ function SummaryTablePage({ report, rows, showTotal, showOverview, pageNumber, t
 
 function DomainDetailPage({ report, domain, showTotal, pageIndex, pageNumber, totalPages }) {
   const yearLabel = formatYearLabel(report.academicYear);
+  const roundLabel = formatRoundLabel(report.round);
   const accent = getDomainAccent(domain.domainOrder);
 
   return (
@@ -358,7 +366,7 @@ function DomainDetailPage({ report, domain, showTotal, pageIndex, pageNumber, to
       <PageHeader
         sectionTag={`ક્ષેત્ર ${domain.domainOrder}`}
         title={domain.domainName}
-        subtitle={`Domain Detail · વજન ${domain.weightage}% · ${yearLabel}`}
+        subtitle={`Domain Detail · વજન ${domain.weightage}% · ${yearLabel}${roundLabel ? ` · ${roundLabel}` : ""}`}
         pageNumber={pageNumber}
         totalPages={totalPages}
       />
@@ -388,13 +396,21 @@ function DomainDetailPage({ report, domain, showTotal, pageIndex, pageNumber, to
               </tbody>
             </table>
             <table className="rpt-compact-table rpt-compact-table--questions">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>માપદંડ</th>
+                  <th>કક્ષા</th>
+                  <th>ગુણ</th>
+                </tr>
+              </thead>
               <tbody>
                 {(sub.questions || []).map((question) => (
                   <tr key={question.questionId}>
                     <td className="rpt-q-num">{domain.domainOrder}.{sub.subDomainOrder}.{question.qIndex + 1}</td>
                     <td className="rpt-q-text">{question.questionText}</td>
+                    <td className="rpt-q-kaksha">{formatKakshaLabel(question.kakshaLevel ?? question.obtainedMarks)}</td>
                     <td className="rpt-num">{formatMarks(question.obtainedMarks)}/{question.maxMarks}</td>
-                    <td className="rpt-num rpt-num--bold">{formatPercent(question.percentage)}</td>
                   </tr>
                 ))}
               </tbody>

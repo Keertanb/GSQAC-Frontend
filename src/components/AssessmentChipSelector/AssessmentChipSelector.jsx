@@ -1,7 +1,9 @@
 import React from "react";
 import { Box, Chip, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { colors } from "../../constants/colors";
 import { getAssessmentTheme } from "../../utils/assessmentTheme";
+import { formatAssessmentPeriod } from "../../utils/assessmentMeta";
 import "./AssessmentChipSelector.css";
 
 export function AssessmentChipSelector({
@@ -13,6 +15,7 @@ export function AssessmentChipSelector({
   getAssessmentTheme: getAssessmentThemeProp = getAssessmentTheme,
   className = "",
 }) {
+  const { t } = useTranslation();
   if (!assessments || assessments.length <= 1) return null;
 
   return (
@@ -36,10 +39,14 @@ export function AssessmentChipSelector({
           const assessmentId = Number(assessment.assessmentId);
           const selected = Number(selectedAssessmentId) === assessmentId;
           const chipTheme = getAssessmentThemeProp(assessment);
-          const chipLabel =
+          const nameLabel =
             getAssessmentLabel?.(assessment) ||
             assessment.assessmentName ||
             `Assessment ${assessment.assessmentId}`;
+          const periodLabel = formatAssessmentPeriod(assessment, t);
+          const chipLabel = periodLabel
+            ? `${nameLabel} · ${periodLabel}`
+            : nameLabel;
 
           return (
             <Chip

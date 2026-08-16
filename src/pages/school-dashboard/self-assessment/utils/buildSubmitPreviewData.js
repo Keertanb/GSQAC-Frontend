@@ -1,14 +1,8 @@
 import { getSubdomainQuestions } from "../../../../services/schoolService";
-
-function parseOptions(options) {
-  try {
-    if (Array.isArray(options)) return options;
-    if (typeof options === "string") return JSON.parse(options);
-    return options || [];
-  } catch {
-    return [];
-  }
-}
+import {
+  getKakshaLevelFromQuestion,
+  parseQuestionOptions,
+} from "../../../../utils/assessmentMeta";
 
 function getQuestionType(question) {
   return question.questionType || (question.isClassroomObservation === 1 ? 2 : 1);
@@ -27,7 +21,7 @@ function resolveAnswerLabel(question) {
 
   if (!question.selectedOptionId) return null;
 
-  const options = parseOptions(question.options);
+  const options = parseQuestionOptions(question.options);
   const selected = options.find(
     (option) => String(option.optionId) === String(question.selectedOptionId),
   );
@@ -66,6 +60,7 @@ function extractQuestions(questions) {
       questionId: question.questionId,
       questionText: question.questionText || "",
       answerLabel,
+      kakshaLevel: getKakshaLevelFromQuestion(question),
       context: buildQuestionContext(question),
     });
   });
@@ -170,6 +165,8 @@ export async function buildSubmitPreviewDataForAssessments({
       combinedPreview.push({
         ...domain,
         assessmentName: assessmentLabel,
+        academicYear: assessment.academicYear || null,
+        round: assessment.round ?? null,
         domainName: `${assessmentLabel} — ${domain.domainName}`,
       });
     });

@@ -16,11 +16,11 @@ import {
   Place as PlaceIcon,
 } from "@mui/icons-material";
 import useAuthStore from "../../store/useAuthStore";
-import { GrievanceFeedbackPanel } from "./components/GrievanceFeedbackPanel";
 import { VerifierRegistrationBoard } from "./components/VerifierRegistrationBoard";
 import { FaqChatAssistant } from "./components/faq-assistant/FaqChatAssistant";
 import { LatestNewsSection } from "./components/LatestNewsSection";
 import { ImportantDocumentsSection } from "./components/ImportantDocumentsSection";
+import { GRIEVANCE_URL } from "../../routes/routeUrls";
 import "./dashboard.css";
 
 import LogoImg from "../../assets/logo_image.png";
@@ -143,8 +143,14 @@ const Dashboard = () => {
 
   const handleNavClick = (event, navId) => {
     event.preventDefault();
-    setActiveNav(navId);
     closeMobileMenu();
+
+    if (navId === "grievance") {
+      navigate(GRIEVANCE_URL);
+      return;
+    }
+
+    setActiveNav(navId);
 
     if (navId === "home" || navId === "about") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -156,9 +162,7 @@ const Dashboard = () => {
         ? "schools"
         : navId === "documents"
           ? "documents"
-          : navId === "grievance"
-            ? "grievance"
-            : null;
+          : null;
 
     if (!sectionId) return;
 
@@ -192,7 +196,7 @@ const Dashboard = () => {
               {NAV_ITEMS.map((item) => (
                 <a
                   key={item.id}
-                  href={`#${item.id}`}
+                  href={item.id === "grievance" ? GRIEVANCE_URL : `#${item.id}`}
                   className={`nav-link${activeNav === item.id ? " nav-link--active" : ""}`}
                   onClick={(e) => handleNavClick(e, item.id)}
                 >
@@ -251,7 +255,7 @@ const Dashboard = () => {
           {NAV_ITEMS.map((item) => (
             <a
               key={item.id}
-              href={`#${item.id}`}
+              href={item.id === "grievance" ? GRIEVANCE_URL : `#${item.id}`}
               className={`mobile-nav-link${activeNav === item.id ? " mobile-nav-link--active" : ""}`}
               onClick={(e) => handleNavClick(e, item.id)}
             >
@@ -462,23 +466,6 @@ const Dashboard = () => {
       </section>
 
       <ImportantDocumentsSection />
-
-      <section id="grievance" className="grievance-section" aria-label="Grievance">
-        <div className="grievance-section-inner">
-          <div className="grievance-section-head">
-            <h2 className="grievance-title">ફરિયાદ (Grievance)</h2>
-            <p className="grievance-lede">
-              શાળાનું નામ અને માપદંડ પસંદ કરીને તમારી ફરિયાદ નોંધાવો. તમારો પ્રતિસાદ
-              GSQAC સુધી પહોંચશે.
-            </p>
-          </div>
-          <div className="grievance-panel">
-            <div className="grievance-tab-panel">
-              <GrievanceFeedbackPanel feedbackSource="grievance" />
-            </div>
-          </div>
-        </div>
-      </section>
 
       <FaqChatAssistant />
     </div>
