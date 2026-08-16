@@ -28,6 +28,8 @@ import {
 } from "@mui/icons-material";
 import { colors } from "../../../../constants/colors";
 import { SelectedKakshaBanner } from "../../../../components/SelectedKakshaBanner/SelectedKakshaBanner";
+import { SubdomainEvidencePanel } from "../../../../components/SubdomainEvidencePanel/SubdomainEvidencePanel";
+import { ErrorBoundary } from "../../../../components/ErrorBoundary/ErrorBoundary";
 import {
   getSubdomainEvidenceProgress,
   isEvidenceOptionalForSelectedOption,
@@ -200,6 +202,8 @@ function McqQuestionBody({
   isMobile = false,
   onEvidenceProgressChange,
 }) {
+  if (!question) return null;
+
   const {
     answers,
     handleAnswerChange,
@@ -333,22 +337,28 @@ function McqQuestionBody({
         />
 
         {showEvidence ? (
-          <SubdomainEvidencePanel
-            questionId={question?.questionId}
-            question={question}
-            schoolId={userName}
-            assessmentId={
-              selectedAssessment?.assessmentId ?? selectedAssessmentId ?? null
-            }
-            selectedAssessment={selectedAssessment}
-            assessmentTheme={assessmentTheme}
-            readOnly={isReadOnly}
-            evidenceOptional={evidenceOptional}
-            variant="question"
-            className="sa-question-evidence"
-            languageCode={(languageCode || "EN").toLowerCase()}
-            onProgressChange={onEvidenceProgressChange}
-          />
+          <ErrorBoundary
+            compact
+            logLabel="SubdomainEvidencePanel"
+            message="Evidence could not be loaded. You can continue answering."
+          >
+            <SubdomainEvidencePanel
+              questionId={question?.questionId}
+              question={question}
+              schoolId={userName}
+              assessmentId={
+                selectedAssessment?.assessmentId ?? selectedAssessmentId ?? null
+              }
+              selectedAssessment={selectedAssessment}
+              assessmentTheme={assessmentTheme}
+              readOnly={isReadOnly}
+              evidenceOptional={evidenceOptional}
+              variant="question"
+              className="sa-question-evidence"
+              languageCode={(languageCode || "EN").toLowerCase()}
+              onProgressChange={onEvidenceProgressChange}
+            />
+          </ErrorBoundary>
         ) : null}
       </CardContent>
     </Card>
@@ -363,7 +373,10 @@ function FlnQuestionBody({ question, c, questionNumber }) {
     gradesCounts,
     isPublished,
     isReadOnly,
+    t,
   } = c;
+
+  if (!question) return null;
 
   const textAnswer = textAnswers[question.questionId] || "";
   let flnData = {};

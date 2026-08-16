@@ -63,6 +63,7 @@ import {
   getSubdomainEvidenceProgress,
   getDomainMandatoryEvidenceProgress,
 } from "../../../../services/evidenceService";
+import { ErrorBoundary } from "../../../../components/ErrorBoundary/ErrorBoundary";
 import { SubdomainQuestionFlow } from "./SubdomainQuestionFlow";
 import { AssessmentProgressOverview } from "./AssessmentProgressOverview";
 import "../SelfAssessment.css";
@@ -2204,12 +2205,18 @@ export function SelfAssessmentLayout({ c }) {
                                 overflow: "hidden",
                               }}
                             >
-                              <SubdomainQuestionFlow
-                                c={c}
-                                matchDownMD={matchDownMD}
-                                setMobileStep={setMobileStep}
-                                scrollMobileToTop={scrollMobileToTop}
-                              />
+                              <ErrorBoundary
+                                logLabel="SubdomainQuestionFlow"
+                                title="Questions could not be loaded"
+                                message="This subdomain hit an unexpected error. Go back and try another subdomain, or reload the page."
+                              >
+                                <SubdomainQuestionFlow
+                                  c={c}
+                                  matchDownMD={matchDownMD}
+                                  setMobileStep={setMobileStep}
+                                  scrollMobileToTop={scrollMobileToTop}
+                                />
+                              </ErrorBoundary>
                             </Box>
                           )}
                       </Box>

@@ -1,21 +1,28 @@
 import { BrowserRouter } from "react-router-dom";
 import { SnackbarProvider } from "notistack";
 import Router from "./routes/Router";
+import { ErrorBoundary } from "./components/ErrorBoundary/ErrorBoundary";
 
 function App() {
   return (
-    <SnackbarProvider
-      maxSnack={3}
-      anchorOrigin={{
-        vertical: "top",
-        horizontal: "right",
-      }}
-      style={{ zIndex: 200000 }}
+    <ErrorBoundary
+      logLabel="App"
+      title="The application hit an unexpected error"
+      message="Reload the page to continue."
     >
-      <BrowserRouter>
-        <Router />
-      </BrowserRouter>
-    </SnackbarProvider>
+      <SnackbarProvider
+        maxSnack={3}
+        anchorOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+        style={{ zIndex: 200000 }}
+      >
+        <BrowserRouter>
+          <Router />
+        </BrowserRouter>
+      </SnackbarProvider>
+    </ErrorBoundary>
   );
 }
 
