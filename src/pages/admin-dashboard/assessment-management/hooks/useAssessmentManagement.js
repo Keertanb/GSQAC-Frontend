@@ -6,11 +6,20 @@ import { colors } from "../../../../constants/colors";
 import {
   ensureSchoolManagementOptions,
   getAssessmentManagementForApi,
+  getAssessmentManagementId,
+  getAssessmentManagementLabelKey,
+  getAssessmentSchoolTypeShortLabel,
   getCurrentYear,
   getMinDateInCurrentYear,
   isAssignmentDateYearValid,
   resolveAssessmentManagementSelectValue,
 } from "../utils/assessmentManagementUtils";
+import {
+  buildAssessmentQuestionnaireData,
+  questionnaireHasContent,
+} from "../utils/buildAssessmentQuestionnaireData";
+import { generateAssessmentQuestionnairePdf } from "../utils/generateAssessmentQuestionnairePdf";
+import { ENV_ACADEMIC_YEAR, ENV_ROUND } from "../../../../utils/assessmentMeta";
 import {
   useGetDomainsQuery,
   useUpsertDomainMutation,
@@ -116,6 +125,9 @@ export function useAssessmentManagement() {
   const [deleteAssessmentModalOpen, setDeleteAssessmentModalOpen] =
     useState(false);
   const [assessmentToDelete, setAssessmentToDelete] = useState(null);
+  const [pdfDownloadManagement, setPdfDownloadManagement] = useState("");
+  const [isDownloadingAssessmentsPdf, setIsDownloadingAssessmentsPdf] =
+    useState(false);
 
   // Assessment editing state
   const [showEditAssessment, setShowEditAssessment] = useState(false);
@@ -288,11 +300,18 @@ export function useAssessmentManagement() {
   const domainsByAssessmentId = useMemo(() => {
     if (!domainsData?.data) return {};
     return domainsData.data.reduce((acc, domain) => {
-      const { assessmentId } = domain;
-      if (!acc[assessmentId]) {
-        acc[assessmentId] = [];
+      const assessmentId = Number(domain.assessmentId);
+      const key = Number.isNaN(assessmentId)
+        ? domain.assessmentId
+        : assessmentId;
+      if (!acc[key]) {
+        acc[key] = [];
       }
-      acc[assessmentId].push(domain);
+      acc[key].push(domain);
+      if (key !== domain.assessmentId) {
+        acc[domain.assessmentId] = acc[key];
+      }
+      acc[String(domain.assessmentId)] = acc[key];
       return acc;
     }, {});
   }, [domainsData]);
@@ -784,6 +803,16 @@ export function useAssessmentManagement() {
     }
   };
 
+  const getSubdomainName = (subdomain) => {
+    if (languageCode === "EN") {
+      return subdomain.subDomainNameEn || subdomain.subDomainName || "";
+    }
+    if (languageCode === "HI") {
+      return subdomain.subDomainNameHi || subdomain.subDomainName || "";
+    }
+    return subdomain.subDomainNameGu || subdomain.subDomainName || "";
+  };
+
   // const getRoleName = (roleId) => {
   //   const roleMap = {
   //     2: "School",
@@ -821,6 +850,95 @@ export function useAssessmentManagement() {
     }
 
     return [];
+  };
+
+  const handleDownloadAssessmentsPdf = async () => {
+    const managementId = Number(pdfDownloadManagement);
+    if (!pdfDownloadManagement || Number.isNaN(managementId)) {
+      enqueueSnackbar(t("assessment.management.downloadPdfSelectRole"), {
+        variant: "warning",
+      });
+      return;
+    }
+
+    const matchingAssessments = (assessmentsData?.data || [])
+      .filter(
+        (assessment) => getAssessmentManagementId(assessment) === managementId,
+      )
+      .sort((a, b) => {
+        const typeDiff = Number(a.schoolType || 0) - Number(b.schoolType || 0);
+        if (typeDiff !== 0) return typeDiff;
+        return Number(a.assessmentId || 0) - Number(b.assessmentId || 0);
+      });
+
+    if (!matchingAssessments.length) {
+      enqueueSnackbar(t("assessment.management.downloadPdfNoAssessments"), {
+        variant: "warning",
+      });
+      return;
+    }
+
+    const managementLabelKey = getAssessmentManagementLabelKey(managementId);
+    const managementLabel = managementLabelKey
+      ? t(managementLabelKey)
+      : t("assessment.management.schoolManagement");
+    const assessmentsForPdf = matchingAssessments.map((assessment) => ({
+      ...assessment,
+      domains:
+        domainsByAssessmentId[assessment.assessmentId] ||
+        domainsByAssessmentId[String(assessment.assessmentId)] ||
+        [],
+    }));
+
+    setIsDownloadingAssessmentsPdf(true);
+    try {
+      const questionnaire = await buildAssessmentQuestionnaireData({
+        assessments: assessmentsForPdf,
+        languageCode,
+        getDomainName,
+        getSubdomainName,
+        getAssessmentName,
+        getSchoolTypeLabel: (assessment) =>
+          getAssessmentSchoolTypeShortLabel(assessment.schoolType, t),
+      });
+
+      if (!questionnaireHasContent(questionnaire)) {
+        enqueueSnackbar(t("assessment.management.downloadPdfEmpty"), {
+          variant: "warning",
+        });
+        return;
+      }
+
+      const academicYear =
+        matchingAssessments.find((assessment) => assessment.academicYear)
+          ?.academicYear || ENV_ACADEMIC_YEAR;
+      const round =
+        matchingAssessments.find((assessment) => assessment.round != null)
+          ?.round ?? ENV_ROUND;
+      const slug =
+        managementId === 1
+          ? "private"
+          : managementId === 3
+            ? "grant-in-aid"
+            : "government";
+
+      await generateAssessmentQuestionnairePdf({
+        assessments: questionnaire,
+        academicYear,
+        round,
+        title: t("assessment.management.downloadPdfTitle"),
+        managementLabel,
+        t,
+        fileName: `gsqac-${slug}-assessments.pdf`,
+      });
+    } catch (error) {
+      console.error("Failed to download assessment PDFs:", error);
+      enqueueSnackbar(t("assessment.management.downloadPdfFailed"), {
+        variant: "error",
+      });
+    } finally {
+      setIsDownloadingAssessmentsPdf(false);
+    }
   };
 
   const todayDate = useMemo(() => {
@@ -1022,7 +1140,12 @@ export function useAssessmentManagement() {
     handleLanguageChange,
     handleTranslateDomain,
     getDomainName,
+    getSubdomainName,
     getAssessmentName,
+    pdfDownloadManagement,
+    setPdfDownloadManagement,
+    isDownloadingAssessmentsPdf,
+    handleDownloadAssessmentsPdf,
     getAssessmentRoleIds,
     todayDate,
     minDateCurrentYear,

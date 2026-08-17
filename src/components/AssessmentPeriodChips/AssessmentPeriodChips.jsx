@@ -13,11 +13,12 @@ export function AssessmentPeriodChips({
   round,
   size = "small",
   className = "",
+  showRound = true,
 }) {
   const { t } = useTranslation();
   const period = resolveAssessmentPeriod({ academicYear, round });
   const yearLabel = formatAcademicYearLabel(period.academicYear, t);
-  const roundLabel = formatRoundLabel(period.round, t);
+  const roundLabel = showRound ? formatRoundLabel(period.round, t) : null;
 
   if (!yearLabel && !roundLabel) return null;
 

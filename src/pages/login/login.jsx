@@ -23,12 +23,12 @@ import { enqueueSnackbar } from "notistack";
 import { roles, getRoleId } from "../../constants/roles";
 import {
   useSendOtpMutation,
+  useSendSchoolOtpMutation,
+  useVerifySchoolOtpMutation,
   useSchoolResetPasswordMutation,
 } from "../../services/authService";
 import useAuthStore from "../../store/useAuthStore";
 import "./login.css";
-
-const STATIC_RESET_OTP = "1109";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -43,7 +43,6 @@ const Login = () => {
   const [schoolResetId, setSchoolResetId] = useState(null);
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isOtpVerified, setIsOtpVerified] = useState(false);
-  const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState({ role: "", userId: "", password: "" });
@@ -51,7 +50,6 @@ const Login = () => {
     userId: "",
     mobileNumber: "",
     otpCode: "",
-    oldPassword: "",
     newPassword: "",
     confirmPassword: "",
     form: "",
@@ -60,7 +58,6 @@ const Login = () => {
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [mobileFocused, setMobileFocused] = useState(false);
   const [otpFocused, setOtpFocused] = useState(false);
-  const [oldPasswordFocused, setOldPasswordFocused] = useState(false);
   const [newPasswordFocused, setNewPasswordFocused] = useState(false);
   const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -99,6 +96,51 @@ const Login = () => {
         error?.message ||
         "Failed to reset password. Please try again.";
       setResetErrors((prev) => ({ ...prev, form: errorMessage }));
+    },
+  });
+
+  const sendSchoolOtpMutation = useSendSchoolOtpMutation({
+    onSuccess: (data) => {
+      const otpId =
+        data?.data?.id ??
+        data?.data?.otpId ??
+        data?.id ??
+        data?.otpId ??
+        null;
+      setSchoolResetId(otpId);
+      setIsOtpSent(true);
+      setIsOtpVerified(false);
+      setOtpCode("");
+      enqueueSnackbar("OTP sent to your mobile number", { variant: "success" });
+    },
+    onError: (error) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to send OTP. Please try again.";
+      setIsOtpSent(false);
+      setSchoolResetId(null);
+      setResetErrors((prev) => ({ ...prev, form: errorMessage }));
+    },
+  });
+
+  const verifySchoolOtpMutation = useVerifySchoolOtpMutation({
+    onSuccess: () => {
+      setIsOtpVerified(true);
+      setResetErrors((prev) => ({ ...prev, otpCode: "", form: "" }));
+      enqueueSnackbar("OTP verified successfully", { variant: "success" });
+    },
+    onError: (error) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Invalid or expired OTP";
+      setIsOtpVerified(false);
+      setResetErrors((prev) => ({
+        ...prev,
+        otpCode: errorMessage,
+        form: "",
+      }));
     },
   });
 
@@ -196,14 +238,12 @@ const Login = () => {
     setSchoolResetId(null);
     setIsOtpSent(false);
     setIsOtpVerified(false);
-    setOldPassword("");
     setNewPassword("");
     setConfirmPassword("");
     setResetErrors({
       userId: "",
       mobileNumber: "",
       otpCode: "",
-      oldPassword: "",
       newPassword: "",
       confirmPassword: "",
       form: "",
@@ -236,7 +276,6 @@ const Login = () => {
       userId: "",
       mobileNumber: "",
       otpCode: "",
-      oldPassword: "",
       newPassword: "",
       confirmPassword: "",
       form: "",
@@ -254,11 +293,24 @@ const Login = () => {
       return;
     }
 
+    if (mobileNumber.trim().length !== 10) {
+      nextErrors.mobileNumber = "Mobile number must be exactly 10 digits";
+      setResetErrors(nextErrors);
+      return;
+    }
+
+    if (!/^[6-9]/.test(mobileNumber.trim())) {
+      nextErrors.mobileNumber = "Mobile number must start with 6, 7, 8, or 9";
+      setResetErrors(nextErrors);
+      return;
+    }
+
     setResetErrors(nextErrors);
-    setIsOtpSent(true);
-    setIsOtpVerified(false);
-    setOtpCode("");
-    enqueueSnackbar("OTP sent successfully", { variant: "success" });
+    sendSchoolOtpMutation.mutate({
+      userName: userId.trim(),
+      roleId: getRoleId("school"),
+      mobileNo: mobileNumber.trim(),
+    });
   };
 
   const handleVerifyResetOtp = () => {
@@ -272,19 +324,28 @@ const Login = () => {
       return;
     }
 
-    if (enteredOtp !== STATIC_RESET_OTP) {
+    if (enteredOtp.length !== 6) {
       setResetErrors((prev) => ({
         ...prev,
-        otpCode: "Invalid OTP",
+        otpCode: "OTP must be 6 digits",
         form: "",
       }));
-      setIsOtpVerified(false);
       return;
     }
 
-    setIsOtpVerified(true);
-    setResetErrors((prev) => ({ ...prev, otpCode: "", form: "" }));
-    enqueueSnackbar("OTP verified successfully", { variant: "success" });
+    if (!schoolResetId) {
+      setResetErrors((prev) => ({
+        ...prev,
+        form: "Please send OTP first",
+      }));
+      return;
+    }
+
+    verifySchoolOtpMutation.mutate({
+      id: schoolResetId,
+      userName: userId.trim(),
+      otpCode: enteredOtp,
+    });
   };
 
   const handleSchoolResetPassword = () => {
@@ -292,7 +353,6 @@ const Login = () => {
       userId: "",
       mobileNumber: "",
       otpCode: "",
-      oldPassword: "",
       newPassword: "",
       confirmPassword: "",
       form: "",
@@ -303,20 +363,12 @@ const Login = () => {
       nextErrors.userId = "Please enter your UDISE Code";
       hasError = true;
     }
-    if (!isOtpVerified) {
+    if (!isOtpVerified || !schoolResetId) {
       nextErrors.otpCode = "Please verify OTP first";
-      hasError = true;
-    }
-    if (!oldPassword.trim()) {
-      nextErrors.oldPassword = "Please enter your old password";
       hasError = true;
     }
     if (!newPassword.trim()) {
       nextErrors.newPassword = "Please enter a new password";
-      hasError = true;
-    }
-    if (oldPassword.trim() && newPassword.trim() && oldPassword.trim() === newPassword.trim()) {
-      nextErrors.newPassword = "New password must be different from old password";
       hasError = true;
     }
     if (!confirmPassword.trim()) {
@@ -338,8 +390,8 @@ const Login = () => {
     }
 
     schoolResetPasswordMutation.mutate({
-      id: schoolResetId || 1,
-      otpCode: STATIC_RESET_OTP,
+      id: schoolResetId,
+      otpCode: otpCode.trim(),
       userName: userId.trim(),
       password: newPassword.trim(),
     });
@@ -647,9 +699,17 @@ const Login = () => {
                     type="button"
                     className="lp-send-otp-btn"
                     onClick={handleSendSchoolOtp}
-                    disabled={!userId.trim() || !mobileNumber.trim()}
+                    disabled={
+                      !userId.trim() ||
+                      !mobileNumber.trim() ||
+                      sendSchoolOtpMutation.isPending
+                    }
                   >
-                    <span>{isOtpSent ? "Resend OTP" : "Send OTP"}</span>
+                    {sendSchoolOtpMutation.isPending ? (
+                      <span>Sending OTP…</span>
+                    ) : (
+                      <span>{isOtpSent ? "Resend OTP" : "Send OTP"}</span>
+                    )}
                   </button>
                   {isOtpSent && (
                     <>
@@ -663,12 +723,12 @@ const Login = () => {
                           className="lp-input"
                           type="text"
                           inputMode="numeric"
-                          placeholder="Enter OTP"
+                          placeholder="Enter 6-digit OTP"
                           value={otpCode}
                           disabled={isOtpVerified}
                           onChange={(e) => {
                             setOtpCode(
-                              e.target.value.replace(/\D/g, "").slice(0, 4),
+                              e.target.value.replace(/\D/g, "").slice(0, 6),
                             );
                             setIsOtpVerified(false);
                             setResetErrors((prev) => ({
@@ -691,9 +751,16 @@ const Login = () => {
                           type="button"
                           className="lp-send-otp-btn"
                           onClick={handleVerifyResetOtp}
-                          disabled={!otpCode.trim()}
+                          disabled={
+                            !otpCode.trim() ||
+                            verifySchoolOtpMutation.isPending
+                          }
                         >
-                          <span>Verify OTP</span>
+                          {verifySchoolOtpMutation.isPending ? (
+                            <span>Verifying…</span>
+                          ) : (
+                            <span>Verify OTP</span>
+                          )}
                         </button>
                       )}
                       {isOtpVerified && (
@@ -701,33 +768,6 @@ const Login = () => {
                       )}
                       {isOtpVerified && (
                         <>
-                          <div className="lp-field-gap" />
-                          <span className="lp-section-label">Old Password</span>
-                          <div
-                            className={`lp-input-wrap${oldPasswordFocused ? " lp-input-focused" : ""}${resetErrors.oldPassword ? " lp-input-error" : ""}`}
-                          >
-                            <LockOutlined className="lp-input-adorn" />
-                            <input
-                              className="lp-input"
-                              type="password"
-                              placeholder="Enter your old password"
-                              value={oldPassword}
-                              onChange={(e) => {
-                                setOldPassword(e.target.value);
-                                setResetErrors((prev) => ({
-                                  ...prev,
-                                  oldPassword: "",
-                                }));
-                              }}
-                              onFocus={() => setOldPasswordFocused(true)}
-                              onBlur={() => setOldPasswordFocused(false)}
-                            />
-                          </div>
-                          {resetErrors.oldPassword && (
-                            <span className="lp-error">
-                              {resetErrors.oldPassword}
-                            </span>
-                          )}
                           <div className="lp-field-gap" />
                           <span className="lp-section-label">New Password</span>
                           <div
@@ -883,7 +923,6 @@ const Login = () => {
                     onClick={handleSchoolResetPassword}
                     disabled={
                       !userId.trim() ||
-                      !oldPassword.trim() ||
                       !newPassword.trim() ||
                       !confirmPassword.trim() ||
                       schoolResetPasswordMutation.isPending

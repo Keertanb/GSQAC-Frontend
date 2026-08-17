@@ -14,9 +14,10 @@ import {
   Business,
   AccountCircle,
   ManageAccounts,
-  Newspaper,
-  FolderShared,
-  RestartAlt,
+    Newspaper,
+    FolderShared,
+    RestartAlt,
+    LockReset,
 } from "@mui/icons-material";
 
 const DRAWER_WIDTH = {
@@ -199,6 +200,13 @@ export const adminMenuItems = [
     icon: RestartAlt,
     url: "/admin-dashboard/school-form-reset",
     activeFinder: ["/admin-dashboard/school-form-reset"],
+  },
+  {
+    id: "school-password-reset",
+    label: "School Password Reset",
+    icon: LockReset,
+    url: "/admin-dashboard/school-password-reset",
+    activeFinder: ["/admin-dashboard/school-password-reset"],
   },
   {
     id: "parent-feedback",

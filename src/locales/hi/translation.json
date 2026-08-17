@@ -102,7 +102,16 @@
       "deleteDomain": "डोमेन हटाएं",
       "deleteDomainConfirm": "क्या आप वाकई \"{{domainName}}\" डोमेन हटाना चाहते हैं? यह क्रिया वापस नहीं की जा सकती।",
       "deleteAssessment": "मूल्यांकन हटाएं",
-      "deleteAssessmentConfirm": "क्या आप वाकई \"{{assessmentName}}\" मूल्यांकन हटाना चाहते हैं? यह क्रिया वापस नहीं की जा सकती और सभी संबंधित डोमेन और प्रश्न भी हट जाएंगे।"
+      "deleteAssessmentConfirm": "क्या आप वाकई \"{{assessmentName}}\" मूल्यांकन हटाना चाहते हैं? यह क्रिया वापस नहीं की जा सकती और सभी संबंधित डोमेन और प्रश्न भी हट जाएंगे।",
+      "selectDownloadRole": "भूमिका चुनें",
+      "downloadPdf": "PDF डाउनलोड करें",
+      "downloadingPdf": "PDF तैयार हो रहा है...",
+      "downloadPdfTitle": "मूल्यांकन प्रश्नावलियाँ",
+      "downloadPdfSelectRole": "मूल्यांकन डाउनलोड करने के लिए भूमिका चुनें.",
+      "downloadPdfNoAssessments": "चयनित भूमिका के लिए कोई मूल्यांकन नहीं मिला.",
+      "downloadPdfEmpty": "इन मूल्यांकनों में निर्यात करने के लिए प्रश्न नहीं हैं.",
+      "downloadPdfFailed": "PDF डाउनलोड विफल रहा. कृपया फिर से प्रयास करें.",
+      "downloadPdfOpenResponse": "खुला उत्तर / अंक"
     },
     "domain": {
       "title": "डोमेन",

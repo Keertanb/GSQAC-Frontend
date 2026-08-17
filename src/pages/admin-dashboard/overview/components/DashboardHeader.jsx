@@ -1,5 +1,6 @@
 import React from "react";
 import AppDropdown from "../../../../components/AppDropdown/AppDropdown";
+import { useExportDashboard } from "../hooks/useExportDashboard";
 
 export function DashboardHeader({
   scopeTitle,
@@ -19,6 +20,8 @@ export function DashboardHeader({
   onSchoolChange,
   onRefresh,
 }) {
+  const { exportToXlsx, isExporting, exportProgress } = useExportDashboard();
+
   return (
     <header className="ado-header">
       <div className="ado-header-top">
@@ -90,18 +93,78 @@ export function DashboardHeader({
               />
             </div>
           </div>
-          <button
-            type="button"
-            className="ado-refresh-btn"
-            onClick={onRefresh}
-            disabled={isFetching}
-            aria-label="Refresh dashboard data"
-          >
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className={isFetching ? "ado-spin-icon" : ""} aria-hidden>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {isFetching ? "Syncing…" : "Refresh"}
-          </button>
+          <div className="ado-header-btn-group">
+            <button
+              id="admin-dashboard-download-report-btn"
+              type="button"
+              className="ado-download-btn"
+              onClick={exportToXlsx}
+              disabled={isExporting}
+              aria-label="Download dashboard report as Excel"
+              title="Download XLSX report (District · Block · Cluster · School)"
+            >
+              {isExporting ? (
+                <>
+                  <svg
+                    className="ado-spin-icon"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  {exportProgress || "Preparing…"}
+                </>
+              ) : (
+                <>
+                  <svg
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                  Download Report
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              className="ado-refresh-btn"
+              onClick={onRefresh}
+              disabled={isFetching}
+              aria-label="Refresh dashboard data"
+            >
+              <svg
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                className={isFetching ? "ado-spin-icon" : ""}
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              {isFetching ? "Syncing…" : "Refresh"}
+            </button>
+          </div>
         </div>
       </div>
     </header>

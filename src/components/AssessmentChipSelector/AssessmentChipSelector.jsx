@@ -14,6 +14,7 @@ export function AssessmentChipSelector({
   getAssessmentLabel,
   getAssessmentTheme: getAssessmentThemeProp = getAssessmentTheme,
   className = "",
+  showPeriod = true,
 }) {
   const { t } = useTranslation();
   if (!assessments || assessments.length <= 1) return null;
@@ -43,7 +44,9 @@ export function AssessmentChipSelector({
             getAssessmentLabel?.(assessment) ||
             assessment.assessmentName ||
             `Assessment ${assessment.assessmentId}`;
-          const periodLabel = formatAssessmentPeriod(assessment, t);
+          const periodLabel = showPeriod
+            ? formatAssessmentPeriod(assessment, t)
+            : "";
           const chipLabel = periodLabel
             ? `${nameLabel} · ${periodLabel}`
             : nameLabel;

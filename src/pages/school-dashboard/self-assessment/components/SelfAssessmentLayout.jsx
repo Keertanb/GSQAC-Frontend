@@ -59,6 +59,7 @@ import { SubmitPreviewModal } from "./SubmitPreviewModal";
 import { AssessmentNavProgressBar } from "../../../../components/AssessmentNavProgressBar/AssessmentNavProgressBar";
 import { AssessmentChipSelector } from "../../../../components/AssessmentChipSelector/AssessmentChipSelector";
 import { AssessmentPeriodChips } from "../../../../components/AssessmentPeriodChips/AssessmentPeriodChips";
+import { ENV_ACADEMIC_YEAR } from "../../../../utils/assessmentMeta";
 import {
   getSubdomainEvidenceProgress,
   getDomainMandatoryEvidenceProgress,
@@ -989,8 +990,8 @@ export function SelfAssessmentLayout({ c }) {
                     }}
                   />
                   <AssessmentPeriodChips
-                    academicYear={selectedAssessment?.academicYear}
-                    round={selectedAssessment?.round}
+                    academicYear={ENV_ACADEMIC_YEAR}
+                    showRound={false}
                   />
                   {/* Status Message */}
                   {!isSubmitted && endDate && (
@@ -1358,6 +1359,7 @@ export function SelfAssessmentLayout({ c }) {
                       selectedAssessmentId={selectedAssessment?.assessmentId}
                       label={t("selfAssessment.selectAssessment")}
                       onSelect={handleAssessmentSelect}
+                      showPeriod={false}
                       getAssessmentLabel={(assessment) =>
                         assessment.assessmentName ||
                         t("selfAssessment.assessmentNameFallback", {
@@ -2645,8 +2647,8 @@ export function SelfAssessmentLayout({ c }) {
         emptyMessage={t("selfAssessment.submitPreview.emptyMessage")}
         confirmText={t("selfAssessment.submitAssessment")}
         cancelText={t("selfAssessment.submitPreview.cancel")}
-        academicYear={selectedAssessment?.academicYear}
-        round={selectedAssessment?.round}
+        academicYear={ENV_ACADEMIC_YEAR}
+        round=""
       />
     </Box>
   );

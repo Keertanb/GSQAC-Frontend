@@ -6,6 +6,7 @@ export const queryKeys = {
     verifyOtp: (userName, otp) => ["auth", "verify-otp", userName, otp],
     resetPassword: () => ["auth", "reset-password"],
     schoolSendOtp: (userName) => ["auth", "school-send-otp", userName],
+    schoolVerifyOtp: () => ["auth", "school-verify-otp"],
     schoolResetPassword: () => ["auth", "school-reset-password"],
     logout: () => ["auth", "logout"],
   },

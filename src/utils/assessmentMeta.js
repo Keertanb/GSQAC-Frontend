@@ -91,7 +91,7 @@ export function formatAcademicYearLabel(academicYear, t) {
 }
 
 export const ENV_ACADEMIC_YEAR =
-  import.meta.env.VITE_ACADEMIC_YEAR || "2024-25";
+  import.meta.env.VITE_ACADEMIC_YEAR || "2026-27";
 export const ENV_ROUND = Number(import.meta.env.VITE_ROUND ?? 1);
 
 export function resolveAssessmentPeriod(assessment = {}) {

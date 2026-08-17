@@ -103,7 +103,16 @@
       "deleteDomain": "Delete Domain",
       "deleteDomainConfirm": "Are you sure you want to delete the domain \"{{domainName}}\"? This action cannot be undone.",
       "deleteAssessment": "Delete Assessment",
-      "deleteAssessmentConfirm": "Are you sure you want to delete the assessment \"{{assessmentName}}\"? This action cannot be undone and will delete all associated domains and questions."
+      "deleteAssessmentConfirm": "Are you sure you want to delete the assessment \"{{assessmentName}}\"? This action cannot be undone and will delete all associated domains and questions.",
+      "selectDownloadRole": "Select role",
+      "downloadPdf": "Download PDF",
+      "downloadingPdf": "Preparing PDF...",
+      "downloadPdfTitle": "Assessment questionnaires",
+      "downloadPdfSelectRole": "Select a role to download assessments.",
+      "downloadPdfNoAssessments": "No assessments found for the selected role.",
+      "downloadPdfEmpty": "These assessments have no questions to export.",
+      "downloadPdfFailed": "Failed to download PDF. Please try again.",
+      "downloadPdfOpenResponse": "Open response / marks"
     },
     "domain": {
       "title": "Domain",

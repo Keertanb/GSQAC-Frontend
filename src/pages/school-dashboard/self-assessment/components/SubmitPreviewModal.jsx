@@ -131,7 +131,7 @@ export function SubmitPreviewModal({
             >
               <AssessmentPeriodChips
                 academicYear={period.academicYear}
-                round={period.round}
+                showRound={false}
               />
               {typeof totalAnswered === "number" && totalAnswered > 0 && (
                 <Typography
@@ -399,7 +399,7 @@ export function SubmitPreviewModal({
               await generateSubmitPreviewPdf({
                 previewData,
                 academicYear: period.academicYear,
-                round: period.round,
+                round: "",
                 totalAnswered,
                 title,
                 fileName: "self-assessment-preview.pdf",

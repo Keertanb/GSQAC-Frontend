@@ -1422,6 +1422,45 @@ export const useResetSchoolAssessmentFormMutation = (options = {}) => {
   });
 };
 
+export const getSchoolLogin = async (schoolId) => {
+  const response = await axiosInstance.get("/admin/school-login", {
+    params: { schoolId },
+  });
+  return response.data;
+};
+
+export const useGetSchoolLoginQuery = (schoolId, enabled = true) => {
+  return useQuery({
+    queryKey: ["admin", "school-login", schoolId],
+    queryFn: () => getSchoolLogin(schoolId),
+    enabled: enabled && !!schoolId,
+    staleTime: 30 * 1000,
+    retry: false,
+  });
+};
+
+export const resetSchoolPassword = async ({ schoolId, password }) => {
+  const response = await axiosInstance.post("/admin/school-password-reset", {
+    schoolId,
+    password,
+  });
+  return response.data;
+};
+
+export const useResetSchoolPasswordMutation = (options = {}) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resetSchoolPassword,
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "school-login", variables.schoolId],
+      });
+      options.onSuccess?.(data, variables, context);
+    },
+    onError: options.onError,
+  });
+};
+
 export const getAdminSchoolAssessmentReport = async ({
   schoolId,
   assessmentId,

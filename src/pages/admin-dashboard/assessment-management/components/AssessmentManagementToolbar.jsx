@@ -2,11 +2,16 @@ import React from "react";
 import {
   Box,
   Button,
+  CircularProgress,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
   ToggleButton,
   ToggleButtonGroup,
 } from "@mui/material";
-import { Add, Settings } from "@mui/icons-material";
+import { Add, Download, Settings } from "@mui/icons-material";
 
 /**
  * Language toggle + primary actions (add assessment, settings).
@@ -17,6 +22,10 @@ export function AssessmentManagementToolbar({
   onLanguageChange,
   onAddAssessmentClick,
   onOpenSettings,
+  pdfDownloadManagement,
+  onPdfDownloadManagementChange,
+  onDownloadAssessmentsPdf,
+  isDownloadingAssessmentsPdf,
   t,
   colors,
 }) {
@@ -68,7 +77,59 @@ export function AssessmentManagementToolbar({
           <ToggleButton value="hi">हिं</ToggleButton>
         </ToggleButtonGroup>
       </Box>
-      <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+      <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+        <FormControl size="small" sx={{ minWidth: 200 }}>
+          <InputLabel id="assessment-pdf-role-label">
+            {t("assessment.management.selectDownloadRole")}
+          </InputLabel>
+          <Select
+            labelId="assessment-pdf-role-label"
+            value={pdfDownloadManagement}
+            label={t("assessment.management.selectDownloadRole")}
+            onChange={(event) => onPdfDownloadManagementChange(event.target.value)}
+            disabled={isDownloadingAssessmentsPdf}
+            displayEmpty
+          >
+            <MenuItem value="">
+              <em>{t("assessment.management.selectDownloadRole")}</em>
+            </MenuItem>
+            <MenuItem value="2">
+              {t("assessment.management.schoolManagementTypes.governmentSchool")}
+            </MenuItem>
+            <MenuItem value="1">
+              {t("assessment.management.schoolManagementTypes.privateSchool")}
+            </MenuItem>
+            <MenuItem value="3">
+              {t("assessment.management.schoolManagementTypes.grantInAidSchool")}
+            </MenuItem>
+          </Select>
+        </FormControl>
+        <Button
+          variant="outlined"
+          startIcon={
+            isDownloadingAssessmentsPdf ? (
+              <CircularProgress size={16} />
+            ) : (
+              <Download />
+            )
+          }
+          onClick={onDownloadAssessmentsPdf}
+          disabled={isDownloadingAssessmentsPdf || !pdfDownloadManagement}
+          sx={{
+            borderColor: colors.primary.blue,
+            color: colors.primary.blue,
+            fontWeight: 600,
+            textTransform: "none",
+            "&:hover": {
+              borderColor: colors.primary.dark,
+              bgcolor: colors.primary.lightest,
+            },
+          }}
+        >
+          {isDownloadingAssessmentsPdf
+            ? t("assessment.management.downloadingPdf")
+            : t("assessment.management.downloadPdf")}
+        </Button>
         <Button
           variant="contained"
           startIcon={<Add />}

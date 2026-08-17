@@ -22,6 +22,7 @@ import SchoolAllocation from "./school-allocation/SchoolAllocation";
 import SchoolAssessmentStatus from "./school-assessment-status/SchoolAssessmentStatus";
 import SchoolSelfAssessmentMonitor from "./school-self-assessment-monitor/SchoolSelfAssessmentMonitor";
 import SchoolFormReset from "./school-form-reset/SchoolFormReset";
+import SchoolPasswordReset from "./school-password-reset/SchoolPasswordReset";
 import ParentFeedback from "./parent-feedback/ParentFeedback";
 import LatestNewsAdmin from "./latest-news/LatestNewsAdmin";
 import ImportantDocumentsAdmin from "./important-documents/ImportantDocumentsAdmin";
@@ -37,6 +38,7 @@ import {
   ADMIN_SCHOOL_ASSESSMENT_STATUS_URL,
   ADMIN_SCHOOL_SELF_ASSESSMENT_MONITOR_URL,
   ADMIN_SCHOOL_FORM_RESET_URL,
+  ADMIN_SCHOOL_PASSWORD_RESET_URL,
   ADMIN_ROLE_MANAGEMENT_URL,
   ADMIN_DISTRICT_NODAL_OFFICERS_URL,
   ADMIN_PARENT_FEEDBACK_URL,
@@ -96,6 +98,8 @@ const AdminDashboard = () => {
       return "school-self-assessment-monitor";
     } else if (location.pathname === ADMIN_SCHOOL_FORM_RESET_URL) {
       return "school-form-reset";
+    } else if (location.pathname === ADMIN_SCHOOL_PASSWORD_RESET_URL) {
+      return "school-password-reset";
     } else if (location.pathname === ADMIN_DISTRICT_NODAL_OFFICERS_URL) {
       return "district-nodal-officers";
     } else if (location.pathname === ADMIN_ROLE_MANAGEMENT_URL) {
@@ -397,6 +401,7 @@ const AdminDashboard = () => {
               <SchoolSelfAssessmentMonitor />
             )}
             {currentView === "school-form-reset" && <SchoolFormReset />}
+            {currentView === "school-password-reset" && <SchoolPasswordReset />}
             {currentView === "district-nodal-officers" && (
               <DistrictNodalOfficers />
             )}

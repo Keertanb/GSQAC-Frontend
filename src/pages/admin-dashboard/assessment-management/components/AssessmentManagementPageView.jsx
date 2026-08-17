@@ -57,6 +57,10 @@ export function AssessmentManagementPageView({ c }) {
         onLanguageChange={handleLanguageChange}
         onAddAssessmentClick={() => setAddAssessmentModalOpen(true)}
         onOpenSettings={handleOpenSettingsModal}
+        pdfDownloadManagement={c.pdfDownloadManagement}
+        onPdfDownloadManagementChange={c.setPdfDownloadManagement}
+        onDownloadAssessmentsPdf={c.handleDownloadAssessmentsPdf}
+        isDownloadingAssessmentsPdf={c.isDownloadingAssessmentsPdf}
         t={t}
         colors={colors}
       />

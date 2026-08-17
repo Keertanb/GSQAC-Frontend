@@ -102,7 +102,16 @@
       "deleteDomain": "ડોમેન કાઢી નાખો",
       "deleteDomainConfirm": "શું તમે ખરેખર \"{{domainName}}\" ડોમેન કાઢી નાખવા માંગો છો? આ ક્રિયા પાછી ફેરવી શકાશે નહીં.",
       "deleteAssessment": "મૂલ્યાંકન કાઢી નાખો",
-      "deleteAssessmentConfirm": "શું તમે ખરેખર \"{{assessmentName}}\" મૂલ્યાંકન કાઢી નાખવા માંગો છો? આ ક્રિયા પાછી ફેરવી શકાશે નહીં અને જોડાયેલા બધા ડોમેન્સ અને પ્રશ્નો પણ કાઢી નાખવામાં આવશે."
+      "deleteAssessmentConfirm": "શું તમે ખરેખર \"{{assessmentName}}\" મૂલ્યાંકન કાઢી નાખવા માંગો છો? આ ક્રિયા પાછી ફેરવી શકાશે નહીં અને જોડાયેલા બધા ડોમેન્સ અને પ્રશ્નો પણ કાઢી નાખવામાં આવશે.",
+      "selectDownloadRole": "ભૂમિકા પસંદ કરો",
+      "downloadPdf": "PDF ડાઉનલોડ કરો",
+      "downloadingPdf": "PDF તૈયાર થઈ રહ્યું છે...",
+      "downloadPdfTitle": "મૂલ્યાંકન પ્રશ્નાવલીઓ",
+      "downloadPdfSelectRole": "મૂલ્યાંકન ડાઉનલોડ કરવા માટે ભૂમિકા પસંદ કરો.",
+      "downloadPdfNoAssessments": "પસંદ કરેલી ભૂમિકા માટે કોઈ મૂલ્યાંકન મળ્યું નથી.",
+      "downloadPdfEmpty": "આ મૂલ્યાંકનોમાં નિકાસ કરવા માટે પ્રશ્નો નથી.",
+      "downloadPdfFailed": "PDF ડાઉનલોડ નિષ્ફળ. કૃપા કરીને ફરી પ્રયાસ કરો.",
+      "downloadPdfOpenResponse": "ખુલ્લો જવાબ / ગુણ"
     },
     "domain": {
       "title": "ડોમેન",

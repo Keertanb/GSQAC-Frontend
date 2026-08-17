@@ -43,6 +43,16 @@ export const sendSchoolOtp = async (payload) => {
 };
 
 /**
+ * Verify OTP for school password reset
+ * @param {Object} payload - { id: number, userName: string, otpCode: string }
+ * @returns {Promise} API response
+ */
+export const verifySchoolOtp = async (payload) => {
+  const response = await axiosInstance.post("/school/verify-otp", payload);
+  return response.data;
+};
+
+/**
  * Reset school password with OTP
  * @param {Object} payload - { id: number, otpCode: string, userName: string, password: string }
  * @returns {Promise} API response
@@ -109,6 +119,19 @@ export const useSendSchoolOtpMutation = (options = {}) => {
   return useMutation({
     mutationFn: (data) => sendSchoolOtp(data),
     mutationKey: queryKeys.auth.schoolSendOtp(),
+    ...options,
+  });
+};
+
+/**
+ * React Query hook for verifying school reset OTP
+ * @param {Object} options - Mutation options
+ * @returns {Object} Mutation object from React Query
+ */
+export const useVerifySchoolOtpMutation = (options = {}) => {
+  return useMutation({
+    mutationFn: (data) => verifySchoolOtp(data),
+    mutationKey: queryKeys.auth.schoolVerifyOtp(),
     ...options,
   });
 };
