@@ -26,6 +26,7 @@ import {
 } from "../../constants/menuItems";
 import { roles } from "../../constants/roles";
 import DrawerWrapper from "./AppDrawer.style";
+import GsqacLogoImg from "../../assets/gsqac_logo.png";
 import "./AppDrawer.css";
 
 function isRouteActive(pathname, pattern) {
@@ -200,26 +201,29 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
             >
               <Box
                 sx={{
-                  width: "40px",
-                  height: "40px",
+                  width: "48px",
+                  height: "48px",
                   borderRadius: "12px",
-                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}dd 100%)`,
+                  background: "#ffffff",
+                  border: "1px solid rgba(148, 163, 184, 0.28)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: `0 6px 14px ${primaryColor}35`,
+                  overflow: "hidden",
+                  flexShrink: 0,
                 }}
               >
-                <Typography
+                <Box
+                  component="img"
+                  src={GsqacLogoImg}
+                  alt="GSQAC"
                   sx={{
-                    color: "white",
-                    fontWeight: 800,
-                    fontSize: "1.25rem",
-                    letterSpacing: "-0.02em",
+                    width: "42px",
+                    height: "42px",
+                    objectFit: "contain",
+                    display: "block",
                   }}
-                >
-                  G
-                </Typography>
+                />
               </Box>
               <Box>
                 <Typography
@@ -271,24 +275,26 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
                 width: "44px",
                 height: "44px",
                 borderRadius: "12px",
-                background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}dd 100%)`,
+                background: "#ffffff",
+                border: "1px solid rgba(148, 163, 184, 0.28)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: `0 4px 12px ${primaryColor}30`,
+                overflow: "hidden",
                 mx: "auto",
               }}
             >
-              <Typography
+              <Box
+                component="img"
+                src={GsqacLogoImg}
+                alt="GSQAC"
                 sx={{
-                  color: "white",
-                  fontWeight: 800,
-                  fontSize: "1.25rem",
-                  letterSpacing: "-0.02em",
+                  width: "38px",
+                  height: "38px",
+                  objectFit: "contain",
+                  display: "block",
                 }}
-              >
-                G
-              </Typography>
+              />
             </Box>
           )}
         </Box>

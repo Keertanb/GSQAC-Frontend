@@ -16,8 +16,8 @@ const SCHOOL_ONLY = "school";
 const SCHOOL_WITH_HOSTEL = "hostel";
 
 const OPTION_LABELS = {
-  [SCHOOL_ONLY]: "શાળા (છાત્રાલય વિનાની શાળા)",
-  [SCHOOL_WITH_HOSTEL]: "છાત્રાલય સાથેની શાળા",
+  [SCHOOL_ONLY]: "છાત્રાલય વિનાની શાળા",
+  [SCHOOL_WITH_HOSTEL]: "છાત્રાલય વાળી શાળા",
 };
 
 export function HostelFacilityModal({ open, onConfirm, isLoading = false }) {
@@ -89,7 +89,8 @@ export function HostelFacilityModal({ open, onConfirm, isLoading = false }) {
               variant="body1"
               sx={{ mb: 2.5, fontWeight: 700, lineHeight: 1.7 }}
             >
-              સ્વ-મૂલ્યાંકનની પ્રક્રિયા શરૂ કરવા માટે તમારી શાળાનો પ્રકાર પસંદ કરો.
+              સ્વ-મૂલ્યાંકનની પ્રક્રિયા શરૂ કરવા માટે તમારી શાળાનો પ્રકાર પસંદ
+              કરો.
             </Typography>
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
@@ -194,7 +195,11 @@ export function HostelFacilityModal({ open, onConfirm, isLoading = false }) {
                 minWidth: 90,
               }}
             >
-              {isLoading ? <CircularProgress size={18} color="inherit" /> : "હા"}
+              {isLoading ? (
+                <CircularProgress size={18} color="inherit" />
+              ) : (
+                "હા"
+              )}
             </Button>
           </>
         ) : (
