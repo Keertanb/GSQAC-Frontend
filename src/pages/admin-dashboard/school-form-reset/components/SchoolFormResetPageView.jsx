@@ -74,7 +74,8 @@ export function SchoolFormResetPageView({ c }) {
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
           Search a school by UDISE / School ID, review details, then reset their
-          filled self-assessment answers, sessions, and evidence.
+          filled self-assessment answers, sessions, evidence, and hostel facility
+          response.
         </Typography>
 
         <Stack
@@ -282,8 +283,8 @@ export function SchoolFormResetPageView({ c }) {
               <Alert severity="warning" sx={{ mb: 2 }}>
                 Reset permanently deletes this school&apos;s self-assessment
                 answers, assessment sessions, and uploaded evidence for the
-                current academic year. The school will need to fill the form
-                again.
+                current academic year, and clears the hostel facility response.
+                The school will need to fill the form and hostel question again.
               </Alert>
               <Button
                 variant="contained"
@@ -311,7 +312,7 @@ export function SchoolFormResetPageView({ c }) {
         onClose={() => !isResetting && setConfirmOpen(false)}
         onConfirm={handleConfirmReset}
         title="Reset school assessment form?"
-        message={`This will permanently clear all filled answers, sessions, and evidence for school ${searchedSchoolId}${
+        message={`This will permanently clear all filled answers, sessions, evidence, and the hostel facility response for school ${searchedSchoolId}${
           school?.schoolName ? ` (${school.schoolName})` : ""
         }. The school must complete the self-assessment again. This cannot be undone.`}
         confirmText="Yes, Reset Form"

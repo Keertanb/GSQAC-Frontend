@@ -386,6 +386,29 @@ export const adminRoutes = [
   },
 ];
 
+// NODAL OFFICER ROUTES — dashboard only, district-scoped
+export const nodalRoutes = [
+  {
+    path: ROUTE_URLS.ROOT_URL,
+    children: [
+      {
+        path: ROUTE_URLS.ADMIN_DASHBOARD_URL,
+        element: (
+          <ProtectedRoute requiredRole="nodal">
+            <Suspense fallback={<LazyLoad />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+    ],
+  },
+  {
+    path: ROUTE_URLS.WILDCARD_URL,
+    element: <Navigate to={ROUTE_URLS.ADMIN_DASHBOARD_URL} replace />,
+  },
+];
+
 // CRC ROUTES
 export const crcRoutes = [
   {

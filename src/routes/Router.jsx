@@ -8,6 +8,7 @@ import {
   parentRoutes,
   inspectorRoutes,
   adminRoutes,
+  nodalRoutes,
   crcRoutes,
 } from "./Routes";
 
@@ -26,6 +27,7 @@ const Router = () => {
       parent: parentRoutes,
       inspector: inspectorRoutes,
       admin: adminRoutes,
+      nodal: nodalRoutes,
       crc: crcRoutes,
     };
 

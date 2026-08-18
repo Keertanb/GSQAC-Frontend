@@ -242,10 +242,6 @@ export function AssessmentSettingsDialog({ c }) {
                                       e.target.value,
                                     )
                                   }
-                                  disabled={
-                                    assignment.isPublished === 1 &&
-                                    !assignment.isNew
-                                  }
                                 >
                                   <MenuItem value="">
                                     <em>

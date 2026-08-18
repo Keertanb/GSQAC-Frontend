@@ -16,6 +16,7 @@ const PublicRoute = ({ children }) => {
       inspector: "/inspector-dashboard",
       admin: "/admin-dashboard",
       crc: "/crc-dashboard",
+      nodal: "/admin-dashboard",
     };
 
     const dashboardRoute = dashboardRoutes[role];

@@ -19,8 +19,12 @@ export function DashboardHeader({
   onBlockChange,
   onSchoolChange,
   onRefresh,
+  isDistrictLocked = false,
+  eyebrowLabel = "GSQAC Admin",
 }) {
-  const { exportToXlsx, isExporting, exportProgress } = useExportDashboard();
+  const { exportToXlsx, isExporting, exportProgress } = useExportDashboard({
+    districtId: isDistrictLocked ? districtId : undefined,
+  });
 
   return (
     <header className="ado-header">
@@ -28,7 +32,7 @@ export function DashboardHeader({
         <div className="ado-header-scope">
           <div className="ado-header-eyebrow">
             <span className={`ado-live-dot ${isFetching ? "ado-live-pulse" : ""}`} aria-hidden />
-            <span>GSQAC Admin</span>
+            <span> {eyebrowLabel}</span>
             {lastUpdated && <span className="ado-updated">Updated {lastUpdated}</span>}
           </div>
           <div className="ado-header-title-row">
@@ -46,16 +50,27 @@ export function DashboardHeader({
               <span className="ado-filter-label">District</span>
               <AppDropdown
                 label=""
-                options={[
-                  { value: "", label: "All Districts" },
-                  ...districts.map((d) => ({ value: String(d.value), label: d.name })),
-                ]}
+                options={
+                  isDistrictLocked
+                    ? districts.map((d) => ({
+                        value: String(d.value ?? d.districtId),
+                        label: d.name || d.districtName || `District ${d.value ?? d.districtId}`,
+                      }))
+                    : [
+                        { value: "", label: "All Districts" },
+                        ...districts.map((d) => ({
+                          value: String(d.value),
+                          label: d.name,
+                        })),
+                      ]
+                }
                 value={districtId}
                 onChange={onDistrictChange}
-                placeholder="All Districts"
+                placeholder={isDistrictLocked ? "Your district" : "All Districts"}
                 valueKey="value"
                 labelKey="label"
                 className="ado-scope-filter"
+                disabled={isDistrictLocked}
               />
             </div>
             <div className="ado-filter-wrap">

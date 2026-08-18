@@ -709,6 +709,12 @@
   padding: 0.25rem 0.5rem;
 }
 
+.ado-chart-scroll {
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
 .ado-heatmap-cell {
   display: flex;
   flex-direction: column;
@@ -1097,6 +1103,100 @@
   color: var(--ado-slate-500);
   margin: 0;
   line-height: 1.4;
+}
+
+.ado-followup {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ado-followup-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.ado-followup-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.75rem 0.8rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--ado-slate-200);
+  background: #fff;
+}
+
+.ado-followup-metric--amber { background: #fffbeb; border-color: #fde68a; }
+.ado-followup-metric--blue { background: #eff6ff; border-color: #bfdbfe; }
+.ado-followup-metric--green { background: #ecfdf5; border-color: #a7f3d0; }
+
+.ado-followup-metric-value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ado-slate-800);
+  line-height: 1.1;
+}
+
+.ado-followup-metric-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ado-slate-700);
+}
+
+.ado-followup-metric-hint {
+  font-size: 0.6875rem;
+  color: var(--ado-slate-500);
+  line-height: 1.35;
+}
+
+.ado-followup-rates {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ado-followup-rate-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ado-slate-600);
+  margin-bottom: 0.35rem;
+}
+
+.ado-followup-rate-head strong {
+  font-size: 0.875rem;
+  color: var(--ado-slate-800);
+}
+
+.ado-followup-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.ado-followup-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  min-width: 0;
+}
+
+.ado-followup-bar-fill--green { background: #10b981; }
+.ado-followup-bar-fill--blue { background: #3b82f6; }
+
+.ado-followup-blocks {
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 720px) {
+  .ado-followup-metrics {
+    grid-template-columns: 1fr;
+  }
 }
 
 .ado-all-clear {

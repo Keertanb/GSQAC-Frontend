@@ -283,7 +283,7 @@ export function HeatmapGrid({ cells, unit = "schools" }) {
     <div className="ado-heatmap-grid">
       {cells.map((c) => (
         <div
-          key={c.name}
+          key={c.fullName || c.name}
           className="ado-heatmap-cell"
           style={{ background: `${getRateColor(c.rate)}1a`, borderColor: `${getRateColor(c.rate)}40` }}
           title={`${c.fullName || c.name}: ${c.completed ?? c.rate}/${c.total ?? c.allocated ?? ""} ${unit} · ${c.rate}%`}

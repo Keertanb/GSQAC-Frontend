@@ -20,6 +20,7 @@ import {
   parentMenuItems,
   inspectorMenuItems,
   adminMenuItems,
+  nodalMenuItems,
   crcMenuItems,
   DRAWER_WIDTH,
 } from "../../constants/menuItems";
@@ -128,6 +129,8 @@ const AppDrawer = ({ open, handleDrawerToggle }) => {
         return inspectorMenuItems;
       case "admin":
         return adminMenuItems;
+      case "nodal":
+        return nodalMenuItems;
       case "crc":
         return crcMenuItems;
       default:

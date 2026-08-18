@@ -238,6 +238,8 @@ export const adminMenuItems = [
   },
 ];
 
+export const nodalMenuItems = adminMenuItems.filter((item) => item.id === "dashboard");
+
 // CRC Menu Items
 export const crcMenuItems = [
   {

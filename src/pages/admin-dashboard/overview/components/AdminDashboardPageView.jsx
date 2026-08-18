@@ -5,18 +5,13 @@ import { DashboardTabs } from "./DashboardTabs";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { GeographyTab } from "./tabs/GeographyTab";
 
-const TABS = [
+const ALL_TABS = [
   { id: "overview", label: "Overview", Component: OverviewTab },
   { id: "geography", label: "Geography", Component: GeographyTab },
 ];
-const TAB_IDS = TABS.map((t) => t.id);
 
 export function AdminDashboardPageView({ c }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const requestedTab = searchParams.get("tab");
-  const activeTab = TAB_IDS.includes(requestedTab) ? requestedTab : "overview";
-  const ActiveTab = TABS.find((tab) => tab.id === activeTab)?.Component || OverviewTab;
-
   const {
     districtId,
     blockId,
@@ -33,10 +28,21 @@ export function AdminDashboardPageView({ c }) {
     isFetching,
     lastUpdated,
     refetch,
+    isNodal,
+    isDistrictLocked,
+    missingDistrictAssignment,
     handleDistrictChange,
     handleBlockChange,
     handleSchoolChange,
   } = c;
+
+  const TABS = isNodal
+    ? ALL_TABS.filter((tab) => tab.id === "overview")
+    : ALL_TABS;
+  const TAB_IDS = TABS.map((t) => t.id);
+  const requestedTab = searchParams.get("tab");
+  const activeTab = TAB_IDS.includes(requestedTab) ? requestedTab : "overview";
+  const ActiveTab = TABS.find((tab) => tab.id === activeTab)?.Component || OverviewTab;
 
   const scopeTitle = selectedSchool
     ? selectedSchool.schoolName
@@ -61,6 +67,16 @@ export function AdminDashboardPageView({ c }) {
       : selectedDistrict
         ? `Monitoring ${blocks.length} blocks · ${overview.totalSchools ?? 0} schools`
         : `Tracking ${districts.length} districts · ${overview.totalSchools ?? overview.totalTrackedSchools ?? 0} schools`;
+
+  if (missingDistrictAssignment) {
+    return (
+      <div className="ado-error">
+        <div className="ado-error-icon">!</div>
+        <p>No district is assigned to this nodal officer account.</p>
+        <p>Ask a GSQAC admin to assign a district, then sign in again.</p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -106,16 +122,20 @@ export function AdminDashboardPageView({ c }) {
           onBlockChange={handleBlockChange}
           onSchoolChange={handleSchoolChange}
           onRefresh={() => refetch()}
+          isDistrictLocked={Boolean(isDistrictLocked)}
+          eyebrowLabel={isNodal ? "Nodal Officer" : "GSQAC Admin"}
         />
-        <DashboardTabs
-          tabs={TABS}
-          value={activeTab}
-          onChange={(next) => {
-            const nextParams = new URLSearchParams(searchParams);
-            nextParams.set("tab", next);
-            setSearchParams(nextParams);
-          }}
-        />
+        {TABS.length > 1 && (
+          <DashboardTabs
+            tabs={TABS}
+            value={activeTab}
+            onChange={(next) => {
+              const nextParams = new URLSearchParams(searchParams);
+              nextParams.set("tab", next);
+              setSearchParams(nextParams);
+            }}
+          />
+        )}
       </div>
 
       <div

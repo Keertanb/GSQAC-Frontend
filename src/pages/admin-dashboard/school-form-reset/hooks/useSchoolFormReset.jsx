@@ -24,7 +24,7 @@ export function useSchoolFormReset() {
       const deleted = data?.data?.deleted || data?.deleted || {};
       enqueueSnackbar(
         data?.message ||
-          `Form reset complete. Answers: ${deleted.answers || 0}, Evidence: ${(deleted.questionEvidence || 0) + (deleted.subdomainEvidence || 0)}, Sessions: ${deleted.sessions || 0}.`,
+          `Form reset complete. Answers: ${deleted.answers || 0}, Evidence: ${(deleted.questionEvidence || 0) + (deleted.subdomainEvidence || 0)}, Sessions: ${deleted.sessions || 0}, Hostel: ${deleted.hostelFacility || 0}.`,
         { variant: "success" },
       );
       setConfirmOpen(false);

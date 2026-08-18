@@ -11,6 +11,7 @@ import {
   VerifiedUserOutlined,
   AdminPanelSettingsOutlined,
   AccountTreeOutlined,
+  LocationCityOutlined,
   CheckCircle,
   Star as StarIcon,
   EmojiEvents as EmojiEventsIcon,
@@ -20,7 +21,7 @@ import {
   VisibilityOff,
 } from "@mui/icons-material";
 import { enqueueSnackbar } from "notistack";
-import { roles, getRoleId } from "../../constants/roles";
+import { roles, getRoleId, DASHBOARD_ROUTES } from "../../constants/roles";
 import {
   useSendOtpMutation,
   useSendSchoolOtpMutation,
@@ -180,19 +181,23 @@ const Login = () => {
         return;
       }
 
-      const dashboardRoutes = {
-        school: "/school-dashboard",
-        parent: "/parent-dashboard",
-        inspector: "/inspector-dashboard",
-        admin: "/admin-dashboard",
-        crc: "/crc-dashboard",
-      };
-
-      const dashboardRoute = dashboardRoutes[selectedRole] || "/";
+      const dashboardRoute = DASHBOARD_ROUTES[selectedRole] || "/";
       const normalizedUserId =
         typeof apiUserId === "string" && !Number.isNaN(Number(apiUserId))
           ? Number(apiUserId)
           : apiUserId;
+
+      const rawDistrictId =
+        firstItem?.districtId ??
+        data?.data?.districtId ??
+        data?.districtId ??
+        firstItem?.entityId ??
+        null;
+      const parsedDistrictId = Number(rawDistrictId);
+      const apiDistrictId =
+        Number.isFinite(parsedDistrictId) && parsedDistrictId > 0
+          ? parsedDistrictId
+          : null;
 
       setUserData(
         {
@@ -200,11 +205,13 @@ const Login = () => {
           role: selectedRole,
           name: apiUserName,
           userName: apiUserName,
+          districtId: apiDistrictId,
         },
         token,
         selectedRole,
         normalizedUserId,
         apiUserName,
+        apiDistrictId,
       );
 
       navigate(dashboardRoute, { replace: true });
@@ -226,6 +233,7 @@ const Login = () => {
       parent: <PersonOutline fontSize="small" />,
       inspector: <VerifiedUserOutlined fontSize="small" />,
       admin: <AdminPanelSettingsOutlined fontSize="small" />,
+      nodal: <LocationCityOutlined fontSize="small" />,
       crc: <AccountTreeOutlined fontSize="small" />,
     };
     return iconMap[roleValue] || <PersonOutline fontSize="small" />;

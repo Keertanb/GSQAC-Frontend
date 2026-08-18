@@ -51,6 +51,7 @@ const OtpVerify = () => {
         inspector: "/inspector-dashboard",
         admin: "/admin-dashboard",
         crc: "/crc-dashboard",
+        nodal: "/admin-dashboard",
       };
 
       const dashboardRoute = dashboardRoutes[authRole];
@@ -190,7 +191,20 @@ const OtpVerify = () => {
             data?.data?.userName ||
             null;
 
-          setUserData(userData, token, currentRole, userId, userName);
+          const districtId =
+            data?.data?.[0]?.districtId ??
+            data?.data?.[0]?.entityId ??
+            data?.districtId ??
+            null;
+
+          setUserData(
+            { ...userData, districtId },
+            token,
+            currentRole,
+            userId,
+            userName,
+            districtId,
+          );
 
           const dashboardRoutes = {
             school: "/school-dashboard",
@@ -198,6 +212,7 @@ const OtpVerify = () => {
             inspector: "/inspector-dashboard",
             admin: "/admin-dashboard",
             crc: "/crc-dashboard",
+            nodal: "/admin-dashboard",
           };
 
           navigate(dashboardRoutes[currentRole] || "/");

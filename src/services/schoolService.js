@@ -71,9 +71,9 @@ export const useGetSubdomainQuestionsQuery = ({
         userId: userIdToUse,
       }),
     enabled: enabled && !!subDomainId && !!roleId,
-    staleTime: 0, // Always consider data stale to refetch on mount
-    refetchOnMount: "always", // Always refetch when component mounts
-    refetchOnWindowFocus: true, // Refetch when window regains focus
+    staleTime: 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -98,9 +98,9 @@ export const useGetDomainsQuery = ({
     queryKey: queryKeys.school.domains(roleId, languageCode, userIdToUse),
     queryFn: () => getDomains({ roleId, languageCode }),
     enabled: enabled && !!roleId,
-    staleTime: 0, // Always consider data stale to refetch on mount
-    refetchOnMount: "always", // Always refetch when component mounts
-    refetchOnWindowFocus: true, // Refetch when window regains focus
+    staleTime: 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 };
 

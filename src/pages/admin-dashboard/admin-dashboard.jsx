@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
@@ -55,7 +55,7 @@ const AdminDashboard = () => {
   const matchDownMD = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(!matchDownMD);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
-  const { logout, user } = useAuthStore();
+  const { logout, user, role } = useAuthStore();
 
   const logoutMutation = useLogoutMutation({
     onSuccess: () => {
@@ -115,6 +115,12 @@ const AdminDashboard = () => {
   };
 
   const currentView = getCurrentView();
+
+  useEffect(() => {
+    if (role === "nodal" && location.pathname !== ADMIN_DASHBOARD_URL) {
+      navigate(ADMIN_DASHBOARD_URL, { replace: true });
+    }
+  }, [role, location.pathname, navigate]);
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
@@ -255,7 +261,7 @@ const AdminDashboard = () => {
                     backgroundClip: "text",
                   }}
                 >
-                  GSQAC Admin
+                  GSQAC {role === "nodal" ? "Nodal Officer" : "Admin"}
                 </Typography>
                 <Typography
                   variant="caption"

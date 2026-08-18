@@ -23,13 +23,17 @@ const useAuthStore = create(
 
       setUserData: (userData, token, role, userId, userName, districtId) => {
         setAuthToken(token);
+        const parsedDistrictId = Number(districtId ?? userData?.districtId);
         set({
           user: userData,
           token,
           role,
           userId,
           userName,
-          districtId: districtId || userData?.districtId || null,
+          districtId:
+            Number.isFinite(parsedDistrictId) && parsedDistrictId > 0
+              ? parsedDistrictId
+              : null,
         });
       },
 

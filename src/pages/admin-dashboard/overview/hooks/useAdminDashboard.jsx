@@ -1,21 +1,51 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   useGetAdminDashboardQuery,
   useGetAllDistrictsQuery,
   useGetDistrictWiseBlocksQuery,
   useGetSchoolListQuery,
 } from "../../../../services/adminService";
+import useAuthStore from "../../../../store/useAuthStore";
+import { isNodalRole } from "../../../../constants/roles";
+import { rejectTestDistricts } from "../../../../utils/excludedDistricts";
 
 const pct = (num, den) => (den > 0 ? Math.round((num / den) * 100) : 0);
 const RADAR_COLORS = ["#4338ca", "#0891b2", "#b45309", "#059669", "#be185d"];
 
 export function useAdminDashboard() {
-  const [districtId, setDistrictId] = useState("");
+  const role = useAuthStore((state) => state.role);
+  const authDistrictId = useAuthStore(
+    (state) => state.districtId ?? state.user?.districtId,
+  );
+  const isNodal = isNodalRole(role);
+  const lockedDistrictId =
+    isNodal && authDistrictId != null && String(authDistrictId) !== ""
+      ? String(authDistrictId)
+      : "";
+
+  const [districtId, setDistrictId] = useState(lockedDistrictId);
   const [blockId, setBlockId] = useState("");
   const [schoolId, setSchoolId] = useState("");
 
+  useEffect(() => {
+    if (lockedDistrictId && districtId !== lockedDistrictId) {
+      setDistrictId(lockedDistrictId);
+      setBlockId("");
+      setSchoolId("");
+    }
+  }, [lockedDistrictId, districtId]);
+
   const { data: districtsData } = useGetAllDistrictsQuery();
-  const districts = districtsData?.data || [];
+  const allDistricts = useMemo(
+    () => rejectTestDistricts(districtsData?.data || []),
+    [districtsData],
+  );
+  const districts = useMemo(() => {
+    if (!isNodal || !lockedDistrictId) return allDistricts;
+    return allDistricts.filter(
+      (d) => String(d.value ?? d.districtId) === String(lockedDistrictId),
+    );
+  }, [allDistricts, isNodal, lockedDistrictId]);
 
   const { data: blocksData } = useGetDistrictWiseBlocksQuery(
     districtId ? Number(districtId) : undefined,
@@ -35,7 +65,7 @@ export function useAdminDashboard() {
   const { data, isLoading, isError, refetch, isFetching, dataUpdatedAt } =
     useGetAdminDashboardQuery(
       { districtId: districtId ? Number(districtId) : undefined },
-      true,
+      !isNodal || Boolean(lockedDistrictId),
     );
 
   const dashboard = data?.data || {};
@@ -43,7 +73,9 @@ export function useAdminDashboard() {
   const verificationStatus = dashboard.verificationStatus || [];
   const assessmentStatus = dashboard.assessmentStatus || [];
   const selfAssessmentCounts = dashboard.selfAssessmentCounts || {};
-  const districtBreakdown = dashboard.districtBreakdown || [];
+  const districtBreakdown = rejectTestDistricts(
+    dashboard.districtBreakdown || [],
+  );
   const statewideDistrictBreakdown = districtBreakdown;
   const blockBreakdown = dashboard.blockBreakdown || [];
   const managementBreakdown = dashboard.managementBreakdown || [];
@@ -52,8 +84,14 @@ export function useAdminDashboard() {
 
   const selectedDistrict = useMemo(() => {
     if (!districtId) return null;
-    return districts.find((d) => String(d.value) === String(districtId));
-  }, [districtId, districts]);
+    return (
+      districts.find((d) => String(d.value) === String(districtId)) ||
+      allDistricts.find((d) => String(d.value) === String(districtId)) || {
+        value: districtId,
+        name: `District ${districtId}`,
+      }
+    );
+  }, [districtId, districts, allDistricts]);
 
   const selectedBlock = useMemo(() => {
     if (!blockId) return null;
@@ -168,17 +206,25 @@ export function useAdminDashboard() {
 
   const districtChartData = useMemo(
     () =>
-      districtBreakdown.map((d) => ({
-        name:
-          (d.districtName || `District ${d.districtId}`).length > 14
-            ? `${(d.districtName || "").slice(0, 12)}…`
-            : d.districtName || `D${d.districtId}`,
-        fullName: d.districtName || `District ${d.districtId}`,
-        completed: d.completedVerification ?? 0,
-        pending: d.pendingVerification ?? 0,
-        allocated: d.allocatedSchools ?? 0,
-        verifiers: d.activeVerifiers ?? 0,
-      })),
+      districtBreakdown.map((d) => {
+        const total = Number(d.totalSchools ?? d.allocatedSchools ?? 0);
+        const completed = Number(d.completedSchools ?? d.completedVerification ?? 0);
+        const started = Number(d.startedSchools ?? 0);
+        const pending = Number(d.notStartedSchools ?? d.pendingVerification ?? 0);
+        return {
+          name:
+            (d.districtName || `District ${d.districtId}`).length > 14
+              ? `${(d.districtName || "").slice(0, 12)}…`
+              : d.districtName || `D${d.districtId}`,
+          fullName: d.districtName || `District ${d.districtId}`,
+          completed,
+          started,
+          pending,
+          total,
+          allocated: total,
+          rate: pct(completed, total),
+        };
+      }),
     [districtBreakdown],
   );
 
@@ -216,38 +262,19 @@ export function useAdminDashboard() {
 
   const completionRateChartData = useMemo(
     () =>
-      [...districtBreakdown]
-        .filter((d) => (d.allocatedSchools ?? 0) > 0)
-        .map((d) => {
-          const rate = pct(d.completedVerification, d.allocatedSchools);
-          return {
-            name:
-              (d.districtName || `District ${d.districtId}`).length > 16
-                ? `${(d.districtName || "").slice(0, 14)}…`
-                : d.districtName || `D${d.districtId}`,
-            fullName: d.districtName || `District ${d.districtId}`,
-            rate,
-            completed: d.completedVerification ?? 0,
-            pending: d.pendingVerification ?? 0,
-            allocated: d.allocatedSchools ?? 0,
-            verifiers: d.activeVerifiers ?? 0,
-          };
-        })
+      [...districtChartData]
+        .filter((d) => (d.total ?? 0) > 0)
         .sort((a, b) => b.rate - a.rate),
-    [districtBreakdown],
+    [districtChartData],
   );
 
   const laggingDistricts = useMemo(
     () =>
-      [...districtBreakdown]
-        .filter((d) => (d.allocatedSchools ?? 0) > 0)
-        .map((d) => ({
-          ...d,
-          completionRate: pct(d.completedVerification, d.allocatedSchools),
-        }))
-        .sort((a, b) => a.completionRate - b.completionRate)
-        .slice(0, 5),
-    [districtBreakdown],
+      [...districtChartData]
+        .filter((d) => (d.total ?? 0) > 0 && d.completed < d.total)
+        .sort((a, b) => a.rate - b.rate)
+        .slice(0, 8),
+    [districtChartData],
   );
 
   const verifierStatusChart = useMemo(
@@ -396,11 +423,11 @@ export function useAdminDashboard() {
   );
 
   const insightCards = useMemo(() => {
-    const districtsBelow50 = districtBreakdown.filter(
-      (d) =>
-        (d.allocatedSchools ?? 0) > 0 &&
-        pct(d.completedVerification, d.allocatedSchools) < 50,
-    ).length;
+    const districtsBelow50 = districtBreakdown.filter((d) => {
+      const total = Number(d.totalSchools ?? d.allocatedSchools ?? 0);
+      const completed = Number(d.completedSchools ?? d.completedVerification ?? 0);
+      return total > 0 && pct(completed, total) < 50;
+    }).length;
 
     const totalPending = overview.pendingVerification ?? 0;
     const activeVerifiers = overview.activeVerifiers ?? 0;
@@ -420,18 +447,25 @@ export function useAdminDashboard() {
   }, [districtBreakdown, overview]);
 
   const handleDistrictChange = (value) => {
+    if (isNodal) return;
     setDistrictId(value);
     setBlockId("");
     setSchoolId("");
   };
 
   const handleDistrictSelect = (value) => {
+    if (isNodal) return;
     setDistrictId(value);
     setBlockId("");
     setSchoolId("");
   };
 
   const handleClearDistrict = () => {
+    if (isNodal) {
+      setBlockId("");
+      setSchoolId("");
+      return;
+    }
     setDistrictId("");
     setBlockId("");
     setSchoolId("");
@@ -509,6 +543,9 @@ export function useAdminDashboard() {
     isFetching,
     lastUpdated,
     refetch,
+    isNodal,
+    isDistrictLocked: isNodal,
+    missingDistrictAssignment: isNodal && !lockedDistrictId,
     handleDistrictChange,
     handleDistrictSelect,
     handleClearDistrict,

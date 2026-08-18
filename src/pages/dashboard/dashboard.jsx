@@ -96,6 +96,7 @@ const Dashboard = () => {
         inspector: "/inspector-dashboard",
         admin: "/admin-dashboard",
         crc: "/crc-dashboard",
+        nodal: "/admin-dashboard",
       };
       const dashboardRoute = dashboardRoutes[role];
       if (dashboardRoute) navigate(dashboardRoute, { replace: true });

@@ -31,6 +31,14 @@ export const roles = [
     color: "#1e3a8a",
     dashboardRoute: "/admin-dashboard",
   },
+  {
+    value: "nodal",
+    label: "Nodal Officer",
+    description: "District dashboard",
+    authMethod: "User ID",
+    color: "#d97706",
+    dashboardRoute: "/admin-dashboard",
+  },
   // {
   //   value: "crc",
   //   label: "CRC",
@@ -51,7 +59,21 @@ export const roleIdMap = {
   inspector: 3,
   crc: 4,
   verifier: 5,
+  nodal: 6,
 };
+
+export const NODAL_ROLE_ID = 6;
+
+export const DASHBOARD_ROUTES = {
+  school: "/school-dashboard",
+  parent: "/parent-dashboard",
+  inspector: "/inspector-dashboard",
+  admin: "/admin-dashboard",
+  crc: "/crc-dashboard",
+  nodal: "/admin-dashboard",
+};
+
+export const isNodalRole = (role) => role === "nodal";
 
 export const getRoleId = (roleValue) => {
   return roleIdMap[roleValue] || null;

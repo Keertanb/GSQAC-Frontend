@@ -2,142 +2,58 @@ import { useState } from "react";
 import ExcelJS from "exceljs/dist/exceljs.bare.min.js";
 import { enqueueSnackbar } from "notistack";
 import axiosInstance from "../../../../config/axios";
+import { rejectTestDistricts } from "../../../../utils/excludedDistricts";
 
 let _cache = null;
 let _cacheAt = 0;
+let _cacheKey = "all";
 const CACHE_TTL = 5 * 60 * 1000;
 let _prefetchPromise = null;
 
-function isCacheValid() {
-  return _cache !== null && Date.now() - _cacheAt < CACHE_TTL;
+function cacheKeyFor(districtId) {
+  return districtId ? `d:${districtId}:assess-v3` : "all:assess-v3";
 }
 
-async function fetchDashboard() {
-  const res = await axiosInstance.get("/admin/dashboard", {
-    params: {},
-    timeout: 30000,
+function isCacheValid(districtId) {
+  return (
+    _cache !== null &&
+    _cacheKey === cacheKeyFor(districtId) &&
+    Date.now() - _cacheAt < CACHE_TTL
+  );
+}
+
+async function fetchDashboardExport(districtId) {
+  const res = await axiosInstance.get("/admin/dashboard-export", {
+    params: districtId ? { districtId: Number(districtId) } : {},
+    timeout: 300000,
   });
   return res.data?.data || {};
 }
 
-async function fetchAllDistricts() {
-  try {
-    const res = await axiosInstance.get("/master/all-districts", {
-      timeout: 15000,
-    });
-    return res.data?.data || [];
-  } catch (err) {
-    console.warn("[Export] master districts failed:", err?.message);
-    return [];
-  }
-}
-
-async function fetchSchoolsForDistrict(districtId) {
-  const PAGE_SIZE = 5000;
-  const allRows = [];
-  try {
-    let page = 0;
-    while (true) {
-      const res = await axiosInstance.get("/admin/school-self-assessment-monitor", {
-        params: {
-          districtId: Number(districtId),
-          page,
-          limit: PAGE_SIZE,
-        },
-        timeout: 60000,
-      });
-      const payload = res.data?.data || {};
-      const rows = payload.rows || [];
-      allRows.push(...rows);
-      const total = Number(payload.total ?? allRows.length);
-      if (rows.length < PAGE_SIZE || allRows.length >= total) break;
-      page += 1;
-    }
-    return allRows;
-  } catch (err) {
-    console.error(
-      `[Export] Schools for district ${districtId}:`,
-      err?.response?.data || err?.message,
-    );
-    return allRows;
-  }
-}
-
-async function fetchAllSchoolsBatched(districtIds, BATCH = 5, onProgress) {
-  const allSchools = [];
-  for (let i = 0; i < districtIds.length; i += BATCH) {
-    const batch = districtIds.slice(i, i + BATCH);
-    const results = await Promise.all(batch.map(fetchSchoolsForDistrict));
-    results.forEach((rows) => allSchools.push(...rows));
-    onProgress?.(Math.min(i + BATCH, districtIds.length), districtIds.length);
-  }
-  return allSchools;
-}
-
-async function prefetchExportData(onProgress) {
-  if (isCacheValid()) return _cache;
+async function prefetchExportData(onProgress, scopedDistrictId) {
+  if (isCacheValid(scopedDistrictId)) return _cache;
   if (_prefetchPromise) return _prefetchPromise;
 
   _prefetchPromise = (async () => {
     try {
-      onProgress?.({ phase: "dashboard" });
-      const [dashboard, masterDistricts] = await Promise.all([
-        fetchDashboard(),
-        fetchAllDistricts(),
-      ]);
-
-      const districtMap = {};
-      masterDistricts.forEach((d) => {
-        const id = String(d.value ?? d.districtId ?? "");
-        if (!id) return;
-        districtMap[id] = {
-          districtId: id,
-          districtName: d.name ?? d.districtName ?? "",
-          totalSchools: 0,
-          completedSchools: 0,
-          startedSchools: 0,
-          notStartedSchools: 0,
-          completedVerification: 0,
-          pendingVerification: 0,
-        };
-      });
-      (dashboard.districtBreakdown || []).forEach((d) => {
-        const id = String(d.districtId ?? "");
-        if (!id) return;
-        districtMap[id] = {
-          ...districtMap[id],
-          districtId: id,
-          districtName:
-            d.districtName ?? districtMap[id]?.districtName ?? "",
-          totalSchools: d.totalSchools ?? d.total ?? 0,
-          completedSchools: d.completedSchools ?? d.completedVerification ?? 0,
-          startedSchools: d.startedSchools ?? d.pendingVerification ?? 0,
-          notStartedSchools: d.notStartedSchools ?? 0,
-          completedVerification: d.completedVerification ?? d.completedSchools ?? 0,
-          pendingVerification: d.pendingVerification ?? d.startedSchools ?? 0,
-        };
-      });
-
-      const allDistrictEntries = Object.values(districtMap);
-      const districtIds = allDistrictEntries
-        .map((d) => d.districtId)
-        .filter(Boolean);
-
-      onProgress?.({ phase: "schools", done: 0, total: districtIds.length });
-
-      const allSchools = await fetchAllSchoolsBatched(
-        districtIds,
-        5,
-        (done, total) => onProgress?.({ phase: "schools", done, total }),
+      onProgress?.({ phase: "schools" });
+      const payload = await fetchDashboardExport(scopedDistrictId);
+      const allSchools = payload.schools || [];
+      const allDistrictEntries = rejectTestDistricts(payload.districts || []).filter(
+        (d) => {
+          if (!scopedDistrictId) return true;
+          return String(d.districtId) === String(scopedDistrictId);
+        },
       );
 
       const result = {
         allDistrictEntries,
         allSchools,
-        blockBreakdown: dashboard.blockBreakdown || [],
+        blockBreakdown: payload.blockBreakdown || [],
       };
       _cache = result;
       _cacheAt = Date.now();
+      _cacheKey = cacheKeyFor(scopedDistrictId);
       return result;
     } finally {
       _prefetchPromise = null;
@@ -187,6 +103,14 @@ const COLUMN_LABELS = {
   clusterName: "Cluster Name",
   schoolId: "School ID",
   schoolName: "School Name",
+  overall_status: "Overall Status",
+  overall_percent: "Overall %",
+  assessment_1_name: "Assessment 1",
+  assessment_1_status: "Assessment 1 Status",
+  assessment_1_percent: "Assessment 1 %",
+  assessment_2_name: "Assessment 2",
+  assessment_2_status: "Assessment 2 Status",
+  assessment_2_percent: "Assessment 2 %",
   total_schools: "Total Schools",
   schools_started: "Started",
   schools_pending: "Pending",
@@ -203,6 +127,14 @@ const COLUMN_WIDTHS = {
   clusterName: 30,
   schoolId: 15,
   schoolName: 34,
+  overall_status: 16,
+  overall_percent: 12,
+  assessment_1_name: 28,
+  assessment_1_status: 18,
+  assessment_1_percent: 14,
+  assessment_2_name: 28,
+  assessment_2_status: 18,
+  assessment_2_percent: 14,
   total_schools: 15,
   schools_started: 13,
   schools_pending: 13,
@@ -216,6 +148,12 @@ const NUMERIC_KEYS = new Set([
   "schools_pending",
   "schools_completed",
   "schools_not_started",
+]);
+
+const PERCENT_KEYS = new Set([
+  "overall_percent",
+  "assessment_1_percent",
+  "assessment_2_percent",
 ]);
 
 function classifyStatus(school) {
@@ -233,7 +171,7 @@ function classifyStatus(school) {
     return {
       isCompleted: false,
       isInProgress: true,
-      isPending: true,
+      isPending: false,
       isNotStarted: false,
     };
   }
@@ -251,10 +189,22 @@ function classifyStatus(school) {
   const isCompleted =
     raw === "submitted" || raw === "completed" || raw === "complete";
   const isInProgress =
-    raw === "in_progress" || raw === "in progress" || raw === "started";
-  const isPending = raw === "pending";
-  const isNotStarted = !isCompleted && !isInProgress && !isPending;
-  return { isCompleted, isInProgress, isPending, isNotStarted };
+    raw === "in_progress" ||
+    raw === "in progress" ||
+    raw === "started";
+  const isNotStarted =
+    !isCompleted &&
+    !isInProgress &&
+    (raw === "pending" ||
+      raw === "not started" ||
+      raw === "not_started" ||
+      raw === "");
+  return {
+    isCompleted,
+    isInProgress,
+    isPending: isNotStarted,
+    isNotStarted,
+  };
 }
 
 function buildSheet(workbook, sheetName, rows, headers) {
@@ -332,31 +282,43 @@ function buildSheet(workbook, sheetName, rows, headers) {
     row.eachCell((cell, ci) => {
       const key = headers[ci - 1];
       const isNum = NUMERIC_KEYS.has(key);
+      const isPct = PERCENT_KEYS.has(key);
       cell.font = { name: "Calibri", size: 10, color: { argb: "FF1E293B" } };
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
       cell.border = { top: HAIR, left: HAIR, bottom: HAIR, right: HAIR };
       cell.alignment = {
-        horizontal: isNum ? "right" : "left",
+        horizontal: isNum || isPct ? "right" : "left",
         vertical: "middle",
-        indent: isNum ? 0 : 1,
+        indent: isNum || isPct ? 0 : 1,
       };
       if (isNum && typeof cell.value === "number") cell.numFmt = "#,##0";
+      if (isPct && typeof cell.value === "number") cell.numFmt = '0"%"';
     });
   });
 
   if (rows.length > 0) {
-    const totals = headers.map((h, i) =>
-      NUMERIC_KEYS.has(h)
-        ? rows.reduce((s, r) => s + (Number(r[h]) || 0), 0)
-        : i === 0
-          ? "GRAND TOTAL"
-          : "",
-    );
+    const totals = headers.map((h, i) => {
+      if (PERCENT_KEYS.has(h)) {
+        const values = rows
+          .map((r) => r[h])
+          .filter((v) => v != null && v !== "")
+          .map(Number)
+          .filter((n) => Number.isFinite(n));
+        return values.length
+          ? Math.round(values.reduce((s, n) => s + n, 0) / values.length)
+          : "";
+      }
+      if (NUMERIC_KEYS.has(h)) {
+        return rows.reduce((s, r) => s + (Number(r[h]) || 0), 0);
+      }
+      return i === 0 ? "GRAND TOTAL" : "";
+    });
     const tr = ws.addRow(totals);
     tr.height = 20;
     tr.eachCell((cell, ci) => {
       const key = headers[ci - 1];
       const isNum = NUMERIC_KEYS.has(key);
+      const isPct = PERCENT_KEYS.has(key);
       cell.font = {
         name: "Calibri",
         bold: true,
@@ -375,10 +337,11 @@ function buildSheet(workbook, sheetName, rows, headers) {
         right: HAIR,
       };
       cell.alignment = {
-        horizontal: isNum ? "right" : "left",
+        horizontal: isNum || isPct ? "right" : "left",
         vertical: "middle",
       };
       if (isNum && typeof cell.value === "number") cell.numFmt = "#,##0";
+      if (isPct && typeof cell.value === "number") cell.numFmt = '0"%"';
     });
   }
 
@@ -401,18 +364,13 @@ function emptyCounts() {
 
 function tallySchool(entry, school) {
   entry.total_schools += 1;
-  const { isCompleted, isInProgress, isPending, isNotStarted } =
-    classifyStatus(school);
+  const { isCompleted, isInProgress, isNotStarted } = classifyStatus(school);
   if (isCompleted) {
     entry.schools_completed += 1;
-    entry.schools_started += 1;
   } else if (isInProgress) {
     entry.schools_started += 1;
-    entry.schools_pending += 1;
-  } else if (isPending) {
-    entry.schools_pending += 1;
-    entry.schools_started += 1;
   } else if (isNotStarted) {
+    entry.schools_pending += 1;
     entry.schools_not_started += 1;
   }
 }
@@ -431,10 +389,10 @@ function aggregateByKey(allSchools, keyFn, initFn) {
 function districtRowsFromSchools(allSchools, fallbackDistricts) {
   const fromSchools = aggregateByKey(
     allSchools,
-    (s) => String(s.districtId ?? s.district_id ?? ""),
+    (s) => String(s.districtId ?? s.district_id ?? "") || "_unassigned",
     (s) => ({
       districtId: s.districtId ?? s.district_id ?? "",
-      districtName: s.districtName ?? s.district_name ?? "",
+      districtName: s.districtName ?? s.district_name ?? "Unassigned",
       ...emptyCounts(),
     }),
   );
@@ -455,8 +413,11 @@ function districtRowsFromSchools(allSchools, fallbackDistricts) {
         districtId: d.districtId,
         districtName: d.districtName,
         total_schools: total,
-        schools_started: completed + started,
-        schools_pending: started,
+        schools_started: started,
+        schools_pending: Math.max(
+          0,
+          total - (completed + started) || d.notStartedSchools || 0,
+        ),
         schools_completed: completed,
         schools_not_started: Math.max(
           0,
@@ -466,36 +427,26 @@ function districtRowsFromSchools(allSchools, fallbackDistricts) {
     });
 }
 
-export function useExportDashboard() {
+export function useExportDashboard({ districtId } = {}) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState("");
 
   const exportToXlsx = async () => {
     if (isExporting) return;
     setIsExporting(true);
-    setExportProgress(isCacheValid() ? "Building workbook…" : "Fetching data…");
+    setExportProgress(isCacheValid(districtId) ? "Building workbook…" : "Fetching data…");
 
     try {
       const { allDistrictEntries, allSchools, blockBreakdown } =
         await prefetchExportData((info) => {
-          if (info.phase === "dashboard") {
-            setExportProgress("Fetching districts…");
-          }
           if (info.phase === "schools") {
-            setExportProgress(
-              info.done === 0
-                ? "Fetching school data…"
-                : `Schools: ${info.done}/${info.total} districts…`,
-            );
+            setExportProgress("Fetching school data…");
           }
-        });
+        }, districtId);
 
       setExportProgress("Building workbook…");
 
-      const districtRows = districtRowsFromSchools(
-        allSchools,
-        allDistrictEntries,
-      );
+      const districtRows = districtRowsFromSchools(allSchools, allDistrictEntries);
 
       const blockRowsFromSchools = aggregateByKey(
         allSchools,
@@ -528,13 +479,10 @@ export function useExportDashboard() {
                 blockId: b.blockId ?? "",
                 blockName: b.blockName ?? "",
                 total_schools: total,
-                schools_started: completed + inProgress,
-                schools_pending: inProgress + pending,
+                schools_started: inProgress,
+                schools_pending: pending,
                 schools_completed: completed,
-                schools_not_started: Math.max(
-                  0,
-                  total - (completed + inProgress),
-                ),
+                schools_not_started: pending,
               };
             })
       ).sort(
@@ -571,8 +519,7 @@ export function useExportDashboard() {
 
       const schoolRows = allSchools
         .map((s) => {
-          const { isCompleted, isInProgress, isPending, isNotStarted } =
-            classifyStatus(s);
+          const { isCompleted, isInProgress, isNotStarted } = classifyStatus(s);
           return {
             districtId: s.districtId ?? s.district_id ?? "",
             districtName: s.districtName ?? s.district_name ?? "",
@@ -585,10 +532,34 @@ export function useExportDashboard() {
             schoolId: s.schoolId ?? s.school_id ?? s.udiseCode ?? "",
             schoolName:
               s.schoolName ?? s.school_name ?? s.schoolNameEn ?? "",
+            overall_status:
+              s.selfAssessmentStatus ||
+              (isCompleted
+                ? "Submitted"
+                : isInProgress
+                  ? "In Progress"
+                  : "Not Started"),
+            overall_percent:
+              s.overallPercent != null && s.overallPercent !== ""
+                ? Number(s.overallPercent)
+                : isCompleted
+                  ? 100
+                  : 0,
+            assessment_1_name: s.assessment1Name || "",
+            assessment_1_status: s.assessment1Status || "",
+            assessment_1_percent:
+              s.assessment1Percent == null || s.assessment1Percent === ""
+                ? ""
+                : Number(s.assessment1Percent),
+            assessment_2_name: s.assessment2Name || "",
+            assessment_2_status: s.assessment2Status || "",
+            assessment_2_percent:
+              s.assessment2Percent == null || s.assessment2Percent === ""
+                ? ""
+                : Number(s.assessment2Percent),
             total_schools: 1,
-            schools_started:
-              isCompleted || isInProgress || isPending ? 1 : 0,
-            schools_pending: isPending || isInProgress ? 1 : 0,
+            schools_started: isInProgress ? 1 : 0,
+            schools_pending: isNotStarted ? 1 : 0,
             schools_completed: isCompleted ? 1 : 0,
             schools_not_started: isNotStarted ? 1 : 0,
           };
@@ -649,11 +620,14 @@ export function useExportDashboard() {
         "clusterName",
         "schoolId",
         "schoolName",
-        "total_schools",
-        "schools_started",
-        "schools_pending",
-        "schools_completed",
-        "schools_not_started",
+        "overall_status",
+        "overall_percent",
+        "assessment_1_name",
+        "assessment_1_status",
+        "assessment_1_percent",
+        "assessment_2_name",
+        "assessment_2_status",
+        "assessment_2_percent",
       ]);
 
       const buffer = await workbook.xlsx.writeBuffer();
