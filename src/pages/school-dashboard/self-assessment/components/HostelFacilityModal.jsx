@@ -137,38 +137,33 @@ export function HostelFacilityModal({ open, onConfirm, isLoading = false }) {
           </Box>
         ) : (
           <Box>
-            <Typography
-              variant="body1"
-              sx={{ mb: 2, fontWeight: 700, lineHeight: 1.7 }}
-            >
-              તમે <strong>{selectedLabel}</strong> નો વિકલ્પ પસંદ કર્યો છે.
-            </Typography>
-
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mb: 2, lineHeight: 1.75 }}
-            >
-              આ વિકલ્પ સાથે તમે સ્વ-મૂલ્યાંકન માટે આગળ વધવા માંગતા હો તો{" "}
-              <strong>હા</strong> પર ક્લિક/ટચ કરો. વિકલ્પમાં ફેરફાર કરવા માટે{" "}
-              <strong>ના</strong> પર ક્લિક/ટચ કરો.
-            </Typography>
-
-            <Typography
-              variant="body2"
-              sx={{
-                lineHeight: 1.75,
-                bgcolor: `${colors.primary.blue}08`,
-                border: `1px solid ${colors.primary.blue}22`,
-                borderRadius: 2,
-                p: 1.5,
-                color: colors.text.primary,
-              }}
-            >
-              તમે <strong>{selectedLabel}</strong> નો વિકલ્પ પસંદ કર્યો છે. – આ
-              વિધાનમાં જે બટન ક્લિક થયેલું હોય તે પ્રમાણે ‘શાળા’ કે ‘છાત્રાલય
-              સાથેની શાળા’ આ બેમાંથી એક જ આવવું જોઈએ.
-            </Typography>
+            {selectedValue === SCHOOL_ONLY ? (
+              <>
+                <Typography
+                  variant="body1"
+                  sx={{ mb: 2, fontWeight: 700, lineHeight: 1.7 }}
+                >
+                  તમે છાત્રાલય વિનાની શાળાનો વિકલ્પ પસંદ કર્યો છે.
+                </Typography>
+                <Typography variant="body2" sx={{ lineHeight: 1.75 }}>
+                  જો આપ છાત્રાલય વિનાની શાળાના વિકલ્પ સાથે આગળ વધવા માંગતા હો તો
+                  &ldquo;હા&rdquo; વિકલ્પ પસંદ કરી આગળ વધો.
+                </Typography>
+              </>
+            ) : (
+              <>
+                <Typography
+                  variant="body1"
+                  sx={{ mb: 2, fontWeight: 700, lineHeight: 1.7 }}
+                >
+                  તમે <strong>{selectedLabel}</strong> નો વિકલ્પ પસંદ કર્યો છે.
+                </Typography>
+                <Typography variant="body2" sx={{ lineHeight: 1.75 }}>
+                  જો આપ <strong>{selectedLabel}</strong> ના વિકલ્પ સાથે આગળ
+                  વધવા માંગતા હો તો &ldquo;હા&rdquo; વિકલ્પ પસંદ કરી આગળ વધો.
+                </Typography>
+              </>
+            )}
           </Box>
         )}
       </DialogContent>
@@ -182,7 +177,7 @@ export function HostelFacilityModal({ open, onConfirm, isLoading = false }) {
               disabled={isLoading}
               sx={{ textTransform: "none", fontWeight: 700, minWidth: 90 }}
             >
-              ના
+              પાછળ જાવ
             </Button>
             <Button
               variant="contained"

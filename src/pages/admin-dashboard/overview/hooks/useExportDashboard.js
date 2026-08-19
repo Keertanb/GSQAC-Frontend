@@ -11,7 +11,7 @@ const CACHE_TTL = 5 * 60 * 1000;
 let _prefetchPromise = null;
 
 function cacheKeyFor(districtId) {
-  return districtId ? `d:${districtId}:assess-v3` : "all:assess-v3";
+  return districtId ? `d:${districtId}:assess-v5` : "all:assess-v5";
 }
 
 function isCacheValid(districtId) {
@@ -50,6 +50,8 @@ async function prefetchExportData(onProgress, scopedDistrictId) {
         allDistrictEntries,
         allSchools,
         blockBreakdown: payload.blockBreakdown || [],
+        districtRows: payload.districtRows || [],
+        blockRows: payload.blockRows || [],
       };
       _cache = result;
       _cacheAt = Date.now();
@@ -112,10 +114,39 @@ const COLUMN_LABELS = {
   assessment_2_status: "Assessment 2 Status",
   assessment_2_percent: "Assessment 2 %",
   total_schools: "Total Schools",
+  govt_schools: "Govt Schools",
+  private_schools: "Private Schools",
+  govt_aided_schools: "Govt Aided Schools",
   schools_started: "Started",
   schools_pending: "Pending",
   schools_completed: "Completed",
   schools_not_started: "Not Started",
+  primary_total: "Primary Total",
+  primary_govt_total: "Primary Govt Total",
+  primary_govt_completed: "Primary Govt Completed",
+  primary_govt_started: "Primary Govt Started",
+  primary_govt_pending: "Primary Govt Pending",
+  primary_aided_total: "Primary Govt Aided Total",
+  primary_aided_completed: "Primary Govt Aided Completed",
+  primary_aided_started: "Primary Govt Aided Started",
+  primary_aided_pending: "Primary Govt Aided Pending",
+  primary_private_total: "Primary Private Total",
+  primary_private_completed: "Primary Private Completed",
+  primary_private_started: "Primary Private Started",
+  primary_private_pending: "Primary Private Pending",
+  secondary_total: "Secondary Total",
+  secondary_govt_total: "Secondary Govt Total",
+  secondary_govt_completed: "Secondary Govt Completed",
+  secondary_govt_started: "Secondary Govt Started",
+  secondary_govt_pending: "Secondary Govt Pending",
+  secondary_aided_total: "Secondary Govt Aided Total",
+  secondary_aided_completed: "Secondary Govt Aided Completed",
+  secondary_aided_started: "Secondary Govt Aided Started",
+  secondary_aided_pending: "Secondary Govt Aided Pending",
+  secondary_private_total: "Secondary Private Total",
+  secondary_private_completed: "Secondary Private Completed",
+  secondary_private_started: "Secondary Private Started",
+  secondary_private_pending: "Secondary Private Pending",
 };
 
 const COLUMN_WIDTHS = {
@@ -136,18 +167,76 @@ const COLUMN_WIDTHS = {
   assessment_2_status: 18,
   assessment_2_percent: 14,
   total_schools: 15,
+  govt_schools: 14,
+  private_schools: 16,
+  govt_aided_schools: 18,
   schools_started: 13,
   schools_pending: 13,
   schools_completed: 15,
   schools_not_started: 15,
+  primary_total: 14,
+  primary_govt_total: 16,
+  primary_govt_completed: 20,
+  primary_govt_started: 18,
+  primary_govt_pending: 18,
+  primary_aided_total: 18,
+  primary_aided_completed: 22,
+  primary_aided_started: 20,
+  primary_aided_pending: 20,
+  primary_private_total: 18,
+  primary_private_completed: 22,
+  primary_private_started: 20,
+  primary_private_pending: 20,
+  secondary_total: 16,
+  secondary_govt_total: 18,
+  secondary_govt_completed: 22,
+  secondary_govt_started: 20,
+  secondary_govt_pending: 20,
+  secondary_aided_total: 20,
+  secondary_aided_completed: 24,
+  secondary_aided_started: 22,
+  secondary_aided_pending: 22,
+  secondary_private_total: 20,
+  secondary_private_completed: 24,
+  secondary_private_started: 22,
+  secondary_private_pending: 22,
 };
 
 const NUMERIC_KEYS = new Set([
   "total_schools",
+  "govt_schools",
+  "private_schools",
+  "govt_aided_schools",
   "schools_started",
   "schools_pending",
   "schools_completed",
   "schools_not_started",
+  "primary_total",
+  "primary_govt_total",
+  "primary_govt_completed",
+  "primary_govt_started",
+  "primary_govt_pending",
+  "primary_aided_total",
+  "primary_aided_completed",
+  "primary_aided_started",
+  "primary_aided_pending",
+  "primary_private_total",
+  "primary_private_completed",
+  "primary_private_started",
+  "primary_private_pending",
+  "secondary_total",
+  "secondary_govt_total",
+  "secondary_govt_completed",
+  "secondary_govt_started",
+  "secondary_govt_pending",
+  "secondary_aided_total",
+  "secondary_aided_completed",
+  "secondary_aided_started",
+  "secondary_aided_pending",
+  "secondary_private_total",
+  "secondary_private_completed",
+  "secondary_private_started",
+  "secondary_private_pending",
 ]);
 
 const PERCENT_KEYS = new Set([
@@ -352,9 +441,107 @@ function buildSheet(workbook, sheetName, rows, headers) {
   };
 }
 
+function classifyManagement(school) {
+  const category = String(
+    school.managementCategory ?? school.management_category ?? "",
+  ).toLowerCase();
+  if (category === "private") return "private";
+  if (category === "aided") return "aided";
+  if (category === "govt") return "govt";
+
+  const rawId =
+    school.schoolManagementId ??
+    school.schoolmanagementid ??
+    school.school_management_id ??
+    school.schmgt;
+  const id = Number(String(rawId ?? "").trim());
+  if (!Number.isFinite(id)) return "govt";
+  if (id === 5 || id === 97) return "private";
+  if (id === 4 || id === 7) return "aided";
+  return "govt";
+}
+
+function classifyCategoryGroup(school) {
+  const id = Number(
+    school.schoolCategoryId ??
+      school.schoolcategoryid ??
+      school.school_category_id ??
+      school.categoryId,
+  );
+  if ([1, 2, 4, 12].includes(id)) return "primary";
+  if ([3, 5, 6, 7, 8, 10, 11].includes(id)) return "secondary";
+  return null;
+}
+
+function getStatusKey(school) {
+  const { isCompleted, isInProgress } = classifyStatus(school);
+  if (isCompleted) return "completed";
+  if (isInProgress) return "started";
+  return "pending";
+}
+
+const MGMT_CATEGORY_HEADERS = [
+  "districtId",
+  "districtName",
+  "primary_total",
+  "primary_govt_total",
+  "primary_govt_completed",
+  "primary_govt_started",
+  "primary_govt_pending",
+  "primary_aided_total",
+  "primary_aided_completed",
+  "primary_aided_started",
+  "primary_aided_pending",
+  "primary_private_total",
+  "primary_private_completed",
+  "primary_private_started",
+  "primary_private_pending",
+  "secondary_total",
+  "secondary_govt_total",
+  "secondary_govt_completed",
+  "secondary_govt_started",
+  "secondary_govt_pending",
+  "secondary_aided_total",
+  "secondary_aided_completed",
+  "secondary_aided_started",
+  "secondary_aided_pending",
+  "secondary_private_total",
+  "secondary_private_completed",
+  "secondary_private_started",
+  "secondary_private_pending",
+];
+
+function createDistrictManagementCategoryRows(allSchools = []) {
+  const map = new Map();
+  allSchools.forEach((school) => {
+    const districtId = school.districtId ?? school.district_id ?? "";
+    const districtName = school.districtName ?? school.district_name ?? "Unassigned";
+    const categoryGroup = classifyCategoryGroup(school);
+    if (!categoryGroup) return;
+    const management = classifyManagement(school);
+    const status = getStatusKey(school);
+    const key = String(districtId || "_unassigned");
+    if (!map.has(key)) {
+      map.set(key, Object.fromEntries(MGMT_CATEGORY_HEADERS.map((h) => [h, 0])));
+      map.get(key).districtId = districtId;
+      map.get(key).districtName = districtName;
+    }
+    const row = map.get(key);
+    row[`${categoryGroup}_total`] += 1;
+    row[`${categoryGroup}_${management}_total`] += 1;
+    row[`${categoryGroup}_${management}_${status}`] += 1;
+  });
+  return Array.from(map.values()).sort((a, b) =>
+    (a.districtName ?? "").localeCompare(b.districtName ?? ""),
+  );
+}
+
 function emptyCounts() {
   return {
     total_schools: 0,
+    govt_schools: 0,
+    private_schools: 0,
+    govt_aided_schools: 0,
     schools_started: 0,
     schools_pending: 0,
     schools_completed: 0,
@@ -364,6 +551,14 @@ function emptyCounts() {
 
 function tallySchool(entry, school) {
   entry.total_schools += 1;
+  const management = classifyManagement(school);
+  if (management === "private") {
+    entry.private_schools += 1;
+  } else if (management === "aided") {
+    entry.govt_aided_schools += 1;
+  } else {
+    entry.govt_schools += 1;
+  }
   const { isCompleted, isInProgress, isNotStarted } = classifyStatus(school);
   if (isCompleted) {
     entry.schools_completed += 1;
@@ -413,6 +608,9 @@ function districtRowsFromSchools(allSchools, fallbackDistricts) {
         districtId: d.districtId,
         districtName: d.districtName,
         total_schools: total,
+        govt_schools: 0,
+        private_schools: 0,
+        govt_aided_schools: 0,
         schools_started: started,
         schools_pending: Math.max(
           0,
@@ -430,6 +628,8 @@ function districtRowsFromSchools(allSchools, fallbackDistricts) {
 export function useExportDashboard({ districtId } = {}) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState("");
+  const [isMgmtCategoryExporting, setIsMgmtCategoryExporting] = useState(false);
+  const [mgmtCategoryExportProgress, setMgmtCategoryExportProgress] = useState("");
 
   const exportToXlsx = async () => {
     if (isExporting) return;
@@ -437,8 +637,13 @@ export function useExportDashboard({ districtId } = {}) {
     setExportProgress(isCacheValid(districtId) ? "Building workbook…" : "Fetching data…");
 
     try {
-      const { allDistrictEntries, allSchools, blockBreakdown } =
-        await prefetchExportData((info) => {
+      const {
+        allDistrictEntries,
+        allSchools,
+        blockBreakdown,
+        districtRows: apiDistrictRows,
+        blockRows: apiBlockRows,
+      } = await prefetchExportData((info) => {
           if (info.phase === "schools") {
             setExportProgress("Fetching school data…");
           }
@@ -446,7 +651,10 @@ export function useExportDashboard({ districtId } = {}) {
 
       setExportProgress("Building workbook…");
 
-      const districtRows = districtRowsFromSchools(allSchools, allDistrictEntries);
+      const districtRows =
+        Array.isArray(apiDistrictRows) && apiDistrictRows.length
+          ? apiDistrictRows
+          : districtRowsFromSchools(allSchools, allDistrictEntries);
 
       const blockRowsFromSchools = aggregateByKey(
         allSchools,
@@ -466,7 +674,9 @@ export function useExportDashboard({ districtId } = {}) {
       );
 
       const blockRows = (
-        blockRowsFromSchools.length
+        Array.isArray(apiBlockRows) && apiBlockRows.length
+          ? apiBlockRows
+          : blockRowsFromSchools.length
           ? blockRowsFromSchools
           : (blockBreakdown || []).map((b) => {
               const completed = b.completed ?? b.completedVerification ?? 0;
@@ -479,6 +689,9 @@ export function useExportDashboard({ districtId } = {}) {
                 blockId: b.blockId ?? "",
                 blockName: b.blockName ?? "",
                 total_schools: total,
+                govt_schools: 0,
+                private_schools: 0,
+                govt_aided_schools: 0,
                 schools_started: inProgress,
                 schools_pending: pending,
                 schools_completed: completed,
@@ -582,6 +795,9 @@ export function useExportDashboard({ districtId } = {}) {
         "districtId",
         "districtName",
         "total_schools",
+        "govt_schools",
+        "private_schools",
+        "govt_aided_schools",
         "schools_started",
         "schools_pending",
         "schools_completed",
@@ -593,6 +809,9 @@ export function useExportDashboard({ districtId } = {}) {
         "blockId",
         "blockName",
         "total_schools",
+        "govt_schools",
+        "private_schools",
+        "govt_aided_schools",
         "schools_started",
         "schools_pending",
         "schools_completed",
@@ -660,5 +879,67 @@ export function useExportDashboard({ districtId } = {}) {
     }
   };
 
-  return { exportToXlsx, isExporting, exportProgress };
+  const exportManagementCategoryToXlsx = async () => {
+    if (isMgmtCategoryExporting) return;
+    setIsMgmtCategoryExporting(true);
+    setMgmtCategoryExportProgress(
+      isCacheValid(districtId) ? "Building workbook…" : "Fetching data…",
+    );
+
+    try {
+      const { allSchools } = await prefetchExportData((info) => {
+        if (info.phase === "schools") {
+          setMgmtCategoryExportProgress("Fetching school data…");
+        }
+      }, districtId);
+
+      setMgmtCategoryExportProgress("Building workbook…");
+      const rows = createDistrictManagementCategoryRows(allSchools);
+
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "GSQAC Admin";
+      workbook.company = "GSQAC";
+      workbook.created = new Date();
+      workbook.modified = new Date();
+
+      buildSheet(workbook, "District Mgmt+Category", rows, MGMT_CATEGORY_HEADERS);
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `GSQAC_District_Management_Category_Report_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(
+        "[useExportDashboard] Mgmt/category export failed:",
+        err?.response?.data || err?.message,
+        err,
+      );
+      enqueueSnackbar(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Management/category export failed. Please try again.",
+        { variant: "error" },
+      );
+    } finally {
+      setIsMgmtCategoryExporting(false);
+      setMgmtCategoryExportProgress("");
+    }
+  };
+
+  return {
+    exportToXlsx,
+    isExporting,
+    exportProgress,
+    exportManagementCategoryToXlsx,
+    isMgmtCategoryExporting,
+    mgmtCategoryExportProgress,
+  };
 }

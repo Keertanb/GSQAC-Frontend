@@ -22,7 +22,14 @@ export function DashboardHeader({
   isDistrictLocked = false,
   eyebrowLabel = "GSQAC Admin",
 }) {
-  const { exportToXlsx, isExporting, exportProgress } = useExportDashboard({
+  const {
+    exportToXlsx,
+    isExporting,
+    exportProgress,
+    exportManagementCategoryToXlsx,
+    isMgmtCategoryExporting,
+    mgmtCategoryExportProgress,
+  } = useExportDashboard({
     districtId: isDistrictLocked ? districtId : undefined,
   });
 
@@ -109,6 +116,47 @@ export function DashboardHeader({
             </div>
           </div>
           <div className="ado-header-btn-group">
+            <button
+              type="button"
+              className="ado-download-btn"
+              onClick={exportManagementCategoryToXlsx}
+              disabled={isMgmtCategoryExporting}
+              aria-label="Download district management and category report"
+              title="Download district-wise primary/secondary + management status report"
+            >
+              {isMgmtCategoryExporting ? (
+                <>
+                  <svg
+                    className="ado-spin-icon"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  {mgmtCategoryExportProgress || "Preparing…"}
+                </>
+              ) : (
+                <>
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                  Download Mgmt+Category
+                </>
+              )}
+            </button>
+
             <button
               id="admin-dashboard-download-report-btn"
               type="button"
