@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -204,17 +204,28 @@ export function useSelfAssessment() {
       hostelValue !== null,
   });
 
-  // Fetch all questions (without class filter) for counting purposes
+  // Coalesce rapid question refetches after single-answer saves
+  const questionsRefetchTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (questionsRefetchTimerRef.current) {
+        clearTimeout(questionsRefetchTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Fetch unfiltered questions only when a class is selected (to detect subject-wise type 3).
+  // Without class filter, the main questions query already returns the full set — avoid duplicate API.
   const { data: allQuestionsData } = useGetSubdomainQuestionsQuery({
     subDomainId: selectedSubdomain?.subDomainId || selectedSubdomain?.id,
     roleId,
     languageCode,
     userId: userId ? Number(userId) : undefined,
-    enabled: !!selectedSubdomain,
+    enabled: !!selectedSubdomain && !!selectedClass,
   });
 
-  // Check if there are subject-wise questions (type 3) in the current subdomain
-  const hasSubjectWiseQuestions = useMemo(() => {
+  const hasSubjectWiseFromAll = useMemo(() => {
     if (!allQuestionsData) return false;
     const questions =
       allQuestionsData?.data?.data ||
@@ -233,21 +244,40 @@ export function useSelfAssessment() {
     subDomainId: selectedSubdomain?.subDomainId || selectedSubdomain?.id,
     roleId,
     languageCode,
-    // Only send cls and section when they are explicitly selected
     ...(selectedClass && { classNumber: Number(selectedClass) }),
     ...(selectedSection && { section: selectedSection }),
-    // Only send subjectId for subject-wise questions when subject is selected
-    ...(hasSubjectWiseQuestions &&
+    ...(hasSubjectWiseFromAll &&
       selectedSubject && { subjectId: Number(selectedSubject) }),
     userId: userId ? Number(userId) : undefined,
     enabled: !!selectedSubdomain,
   });
 
-  // Fetch school grades for FLN questions
+  const scheduleQuestionsRefetch = useCallback(() => {
+    if (questionsRefetchTimerRef.current) {
+      clearTimeout(questionsRefetchTimerRef.current);
+    }
+    questionsRefetchTimerRef.current = setTimeout(() => {
+      questionsRefetchTimerRef.current = null;
+      refetchQuestions();
+    }, 800);
+  }, [refetchQuestions]);
+
+  const hasSubjectWiseQuestions = useMemo(() => {
+    if (selectedClass) return hasSubjectWiseFromAll;
+    if (!questionsData) return false;
+    const questions =
+      questionsData?.data?.data ||
+      (Array.isArray(questionsData?.data) ? questionsData.data : []);
+    return questions.some(
+      (q) => q.questionType === 3 || q.questionType === "3",
+    );
+  }, [selectedClass, hasSubjectWiseFromAll, questionsData]);
+
+  // Fetch school grades only when a subdomain is open (FLN needs it)
   const { data: gradesData, isLoading: isLoadingGrades } =
     useGetSchoolGradesQuery({
       schoolId: userName || undefined,
-      enabled: !!userName,
+      enabled: !!userName && !!selectedSubdomain,
     });
 
   // Parse grades data to get student counts by class
@@ -317,11 +347,11 @@ export function useSelfAssessment() {
   // Note: Removed auto-selection of class group and class to prevent
   // sending default cls/section parameters for General Questions
 
-  // Fetch all school sections once
+  // Fetch school sections only when class/observation flow needs them
   const { data: sectionsData, isLoading: isLoadingSections } =
     useGetSchoolSectionsQuery({
       schoolId: userName || undefined,
-      enabled: !!userName,
+      enabled: !!userName && !!selectedSubdomain,
     });
 
   // Fetch class-wise subjects when class is selected
@@ -1474,9 +1504,10 @@ export function useSelfAssessment() {
   };
 
   const submitAnswerMutation = useSubmitAnswerMutation({
-    onSuccess: (data) => {
-      refetchQuestions();
-      refetchDomains();
+    onSuccess: () => {
+      // Avoid full domain recalculation on every single answer (DB storm under concurrency).
+      // Debounced questions refresh; domains refresh only on subdomain save.
+      scheduleQuestionsRefetch();
       enqueueSnackbar("Answer submitted successfully!", {
         variant: "success",
       });
@@ -1551,11 +1582,8 @@ export function useSelfAssessment() {
   const submitAssessmentMutation = useSubmitAssessmentMutation({
     onSuccess: (data, variables) => {
       if (variables.isSubmitted === 0) {
-        // Session creation - refetch domains to get the sessionId
+        // Must refresh immediately so sessionId is available for the next save
         refetchDomains();
-        // enqueueSnackbar("Session created successfully!", {
-        //   variant: "success",
-        // });
       } else {
         // Final submission - close the feedback modal
         setShowSubmitConfirmation(false);

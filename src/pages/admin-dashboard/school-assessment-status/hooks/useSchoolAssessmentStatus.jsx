@@ -85,7 +85,11 @@ export function useSchoolAssessmentStatus() {
     schoolId: selectedSchoolId,
     assessmentId: submittedSelfAssessment?.assessmentId,
     languageCode: "GU",
-    enabled: !!selectedSchoolId && !!submittedSelfAssessment?.assessmentId,
+    schoolUserId: schoolDetail?.schoolUserId,
+    enabled:
+      !!selectedSchoolId &&
+      !!submittedSelfAssessment?.assessmentId &&
+      !!schoolDetail?.schoolUserId,
   });
 
   const report = useMemo(() => {

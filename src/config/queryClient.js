@@ -44,12 +44,13 @@ export const queryKeys = {
     deleteQuestion: () => ["admin", "delete-question"],
     deleteQuestionOption: () => ["admin", "delete-question-option"],
     assessments: (academicYear) => ["admin", "assessments", academicYear],
-    schoolAssessmentReport: (schoolId, assessmentId, languageCode) => [
+    schoolAssessmentReport: (schoolId, assessmentId, languageCode, schoolUserId) => [
       "admin",
       "school-assessment-report",
       schoolId,
       assessmentId,
       languageCode,
+      schoolUserId ?? null,
     ],
   },
   school: {

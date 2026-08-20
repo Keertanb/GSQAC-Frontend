@@ -71,8 +71,8 @@ export const useGetSubdomainQuestionsQuery = ({
         userId: userIdToUse,
       }),
     enabled: enabled && !!subDomainId && !!roleId,
-    staleTime: 60 * 1000,
-    refetchOnMount: true,
+    staleTime: 10 * 60 * 1000,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
 };
@@ -98,8 +98,8 @@ export const useGetDomainsQuery = ({
     queryKey: queryKeys.school.domains(roleId, languageCode, userIdToUse),
     queryFn: () => getDomains({ roleId, languageCode }),
     enabled: enabled && !!roleId,
-    staleTime: 60 * 1000,
-    refetchOnMount: true,
+    staleTime: 10 * 60 * 1000,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
 };
@@ -199,7 +199,9 @@ export const useGetSchoolDataQuery = ({
       return getSchoolData(params);
     },
     enabled: enabled && (!!userName || !!schoolId),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 15 * 60 * 1000, // 15 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -215,7 +217,9 @@ export const useGetSchoolGradesQuery = ({ schoolId, enabled = true }) => {
     queryKey: ["school", "grades", schoolId],
     queryFn: () => getSchoolGrades({ schoolId }),
     enabled: enabled && !!schoolId,
-    staleTime: 10 * 60 * 1000, // 10 minutes (grades don't change often)
+    staleTime: 15 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -236,7 +240,9 @@ export const useGetClassWiseSectionsQuery = ({
     queryKey: queryKeys.school.classWiseSections(userId, classNumber),
     queryFn: () => getClassWiseSections({ userId, class: classNumber }),
     enabled: enabled && !!userId && !!classNumber,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 15 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -252,7 +258,9 @@ export const useGetSchoolSectionsQuery = ({ schoolId, enabled = true }) => {
     queryKey: queryKeys.school.schoolSections(schoolId),
     queryFn: () => getSchoolSections({ schoolId }),
     enabled: enabled && !!schoolId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 15 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 };
 

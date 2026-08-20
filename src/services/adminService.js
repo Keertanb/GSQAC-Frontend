@@ -1388,7 +1388,10 @@ export const useGetSchoolAssessmentStatusDetailQuery = (schoolId, enabled = true
     queryKey: ["admin", "school-assessment-status-detail", schoolId],
     queryFn: () => getSchoolAssessmentStatusDetail(schoolId),
     enabled: enabled && !!schoolId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 };
 
@@ -1465,9 +1468,10 @@ export const getAdminSchoolAssessmentReport = async ({
   schoolId,
   assessmentId,
   languageCode = "GU",
+  schoolUserId,
 }) => {
   const response = await axiosInstance.get("/admin/school-assessment-report", {
-    params: { schoolId, assessmentId, languageCode },
+    params: { schoolId, assessmentId, languageCode, schoolUserId },
     timeout: 90000,
   });
   return response.data;
@@ -1477,13 +1481,27 @@ export const useGetAdminSchoolAssessmentReportQuery = ({
   schoolId,
   assessmentId,
   languageCode = "GU",
+  schoolUserId,
   enabled = true,
 }) => {
   return useQuery({
-    queryKey: queryKeys.admin.schoolAssessmentReport(schoolId, assessmentId, languageCode),
-    queryFn: () => getAdminSchoolAssessmentReport({ schoolId, assessmentId, languageCode }),
+    queryKey: queryKeys.admin.schoolAssessmentReport(
+      schoolId,
+      assessmentId,
+      languageCode,
+      schoolUserId,
+    ),
+    queryFn: () =>
+      getAdminSchoolAssessmentReport({
+        schoolId,
+        assessmentId,
+        languageCode,
+        schoolUserId,
+      }),
     enabled: enabled && !!schoolId && !!assessmentId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: false,
   });
 };
