@@ -13,7 +13,6 @@ import {
   waitForPdfCapturePages,
 } from "../../../school-dashboard/report-generation/utils/generateReportPdf";
 import { buildReportPageList } from "../../../school-dashboard/report-generation/utils/reportPageUtils";
-import studentsBanner from "../../../../assets/students_image.jpeg";
 import { getSubmittedSchoolSelfAssessment } from "../../school-assessment-status/utils/schoolAssessmentProgressUtils";
 
 export function useSchoolSelfAssessmentMonitor() {
@@ -166,12 +165,19 @@ export function useSchoolSelfAssessmentMonitor() {
   const handleDownloadPdf = async (filename) => {
     if (!report?.isSubmitted || isGeneratingPdf) return;
 
+    setIsGeneratingPdf(true);
+    pdfCaptureRefs.current = [];
+
     try {
-      setIsGeneratingPdf(true);
-      setPdfCaptureActive(true);
       await ensureReportFontsLoaded();
-      await waitForPdfCapturePages(pdfCaptureRefs, pdfPageCount);
-      await generateReportPdf(pdfCaptureRefs, filename, studentsBanner);
+      setPdfCaptureActive(true);
+
+      await new Promise((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(resolve));
+      });
+
+      const pages = await waitForPdfCapturePages(pdfCaptureRefs, pdfPageCount);
+      await generateReportPdf(pages, filename);
       enqueueSnackbar("Report downloaded successfully.", { variant: "success" });
     } catch (error) {
       enqueueSnackbar(error?.message || "Failed to download report.", {
@@ -180,6 +186,7 @@ export function useSchoolSelfAssessmentMonitor() {
     } finally {
       setPdfCaptureActive(false);
       setIsGeneratingPdf(false);
+      pdfCaptureRefs.current = [];
     }
   };
 

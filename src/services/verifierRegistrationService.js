@@ -97,6 +97,7 @@ export async function getVerifierRegistrations(params = {}) {
       page: params.page ?? 0,
       limit: params.limit ?? 20,
       search: params.search || undefined,
+      districtId: params.districtId || undefined,
     },
   });
   return response.data;
@@ -110,6 +111,7 @@ export function useGetVerifierRegistrationsQuery(params = {}, options = {}) {
       params.page,
       params.limit,
       params.search,
+      params.districtId ?? null,
     ],
     queryFn: () => getVerifierRegistrations(params),
     staleTime: 60 * 1000,

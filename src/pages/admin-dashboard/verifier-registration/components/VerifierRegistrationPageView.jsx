@@ -47,7 +47,9 @@ export function VerifierRegistrationPageView({
         <div>
           <h1 className="vr-reg-admin-title">Verifier Registration</h1>
           <p className="vr-reg-admin-subtitle">
-            Insights and applications from the public verifier registration form
+            {c?.districtScoped
+              ? "Verifier registrations whose job district matches your district"
+              : "Insights and applications from the public verifier registration form"}
           </p>
         </div>
         {activeTab === "applications" ? (

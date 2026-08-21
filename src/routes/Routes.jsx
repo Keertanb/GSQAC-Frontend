@@ -386,7 +386,7 @@ export const adminRoutes = [
   },
 ];
 
-// NODAL OFFICER ROUTES — dashboard only, district-scoped
+// NODAL OFFICER ROUTES — dashboard only for now
 export const nodalRoutes = [
   {
     path: ROUTE_URLS.ROOT_URL,
@@ -401,6 +401,17 @@ export const nodalRoutes = [
           </ProtectedRoute>
         ),
       },
+      // Verifier Registration for nodal — enable when needed:
+      // {
+      //   path: ROUTE_URLS.ADMIN_VERIFIER_REGISTRATION_URL,
+      //   element: (
+      //     <ProtectedRoute requiredRole="nodal">
+      //       <Suspense fallback={<LazyLoad />}>
+      //         <AdminDashboard />
+      //       </Suspense>
+      //     </ProtectedRoute>
+      //   ),
+      // },
     ],
   },
   {

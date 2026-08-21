@@ -239,6 +239,10 @@ export const adminMenuItems = [
 ];
 
 export const nodalMenuItems = adminMenuItems.filter((item) => item.id === "dashboard");
+// Verifier Registration tab for nodal — enable when needed:
+// export const nodalMenuItems = adminMenuItems.filter(
+//   (item) => item.id === "dashboard" || item.id === "verifier-registration",
+// );
 
 // CRC Menu Items
 export const crcMenuItems = [

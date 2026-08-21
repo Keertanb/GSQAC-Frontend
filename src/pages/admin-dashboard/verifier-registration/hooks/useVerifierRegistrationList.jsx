@@ -6,12 +6,21 @@ import {
   useGetVerifierRegistrationsQuery,
 } from "../../../../services/verifierRegistrationService";
 import { exportToExcel } from "../../../../utils/exportToExcel";
+import useAuthStore from "../../../../store/useAuthStore";
+import { isNodalRole } from "../../../../constants/roles";
 import {
   EXCEL_COLUMNS,
   enrichRegistrationRow,
 } from "../utils/verifierRegistrationAdminUtils";
 
 export function useVerifierRegistrationList() {
+  const role = useAuthStore((s) => s.role);
+  const authDistrictId = useAuthStore((s) => s.districtId);
+  const districtId =
+    isNodalRole(role) && Number(authDistrictId) > 0
+      ? Number(authDistrictId)
+      : undefined;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -27,6 +36,7 @@ export function useVerifierRegistrationList() {
       page: currentPage,
       limit: itemsPerPage,
       search: appliedSearch || undefined,
+      districtId,
     });
 
   const payload = data?.data || data || {};
@@ -56,6 +66,7 @@ export function useVerifierRegistrationList() {
         page: 0,
         limit: 10000,
         search: appliedSearch || undefined,
+        districtId,
       });
       const list = response?.data?.rows || response?.rows || [];
       const enriched = list.map((row) => enrichRegistrationRow(row, districts));
@@ -139,5 +150,6 @@ export function useVerifierRegistrationList() {
     handleCloseModal,
     handleExportToExcel,
     refetch,
+    districtScoped: !!districtId,
   };
 }

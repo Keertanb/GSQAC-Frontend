@@ -1,12 +1,21 @@
 import { useMemo } from "react";
 import { useGetAllDistrictsQuery } from "../../../../services/adminService";
 import { useGetVerifierRegistrationsQuery } from "../../../../services/verifierRegistrationService";
+import useAuthStore from "../../../../store/useAuthStore";
+import { isNodalRole } from "../../../../constants/roles";
 import {
   buildVerifierRegistrationAnalytics,
   emptyVerifierRegistrationAnalytics,
 } from "../utils/buildVerifierRegistrationAnalytics";
 
 export function useVerifierRegistrationAnalytics(enabled = true) {
+  const role = useAuthStore((s) => s.role);
+  const authDistrictId = useAuthStore((s) => s.districtId);
+  const districtId =
+    isNodalRole(role) && Number(authDistrictId) > 0
+      ? Number(authDistrictId)
+      : undefined;
+
   const { data: districtsData } = useGetAllDistrictsQuery();
   const districts = districtsData?.data || [];
 
@@ -15,6 +24,7 @@ export function useVerifierRegistrationAnalytics(enabled = true) {
       {
         page: 0,
         limit: 10000,
+        districtId,
       },
       {
         enabled,
@@ -37,5 +47,6 @@ export function useVerifierRegistrationAnalytics(enabled = true) {
     isError: enabled && isError,
     refetch,
     rowCount: rows.length,
+    districtScoped: !!districtId,
   };
 }

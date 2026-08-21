@@ -381,13 +381,6 @@ export function SchoolDetailsPageView({ c }) {
                       {schoolData.schoolType ? (
                         <Chip size="small" label={schoolData.schoolType} className="sd-hero__chip" />
                       ) : null}
-                      {schoolData.classesFrom && schoolData.classesTo ? (
-                        <Chip
-                          size="small"
-                          label={`Class ${schoolData.classesFrom}–${schoolData.classesTo}`}
-                          className="sd-hero__chip"
-                        />
-                      ) : null}
                     </Box>
                   </Box>
                 </Paper>
@@ -431,18 +424,6 @@ export function SchoolDetailsPageView({ c }) {
                         label="Medium of Instruction"
                         value={schoolData.mediumOfInstruction}
                       />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
-                      <InfoField label="Location Type" value={schoolData.locationType} />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
-                      <InfoField label="Students (Boys & Girls)" value={schoolData.studentsType} />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
-                      <InfoField label="Classes From" value={schoolData.classesFrom} />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3} sx={gridItemStyles}>
-                      <InfoField label="Classes To" value={schoolData.classesTo} />
                     </Grid>
                   </Grid>
                 </SectionCard>

@@ -133,16 +133,20 @@ async function capturePageFrame(pageNode) {
 
 export async function waitForPdfCapturePages(pageRefs, expectedCount, timeoutMs = 5000) {
   const started = Date.now();
+  const getPages = () => {
+    const current = pageRefs?.current;
+    return Array.isArray(current) ? current.filter(Boolean) : [];
+  };
 
   while (Date.now() - started < timeoutMs) {
-    const pages = pageRefs.current.filter(Boolean);
+    const pages = getPages();
     if (pages.length >= expectedCount) {
       return pages;
     }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
 
-  const pages = pageRefs.current.filter(Boolean);
+  const pages = getPages();
   if (!pages.length) {
     throw new Error("PDF capture layout did not render in time.");
   }
@@ -151,7 +155,11 @@ export async function waitForPdfCapturePages(pageRefs, expectedCount, timeoutMs 
 }
 
 export async function generateReportPdf(pageElements, fileName = "school-assessment-report.pdf") {
-  const pages = pageElements.filter(Boolean);
+  const pages = Array.isArray(pageElements)
+    ? pageElements.filter(Boolean)
+    : Array.isArray(pageElements?.current)
+      ? pageElements.current.filter(Boolean)
+      : [];
   if (!pages.length) {
     throw new Error("No report pages to export");
   }

@@ -84,10 +84,6 @@ export function useSchoolDetails() {
     managementType: "",
     schoolType: "",
     mediumOfInstruction: "",
-    locationType: "Rural",
-    studentsType: "Co-Ed",
-    classesFrom: "1",
-    classesTo: "8",
 
     // Statistics
     totalTeachers: "0",
@@ -153,14 +149,6 @@ export function useSchoolDetails() {
         schoolType: apiData.schoolTypeName || prev.schoolType,
         mediumOfInstruction:
           apiData.mediumNames || apiData.mediums || prev.mediumOfInstruction,
-        locationType:
-          extractValue(apiData.schoolLocalityName) || prev.locationType,
-        studentsType:
-          apiData.schoolTypeName === "Co-educational"
-            ? "Co-Ed"
-            : prev.studentsType,
-        classesFrom: String(apiData.lowerClass || prev.classesFrom),
-        classesTo: String(apiData.upperClass || prev.classesTo),
 
         // Statistics
         totalTeachers: String(apiData.teacherCount || prev.totalTeachers),
@@ -274,10 +262,6 @@ export function useSchoolDetails() {
       "Management Type": "managementType",
       "School Type": "schoolType",
       "Medium of Instruction": "mediumOfInstruction",
-      "Location Type (Rural/Urban)": "locationType",
-      "Students (Boys & Girls)": "studentsType",
-      "Classes (Range) From": "classesFrom",
-      "Classes (Range) To": "classesTo",
       "Principal/Head Name": "principalName",
       Designation: "designation",
       "Mobile Number": "mobileNumber",
