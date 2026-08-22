@@ -1,5 +1,22 @@
 /* Self Assessment - Mobile responsive */
 
+.sa-loading-panel {
+  animation: sa-loading-fade 0.25s ease;
+}
+
+.sa-data-refresh-bar {
+  flex-shrink: 0;
+}
+
+@keyframes sa-loading-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Collapsible left domains panel */
 .sa-left-panel-shell {
   flex-shrink: 0;

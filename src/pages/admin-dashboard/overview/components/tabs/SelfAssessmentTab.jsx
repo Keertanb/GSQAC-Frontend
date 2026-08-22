@@ -40,8 +40,8 @@ export function SchoolSelfAssessmentStatusSection({
   const scopeName = selectedDistrict?.name || (districtId ? "selected district" : "all school logins");
   const requiredLabel =
     requiredPerSchool > 0
-      ? `counted from active school users in user_master · each against ${requiredPerSchool} published form${requiredPerSchool > 1 ? "s" : ""} for its management`
-      : "counted from active school users in user_master · each against published forms for its management";
+      ? `each school against ${requiredPerSchool} published form${requiredPerSchool > 1 ? "s" : ""} for its school type`
+      : "each school against published forms for its school type";
 
   return (
     <div className={compact ? "ado-self-assessment-embed" : ""}>
@@ -67,7 +67,7 @@ export function SchoolSelfAssessmentStatusSection({
           <StatCard
             label="Total Schools"
             value={totalSchools}
-            sub={districtId ? "Active school users in this district (user_master)" : "Active school users statewide (user_master)"}
+            sub={districtId ? "Active school users in this district" : "Active school users statewide (user_master)"}
             tone="indigo"
             icon={ICONS.schools}
           />

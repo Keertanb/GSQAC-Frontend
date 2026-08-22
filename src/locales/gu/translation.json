@@ -191,6 +191,9 @@
     "failedToLoadAssessment": "મૂલ્યાંકન લોડ કરવામાં નિષ્ફળ. કૃપા કરીને તમારું કનેક્શન તપાસો અથવા વ્યવસ્થાપકનો સંપર્ક કરો.",
     "failedToLoadQuestions": "માપદંડ લોડ કરવામાં નિષ્ફળ",
     "loadingClasses": "ધોરણો લોડ થઈ રહ્યા છે...",
+    "loadingAssessmentData": "તમારું મૂલ્યાંકન લોડ થઈ રહ્યું છે...",
+    "loadingAssessmentDataHint": "મુખ્યક્ષેત્ર અને પ્રગતિ લોડ થાય ત્યાં સુધી કૃપા કરીને રાહ જુઓ.",
+    "refreshingAssessmentData": "મૂલ્યાંકન ડેટા અપડેટ થઈ રહ્યો છે...",
     "mobileStep": {
       "domains": "મુખ્યક્ષેત્ર",
       "subdomains": "પેટાક્ષેત્ર",

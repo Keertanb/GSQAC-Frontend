@@ -2411,6 +2411,12 @@ export function useSelfAssessment() {
     return false;
   };
 
+  const isAssessmentDataLoading =
+    isLoadingSchoolData ||
+    (hostelValue !== null && isLoadingDomains && !isErrorDomains);
+  const isAssessmentDataRefreshing =
+    isFetchingDomains && !isLoadingDomains && !isErrorDomains;
+
   return {
     navigate,
     theme,
@@ -2490,6 +2496,8 @@ export function useSelfAssessment() {
     domainsData,
     isLoadingDomains,
     isFetchingDomains,
+    isAssessmentDataLoading,
+    isAssessmentDataRefreshing,
     isErrorDomains,
     refetchDomains,
     allQuestionsData,

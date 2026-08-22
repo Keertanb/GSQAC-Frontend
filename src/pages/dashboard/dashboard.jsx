@@ -25,7 +25,7 @@ import "./dashboard.css";
 
 import LogoImg from "../../assets/logo_image.png";
 import EmblemImg from "../../assets/emblem_india.png";
-import GsqacLogoImg from "../../assets/gsqac_logo.png";
+import GsqacLogoImg from "../../assets/gsqac_new_logo.png";
 import HeroBgImg from "../../assets/students_image.jpeg";
 import StudentCarouselImg from "../../assets/student_carousel.png";
 import dashboardStudent from "../../assets/dashboard_image.jpeg";

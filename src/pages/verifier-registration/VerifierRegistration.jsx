@@ -27,7 +27,7 @@ import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import { enqueueSnackbar } from "notistack";
 import { ROOT_URL } from "../../routes/routeUrls";
 import LogoImg from "../../assets/logo_image.png";
-import GsqacLogoImg from "../../assets/gsqac_logo.png";
+import GsqacLogoImg from "../../assets/gsqac_new_logo.png";
 import VerifierFormSection from "./components/VerifierFormSection";
 import BilingualFieldLabel from "./components/BilingualFieldLabel";
 import VerifierRegistrationPreviewModal from "./components/VerifierRegistrationPreviewModal";

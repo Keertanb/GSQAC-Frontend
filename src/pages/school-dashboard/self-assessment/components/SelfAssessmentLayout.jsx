@@ -116,6 +116,51 @@ function EvidenceCountChip({ progress, t, compact = false }) {
   );
 }
 
+function SelfAssessmentLoadingPanel({
+  message,
+  subtitle,
+  accentColor,
+  compact = false,
+}) {
+  return (
+    <Box
+      className="sa-loading-panel"
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        py: compact ? 4 : 6,
+        px: 3,
+        gap: 2,
+        minHeight: compact ? 160 : 220,
+      }}
+    >
+      <CircularProgress size={compact ? 32 : 40} sx={{ color: accentColor }} />
+      <Typography
+        variant="body1"
+        sx={{
+          fontWeight: 600,
+          color: colors.text.primary,
+          textAlign: "center",
+          fontSize: compact ? "0.875rem" : "1rem",
+        }}
+      >
+        {message}
+      </Typography>
+      {subtitle && (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ textAlign: "center", maxWidth: 320, lineHeight: 1.5 }}
+        >
+          {subtitle}
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
 function EvidenceCountProgress({
   uploaded,
   total,
@@ -327,6 +372,8 @@ export function SelfAssessmentLayout({ c }) {
     domainsData,
     isLoadingDomains,
     isFetchingDomains,
+    isAssessmentDataLoading,
+    isAssessmentDataRefreshing,
     isErrorDomains,
     refetchDomains,
     allQuestionsData,
@@ -935,6 +982,19 @@ export function SelfAssessmentLayout({ c }) {
           }}
           className={`self-assessment-page-content app-page-below-header sa-theme-${at.kind}`}
         >
+          {isAssessmentDataRefreshing && (
+            <LinearProgress
+              className="sa-data-refresh-bar"
+              sx={{
+                position: "sticky",
+                top: 0,
+                zIndex: 2,
+                height: 3,
+                bgcolor: `${at.primary}12`,
+                "& .MuiLinearProgress-bar": { bgcolor: at.primary },
+              }}
+            />
+          )}
           <Box
             sx={{
               pl: drawerOpen && !matchDownMD ? 0 : { xs: 1.5, sm: 2, md: 3 },
@@ -1369,6 +1429,17 @@ export function SelfAssessmentLayout({ c }) {
                     />
                   </Box>
 
+                  {isAssessmentDataLoading && (
+                    <LinearProgress
+                      sx={{
+                        flexShrink: 0,
+                        height: 3,
+                        bgcolor: `${at.primary}12`,
+                        "& .MuiLinearProgress-bar": { bgcolor: at.primary },
+                      }}
+                    />
+                  )}
+
                   {/* Domains/Subdomains List */}
                   <Box
                     className="sa-nav-list"
@@ -1381,7 +1452,14 @@ export function SelfAssessmentLayout({ c }) {
                       p: { xs: 2.5, md: 1.5 },
                     }}
                   >
-                    {showMobileSubdomainsPanel ? (
+                    {isAssessmentDataLoading ? (
+                      <SelfAssessmentLoadingPanel
+                        message={t("selfAssessment.loadingAssessmentData")}
+                        subtitle={t("selfAssessment.loadingAssessmentDataHint")}
+                        accentColor={at.primary}
+                        compact={matchDownMD}
+                      />
+                    ) : showMobileSubdomainsPanel ? (
                       selectedDomain?.subDomain?.length > 0 ? (
                         <Box
                           sx={{
@@ -2574,7 +2652,13 @@ export function SelfAssessmentLayout({ c }) {
                         flexDirection: "column",
                       }}
                     >
-                      {currentChartData.length > 0 ? (
+                      {isAssessmentDataLoading ? (
+                        <SelfAssessmentLoadingPanel
+                          message={t("selfAssessment.loadingAssessmentData")}
+                          subtitle={t("selfAssessment.loadingAssessmentDataHint")}
+                          accentColor={at.primary}
+                        />
+                      ) : currentChartData.length > 0 ? (
                         <AssessmentProgressOverview
                           embedded
                           items={currentChartData}

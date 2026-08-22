@@ -13,7 +13,7 @@ import "./dashboard.css";
 
 import LogoImg from "../../assets/logo_image.png";
 import EmblemImg from "../../assets/emblem_india.png";
-import GsqacLogoImg from "../../assets/gsqac_logo.png";
+import GsqacLogoImg from "../../assets/gsqac_new_logo.png";
 
 const HARDCOPY_NOTE =
   "આપની રજૂઆત માટે સૌ પ્રથમ હાર્ડકોપીમાં ફોર્મ ડાઉનલોડ કરી અને ભરી ને રાખશો. જેથી ઓનલાઇન ભરતી વખતે સરળતા રહે";

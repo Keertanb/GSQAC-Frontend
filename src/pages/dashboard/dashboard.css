@@ -70,9 +70,9 @@
 }
 
 .header-gsqac-logo {
-  height: 80px;
+  height: 64px;
   width: auto;
-  max-width: 280px;
+  max-width: 220px;
   object-fit: contain;
   flex-shrink: 0;
   margin-left: -0.1rem;
@@ -1089,8 +1089,8 @@
   }
 
   .header-gsqac-logo {
-    height: 48px;
-    max-width: 150px;
+    height: 40px;
+    max-width: 130px;
     margin-left: -0.05rem;
   }
 
@@ -1164,8 +1164,8 @@
 
 @media (max-width: 380px) {
   .header-gsqac-logo {
-    height: 42px;
-    max-width: 110px;
+    height: 36px;
+    max-width: 100px;
   }
 
   .main-logo-img {

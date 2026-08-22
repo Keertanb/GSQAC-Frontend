@@ -191,6 +191,9 @@
     "failedToLoadAssessment": "मूल्यांकन लोड नहीं हो सका। कृपया अपना कनेक्शन जांचें या प्रशासक से संपर्क करें।",
     "failedToLoadQuestions": "प्रश्न लोड नहीं हो सके",
     "loadingClasses": "कक्षाएं लोड हो रही हैं...",
+    "loadingAssessmentData": "आपका मूल्यांकन लोड हो रहा है...",
+    "loadingAssessmentDataHint": "डोमेन और प्रगति लोड होने तक कृपया प्रतीक्षा करें।",
+    "refreshingAssessmentData": "मूल्यांकन डेटा अपडेट हो रहा है...",
     "mobileStep": {
       "domains": "डोमेन",
       "subdomains": "उप-डोमेन",

@@ -26,7 +26,7 @@ import {
 } from "../../constants/menuItems";
 import { roles } from "../../constants/roles";
 import DrawerWrapper from "./AppDrawer.style";
-import GsqacLogoImg from "../../assets/gsqac_logo.png";
+import GsqacLogoImg from "../../assets/gsqac_new_logo.png";
 import "./AppDrawer.css";
 
 function isRouteActive(pathname, pattern) {
