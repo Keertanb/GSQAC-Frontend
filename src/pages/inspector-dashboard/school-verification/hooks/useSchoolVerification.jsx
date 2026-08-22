@@ -1176,10 +1176,9 @@ export function useSchoolVerification() {
   };
 
   const submitAnswerMutation = useSubmitAnswerMutation({
-    onSuccess: (data) => {
-      // Refetch questions and domains to update progress bars
-      refetchQuestions();
-      refetchDomains();
+    onSuccess: () => {
+      // Match school: no per-answer domain/question refetch (was driving SP_GetDomain + evidence summary + SP_GetQuestion).
+      // Progress refreshes on subdomain save / assessment submit.
       enqueueSnackbar("Answer submitted successfully!", {
         variant: "success",
       });

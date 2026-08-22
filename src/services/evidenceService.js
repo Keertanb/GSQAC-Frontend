@@ -331,7 +331,7 @@ export function useSubdomainEvidenceQuery(
     queryFn: () =>
       getSubdomainEvidence({ subDomainId, schoolId, languageCode }),
     enabled: enabled && !!subDomainId && !!schoolId,
-    staleTime: 30 * 1000,
+    staleTime: 10 * 60 * 1000, // evidence slots/uploads; invalidate on upload
   });
 }
 
@@ -343,7 +343,7 @@ export function useQuestionEvidenceQuery(
     queryKey: ["question-evidence", questionId, schoolId, languageCode],
     queryFn: () => getQuestionEvidence({ questionId, schoolId, languageCode }),
     enabled: enabled && !!questionId && !!schoolId,
-    staleTime: 30 * 1000,
+    staleTime: 10 * 60 * 1000, // evidence slots/uploads; invalidate on upload
   });
 }
 
@@ -359,7 +359,7 @@ export function useEvidenceSlotsQuery(
         questionId ? { questionId } : { subDomainId },
       ),
     enabled: enabled && !!(questionId || subDomainId),
-    staleTime: 30 * 1000,
+    staleTime: 10 * 60 * 1000, // evidence slots/uploads; invalidate on upload
   });
 }
 

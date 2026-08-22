@@ -33,8 +33,8 @@ export const resetPassword = async (payload) => {
 };
 
 /**
- * Send OTP for school password reset
- * @param {Object} payload - { userName: string, roleId: string, mobileNo: string }
+ * Send OTP for school / district nodal password reset
+ * @param {Object} payload - { userName: string, roleId: number, mobileNo: string }
  * @returns {Promise} API response
  */
 export const sendSchoolOtp = async (payload) => {
@@ -43,8 +43,8 @@ export const sendSchoolOtp = async (payload) => {
 };
 
 /**
- * Verify OTP for school password reset
- * @param {Object} payload - { id: number, userName: string, otpCode: string }
+ * Verify OTP for school / district nodal password reset
+ * @param {Object} payload - { id: number, userName: string, otpCode: string, roleId: number }
  * @returns {Promise} API response
  */
 export const verifySchoolOtp = async (payload) => {
@@ -53,8 +53,8 @@ export const verifySchoolOtp = async (payload) => {
 };
 
 /**
- * Reset school password with OTP
- * @param {Object} payload - { id: number, otpCode: string, userName: string, password: string }
+ * Reset school / district nodal password with OTP
+ * @param {Object} payload - { id: number, otpCode: string, userName: string, password: string, roleId: number }
  * @returns {Promise} API response
  */
 export const resetSchoolPassword = async (payload) => {

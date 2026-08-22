@@ -279,6 +279,14 @@ const Login = () => {
     setErrors({ ...errors, password: "" });
   };
 
+  const resetRoleId = getRoleId(selectedRole === "nodal" ? "nodal" : "school");
+  const resetUserLabel =
+    selectedRole === "nodal" ? "User Name" : "UDISE Code";
+  const resetUserPlaceholder =
+    selectedRole === "nodal"
+      ? "Enter your user name"
+      : "Enter your UDISE Code";
+
   const handleSendSchoolOtp = () => {
     const nextErrors = {
       userId: "",
@@ -290,7 +298,7 @@ const Login = () => {
     };
 
     if (!userId.trim()) {
-      nextErrors.userId = "Please enter your UDISE Code";
+      nextErrors.userId = `Please enter your ${resetUserLabel}`;
       setResetErrors(nextErrors);
       return;
     }
@@ -316,7 +324,7 @@ const Login = () => {
     setResetErrors(nextErrors);
     sendSchoolOtpMutation.mutate({
       userName: userId.trim(),
-      roleId: getRoleId("school"),
+      roleId: resetRoleId,
       mobileNo: mobileNumber.trim(),
     });
   };
@@ -353,6 +361,7 @@ const Login = () => {
       id: schoolResetId,
       userName: userId.trim(),
       otpCode: enteredOtp,
+      roleId: resetRoleId,
     });
   };
 
@@ -368,7 +377,7 @@ const Login = () => {
     let hasError = false;
 
     if (!userId.trim()) {
-      nextErrors.userId = "Please enter your UDISE Code";
+      nextErrors.userId = `Please enter your ${resetUserLabel}`;
       hasError = true;
     }
     if (!isOtpVerified || !schoolResetId) {
@@ -402,6 +411,7 @@ const Login = () => {
       otpCode: otpCode.trim(),
       userName: userId.trim(),
       password: newPassword.trim(),
+      roleId: resetRoleId,
     });
   };
 
@@ -523,7 +533,9 @@ const Login = () => {
               </h2>
               <p className="lp-form-subtitle">
                 {isResetPasswordMode
-                  ? "Update your school account password"
+                  ? selectedRole === "nodal"
+                    ? "Update your district nodal officer password"
+                    : "Update your school account password"
                   : "Select your role and sign in to continue"}
               </p>
             </div>
@@ -642,7 +654,7 @@ const Login = () => {
             >
               {isResetPasswordMode ? (
                 <>
-                  <span className="lp-section-label">UDISE Code</span>
+                  <span className="lp-section-label">{resetUserLabel}</span>
                   <div
                     className={`lp-input-wrap${inputFocused ? " lp-input-focused" : ""}${resetErrors.userId ? " lp-input-error" : ""}`}
                   >
@@ -650,7 +662,7 @@ const Login = () => {
                     <input
                       className="lp-input"
                       type="text"
-                      placeholder="Enter your UDISE Code"
+                      placeholder={resetUserPlaceholder}
                       value={userId}
                       onChange={(e) => {
                         handleUserIdChange(e);
@@ -906,7 +918,7 @@ const Login = () => {
                     <span className="lp-error">{errors.password}</span>
                   )}
 
-                  {selectedRole === "school" && (
+                  {(selectedRole === "school" || selectedRole === "nodal") && (
                     <button
                       type="button"
                       className="lp-reset-link"

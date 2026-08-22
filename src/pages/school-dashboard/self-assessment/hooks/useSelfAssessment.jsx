@@ -1505,9 +1505,8 @@ export function useSelfAssessment() {
 
   const submitAnswerMutation = useSubmitAnswerMutation({
     onSuccess: () => {
-      // Avoid full domain recalculation on every single answer (DB storm under concurrency).
-      // Debounced questions refresh; domains refresh only on subdomain save.
-      scheduleQuestionsRefetch();
+      // Do not refetch questions/domains per answer — local state already has the selection.
+      // Domains + questions refresh on subdomain save / session submit only (cuts SP_GetQuestion storm).
       enqueueSnackbar("Answer submitted successfully!", {
         variant: "success",
       });
