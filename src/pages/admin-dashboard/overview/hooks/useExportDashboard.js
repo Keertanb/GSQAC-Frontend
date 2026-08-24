@@ -3,6 +3,7 @@ import ExcelJS from "exceljs/dist/exceljs.bare.min.js";
 import { enqueueSnackbar } from "notistack";
 import axiosInstance from "../../../../config/axios";
 import { rejectTestDistricts } from "../../../../utils/excludedDistricts";
+import { generatePerformanceReportPdf } from "../utils/generatePerformanceReportPdf";
 
 let _cache = null;
 let _cacheAt = 0;
@@ -625,11 +626,94 @@ function districtRowsFromSchools(allSchools, fallbackDistricts) {
     });
 }
 
+function buildDistrictRankRowsByManagement(allSchools = []) {
+  const map = new Map();
+  allSchools.forEach((school) => {
+    const districtId = Number(school.districtId ?? school.district_id) || 0;
+    const districtName = school.districtName ?? school.district_name ?? "Unassigned";
+    const management = classifyManagement(school);
+    const status = getStatusKey(school);
+    if (!map.has(districtId)) {
+      map.set(districtId, {
+        districtId,
+        districtName,
+        govt: { total: 0, active: 0, pend: 0 },
+        aided: { total: 0, active: 0, pend: 0 },
+        private: { total: 0, active: 0, pend: 0 },
+        total: 0,
+        completed: 0,
+      });
+    }
+    const row = map.get(districtId);
+    const bucket = row[management];
+    bucket.total += 1;
+    row.total += 1;
+    if (status === "pending") bucket.pend += 1;
+    else bucket.active += 1;
+    if (status === "completed") row.completed += 1;
+  });
+  return Array.from(map.values())
+    .map((r) => ({
+      ...r,
+      activePercent: r.total > 0 ? (100 * (r.govt.active + r.aided.active + r.private.active)) / r.total : 0,
+    }))
+    .sort((a, b) => b.activePercent - a.activePercent);
+}
+
+function buildDistrictRankRowsByType(allSchools = []) {
+  const map = new Map();
+  allSchools.forEach((school) => {
+    const districtId = Number(school.districtId ?? school.district_id) || 0;
+    const districtName = school.districtName ?? school.district_name ?? "Unassigned";
+    const category = classifyCategoryGroup(school);
+    if (!category) return;
+    const status = classifyStatus(school);
+    if (!map.has(districtId)) {
+      map.set(districtId, {
+        districtId,
+        districtName,
+        primary: { total: 0, completed: 0, started: 0, pending: 0 },
+        secondary: { total: 0, completed: 0, started: 0, pending: 0 },
+        total: 0,
+        completed: 0,
+      });
+    }
+    const row = map.get(districtId);
+    const bucket = row[category];
+    bucket.total += 1;
+    row.total += 1;
+    if (status.isCompleted) {
+      bucket.completed += 1;
+      row.completed += 1;
+    } else if (status.isInProgress) {
+      bucket.started += 1;
+    } else {
+      bucket.pending += 1;
+    }
+  });
+  return Array.from(map.values())
+    .map((r) => ({
+      ...r,
+      activePercent:
+        r.total > 0
+          ? (100 *
+              (r.primary.completed +
+                r.primary.started +
+                r.secondary.completed +
+                r.secondary.started)) /
+            r.total
+          : 0,
+    }))
+    .sort((a, b) => b.activePercent - a.activePercent);
+}
+
 export function useExportDashboard({ districtId } = {}) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState("");
   const [isMgmtCategoryExporting, setIsMgmtCategoryExporting] = useState(false);
   const [mgmtCategoryExportProgress, setMgmtCategoryExportProgress] = useState("");
+  const [isPdfExporting, setIsPdfExporting] = useState(false);
+  const [pdfExportProgress, setPdfExportProgress] = useState("");
 
   const exportToXlsx = async () => {
     if (isExporting) return;
@@ -934,6 +1018,96 @@ export function useExportDashboard({ districtId } = {}) {
     }
   };
 
+  const exportPerformancePdf = async () => {
+    if (isPdfExporting) return;
+    setIsPdfExporting(true);
+    setPdfExportProgress(isCacheValid(districtId) ? "Building PDF…" : "Fetching data…");
+
+    try {
+      const { allSchools } = await prefetchExportData((info) => {
+        if (info.phase === "schools") setPdfExportProgress("Fetching school data…");
+      }, districtId);
+
+      setPdfExportProgress("Preparing report…");
+
+      const totalSchools = allSchools.length;
+      const totalCompleted = allSchools.filter((s) => classifyStatus(s).isCompleted).length;
+      const totalStarted = allSchools.filter((s) => classifyStatus(s).isInProgress).length;
+      const totalPending = Math.max(0, totalSchools - totalCompleted - totalStarted);
+      const totalActive = totalCompleted + totalStarted;
+
+      const mgmtBuckets = {
+        govt: { label: "Government (Govt)", total: 0, completed: 0, started: 0, pending: 0 },
+        aided: { label: "Grant-in-Aid (Aided)", total: 0, completed: 0, started: 0, pending: 0 },
+        private: { label: "Private (Unaided)", total: 0, completed: 0, started: 0, pending: 0 },
+      };
+
+      const typeBuckets = {
+        primary: { label: "Primary Schools", total: 0, completed: 0, started: 0, pending: 0 },
+        secondary: { label: "Secondary Schools", total: 0, completed: 0, started: 0, pending: 0 },
+      };
+
+      allSchools.forEach((school) => {
+        const status = classifyStatus(school);
+        const mgmt = mgmtBuckets[classifyManagement(school)];
+        if (mgmt) {
+          mgmt.total += 1;
+          if (status.isCompleted) mgmt.completed += 1;
+          else if (status.isInProgress) mgmt.started += 1;
+          else mgmt.pending += 1;
+        }
+
+        const type = typeBuckets[classifyCategoryGroup(school)];
+        if (type) {
+          type.total += 1;
+          if (status.isCompleted) type.completed += 1;
+          else if (status.isInProgress) type.started += 1;
+          else type.pending += 1;
+        }
+      });
+
+      const districtMgmtRows = buildDistrictRankRowsByManagement(allSchools);
+      const districtTypeRows = buildDistrictRankRowsByType(allSchools);
+      const districtCount = new Set(
+        allSchools.map((s) => s.districtId ?? s.district_id),
+      ).size;
+
+      const generatedAt = new Date();
+      const generatedDate = generatedAt.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      });
+
+      setPdfExportProgress("Generating PDF…");
+      generatePerformanceReportPdf({
+        districtCount,
+        generatedDate,
+        fileDate: generatedAt.toISOString().slice(0, 10),
+        mgmtBuckets,
+        typeBuckets,
+        totals: {
+          total: totalSchools,
+          completed: totalCompleted,
+          started: totalStarted,
+          pending: totalPending,
+          active: totalActive,
+        },
+        districtMgmtRows,
+        districtTypeRows,
+      });
+    } catch (err) {
+      console.error("[useExportDashboard] Performance PDF export failed:", err?.response?.data || err?.message, err);
+      enqueueSnackbar(
+        err?.response?.data?.message || err?.message || "PDF export failed. Please try again.",
+        { variant: "error" },
+      );
+    } finally {
+      setIsPdfExporting(false);
+      setPdfExportProgress("");
+    }
+  };
+
   return {
     exportToXlsx,
     isExporting,
@@ -941,5 +1115,8 @@ export function useExportDashboard({ districtId } = {}) {
     exportManagementCategoryToXlsx,
     isMgmtCategoryExporting,
     mgmtCategoryExportProgress,
+    exportPerformancePdf,
+    isPdfExporting,
+    pdfExportProgress,
   };
 }

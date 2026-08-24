@@ -21,6 +21,7 @@ export function DashboardHeader({
   onRefresh,
   isDistrictLocked = false,
   eyebrowLabel = "GSQAC Admin",
+  showReportPdf = false,
 }) {
   const {
     exportToXlsx,
@@ -29,6 +30,9 @@ export function DashboardHeader({
     exportManagementCategoryToXlsx,
     isMgmtCategoryExporting,
     mgmtCategoryExportProgress,
+    exportPerformancePdf,
+    isPdfExporting,
+    pdfExportProgress,
   } = useExportDashboard({
     districtId: isDistrictLocked ? districtId : undefined,
   });
@@ -156,6 +160,49 @@ export function DashboardHeader({
                 </>
               )}
             </button>
+
+            {showReportPdf && (
+              <button
+                type="button"
+                className="ado-download-btn"
+                onClick={exportPerformancePdf}
+                disabled={isPdfExporting}
+                aria-label="Download dashboard report as PDF"
+                title="Download PDF report in GSQAC performance format"
+              >
+                {isPdfExporting ? (
+                  <>
+                    <svg
+                      className="ado-spin-icon"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    {pdfExportProgress || "Preparing…"}
+                  </>
+                ) : (
+                  <>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v10m0 0l-4-4m4 4l4-4M4 20h16"
+                      />
+                    </svg>
+                    Download Report PDF
+                  </>
+                )}
+              </button>
+            )}
 
             <button
               id="admin-dashboard-download-report-btn"

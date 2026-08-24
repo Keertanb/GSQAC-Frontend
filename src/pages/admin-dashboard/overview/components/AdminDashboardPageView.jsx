@@ -124,6 +124,7 @@ export function AdminDashboardPageView({ c }) {
           onRefresh={() => refetch()}
           isDistrictLocked={Boolean(isDistrictLocked)}
           eyebrowLabel={isNodal ? "Nodal Officer" : "GSQAC Admin"}
+          showReportPdf={!isNodal}
         />
         {TABS.length > 1 && (
           <DashboardTabs
