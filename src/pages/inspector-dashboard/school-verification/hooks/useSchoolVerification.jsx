@@ -69,7 +69,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { filterQuestionsByClassRange } from "../../../../utils/classRange";
+import { filterQuestionsByClassRange, resolveEffectiveSchoolClassRange } from "../../../../utils/classRange";
 import { parseQuestionOptions, resolveAssessmentPeriod } from "../../../../utils/assessmentMeta";
 import {
   clampProgressPercentage,
@@ -196,12 +196,15 @@ export function useSchoolVerification() {
     return counts;
   }, [gradesData]);
 
-  const lowerClass = schoolData.lowerClass
-    ? Number(schoolData.lowerClass)
-    : null;
-  const upperClass = schoolData.upperClass
-    ? Number(schoolData.upperClass)
-    : null;
+  const { lowerClass, upperClass } = useMemo(
+    () =>
+      resolveEffectiveSchoolClassRange(
+        schoolData.lowerClass,
+        schoolData.upperClass,
+        schoolData.schoolCategoryId,
+      ),
+    [schoolData.lowerClass, schoolData.upperClass, schoolData.schoolCategoryId],
+  );
 
   const classOptions = useMemo(() => {
     if (

@@ -33,6 +33,7 @@ import {
   useSubmitAssessmentMutation,
   useGetSchoolGradesQuery,
   submitAssessment,
+  fetchDomainsBypassingCache,
 } from "../../../../services/schoolService";
 import {
   useGetClassWiseSubjectsQuery,
@@ -45,7 +46,7 @@ import {
   normalizeHostelFacilityValue,
   sumProgressFromDomains,
 } from "../../../../utils/hostelDomain";
-import { filterQuestionsByClassRange } from "../../../../utils/classRange";
+import { filterQuestionsByClassRange, resolveEffectiveSchoolClassRange } from "../../../../utils/classRange";
 import { parseQuestionOptions, resolveAssessmentPeriod } from "../../../../utils/assessmentMeta";
 import {
   isAssessmentSubmitted,
@@ -290,12 +291,15 @@ export function useSelfAssessment() {
     return counts;
   }, [gradesData]);
 
-  const lowerClass = schoolData.lowerClass
-    ? Number(schoolData.lowerClass)
-    : null;
-  const upperClass = schoolData.upperClass
-    ? Number(schoolData.upperClass)
-    : null;
+  const { lowerClass, upperClass } = useMemo(
+    () =>
+      resolveEffectiveSchoolClassRange(
+        schoolData.lowerClass,
+        schoolData.upperClass,
+        schoolData.schoolCategoryId,
+      ),
+    [schoolData.lowerClass, schoolData.upperClass, schoolData.schoolCategoryId],
+  );
 
   const classOptions = useMemo(() => {
     if (
@@ -1543,13 +1547,22 @@ export function useSelfAssessment() {
             return next;
           });
         }
-        const domainsResult = await refetchDomains();
+        const domainsResult = await fetchDomainsBypassingCache({
+          roleId,
+          languageCode,
+          userId: userId ? Number(userId) : undefined,
+        });
         const freshSessionId = getSessionIdFromDomainsResponse(
-          domainsResult.data,
+          domainsResult,
           selectedAssessment?.assessmentId ?? selectedAssessmentId,
         );
 
-        if (freshSessionId === null || freshSessionId === undefined) {
+        // Never re-upsert with isSubmitted:0 after a final submit (would clear
+        // read-only if SP allowed downgrade / stale cache hid sessionId).
+        if (
+          (freshSessionId === null || freshSessionId === undefined) &&
+          !isAssessmentSubmitted(selectedAssessment)
+        ) {
           const sessionPayload = {
             sessionId: null,
             assessmentId: selectedAssessment?.assessmentId ?? null,
@@ -1580,16 +1593,23 @@ export function useSelfAssessment() {
 
   const submitAssessmentMutation = useSubmitAssessmentMutation({
     onSuccess: (data, variables) => {
-      if (variables.isSubmitted === 0) {
+      if (Number(variables?.isSubmitted) === 0) {
         // Must refresh immediately so sessionId is available for the next save
-        refetchDomains();
+        fetchDomainsBypassingCache({
+          roleId,
+          languageCode,
+          userId: userId ? Number(userId) : undefined,
+        });
       } else {
         // Final submission - close the feedback modal
         setShowSubmitConfirmation(false);
         setSubmitFeedback("");
 
-        // Refetch domains to update progress and isSubmitted status
-        refetchDomains();
+        fetchDomainsBypassingCache({
+          roleId,
+          languageCode,
+          userId: userId ? Number(userId) : undefined,
+        });
 
         // Refetch questions if subdomain is selected
         if (selectedSubdomain) {
@@ -1597,13 +1617,10 @@ export function useSelfAssessment() {
         }
 
         // Invalidate all school-related queries to refresh dashboard data
+        // (domains already refreshed via bypass-cache fetch above)
         queryClient.invalidateQueries({
           queryKey: ["school"],
-        });
-
-        // Invalidate specific queries
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.school.domains(roleId, languageCode),
+          predicate: (query) => query.queryKey[1] !== "domains",
         });
 
         queryClient.invalidateQueries({
@@ -1612,10 +1629,6 @@ export function useSelfAssessment() {
 
         queryClient.invalidateQueries({
           queryKey: queryKeys.school.schoolSections(userName),
-        });
-
-        enqueueSnackbar("Assessment submitted successfully!", {
-          variant: "success",
         });
       }
     },
@@ -1680,6 +1693,7 @@ export function useSelfAssessment() {
         roleId,
         languageCode,
         userId: Number(userId),
+        schoolId: userName || undefined,
         getDomainName,
         getSubdomainName,
         getAssessmentName: (assessment) =>
@@ -1797,17 +1811,43 @@ export function useSelfAssessment() {
       setShowSubmitConfirmation(false);
       setSubmitFeedback("");
 
-      await refetchDomains();
+      // Optimistic: flip UI to read-only immediately even if Redis is briefly stale
+      const submittedIds = new Set(
+        pendingAssessments.map((a) => Number(a.assessmentId)),
+      );
+      const domainsQueryKey = queryKeys.school.domains(
+        roleId,
+        languageCode,
+        userId ? Number(userId) : undefined,
+      );
+      queryClient.setQueryData(domainsQueryKey, (old) => {
+        if (!old?.data || !Array.isArray(old.data)) return old;
+        return {
+          ...old,
+          data: old.data.map((assessment) =>
+            submittedIds.has(Number(assessment.assessmentId))
+              ? { ...assessment, isSubmitted: 1 }
+              : assessment,
+          ),
+        };
+      });
+
+      // Bypass Redis so isSubmitted=1 is not masked by a stale GET cache
+      await fetchDomainsBypassingCache({
+        roleId,
+        languageCode,
+        userId: userId ? Number(userId) : undefined,
+      });
 
       if (selectedSubdomain) {
         refetchQuestions();
       }
 
+      // Do not invalidate domains here — bypass-cache fetch already set fresh
+      // isSubmitted; a normal refetch can re-hit stale Redis and undo read-only.
       queryClient.invalidateQueries({
         queryKey: ["school"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.school.domains(roleId, languageCode),
+        predicate: (query) => query.queryKey[1] !== "domains",
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.school.schoolData(userName),

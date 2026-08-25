@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -14,9 +14,7 @@ import {
 import {
   Preview as PreviewIcon,
   Close as CloseIcon,
-  Download as DownloadIcon,
 } from "@mui/icons-material";
-import { enqueueSnackbar } from "notistack";
 import { colors } from "../../../../constants/colors";
 import { useTranslation } from "react-i18next";
 import { AssessmentOptionText } from "../../../../utils/assessmentOptionText";
@@ -25,7 +23,6 @@ import {
   formatKakshaLabel,
   getAssessmentPeriodFromList,
 } from "../../../../utils/assessmentMeta";
-import { generateSubmitPreviewPdf } from "../utils/generateSubmitPreviewPdf";
 
 export function SubmitPreviewModal({
   open,
@@ -45,7 +42,6 @@ export function SubmitPreviewModal({
   round,
 }) {
   const { t } = useTranslation();
-  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const hasData =
     Array.isArray(previewData) &&
     previewData.some((domain) =>
@@ -392,59 +388,9 @@ export function SubmitPreviewModal({
         }}
       >
         <Button
-          onClick={async () => {
-            if (!hasData || isDownloadingPdf) return;
-            setIsDownloadingPdf(true);
-            try {
-              await generateSubmitPreviewPdf({
-                previewData,
-                academicYear: period.academicYear,
-                round: "",
-                totalAnswered,
-                title,
-                fileName: "self-assessment-preview.pdf",
-              });
-            } catch (pdfError) {
-              console.error("Failed to download preview PDF:", pdfError);
-              enqueueSnackbar(
-                t("selfAssessment.submitPreview.downloadFailed", {
-                  defaultValue: "Failed to download PDF. Please try again.",
-                }),
-                { variant: "error" },
-              );
-            } finally {
-              setIsDownloadingPdf(false);
-            }
-          }}
-          variant="outlined"
-          disabled={isLoading || isSubmitting || !hasData || isDownloadingPdf}
-          startIcon={
-            isDownloadingPdf ? (
-              <CircularProgress size={16} />
-            ) : (
-              <DownloadIcon fontSize="small" />
-            )
-          }
-          sx={{
-            minWidth: { sm: 140 },
-            textTransform: "none",
-            fontWeight: 600,
-            borderRadius: 2,
-            mr: { sm: "auto" },
-          }}
-        >
-          {isDownloadingPdf
-            ? t("selfAssessment.submitPreview.downloadingPdf", {
-                defaultValue: "Preparing PDF...",
-              })
-            : t("selfAssessment.submitPreview.downloadPdf", {
-                defaultValue: "Download PDF",
-              })}
-        </Button>
-        <Button
           onClick={onClose}
           variant="outlined"
-          disabled={isLoading || isSubmitting || isDownloadingPdf}
+          disabled={isLoading || isSubmitting}
           sx={{
             minWidth: { sm: 100 },
             textTransform: "none",
@@ -457,7 +403,7 @@ export function SubmitPreviewModal({
         <Button
           onClick={onConfirm}
           variant="contained"
-          disabled={isLoading || isSubmitting || !!error || isDownloadingPdf}
+          disabled={isLoading || isSubmitting || !!error}
           startIcon={
             isSubmitting ? (
               <CircularProgress size={16} sx={{ color: "inherit" }} />

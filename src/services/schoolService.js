@@ -23,7 +23,7 @@ function resolveSubdomainSubmitRoleId(payload) {
  * @returns {Promise} API response
  */
 export const getDomains = async (params = {}) => {
-  const { roleId, languageCode, ...otherParams } = params;
+  const { roleId, languageCode, bypassCache = false, ...otherParams } = params;
   const config = {
     params: { languageCode, ...otherParams },
     headers: {},
@@ -31,6 +31,10 @@ export const getDomains = async (params = {}) => {
 
   if (roleId) {
     config.headers.roleId = roleId;
+  }
+  if (bypassCache) {
+    config.headers["Cache-Control"] = "no-cache";
+    config.headers["X-Bypass-Cache"] = "1";
   }
 
   const response = await axiosInstance.get("/questionnaire/domain", config);
@@ -96,11 +100,33 @@ export const useGetDomainsQuery = ({
 
   return useQuery({
     queryKey: queryKeys.school.domains(roleId, languageCode, userIdToUse),
-    queryFn: () => getDomains({ roleId, languageCode }),
+    queryFn: ({ meta } = {}) =>
+      getDomains({
+        roleId,
+        languageCode,
+        bypassCache: Boolean(meta?.bypassCache),
+      }),
     enabled: enabled && !!roleId,
-    staleTime: 10 * 60 * 1000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    // Progress/submit status must stay fresh (Redis is also invalidated on writes)
+    staleTime: 30 * 1000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+  });
+};
+
+/**
+ * Force-fetch domains bypassing Redis HTTP cache (post-submit / post-reset).
+ */
+export const fetchDomainsBypassingCache = async ({
+  roleId,
+  languageCode,
+  userId,
+}) => {
+  const userIdToUse = userId || useAuthStore.getState().userId;
+  return queryClient.fetchQuery({
+    queryKey: queryKeys.school.domains(roleId, languageCode, userIdToUse),
+    queryFn: () =>
+      getDomains({ roleId, languageCode, bypassCache: true }),
   });
 };
 
@@ -320,29 +346,28 @@ export const submitAssessment = async (payload) => {
  * @returns {Object} Mutation object from React Query
  */
 export const useSubmitAssessmentMutation = (options = {}) => {
+  const { onSuccess, onError, ...rest } = options;
   return useMutation({
     mutationFn: (data) => submitAssessment(data),
     mutationKey: ["school", "submit-assessment"],
-    onSuccess: (data) => {
-      enqueueSnackbar(data?.message || "Assessment submitted successfully", {
-        variant: "success",
-      });
-      if (options.onSuccess) {
-        options.onSuccess(data);
+    ...rest,
+    onSuccess: (data, variables, context) => {
+      if (Number(variables?.isSubmitted) === 1) {
+        enqueueSnackbar(data?.message || "Assessment submitted successfully", {
+          variant: "success",
+        });
       }
+      onSuccess?.(data, variables, context);
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
       enqueueSnackbar(
         error?.response?.data?.message || "Failed to submit assessment",
         {
           variant: "error",
         },
       );
-      if (options.onError) {
-        options.onError(error);
-      }
+      onError?.(error, variables, context);
     },
-    ...options,
   });
 };
 
@@ -436,6 +461,33 @@ export const getSubdomainQuestions = async (params) => {
   }
 
   const response = await axiosInstance.get("/questionnaire/question", config);
+  return response.data;
+};
+
+/**
+ * Batch fetch all answered questions for submit preview (one HTTP call).
+ */
+export const getSubmitPreviewQuestions = async (params = {}) => {
+  const { roleId, languageCode, userId, schoolId } = params;
+  const config = {
+    params: {
+      ...(languageCode ? { languageCode } : {}),
+      ...(schoolId ? { schoolId } : {}),
+    },
+    headers: {},
+  };
+
+  if (roleId) {
+    config.headers.roleId = roleId;
+  }
+
+  const authState = useAuthStore.getState();
+  const userIdToSend = userId || authState.userId;
+  if (userIdToSend) {
+    config.headers.userId = userIdToSend;
+  }
+
+  const response = await axiosInstance.get("/questionnaire/submit-preview", config);
   return response.data;
 };
 

@@ -10,7 +10,9 @@ export function clampProgressPercentage(value) {
 }
 
 export function isAssessmentSubmitted(assessment) {
-  return Number(assessment?.isSubmitted) === 1;
+  const value = assessment?.isSubmitted;
+  if (value === true || value === 1 || value === "1") return true;
+  return Number(value) === 1;
 }
 
 export function getDomainProgressFromApi(domain) {

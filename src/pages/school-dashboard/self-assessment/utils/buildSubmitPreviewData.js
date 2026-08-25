@@ -1,4 +1,7 @@
-import { getSubdomainQuestions } from "../../../../services/schoolService";
+import {
+  getSubdomainQuestions,
+  getSubmitPreviewQuestions,
+} from "../../../../services/schoolService";
 import {
   getKakshaLevelFromQuestion,
   parseQuestionOptions,
@@ -33,8 +36,8 @@ function buildQuestionContext(question) {
   const questionType = getQuestionType(question);
   const parts = [];
 
-  if (question.cls != null || question.std != null) {
-    parts.push(`Class ${question.cls ?? question.std}`);
+  if (question.cls != null || question.class != null || question.std != null) {
+    parts.push(`Class ${question.cls ?? question.class ?? question.std}`);
   }
   if (question.section) {
     parts.push(`Section ${question.section}`);
@@ -75,10 +78,65 @@ function normalizeQuestionsResponse(response) {
   if (response?.data && Array.isArray(response.data)) {
     return response.data;
   }
+  if (Array.isArray(response)) {
+    return response;
+  }
   return [];
 }
 
-export async function buildSubmitPreviewData({
+function groupQuestionsBySubDomain(questions = []) {
+  const map = new Map();
+  questions.forEach((question) => {
+    const key = Number(question.subDomainId);
+    if (!Number.isFinite(key)) return;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(question);
+  });
+  return map;
+}
+
+function buildPreviewFromQuestionMap({
+  domains,
+  questionsBySubDomain,
+  getDomainName,
+  getSubdomainName,
+}) {
+  const previewDomains = [];
+
+  domains.forEach((domain, domainIndex) => {
+    const subdomainList = domain.subDomain || [];
+    const previewSubdomains = [];
+
+    subdomainList.forEach((subdomain, subdomainIndex) => {
+      const subDomainId = Number(subdomain.subDomainId || subdomain.id);
+      const questions = questionsBySubDomain.get(subDomainId) || [];
+      const answeredQuestions = extractQuestions(questions);
+      if (!answeredQuestions.length) return;
+
+      previewSubdomains.push({
+        subdomainName: getSubdomainName(subdomain),
+        subdomainIndex: subdomainIndex + 1,
+        questions: answeredQuestions.map((item, questionIndex) => ({
+          ...item,
+          questionNumber: `${domainIndex + 1}.${subdomainIndex + 1}.${questionIndex + 1}`,
+        })),
+      });
+    });
+
+    if (previewSubdomains.length) {
+      previewDomains.push({
+        domainName: getDomainName(domain),
+        domainIndex: domainIndex + 1,
+        subdomains: previewSubdomains,
+      });
+    }
+  });
+
+  return previewDomains;
+}
+
+/** Legacy fallback: one request per subdomain (used if batch endpoint is unavailable). */
+async function buildSubmitPreviewDataLegacy({
   domains,
   roleId,
   languageCode,
@@ -135,15 +193,62 @@ export async function buildSubmitPreviewData({
   return previewDomains;
 }
 
-export async function buildSubmitPreviewDataForAssessments({
-  assessments,
+export async function buildSubmitPreviewData({
+  domains,
   roleId,
   languageCode,
   userId,
   getDomainName,
   getSubdomainName,
+  questionsBySubDomain = null,
+}) {
+  if (questionsBySubDomain instanceof Map) {
+    return buildPreviewFromQuestionMap({
+      domains,
+      questionsBySubDomain,
+      getDomainName,
+      getSubdomainName,
+    });
+  }
+
+  return buildSubmitPreviewDataLegacy({
+    domains,
+    roleId,
+    languageCode,
+    userId,
+    getDomainName,
+    getSubdomainName,
+  });
+}
+
+export async function buildSubmitPreviewDataForAssessments({
+  assessments,
+  roleId,
+  languageCode,
+  userId,
+  schoolId,
+  getDomainName,
+  getSubdomainName,
   getAssessmentName,
 }) {
+  let questionsBySubDomain = null;
+
+  try {
+    const batchResponse = await getSubmitPreviewQuestions({
+      roleId,
+      languageCode,
+      userId,
+      schoolId,
+    });
+    const allQuestions = normalizeQuestionsResponse(batchResponse);
+    questionsBySubDomain = groupQuestionsBySubDomain(allQuestions);
+  } catch (error) {
+    console.warn(
+      "[submit-preview] Batch endpoint unavailable, falling back to per-subdomain fetches:",
+      error?.message || error,
+    );
+  }
+
   const combinedPreview = [];
 
   for (let assessmentIndex = 0; assessmentIndex < assessments.length; assessmentIndex += 1) {
@@ -159,6 +264,7 @@ export async function buildSubmitPreviewDataForAssessments({
       userId,
       getDomainName,
       getSubdomainName,
+      questionsBySubDomain,
     });
 
     previewDomains.forEach((domain) => {
