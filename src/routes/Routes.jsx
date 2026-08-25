@@ -249,6 +249,16 @@ export const adminRoutes = [
         ),
       },
       {
+        path: ROUTE_URLS.ADMIN_SCHOOL_SCORES_URL,
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <Suspense fallback={<LazyLoad />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: ROUTE_URLS.ADMIN_VERIFIER_URL,
         element: (
           <ProtectedRoute requiredRole="admin">

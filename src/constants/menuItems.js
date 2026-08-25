@@ -18,6 +18,7 @@ import {
     FolderShared,
     RestartAlt,
     LockReset,
+    WorkspacePremium,
 } from "@mui/icons-material";
 
 const DRAWER_WIDTH = {
@@ -143,6 +144,13 @@ export const adminMenuItems = [
     icon: Dashboard,
     url: "/admin-dashboard",
     activeFinder: ["/admin-dashboard"],
+  },
+  {
+    id: "school-score-dashboard",
+    label: "School Scores",
+    icon: WorkspacePremium,
+    url: "/admin-dashboard/school-scores",
+    activeFinder: ["/admin-dashboard/school-scores"],
   },
   {
     id: "assessment-management",

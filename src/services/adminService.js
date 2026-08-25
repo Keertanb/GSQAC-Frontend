@@ -1411,9 +1411,11 @@ export const useGetSchoolAssessmentStatusDetailQuery = (
  * Reset school self-assessment form (answers, sessions, evidence)
  */
 export const resetSchoolAssessmentForm = async ({ schoolId }) => {
-  const response = await axiosInstance.post("/admin/school-form-reset", {
-    schoolId,
-  });
+  const response = await axiosInstance.post(
+    "/admin/school-form-reset",
+    { schoolId },
+    { timeout: 120000 },
+  );
   return response.data;
 };
 
@@ -1541,6 +1543,30 @@ export const useGetAdminDashboardQuery = (params = {}, enabled = true) => {
   return useQuery({
     queryKey: ["admin", "dashboard", params.districtId ?? "all"],
     queryFn: () => getAdminDashboard(params),
+    enabled,
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+/**
+ * Completed-school report score aggregates (bands + grades)
+ * @param {Object} params - { districtId?: number }
+ */
+export const getAdminSchoolScoreDashboard = async (params = {}) => {
+  const response = await axiosInstance.get("/admin/school-score-dashboard", {
+    params,
+    timeout: 180000,
+  });
+  return response.data;
+};
+
+export const useGetAdminSchoolScoreDashboardQuery = (
+  params = {},
+  enabled = true,
+) => {
+  return useQuery({
+    queryKey: ["admin", "school-score-dashboard", params.districtId ?? "all"],
+    queryFn: () => getAdminSchoolScoreDashboard(params),
     enabled,
     staleTime: 2 * 60 * 1000,
   });

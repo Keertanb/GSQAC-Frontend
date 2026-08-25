@@ -38,6 +38,7 @@ export const ADMIN_PARENT_FEEDBACK_URL = "/admin-dashboard/parent-feedback";
 export const ADMIN_LATEST_NEWS_URL = "/admin-dashboard/latest-news";
 export const ADMIN_IMPORTANT_DOCUMENTS_URL =
   "/admin-dashboard/important-documents";
+export const ADMIN_SCHOOL_SCORES_URL = "/admin-dashboard/school-scores";
 
 // CRC Dashboard Routes
 export const CRC_DASHBOARD_URL = "/crc-dashboard";

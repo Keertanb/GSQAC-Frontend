@@ -29,6 +29,7 @@ import ImportantDocumentsAdmin from "./important-documents/ImportantDocumentsAdm
 import AdminOverview from "./overview/AdminOverview";
 import DistrictNodalOfficers from "./district-nodal-officers/DistrictNodalOfficers";
 import RoleManagement from "./role-management/RoleManagement";
+import SchoolScoreDashboard from "./school-score-dashboard/SchoolScoreDashboard";
 import {
   ADMIN_DASHBOARD_URL,
   ADMIN_VERIFIER_URL,
@@ -44,6 +45,7 @@ import {
   ADMIN_PARENT_FEEDBACK_URL,
   ADMIN_LATEST_NEWS_URL,
   ADMIN_IMPORTANT_DOCUMENTS_URL,
+  ADMIN_SCHOOL_SCORES_URL,
 } from "../../routes/routeUrls";
 import ConfirmationModal from "../../components/ConfirmationModal/ConfirmationModal";
 import "./admin-dashboard.css";
@@ -110,6 +112,8 @@ const AdminDashboard = () => {
       return "latest-news";
     } else if (location.pathname === ADMIN_IMPORTANT_DOCUMENTS_URL) {
       return "important-documents";
+    } else if (location.pathname === ADMIN_SCHOOL_SCORES_URL) {
+      return "school-scores";
     }
     return "dashboard";
   };
@@ -420,6 +424,7 @@ const AdminDashboard = () => {
             {currentView === "important-documents" && (
               <ImportantDocumentsAdmin />
             )}
+            {currentView === "school-scores" && <SchoolScoreDashboard />}
             {currentView === "dashboard" && <AdminOverview />}
           </Box>
         </Box>

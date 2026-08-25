@@ -1,0 +1,330 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;600;700;800&display=swap");
+
+.school-score-dashboard {
+  --ssd-ink: #0f172a;
+  --ssd-muted: #64748b;
+  --ssd-line: #e2e8f0;
+  --ssd-surface: #ffffff;
+  --ssd-canvas: #f1f5f9;
+  --ssd-teal: #0f766e;
+  --ssd-teal-soft: #ccfbf1;
+  --ssd-cyan: #0891b2;
+  --ssd-emerald: #059669;
+  --ssd-amber: #d97706;
+  --ssd-radius: 1rem;
+  --ssd-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  font-family: "Source Sans 3", "Segoe UI", sans-serif;
+  color: var(--ssd-ink);
+  padding: 0 0 2rem;
+}
+
+.ssd-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: calc(var(--ssd-radius) + 0.15rem);
+  background:
+    radial-gradient(1200px 280px at 8% -10%, rgba(15, 118, 110, 0.18), transparent 55%),
+    radial-gradient(900px 260px at 92% 0%, rgba(8, 145, 178, 0.16), transparent 50%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid var(--ssd-line);
+  box-shadow: var(--ssd-shadow);
+  padding: 1.35rem 1.5rem 1.45rem;
+  margin-bottom: 1.15rem;
+}
+
+.ssd-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ssd-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ssd-teal);
+}
+
+.ssd-title {
+  margin: 0;
+  font-family: "Fraunces", "Georgia", serif;
+  font-size: clamp(1.55rem, 2.4vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.ssd-subtitle {
+  margin: 0.45rem 0 0;
+  max-width: 42rem;
+  color: var(--ssd-muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.ssd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.ssd-select {
+  min-width: 180px;
+  border: 1px solid var(--ssd-line);
+  border-radius: 0.7rem;
+  background: #fff;
+  color: var(--ssd-ink);
+  padding: 0.55rem 0.8rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.ssd-btn {
+  border: 1px solid var(--ssd-line);
+  border-radius: 0.7rem;
+  background: #fff;
+  color: var(--ssd-ink);
+  padding: 0.55rem 0.95rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.ssd-btn:hover {
+  background: var(--ssd-teal-soft);
+  border-color: #99f6e4;
+}
+
+.ssd-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.ssd-meta {
+  margin-top: 0.85rem;
+  font-size: 0.78rem;
+  color: var(--ssd-muted);
+}
+
+.ssd-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1.15rem;
+}
+
+.ssd-stat {
+  border-radius: var(--ssd-radius);
+  border: 1px solid var(--ssd-line);
+  background: var(--ssd-surface);
+  box-shadow: var(--ssd-shadow);
+  padding: 1rem 1.05rem;
+  min-height: 112px;
+}
+
+.ssd-stat-label {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ssd-muted);
+}
+
+.ssd-stat-value {
+  margin: 0.45rem 0 0;
+  font-family: "Fraunces", "Georgia", serif;
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.ssd-stat-sub {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ssd-muted);
+}
+
+.ssd-stat--score .ssd-stat-value {
+  color: var(--ssd-teal);
+}
+
+.ssd-stat--grade .ssd-stat-value {
+  color: var(--ssd-emerald);
+}
+
+.ssd-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.ssd-card {
+  border-radius: var(--ssd-radius);
+  border: 1px solid var(--ssd-line);
+  background: var(--ssd-surface);
+  box-shadow: var(--ssd-shadow);
+  padding: 1.1rem 1.15rem 1.2rem;
+}
+
+.ssd-card-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.ssd-card-desc {
+  margin: 0.3rem 0 0.9rem;
+  color: var(--ssd-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.ssd-chart {
+  width: 100%;
+  height: 300px;
+}
+
+.ssd-grade-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+.ssd-grade-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 1px solid var(--ssd-line);
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  background: linear-gradient(180deg, #fff, #f8fafc);
+}
+
+.ssd-grade-left {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.ssd-grade-swatch {
+  width: 0.65rem;
+  height: 1.6rem;
+  border-radius: 999px;
+}
+
+.ssd-grade-name {
+  margin: 0;
+  font-weight: 750;
+  font-size: 0.92rem;
+}
+
+.ssd-grade-meta {
+  margin: 0.1rem 0 0;
+  font-size: 0.72rem;
+  color: var(--ssd-muted);
+}
+
+.ssd-grade-count {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.ssd-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--ssd-line);
+  border-radius: 0.8rem;
+}
+
+.ssd-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 520px;
+}
+
+.ssd-table th,
+.ssd-table td {
+  padding: 0.75rem 0.9rem;
+  text-align: left;
+  border-bottom: 1px solid var(--ssd-line);
+  font-size: 0.875rem;
+}
+
+.ssd-table th {
+  background: #f8fafc;
+  color: var(--ssd-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ssd-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ssd-bar {
+  height: 0.45rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  min-width: 88px;
+}
+
+.ssd-bar > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--ssd-cyan), var(--ssd-teal));
+}
+
+.ssd-empty,
+.ssd-error,
+.ssd-loading {
+  border-radius: var(--ssd-radius);
+  border: 1px solid var(--ssd-line);
+  background: #fff;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--ssd-muted);
+}
+
+.ssd-error {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fff1f2;
+}
+
+@media (max-width: 1100px) {
+  .ssd-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ssd-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .ssd-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .ssd-grade-list {
+    grid-template-columns: 1fr;
+  }
+
+  .ssd-hero {
+    padding: 1.1rem;
+  }
+}
