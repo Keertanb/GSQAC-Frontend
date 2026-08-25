@@ -1327,7 +1327,10 @@ export const getSchoolAssessmentStatusList = async (params = {}) => {
 /**
  * React Query hook for school assessment status list
  */
-export const useGetSchoolAssessmentStatusListQuery = (params = {}, enabled = true) => {
+export const useGetSchoolAssessmentStatusListQuery = (
+  params = {},
+  enabled = true,
+) => {
   return useQuery({
     queryKey: [
       "admin",
@@ -1344,13 +1347,19 @@ export const useGetSchoolAssessmentStatusListQuery = (params = {}, enabled = tru
 };
 
 export const getSchoolSelfAssessmentMonitor = async (params = {}) => {
-  const response = await axiosInstance.get("/admin/school-self-assessment-monitor", {
-    params,
-  });
+  const response = await axiosInstance.get(
+    "/admin/school-self-assessment-monitor",
+    {
+      params,
+    },
+  );
   return response.data;
 };
 
-export const useGetSchoolSelfAssessmentMonitorQuery = (params = {}, enabled = true) => {
+export const useGetSchoolSelfAssessmentMonitorQuery = (
+  params = {},
+  enabled = true,
+) => {
   return useQuery({
     queryKey: [
       "admin",
@@ -1383,7 +1392,10 @@ export const getSchoolAssessmentStatusDetail = async (schoolId) => {
 /**
  * React Query hook for school assessment status detail
  */
-export const useGetSchoolAssessmentStatusDetailQuery = (schoolId, enabled = true) => {
+export const useGetSchoolAssessmentStatusDetailQuery = (
+  schoolId,
+  enabled = true,
+) => {
   return useQuery({
     queryKey: ["admin", "school-assessment-status-detail", schoolId],
     queryFn: () => getSchoolAssessmentStatusDetail(schoolId),
@@ -1411,7 +1423,11 @@ export const useResetSchoolAssessmentFormMutation = (options = {}) => {
     mutationFn: resetSchoolAssessmentForm,
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({
-        queryKey: ["admin", "school-assessment-status-detail", variables.schoolId],
+        queryKey: [
+          "admin",
+          "school-assessment-status-detail",
+          variables.schoolId,
+        ],
       });
       queryClient.invalidateQueries({
         queryKey: ["admin", "school-assessment-status"],
@@ -1511,7 +1527,10 @@ export const useGetAdminSchoolAssessmentReportQuery = ({
  * @param {Object} params - { districtId?: number }
  */
 export const getAdminDashboard = async (params = {}) => {
-  const response = await axiosInstance.get("/admin/dashboard", { params });
+  const response = await axiosInstance.get("/admin/dashboard", {
+    params,
+    timeout: 120000,
+  });
   return response.data;
 };
 
