@@ -6,6 +6,7 @@ import {
   getKakshaLevelFromQuestion,
   parseQuestionOptions,
 } from "../../../../utils/assessmentMeta";
+import { dedupeQuestionsById } from "../../../../utils/dedupeQuestions";
 
 function getQuestionType(question) {
   return question.questionType || (question.isClassroomObservation === 1 ? 2 : 1);
@@ -72,16 +73,15 @@ function extractQuestions(questions) {
 }
 
 function normalizeQuestionsResponse(response) {
+  let questions = [];
   if (response?.data?.data && Array.isArray(response.data.data)) {
-    return response.data.data;
+    questions = response.data.data;
+  } else if (response?.data && Array.isArray(response.data)) {
+    questions = response.data;
+  } else if (Array.isArray(response)) {
+    questions = response;
   }
-  if (response?.data && Array.isArray(response.data)) {
-    return response.data;
-  }
-  if (Array.isArray(response)) {
-    return response;
-  }
-  return [];
+  return dedupeQuestionsById(questions);
 }
 
 function groupQuestionsBySubDomain(questions = []) {

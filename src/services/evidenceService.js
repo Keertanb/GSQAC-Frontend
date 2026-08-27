@@ -273,6 +273,7 @@ export function sanitizeDomainsEvidence(domains = []) {
 export const getSubdomainEvidence = async (params) => {
   const response = await axiosInstance.get("/common/subdomain-evidence", {
     params,
+    timeout: 60000,
   });
   return response.data;
 };
@@ -281,13 +282,38 @@ export const prepareSubdomainEvidenceUpload = async (payload) => {
   const response = await axiosInstance.post(
     "/common/subdomain-evidence/prepare-upload",
     payload,
+    { timeout: 90000 },
   );
   return response.data;
+};
+
+/**
+ * School evidence upload: prepare API + S3 PUT as one operation.
+ * Avoids success toast / cache invalidation before the file actually lands in S3.
+ */
+export const uploadSubdomainEvidenceFile = async ({ file, ...payload }) => {
+  if (!file) throw new Error("File is required.");
+  const prepared = await prepareSubdomainEvidenceUpload({
+    ...payload,
+    extension:
+      payload.extension ||
+      file.name.split(".").pop()?.toLowerCase() ||
+      "jpg",
+    contentType: payload.contentType || file.type || "application/octet-stream",
+    fileSizeBytes: payload.fileSizeBytes ?? file.size,
+  });
+  const uploadPayload = prepared?.data || prepared;
+  if (!uploadPayload?.uploadURL) {
+    throw new Error("Unable to prepare evidence upload.");
+  }
+  await uploadFileToPresignedUrl(uploadPayload.uploadURL, file, 180000);
+  return prepared;
 };
 
 export const getQuestionEvidence = async (params) => {
   const response = await axiosInstance.get("/common/question-evidence", {
     params,
+    timeout: 60000,
   });
   return response.data;
 };
@@ -296,8 +322,28 @@ export const prepareQuestionEvidenceUpload = async (payload) => {
   const response = await axiosInstance.post(
     "/common/question-evidence/prepare-upload",
     payload,
+    { timeout: 90000 },
   );
   return response.data;
+};
+
+export const uploadQuestionEvidenceFile = async ({ file, ...payload }) => {
+  if (!file) throw new Error("File is required.");
+  const prepared = await prepareQuestionEvidenceUpload({
+    ...payload,
+    extension:
+      payload.extension ||
+      file.name.split(".").pop()?.toLowerCase() ||
+      "jpg",
+    contentType: payload.contentType || file.type || "application/octet-stream",
+    fileSizeBytes: payload.fileSizeBytes ?? file.size,
+  });
+  const uploadPayload = prepared?.data || prepared;
+  if (!uploadPayload?.uploadURL) {
+    throw new Error("Unable to prepare evidence upload.");
+  }
+  await uploadFileToPresignedUrl(uploadPayload.uploadURL, file, 180000);
+  return prepared;
 };
 
 export const getEvidenceSlots = async (params) => {
@@ -492,7 +538,7 @@ export function usePrepareSubdomainEvidenceMutation(options = {}) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: prepareSubdomainEvidenceUpload,
+    mutationFn: uploadSubdomainEvidenceFile,
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({
         queryKey: [
@@ -501,11 +547,11 @@ export function usePrepareSubdomainEvidenceMutation(options = {}) {
           variables.schoolId,
         ],
       });
-      queryClient.invalidateQueries({ queryKey: ["questionnaire", "domain"] });
-      queryClient.invalidateQueries({ queryKey: ["school", "domains"] });
-      queryClient.invalidateQueries({ queryKey: ["verifier", "domains"] });
-      queryClient.invalidateQueries({ queryKey: ["crc", "domains"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "domains"] });
+      // Soft-refresh domain progress without blocking upload UX
+      queryClient.invalidateQueries({
+        queryKey: ["school", "domains"],
+        refetchType: "active",
+      });
       enqueueSnackbar(data?.message || "Evidence uploaded successfully.", {
         variant: "success",
       });
@@ -588,7 +634,7 @@ export function usePrepareQuestionEvidenceMutation(options = {}) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: prepareQuestionEvidenceUpload,
+    mutationFn: uploadQuestionEvidenceFile,
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({
         queryKey: [
@@ -597,10 +643,10 @@ export function usePrepareQuestionEvidenceMutation(options = {}) {
           variables.schoolId,
         ],
       });
-      queryClient.invalidateQueries({ queryKey: ["questionnaire", "domain"] });
-      queryClient.invalidateQueries({ queryKey: ["school", "domains"] });
-      queryClient.invalidateQueries({ queryKey: ["verifier", "domains"] });
-      queryClient.invalidateQueries({ queryKey: ["crc", "domains"] });
+      queryClient.invalidateQueries({
+        queryKey: ["school", "domains"],
+        refetchType: "active",
+      });
       enqueueSnackbar(data?.message || "Evidence uploaded successfully.", {
         variant: "success",
       });
@@ -618,16 +664,31 @@ export function usePrepareQuestionEvidenceMutation(options = {}) {
   });
 }
 
-export async function uploadFileToPresignedUrl(uploadURL, file) {
-  const response = await fetch(uploadURL, {
-    method: "PUT",
-    headers: {
-      "Content-Type": file.type || "application/octet-stream",
-    },
-    body: file,
-  });
+export async function uploadFileToPresignedUrl(uploadURL, file, timeoutMs = 120000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  if (!response.ok) {
-    throw new Error(`Upload failed with status ${response.status}`);
+  try {
+    const response = await fetch(uploadURL, {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type || "application/octet-stream",
+      },
+      body: file,
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Upload failed with status ${response.status}`);
+    }
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(
+        "Document upload timed out. Please check your network and try again with a smaller file.",
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
   }
 }

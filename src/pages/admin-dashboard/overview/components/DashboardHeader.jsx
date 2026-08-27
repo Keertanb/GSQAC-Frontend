@@ -156,7 +156,12 @@ export function DashboardHeader({
                       d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                     />
                   </svg>
-                  Download Mgmt+Category
+                  <span className="ado-download-btn__label ado-download-btn__label--full">
+                    Download Mgmt+Category
+                  </span>
+                  <span className="ado-download-btn__label ado-download-btn__label--short">
+                    Mgmt+Category
+                  </span>
                 </>
               )}
             </button>
@@ -198,7 +203,12 @@ export function DashboardHeader({
                         d="M12 4v10m0 0l-4-4m4 4l4-4M4 20h16"
                       />
                     </svg>
-                    Download Report PDF
+                    <span className="ado-download-btn__label ado-download-btn__label--full">
+                      Download Report PDF
+                    </span>
+                    <span className="ado-download-btn__label ado-download-btn__label--short">
+                      Report PDF
+                    </span>
                   </>
                 )}
               </button>
@@ -246,7 +256,12 @@ export function DashboardHeader({
                       d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                     />
                   </svg>
-                  Download Report
+                  <span className="ado-download-btn__label ado-download-btn__label--full">
+                    Download Report
+                  </span>
+                  <span className="ado-download-btn__label ado-download-btn__label--short">
+                    Excel Report
+                  </span>
                 </>
               )}
             </button>

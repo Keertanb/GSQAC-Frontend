@@ -82,7 +82,8 @@ export default function SchoolScoreDashboard() {
             <h1 className="ssd-title">School Score Dashboard</h1>
             <p className="ssd-subtitle">
               Average report marks, grade mix, and score-band distribution for
-              schools that have submitted their self-assessment.
+              schools that completed all required self-assessment forms
+              (same completed count as the main dashboard).
             </p>
           </div>
           <div className="ssd-actions">
@@ -121,7 +122,7 @@ export default function SchoolScoreDashboard() {
 
       <section className="ssd-stats">
         <article className="ssd-stat">
-          <p className="ssd-stat-label">Scored schools</p>
+          <p className="ssd-stat-label">Completed schools</p>
           <p className="ssd-stat-value">{c.summary.scoredSchools || 0}</p>
         </article>
         <article className="ssd-stat ssd-stat--score">

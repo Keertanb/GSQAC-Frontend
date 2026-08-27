@@ -34,7 +34,6 @@ import {
   MAX_EVIDENCE_SIZE_BYTES,
   questionRequiresEvidence,
   subdomainRequiresEvidence,
-  uploadFileToPresignedUrl,
   usePrepareQuestionEvidenceMutation,
   usePrepareSubdomainEvidenceMutation,
   useQuestionEvidenceQuery,
@@ -587,9 +586,10 @@ export function SubdomainEvidencePanel({
 
     try {
       setUploadingSlotId(evidenceSlotId);
-      const response = await uploadMutation.mutateAsync(
+      await uploadMutation.mutateAsync(
         isQuestionScoped
           ? {
+              file,
               questionId,
               evidenceSlotId,
               schoolId,
@@ -599,6 +599,7 @@ export function SubdomainEvidencePanel({
               fileSizeBytes: file.size,
             }
           : {
+              file,
               subDomainId,
               evidenceSlotId,
               schoolId,
@@ -608,11 +609,6 @@ export function SubdomainEvidencePanel({
               fileSizeBytes: file.size,
             },
       );
-
-      const uploadPayload = response?.data || response;
-      if (uploadPayload?.uploadURL) {
-        await uploadFileToPresignedUrl(uploadPayload.uploadURL, file);
-      }
     } catch {
       setUploadingSlotId(null);
     } finally {

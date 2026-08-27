@@ -186,7 +186,10 @@ export const submitSubdomainWiseAnswers = async (payload) => {
     ...payload,
     ...(roleId != null ? { roleId } : {}),
   };
-  const config = roleId != null ? { headers: { roleId } } : undefined;
+  const config = {
+    timeout: 90000,
+    ...(roleId != null ? { headers: { roleId } } : {}),
+  };
   const response = await axiosInstance.post(
     "/school/sub-domain-wise-submit-answers",
     body,

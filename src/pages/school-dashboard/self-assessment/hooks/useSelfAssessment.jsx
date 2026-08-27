@@ -47,6 +47,7 @@ import {
   sumProgressFromDomains,
 } from "../../../../utils/hostelDomain";
 import { filterQuestionsByClassRange, resolveEffectiveSchoolClassRange } from "../../../../utils/classRange";
+import { dedupeQuestionsById } from "../../../../utils/dedupeQuestions";
 import { parseQuestionOptions, resolveAssessmentPeriod } from "../../../../utils/assessmentMeta";
 import {
   isAssessmentSubmitted,
@@ -738,7 +739,9 @@ export function useSelfAssessment() {
     } else if (allQuestionsData?.data && Array.isArray(allQuestionsData.data)) {
       questions = allQuestionsData.data;
     }
-    return filterQuestionsByClassRange(questions, lowerClass, upperClass);
+    return dedupeQuestionsById(
+      filterQuestionsByClassRange(questions, lowerClass, upperClass),
+    );
   }, [allQuestionsData?.data, lowerClass, upperClass]);
 
   const allQuestions = useMemo(() => {
@@ -748,11 +751,13 @@ export function useSelfAssessment() {
     } else if (questionsData?.data && Array.isArray(questionsData.data)) {
       questions = questionsData.data;
     }
-    return filterQuestionsByClassRange(
-      questions,
-      lowerClass,
-      upperClass,
-      selectedClass || null,
+    return dedupeQuestionsById(
+      filterQuestionsByClassRange(
+        questions,
+        lowerClass,
+        upperClass,
+        selectedClass || null,
+      ),
     );
   }, [questionsData?.data, lowerClass, upperClass, selectedClass]);
 
@@ -2216,18 +2221,8 @@ export function useSelfAssessment() {
       return;
     }
 
-    // Check if user has answered any class-based questions (type 2 or 3)
-    const hasAnsweredClassBasedQuestions = classBasedQuestions.some(
-      (q) => answers[q.questionId] || textAnswers[q.questionId],
-    );
-
-    // Check if user has answered any subject observation questions (type 3)
-    const hasAnsweredSubjectQuestions = subjectObservationQuestions.some(
-      (q) => answers[q.questionId] || textAnswers[q.questionId],
-    );
-
-    // Only require class/section if user has answered class-based questions
-    if (hasAnsweredClassBasedQuestions) {
+    // Validate class/section/subject based on CURRENT TAB TYPE only
+    if (currentTab?.id === "classroom") {
       if (!selectedClass) {
         enqueueSnackbar("Please select a class before submitting.", {
           variant: "warning",
@@ -2240,9 +2235,22 @@ export function useSelfAssessment() {
         });
         return;
       }
+    }
 
-      // For subject observation questions, only validate subject if user has answered type 3 questions
-      if (hasAnsweredSubjectQuestions && !selectedSubject) {
+    if (currentTab?.id === "subject") {
+      if (!selectedClass) {
+        enqueueSnackbar("Please select a class before submitting.", {
+          variant: "warning",
+        });
+        return;
+      }
+      if (!selectedSection) {
+        enqueueSnackbar("Please select a section before submitting.", {
+          variant: "warning",
+        });
+        return;
+      }
+      if (!selectedSubject) {
         enqueueSnackbar("Please select a subject before submitting.", {
           variant: "warning",
         });
@@ -2252,14 +2260,17 @@ export function useSelfAssessment() {
 
     let clsValue = null;
     let sectionValue = null;
-    const isClassSelected = hasAnsweredClassBasedQuestions && selectedClass;
+    const isClassSelected =
+      (currentTab?.id === "classroom" || currentTab?.id === "subject") &&
+      selectedClass;
 
     if (isClassSelected) {
       // Class-based questions - use selected class and section
       clsValue = Number(selectedClass);
       sectionValue = selectedSection || null;
     }
-    // For General questions or FLN questions, clsValue and sectionValue remain null
+    // For General / FLN tabs, cls and section must stay null so type-1 answers
+    // are not duplicated per class/section in question_answer.
 
     // Determine questionType for current submission (tab-based)
     const questionTypeByTabId = {
@@ -2272,13 +2283,22 @@ export function useSelfAssessment() {
       ? questionTypeByTabId[currentTab.id] || null
       : null;
 
-    // Format answers array from current answers state
+    // Format answers array from current tab questions only
     const answersArray = [];
+    const questionsToProcess =
+      currentTab?.questions?.length > 0 ? currentTab.questions : allQuestions;
 
-    for (const question of allQuestions) {
+    for (const question of questionsToProcess) {
       const questionType =
         question.questionType ||
         (question.isClassroomObservation === 1 ? 2 : 1);
+
+      if (
+        payloadQuestionType != null &&
+        Number(questionType) !== Number(payloadQuestionType)
+      ) {
+        continue;
+      }
 
       // For FLN questions (type 4), create separate answer objects for each class
       if (questionType === 4 || questionType === "4") {

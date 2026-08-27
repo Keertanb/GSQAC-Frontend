@@ -35,6 +35,7 @@ import useAuthStore from "../../../../store/useAuthStore";
 import { useLogoutMutation } from "../../../../services/authService";
 import { enqueueSnackbar } from "notistack";
 import { filterQuestionsByClassRange, resolveEffectiveSchoolClassRange } from "../../../../utils/classRange";
+import { dedupeQuestionsById } from "../../../../utils/dedupeQuestions";
 import { parseQuestionOptions, resolveAssessmentPeriod } from "../../../../utils/assessmentMeta";
 import {
   clampProgressPercentage,
@@ -530,7 +531,9 @@ export function useCRCAssessment() {
     } else if (allQuestionsData?.data && Array.isArray(allQuestionsData.data)) {
       questions = allQuestionsData.data;
     }
-    return filterQuestionsByClassRange(questions, lowerClass, upperClass);
+    return dedupeQuestionsById(
+      filterQuestionsByClassRange(questions, lowerClass, upperClass),
+    );
   }, [allQuestionsData?.data, lowerClass, upperClass]);
 
   const allQuestions = useMemo(() => {
@@ -540,11 +543,13 @@ export function useCRCAssessment() {
     } else if (questionsData?.data && Array.isArray(questionsData.data)) {
       questions = questionsData.data;
     }
-    return filterQuestionsByClassRange(
-      questions,
-      lowerClass,
-      upperClass,
-      selectedClass || null,
+    return dedupeQuestionsById(
+      filterQuestionsByClassRange(
+        questions,
+        lowerClass,
+        upperClass,
+        selectedClass || null,
+      ),
     );
   }, [questionsData?.data, lowerClass, upperClass, selectedClass]);
 

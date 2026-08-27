@@ -24,11 +24,15 @@ export async function uploadVerifierRegistrationDocument(file) {
     throw new Error("File exceeds the maximum allowed size of 5 MB.");
   }
 
-  const response = await axiosInstance.post("/common/get-upload-url", {
-    extension,
-    contentType: file.type || "application/octet-stream",
-    uploadType: "verifierRegistration",
-  });
+  const response = await axiosInstance.post(
+    "/common/get-upload-url",
+    {
+      extension,
+      contentType: file.type || "application/octet-stream",
+      uploadType: "verifierRegistration",
+    },
+    { timeout: 90000 },
+  );
 
   const uploadPayload = response?.data?.data || response?.data;
   if (!uploadPayload?.uploadURL || !uploadPayload?.fileName) {

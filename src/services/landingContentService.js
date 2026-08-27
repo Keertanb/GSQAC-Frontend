@@ -34,11 +34,15 @@ async function uploadLandingFile(file, uploadType, allowedExtensions) {
   const contentType =
     file.type || CONTENT_TYPE_BY_EXT[extension] || "application/octet-stream";
 
-  const response = await axiosInstance.post("/common/get-upload-url", {
-    extension,
-    contentType,
-    uploadType,
-  });
+  const response = await axiosInstance.post(
+    "/common/get-upload-url",
+    {
+      extension,
+      contentType,
+      uploadType,
+    },
+    { timeout: 90000 },
+  );
 
   const uploadPayload = response?.data?.data || response?.data;
   if (!uploadPayload?.uploadURL || !uploadPayload?.fileName) {
