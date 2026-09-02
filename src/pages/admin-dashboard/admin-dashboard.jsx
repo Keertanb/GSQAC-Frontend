@@ -122,8 +122,10 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (role !== "nodal") return;
-    // When enabling Verifier Registration for nodal, add ADMIN_VERIFIER_REGISTRATION_URL here
-    const allowedPaths = [ADMIN_DASHBOARD_URL];
+    const allowedPaths = [
+      ADMIN_DASHBOARD_URL,
+      ADMIN_VERIFIER_REGISTRATION_URL,
+    ];
     if (!allowedPaths.includes(location.pathname)) {
       navigate(ADMIN_DASHBOARD_URL, { replace: true });
     }

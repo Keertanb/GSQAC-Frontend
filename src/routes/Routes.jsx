@@ -411,17 +411,16 @@ export const nodalRoutes = [
           </ProtectedRoute>
         ),
       },
-      // Verifier Registration for nodal — enable when needed:
-      // {
-      //   path: ROUTE_URLS.ADMIN_VERIFIER_REGISTRATION_URL,
-      //   element: (
-      //     <ProtectedRoute requiredRole="nodal">
-      //       <Suspense fallback={<LazyLoad />}>
-      //         <AdminDashboard />
-      //       </Suspense>
-      //     </ProtectedRoute>
-      //   ),
-      // },
+      {
+        path: ROUTE_URLS.ADMIN_VERIFIER_REGISTRATION_URL,
+        element: (
+          <ProtectedRoute requiredRole="nodal">
+            <Suspense fallback={<LazyLoad />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
   {

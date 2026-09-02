@@ -1,3 +1,5 @@
+import { getAssessmentGradeInfo } from "./assessmentGrading";
+
 const HOSTEL_EXACT_NAMES = new Set([
   "school hostel",
   "શાળા છાત્રાલય",
@@ -112,6 +114,98 @@ export function filterAssessmentsByHostelFacility(assessments, hostelFacility) {
       answerPercentage: totals.answerPercentage,
     };
   });
+}
+
+function flattenReportSubDomains(domains = []) {
+  const rows = [];
+  domains.forEach((domain) => {
+    (domain.subDomains || []).forEach((sub) => {
+      rows.push({
+        subDomainName: sub.subDomainName,
+        percentage: Number(sub.percentage) || 0,
+        subDomainOrder: Number(sub.subDomainOrder) || 0,
+      });
+    });
+  });
+  return rows;
+}
+
+function buildReportStrengths(domains) {
+  if (!domains.length) {
+    return { mainDomain: null, mainDomainPercentage: null, subDomains: [] };
+  }
+  const sorted = [...domains].sort(
+    (a, b) => (Number(b.percentage) || 0) - (Number(a.percentage) || 0),
+  );
+  const top = sorted[0];
+  const subDomains = flattenReportSubDomains(domains)
+    .filter((sub) => sub.percentage >= 60)
+    .sort((a, b) => b.percentage - a.percentage || a.subDomainOrder - b.subDomainOrder)
+    .slice(0, 3)
+    .map((sub) => sub.subDomainName);
+  return {
+    mainDomain: top?.domainName || null,
+    mainDomainPercentage: top?.percentage ?? null,
+    subDomains,
+  };
+}
+
+function buildReportImprovements(domains) {
+  if (!domains.length) {
+    return { mainDomain: null, mainDomainPercentage: null, subDomains: [] };
+  }
+  const sorted = [...domains].sort(
+    (a, b) => (Number(a.percentage) || 0) - (Number(b.percentage) || 0),
+  );
+  const lowest = sorted[0];
+  const subDomains = flattenReportSubDomains(domains)
+    .filter((sub) => sub.percentage < 80)
+    .sort((a, b) => a.percentage - b.percentage || a.subDomainOrder - b.subDomainOrder)
+    .slice(0, 3)
+    .map((sub) => sub.subDomainName);
+  return {
+    mainDomain: lowest?.domainName || null,
+    mainDomainPercentage: lowest?.percentage ?? null,
+    subDomains,
+  };
+}
+
+/** Apply hostel=no filter to submitted assessment report payload. */
+export function applyHostelFacilityToAssessmentReport(report, hostelFacility) {
+  if (!report?.isSubmitted || !Array.isArray(report.domains)) return report;
+
+  const normalizedHostel = normalizeHostelFacilityValue(hostelFacility);
+  if (normalizedHostel === null || normalizedHostel === 1) return report;
+
+  const filteredDomains = filterDomainsByHostelFacility(report.domains, 0);
+  if (filteredDomains.length === report.domains.length) return report;
+
+  const totalObtained = filteredDomains.reduce(
+    (sum, domain) => sum + (Number(domain.obtainedMarks) || 0),
+    0,
+  );
+  const totalMaxMarks = filteredDomains.reduce(
+    (sum, domain) => sum + (Number(domain.maxMarks) || 0),
+    0,
+  );
+  const overallPercentage = filteredDomains.reduce(
+    (sum, domain) => sum + (Number(domain.weightedScore) || 0),
+    0,
+  );
+
+  return {
+    ...report,
+    domains: filteredDomains,
+    summary: {
+      ...(report.summary || {}),
+      overallPercentage,
+      totalObtained,
+      totalMaxMarks,
+      ...getAssessmentGradeInfo(overallPercentage),
+    },
+    strengths: buildReportStrengths(filteredDomains),
+    improvements: buildReportImprovements(filteredDomains),
+  };
 }
 
 export function formatHostelFacilityLabel(hostelFacility) {

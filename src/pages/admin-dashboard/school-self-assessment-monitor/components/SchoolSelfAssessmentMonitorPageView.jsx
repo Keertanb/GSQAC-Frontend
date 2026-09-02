@@ -24,7 +24,7 @@ import {
 } from "@mui/icons-material";
 import AppDropdown from "../../../../components/AppDropdown/AppDropdown";
 import AppTable from "../../../../components/AppTable/AppTable";
-import { SchoolAssessmentReportPanel } from "../../school-assessment-status/components/SchoolAssessmentReportPanel";
+import { AdminMonitorReportPanel } from "./AdminMonitorReportPanel";
 import "../../school-assessment-status/SchoolAssessmentStatus.css";
 import "../SchoolSelfAssessmentMonitor.css";
 
@@ -154,7 +154,7 @@ function SchoolDetailPanel({
       </div>
 
       {school?.selfAssessmentIsSubmitted === 1 ? (
-        <SchoolAssessmentReportPanel
+        <AdminMonitorReportPanel
           report={report}
           isLoading={isReportLoading}
           isError={isReportError}

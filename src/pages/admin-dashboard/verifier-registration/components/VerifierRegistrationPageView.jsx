@@ -45,14 +45,16 @@ export function VerifierRegistrationPageView({
     <div className="vr-reg-admin-container">
       <div className="vr-reg-admin-header">
         <div>
-          <h1 className="vr-reg-admin-title">Verifier Registration</h1>
+          <h1 className="vr-reg-admin-title">
+            {c?.districtScoped ? "Verifier Dashboard" : "Verifier Registration"}
+          </h1>
           <p className="vr-reg-admin-subtitle">
             {c?.districtScoped
-              ? "Verifier registrations whose job district matches your district"
+              ? "Verifiers whose native district matches your district"
               : "Insights and applications from the public verifier registration form"}
           </p>
         </div>
-        {activeTab === "applications" ? (
+        {activeTab === "applications" || c?.districtScoped ? (
           <div className="vr-reg-admin-header-actions">
             <AppButton
               variant="plain"

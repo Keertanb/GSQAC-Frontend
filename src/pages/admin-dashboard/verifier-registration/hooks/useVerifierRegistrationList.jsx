@@ -93,7 +93,45 @@ export function useVerifierRegistrationList() {
     }
   };
 
-  const columns = [
+  const columns = districtId
+    ? [
+        {
+          id: "registrationId",
+          label: "ID",
+          render: (row) => row.registrationId,
+        },
+        {
+          id: "fullName",
+          label: "Name",
+          render: (row) => row.fullName || "-",
+        },
+        {
+          id: "mobileNumber",
+          label: "Mobile",
+          render: (row) => row.mobileNumber || "-",
+        },
+        {
+          id: "email",
+          label: "Email",
+          render: (row) => row.email || "-",
+        },
+        {
+          id: "nativeDistrict",
+          label: "Native District",
+          render: (row) => row.nativeDistrictName || "-",
+        },
+        {
+          id: "jobDistrict",
+          label: "Job District",
+          render: (row) => row.jobDistrictName || "-",
+        },
+        {
+          id: "createdAt",
+          label: "Registered At",
+          render: (row) => row.createdAtLabel || "-",
+        },
+      ]
+    : [
     {
       id: "registrationId",
       label: "ID",

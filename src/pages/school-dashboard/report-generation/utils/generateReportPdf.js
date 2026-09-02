@@ -79,7 +79,9 @@ function applyCaptureCloneStyles(clonedElement) {
   clonedElement.style.boxShadow = "none";
   clonedElement.style.transform = "none";
 
-  const page = clonedElement.querySelector(".rpt-page");
+  const page =
+    clonedElement.querySelector(".rpt-page") ||
+    clonedElement.querySelector(".amr-page");
   if (page) {
     page.style.width = `${A4_WIDTH_PX}px`;
     page.style.height = `${A4_HEIGHT_PX}px`;
@@ -107,6 +109,21 @@ function applyCaptureCloneStyles(clonedElement) {
     el.style.display = "block";
     el.style.visibility = "visible";
   });
+}
+
+function resolvePageFrameNode(pageRef) {
+  if (!pageRef) return null;
+  if (
+    pageRef.classList?.contains("rpt-frame") ||
+    pageRef.classList?.contains("amr-frame")
+  ) {
+    return pageRef;
+  }
+  return (
+    pageRef.querySelector(".rpt-frame") ||
+    pageRef.querySelector(".amr-frame") ||
+    pageRef
+  );
 }
 
 async function capturePageFrame(pageNode) {
@@ -177,9 +194,7 @@ export async function generateReportPdf(pageElements, fileName = "school-assessm
   const pageHeightMm = pdf.internal.pageSize.getHeight();
 
   for (let index = 0; index < pages.length; index += 1) {
-    const pageNode = pages[index].classList?.contains("rpt-frame")
-      ? pages[index]
-      : pages[index].querySelector(".rpt-frame") || pages[index];
+    const pageNode = resolvePageFrameNode(pages[index]);
 
     const canvas = await capturePageFrame(pageNode);
     const imgData = canvas.toDataURL("image/png", 1.0);

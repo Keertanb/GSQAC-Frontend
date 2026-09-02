@@ -246,11 +246,16 @@ export const adminMenuItems = [
   },
 ];
 
-export const nodalMenuItems = adminMenuItems.filter((item) => item.id === "dashboard");
-// Verifier Registration tab for nodal — enable when needed:
-// export const nodalMenuItems = adminMenuItems.filter(
-//   (item) => item.id === "dashboard" || item.id === "verifier-registration",
-// );
+export const nodalMenuItems = [
+  ...adminMenuItems.filter((item) => item.id === "dashboard"),
+  {
+    id: "verifier-registration",
+    label: "Verifier Dashboard",
+    icon: HowToReg,
+    url: "/admin-dashboard/verifier-registration",
+    activeFinder: ["/admin-dashboard/verifier-registration"],
+  },
+];
 
 // CRC Menu Items
 export const crcMenuItems = [

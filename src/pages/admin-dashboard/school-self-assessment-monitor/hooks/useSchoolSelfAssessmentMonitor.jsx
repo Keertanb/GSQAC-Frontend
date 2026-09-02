@@ -12,7 +12,11 @@ import {
   generateReportPdf,
   waitForPdfCapturePages,
 } from "../../../school-dashboard/report-generation/utils/generateReportPdf";
-import { buildReportPageList } from "../../../school-dashboard/report-generation/utils/reportPageUtils";
+import { ADMIN_MONITOR_REPORT_PAGES } from "../utils/adminMonitorReportPages";
+import {
+  applyHostelFacilityToAssessmentReport,
+  normalizeHostelFacilityValue,
+} from "../../../../utils/hostelDomain";
 import { getSubmittedSchoolSelfAssessment } from "../../school-assessment-status/utils/schoolAssessmentProgressUtils";
 
 export function useSchoolSelfAssessmentMonitor() {
@@ -101,8 +105,14 @@ export function useSchoolSelfAssessmentMonitor() {
     if (!baseReport?.isSubmitted) return baseReport;
 
     const school = schoolDetail?.school || selectedSchool || {};
+    const hostelFacility =
+      schoolDetail?.hostel ??
+      schoolDetail?.school?.hostel ??
+      school?.hostel ??
+      baseReport?.school?.hostel ??
+      null;
 
-    return {
+    const merged = {
       ...baseReport,
       school: {
         schoolId: selectedSchoolId,
@@ -127,12 +137,15 @@ export function useSchoolSelfAssessmentMonitor() {
           school.cluster ||
           baseReport.school?.cluster ||
           "",
+        hostel: normalizeHostelFacilityValue(hostelFacility),
       },
     };
+
+    return applyHostelFacilityToAssessmentReport(merged, hostelFacility);
   }, [reportResponse, schoolDetail, selectedSchool, selectedSchoolId]);
 
   const pdfPageCount = useMemo(
-    () => (report?.isSubmitted ? buildReportPageList(report).length : 0),
+    () => (report?.isSubmitted ? ADMIN_MONITOR_REPORT_PAGES : 0),
     [report],
   );
 
